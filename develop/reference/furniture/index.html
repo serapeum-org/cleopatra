@@ -2879,7 +2879,8 @@ positions (each in <code>[0, length]</code>); <code>False</code> draws no tick n
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The fill of the even blocks and the colour of the ticks / text.</p>
+                <p>The fill of the even blocks and the colour of the block outline,
+the ticks and the text.</p>
               </div>
             </td>
             <td>
@@ -2895,7 +2896,7 @@ positions (each in <code>[0, length]</code>); <code>False</code> draws no tick n
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The fill of the odd blocks (and the block outline).</p>
+                <p>The fill of the odd blocks (the alternating light blocks).</p>
               </div>
             </td>
             <td>
@@ -3252,8 +3253,7 @@ is not <code>"top"</code> / <code>"bottom"</code>, the axes has a zero-width x-r
 <span class="normal"><a href="#__codelineno-0-330">330</a></span>
 <span class="normal"><a href="#__codelineno-0-331">331</a></span>
 <span class="normal"><a href="#__codelineno-0-332">332</a></span>
-<span class="normal"><a href="#__codelineno-0-333">333</a></span>
-<span class="normal"><a href="#__codelineno-0-334">334</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-139" name="__codelineno-0-139"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_scale_bar</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-333">333</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-139" name="__codelineno-0-139"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_scale_bar</span><span class="p">(</span>
 <a id="__codelineno-0-140" name="__codelineno-0-140"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span><span class="p">,</span>
 <a id="__codelineno-0-141" name="__codelineno-0-141"></a>    <span class="n">length</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
 <a id="__codelineno-0-142" name="__codelineno-0-142"></a>    <span class="o">*</span><span class="p">,</span>
@@ -3297,158 +3297,157 @@ is not <code>"top"</code> / <code>"bottom"</code>, the axes has a zero-width x-r
 <a id="__codelineno-0-180" name="__codelineno-0-180"></a><span class="sd">        ticks: `True` (default) numbers the `segments + 1` block boundaries</span>
 <a id="__codelineno-0-181" name="__codelineno-0-181"></a><span class="sd">            `0 .. length`; a sequence places tick numbers at those data</span>
 <a id="__codelineno-0-182" name="__codelineno-0-182"></a><span class="sd">            positions (each in `[0, length]`); `False` draws no tick numbers.</span>
-<a id="__codelineno-0-183" name="__codelineno-0-183"></a><span class="sd">        color: The fill of the even blocks and the colour of the ticks / text.</span>
-<a id="__codelineno-0-184" name="__codelineno-0-184"></a><span class="sd">        edge_color: The fill of the odd blocks (and the block outline).</span>
-<a id="__codelineno-0-185" name="__codelineno-0-185"></a><span class="sd">        label_location: `"top"` or `"bottom"` -- which side of the bar the tick</span>
-<a id="__codelineno-0-186" name="__codelineno-0-186"></a><span class="sd">            numbers and caption sit on. `None` (default) picks the side facing</span>
-<a id="__codelineno-0-187" name="__codelineno-0-187"></a><span class="sd">            the axes interior for the chosen corner (a lower corner labels</span>
-<a id="__codelineno-0-188" name="__codelineno-0-188"></a><span class="sd">            above the bar, an upper corner below), so the caption never spills</span>
-<a id="__codelineno-0-189" name="__codelineno-0-189"></a><span class="sd">            off the axes edge.</span>
-<a id="__codelineno-0-190" name="__codelineno-0-190"></a><span class="sd">        label_size: Font size (points) for the tick numbers and caption.</span>
-<a id="__codelineno-0-191" name="__codelineno-0-191"></a><span class="sd">            `None` uses matplotlib's default.</span>
-<a id="__codelineno-0-192" name="__codelineno-0-192"></a><span class="sd">        box: A backing panel behind the bar, using `ColorBar`'s vocabulary --</span>
-<a id="__codelineno-0-193" name="__codelineno-0-193"></a><span class="sd">            `None` / `False` (none), `True` (translucent white), a colour</span>
-<a id="__codelineno-0-194" name="__codelineno-0-194"></a><span class="sd">            string, or a dict of `Rectangle` kwargs.</span>
-<a id="__codelineno-0-195" name="__codelineno-0-195"></a><span class="sd">        zorder: The draw order for the furniture. `None` uses a high default</span>
-<a id="__codelineno-0-196" name="__codelineno-0-196"></a><span class="sd">            that sits above the data.</span>
-<a id="__codelineno-0-197" name="__codelineno-0-197"></a>
-<a id="__codelineno-0-198" name="__codelineno-0-198"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-199" name="__codelineno-0-199"></a><span class="sd">        Axes: The frameless inset axes the bar was drawn on, so the caller can</span>
-<a id="__codelineno-0-200" name="__codelineno-0-200"></a><span class="sd">        adjust it further.</span>
-<a id="__codelineno-0-201" name="__codelineno-0-201"></a>
-<a id="__codelineno-0-202" name="__codelineno-0-202"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-203" name="__codelineno-0-203"></a><span class="sd">        ValueError: If `location` is not a corner, `length` is not finite and</span>
-<a id="__codelineno-0-204" name="__codelineno-0-204"></a><span class="sd">            positive, `pad` is out of range, `segments &lt; 1`, `label_location`</span>
-<a id="__codelineno-0-205" name="__codelineno-0-205"></a><span class="sd">            is not `"top"` / `"bottom"`, the axes has a zero-width x-range, or</span>
-<a id="__codelineno-0-206" name="__codelineno-0-206"></a><span class="sd">            `pad + bar width` leaves no room on the axes.</span>
-<a id="__codelineno-0-207" name="__codelineno-0-207"></a>
-<a id="__codelineno-0-208" name="__codelineno-0-208"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-209" name="__codelineno-0-209"></a><span class="sd">        - A four-block "100 km" bar in the lower-left corner:</span>
-<a id="__codelineno-0-210" name="__codelineno-0-210"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-211" name="__codelineno-0-211"></a><span class="sd">            &gt;&gt;&gt; import matplotlib</span>
-<a id="__codelineno-0-212" name="__codelineno-0-212"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use("Agg")</span>
-<a id="__codelineno-0-213" name="__codelineno-0-213"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-214" name="__codelineno-0-214"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.furniture import add_scale_bar</span>
-<a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="sd">            &gt;&gt;&gt; ax.set_xlim(0, 500_000)</span>
-<a id="__codelineno-0-217" name="__codelineno-0-217"></a><span class="sd">            (0.0, 500000.0)</span>
-<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">            &gt;&gt;&gt; bar = add_scale_bar(ax, 100_000, label="100 km", location="lower left",</span>
-<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">            ...                     segments=4)</span>
-<a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="sd">            &gt;&gt;&gt; len(bar.patches)   # four alternating blocks</span>
-<a id="__codelineno-0-221" name="__codelineno-0-221"></a><span class="sd">            4</span>
-<a id="__codelineno-0-222" name="__codelineno-0-222"></a><span class="sd">            &gt;&gt;&gt; plt.close(fig)</span>
-<a id="__codelineno-0-223" name="__codelineno-0-223"></a>
-<a id="__codelineno-0-224" name="__codelineno-0-224"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-225" name="__codelineno-0-225"></a><span class="sd">    """</span>
-<a id="__codelineno-0-226" name="__codelineno-0-226"></a>    <span class="k">if</span> <span class="n">location</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_CORNERS</span><span class="p">:</span>
-<a id="__codelineno-0-227" name="__codelineno-0-227"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"location must be one of </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">_CORNERS</span><span class="p">)</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">location</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
-<a id="__codelineno-0-228" name="__codelineno-0-228"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">length</span><span class="p">)</span> <span class="ow">or</span> <span class="n">length</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
-<a id="__codelineno-0-229" name="__codelineno-0-229"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"length must be a finite positive number, got </span><span class="si">{</span><span class="n">length</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
-<a id="__codelineno-0-230" name="__codelineno-0-230"></a>    <span class="k">if</span> <span class="n">segments</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
-<a id="__codelineno-0-231" name="__codelineno-0-231"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"segments must be &gt;= 1, got </span><span class="si">{</span><span class="n">segments</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
-<a id="__codelineno-0-232" name="__codelineno-0-232"></a>    <span class="k">if</span> <span class="n">label_location</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"top"</span><span class="p">,</span> <span class="s2">"bottom"</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
-<a id="__codelineno-0-233" name="__codelineno-0-233"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-234" name="__codelineno-0-234"></a>            <span class="sa">f</span><span class="s2">"label_location must be 'top', 'bottom', or None, got </span><span class="si">{</span><span class="n">label_location</span><span class="si">!r}</span><span class="s2">."</span>
-<a id="__codelineno-0-235" name="__codelineno-0-235"></a>        <span class="p">)</span>
-<a id="__codelineno-0-236" name="__codelineno-0-236"></a>    <span class="k">if</span> <span class="n">label_location</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a>        <span class="c1"># Default: grow the tick numbers / caption toward the axes interior, so a</span>
-<a id="__codelineno-0-238" name="__codelineno-0-238"></a>        <span class="c1"># bar in a lower corner labels above the bar and one in an upper corner</span>
-<a id="__codelineno-0-239" name="__codelineno-0-239"></a>        <span class="c1"># labels below -- otherwise a default lower-corner bar spills its caption</span>
-<a id="__codelineno-0-240" name="__codelineno-0-240"></a>        <span class="c1"># off the bottom edge, over the axis tick labels.</span>
-<a id="__codelineno-0-241" name="__codelineno-0-241"></a>        <span class="n">label_location</span> <span class="o">=</span> <span class="s2">"top"</span> <span class="k">if</span> <span class="n">location</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"lower"</span><span class="p">)</span> <span class="k">else</span> <span class="s2">"bottom"</span>
-<a id="__codelineno-0-242" name="__codelineno-0-242"></a>    <span class="n">pad_x</span><span class="p">,</span> <span class="n">pad_y</span> <span class="o">=</span> <span class="n">_as_margins</span><span class="p">(</span><span class="n">pad</span><span class="p">)</span>
-<a id="__codelineno-0-243" name="__codelineno-0-243"></a>
-<a id="__codelineno-0-244" name="__codelineno-0-244"></a>    <span class="n">x0d</span><span class="p">,</span> <span class="n">x1d</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
-<a id="__codelineno-0-245" name="__codelineno-0-245"></a>    <span class="n">data_range</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x1d</span><span class="p">)</span> <span class="o">-</span> <span class="nb">float</span><span class="p">(</span><span class="n">x0d</span><span class="p">))</span>
-<a id="__codelineno-0-246" name="__codelineno-0-246"></a>    <span class="k">if</span> <span class="n">data_range</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
-<a id="__codelineno-0-247" name="__codelineno-0-247"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"the axes has a zero-width x-range; cannot size a scale bar."</span><span class="p">)</span>
-<a id="__codelineno-0-248" name="__codelineno-0-248"></a>    <span class="n">width</span> <span class="o">=</span> <span class="n">length</span> <span class="o">/</span> <span class="n">data_range</span>
-<a id="__codelineno-0-249" name="__codelineno-0-249"></a>    <span class="k">if</span> <span class="n">pad_x</span> <span class="o">+</span> <span class="n">width</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">:</span>
-<a id="__codelineno-0-250" name="__codelineno-0-250"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-251" name="__codelineno-0-251"></a>            <span class="sa">f</span><span class="s2">"the bar spans </span><span class="si">{</span><span class="n">width</span><span class="si">:</span><span class="s2">.3g</span><span class="si">}</span><span class="s2"> of the axes width; with pad_x=</span><span class="si">{</span><span class="n">pad_x</span><span class="si">}</span><span class="s2"> it does "</span>
-<a id="__codelineno-0-252" name="__codelineno-0-252"></a>            <span class="s2">"not fit. Shorten `length`, zoom out, or reduce `pad`."</span>
-<a id="__codelineno-0-253" name="__codelineno-0-253"></a>        <span class="p">)</span>
-<a id="__codelineno-0-254" name="__codelineno-0-254"></a>
-<a id="__codelineno-0-255" name="__codelineno-0-255"></a>    <span class="n">z</span> <span class="o">=</span> <span class="n">_FURNITURE_ZORDER</span> <span class="k">if</span> <span class="n">zorder</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">zorder</span>
-<a id="__codelineno-0-256" name="__codelineno-0-256"></a>    <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="n">_corner_origin</span><span class="p">(</span><span class="n">location</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">pad_x</span><span class="p">,</span> <span class="n">pad_y</span><span class="p">)</span>
-<a id="__codelineno-0-257" name="__codelineno-0-257"></a>
-<a id="__codelineno-0-258" name="__codelineno-0-258"></a>    <span class="n">text_color</span> <span class="o">=</span> <span class="n">color</span>
-<a id="__codelineno-0-259" name="__codelineno-0-259"></a>    <span class="n">at_top</span> <span class="o">=</span> <span class="n">label_location</span> <span class="o">==</span> <span class="s2">"top"</span>
-<a id="__codelineno-0-260" name="__codelineno-0-260"></a>    <span class="c1"># The tick marks / numbers / caption grow away from the bar on the label</span>
-<a id="__codelineno-0-261" name="__codelineno-0-261"></a>    <span class="c1"># side. `sign` points from the bar toward that side in axes fraction.</span>
-<a id="__codelineno-0-262" name="__codelineno-0-262"></a>    <span class="n">sign</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="k">if</span> <span class="n">at_top</span> <span class="k">else</span> <span class="o">-</span><span class="mf">1.0</span>
-<a id="__codelineno-0-263" name="__codelineno-0-263"></a>    <span class="n">bar_edge</span> <span class="o">=</span> <span class="p">(</span><span class="n">y0</span> <span class="o">+</span> <span class="n">height</span><span class="p">)</span> <span class="k">if</span> <span class="n">at_top</span> <span class="k">else</span> <span class="n">y0</span>
-<a id="__codelineno-0-264" name="__codelineno-0-264"></a>    <span class="n">text_va</span> <span class="o">=</span> <span class="s2">"bottom"</span> <span class="k">if</span> <span class="n">at_top</span> <span class="k">else</span> <span class="s2">"top"</span>
-<a id="__codelineno-0-265" name="__codelineno-0-265"></a>
-<a id="__codelineno-0-266" name="__codelineno-0-266"></a>    <span class="n">_draw_scale_box</span><span class="p">(</span>
-<a id="__codelineno-0-267" name="__codelineno-0-267"></a>        <span class="n">ax</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">sign</span><span class="p">,</span> <span class="n">bar_edge</span><span class="p">,</span> <span class="nb">bool</span><span class="p">(</span><span class="n">ticks</span> <span class="ow">or</span> <span class="n">label</span><span class="p">),</span> <span class="n">box</span><span class="p">,</span> <span class="n">z</span>
-<a id="__codelineno-0-268" name="__codelineno-0-268"></a>    <span class="p">)</span>
-<a id="__codelineno-0-269" name="__codelineno-0-269"></a>
-<a id="__codelineno-0-270" name="__codelineno-0-270"></a>    <span class="n">inset</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">inset_axes</span><span class="p">(</span>
-<a id="__codelineno-0-271" name="__codelineno-0-271"></a>        <span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">),</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="n">z</span> <span class="o">+</span> <span class="mf">0.1</span>
-<a id="__codelineno-0-272" name="__codelineno-0-272"></a>    <span class="p">)</span>
-<a id="__codelineno-0-273" name="__codelineno-0-273"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
-<a id="__codelineno-0-274" name="__codelineno-0-274"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
-<a id="__codelineno-0-275" name="__codelineno-0-275"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">set_navigate</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-<a id="__codelineno-0-276" name="__codelineno-0-276"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">set_in_layout</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-<a id="__codelineno-0-277" name="__codelineno-0-277"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">"off"</span><span class="p">)</span>
-<a id="__codelineno-0-278" name="__codelineno-0-278"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">patch</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-<a id="__codelineno-0-279" name="__codelineno-0-279"></a>    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">fill</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">_segment_fills</span><span class="p">(</span><span class="n">segments</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">edge_color</span><span class="p">)):</span>
-<a id="__codelineno-0-280" name="__codelineno-0-280"></a>        <span class="n">inset</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span>
-<a id="__codelineno-0-281" name="__codelineno-0-281"></a>            <span class="n">Rectangle</span><span class="p">(</span>
-<a id="__codelineno-0-282" name="__codelineno-0-282"></a>                <span class="p">(</span><span class="n">i</span> <span class="o">/</span> <span class="n">segments</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
-<a id="__codelineno-0-283" name="__codelineno-0-283"></a>                <span class="mf">1.0</span> <span class="o">/</span> <span class="n">segments</span><span class="p">,</span>
-<a id="__codelineno-0-284" name="__codelineno-0-284"></a>                <span class="mf">1.0</span><span class="p">,</span>
-<a id="__codelineno-0-285" name="__codelineno-0-285"></a>                <span class="n">facecolor</span><span class="o">=</span><span class="n">fill</span><span class="p">,</span>
-<a id="__codelineno-0-286" name="__codelineno-0-286"></a>                <span class="n">edgecolor</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
-<a id="__codelineno-0-287" name="__codelineno-0-287"></a>                <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
-<a id="__codelineno-0-288" name="__codelineno-0-288"></a>            <span class="p">)</span>
-<a id="__codelineno-0-289" name="__codelineno-0-289"></a>        <span class="p">)</span>
-<a id="__codelineno-0-290" name="__codelineno-0-290"></a>
-<a id="__codelineno-0-291" name="__codelineno-0-291"></a>    <span class="k">if</span> <span class="n">ticks</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
-<a id="__codelineno-0-292" name="__codelineno-0-292"></a>        <span class="c1"># Number the segment boundaries 0 .. length.</span>
-<a id="__codelineno-0-293" name="__codelineno-0-293"></a>        <span class="n">tick_positions</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="o">/</span> <span class="n">segments</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">segments</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
-<a id="__codelineno-0-294" name="__codelineno-0-294"></a>        <span class="n">tick_values</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="o">*</span> <span class="n">length</span> <span class="o">/</span> <span class="n">segments</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">segments</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
-<a id="__codelineno-0-295" name="__codelineno-0-295"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-296" name="__codelineno-0-296"></a>        <span class="n">tick_positions</span><span class="p">,</span> <span class="n">tick_values</span> <span class="o">=</span> <span class="n">_scale_bar_ticks</span><span class="p">(</span><span class="n">ticks</span><span class="p">,</span> <span class="n">length</span><span class="p">)</span>
-<a id="__codelineno-0-297" name="__codelineno-0-297"></a>    <span class="k">for</span> <span class="n">frac</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">tick_positions</span><span class="p">,</span> <span class="n">tick_values</span><span class="p">):</span>
-<a id="__codelineno-0-298" name="__codelineno-0-298"></a>        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-<a id="__codelineno-0-299" name="__codelineno-0-299"></a>            <span class="p">[</span><span class="n">x0</span> <span class="o">+</span> <span class="n">frac</span> <span class="o">*</span> <span class="n">width</span><span class="p">,</span> <span class="n">x0</span> <span class="o">+</span> <span class="n">frac</span> <span class="o">*</span> <span class="n">width</span><span class="p">],</span>
-<a id="__codelineno-0-300" name="__codelineno-0-300"></a>            <span class="p">[</span><span class="n">bar_edge</span><span class="p">,</span> <span class="n">bar_edge</span> <span class="o">+</span> <span class="n">sign</span> <span class="o">*</span> <span class="n">_TICK_LEN</span><span class="p">],</span>
-<a id="__codelineno-0-301" name="__codelineno-0-301"></a>            <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
-<a id="__codelineno-0-302" name="__codelineno-0-302"></a>            <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
-<a id="__codelineno-0-303" name="__codelineno-0-303"></a>            <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span>
-<a id="__codelineno-0-304" name="__codelineno-0-304"></a>            <span class="n">zorder</span><span class="o">=</span><span class="n">z</span> <span class="o">+</span> <span class="mf">0.1</span><span class="p">,</span>
-<a id="__codelineno-0-305" name="__codelineno-0-305"></a>            <span class="n">clip_on</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-306" name="__codelineno-0-306"></a>        <span class="p">)</span>
-<a id="__codelineno-0-307" name="__codelineno-0-307"></a>        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
-<a id="__codelineno-0-308" name="__codelineno-0-308"></a>            <span class="n">x0</span> <span class="o">+</span> <span class="n">frac</span> <span class="o">*</span> <span class="n">width</span><span class="p">,</span>
-<a id="__codelineno-0-309" name="__codelineno-0-309"></a>            <span class="n">bar_edge</span> <span class="o">+</span> <span class="n">sign</span> <span class="o">*</span> <span class="p">(</span><span class="n">_TICK_LEN</span> <span class="o">+</span> <span class="mf">0.006</span><span class="p">),</span>
-<a id="__codelineno-0-310" name="__codelineno-0-310"></a>            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-<a id="__codelineno-0-311" name="__codelineno-0-311"></a>            <span class="n">ha</span><span class="o">=</span><span class="s2">"center"</span><span class="p">,</span>
-<a id="__codelineno-0-312" name="__codelineno-0-312"></a>            <span class="n">va</span><span class="o">=</span><span class="n">text_va</span><span class="p">,</span>
-<a id="__codelineno-0-313" name="__codelineno-0-313"></a>            <span class="n">color</span><span class="o">=</span><span class="n">text_color</span><span class="p">,</span>
-<a id="__codelineno-0-314" name="__codelineno-0-314"></a>            <span class="n">fontsize</span><span class="o">=</span><span class="n">label_size</span><span class="p">,</span>
-<a id="__codelineno-0-315" name="__codelineno-0-315"></a>            <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span>
-<a id="__codelineno-0-316" name="__codelineno-0-316"></a>            <span class="n">zorder</span><span class="o">=</span><span class="n">z</span> <span class="o">+</span> <span class="mf">0.1</span><span class="p">,</span>
-<a id="__codelineno-0-317" name="__codelineno-0-317"></a>            <span class="n">clip_on</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-318" name="__codelineno-0-318"></a>        <span class="p">)</span>
-<a id="__codelineno-0-319" name="__codelineno-0-319"></a>
-<a id="__codelineno-0-320" name="__codelineno-0-320"></a>    <span class="n">caption</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">length</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">label</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">label</span>
-<a id="__codelineno-0-321" name="__codelineno-0-321"></a>    <span class="n">caption_offset</span> <span class="o">=</span> <span class="p">(</span><span class="n">_TICK_LEN</span> <span class="o">+</span> <span class="mf">0.05</span><span class="p">)</span> <span class="k">if</span> <span class="n">tick_positions</span> <span class="k">else</span> <span class="mf">0.008</span>
-<a id="__codelineno-0-322" name="__codelineno-0-322"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
-<a id="__codelineno-0-323" name="__codelineno-0-323"></a>        <span class="n">x0</span> <span class="o">+</span> <span class="n">width</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">,</span>
-<a id="__codelineno-0-324" name="__codelineno-0-324"></a>        <span class="n">bar_edge</span> <span class="o">+</span> <span class="n">sign</span> <span class="o">*</span> <span class="n">caption_offset</span><span class="p">,</span>
-<a id="__codelineno-0-325" name="__codelineno-0-325"></a>        <span class="n">caption</span><span class="p">,</span>
-<a id="__codelineno-0-326" name="__codelineno-0-326"></a>        <span class="n">ha</span><span class="o">=</span><span class="s2">"center"</span><span class="p">,</span>
-<a id="__codelineno-0-327" name="__codelineno-0-327"></a>        <span class="n">va</span><span class="o">=</span><span class="n">text_va</span><span class="p">,</span>
-<a id="__codelineno-0-328" name="__codelineno-0-328"></a>        <span class="n">color</span><span class="o">=</span><span class="n">text_color</span><span class="p">,</span>
-<a id="__codelineno-0-329" name="__codelineno-0-329"></a>        <span class="n">fontsize</span><span class="o">=</span><span class="n">label_size</span><span class="p">,</span>
-<a id="__codelineno-0-330" name="__codelineno-0-330"></a>        <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span>
-<a id="__codelineno-0-331" name="__codelineno-0-331"></a>        <span class="n">zorder</span><span class="o">=</span><span class="n">z</span> <span class="o">+</span> <span class="mf">0.1</span><span class="p">,</span>
-<a id="__codelineno-0-332" name="__codelineno-0-332"></a>        <span class="n">clip_on</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-333" name="__codelineno-0-333"></a>    <span class="p">)</span>
-<a id="__codelineno-0-334" name="__codelineno-0-334"></a>    <span class="k">return</span> <span class="n">inset</span>
+<a id="__codelineno-0-183" name="__codelineno-0-183"></a><span class="sd">        color: The fill of the even blocks and the colour of the block outline,</span>
+<a id="__codelineno-0-184" name="__codelineno-0-184"></a><span class="sd">            the ticks and the text.</span>
+<a id="__codelineno-0-185" name="__codelineno-0-185"></a><span class="sd">        edge_color: The fill of the odd blocks (the alternating light blocks).</span>
+<a id="__codelineno-0-186" name="__codelineno-0-186"></a><span class="sd">        label_location: `"top"` or `"bottom"` -- which side of the bar the tick</span>
+<a id="__codelineno-0-187" name="__codelineno-0-187"></a><span class="sd">            numbers and caption sit on. `None` (default) picks the side facing</span>
+<a id="__codelineno-0-188" name="__codelineno-0-188"></a><span class="sd">            the axes interior for the chosen corner (a lower corner labels</span>
+<a id="__codelineno-0-189" name="__codelineno-0-189"></a><span class="sd">            above the bar, an upper corner below), so the caption never spills</span>
+<a id="__codelineno-0-190" name="__codelineno-0-190"></a><span class="sd">            off the axes edge.</span>
+<a id="__codelineno-0-191" name="__codelineno-0-191"></a><span class="sd">        label_size: Font size (points) for the tick numbers and caption.</span>
+<a id="__codelineno-0-192" name="__codelineno-0-192"></a><span class="sd">            `None` uses matplotlib's default.</span>
+<a id="__codelineno-0-193" name="__codelineno-0-193"></a><span class="sd">        box: A backing panel behind the bar, using `ColorBar`'s vocabulary --</span>
+<a id="__codelineno-0-194" name="__codelineno-0-194"></a><span class="sd">            `None` / `False` (none), `True` (translucent white), a colour</span>
+<a id="__codelineno-0-195" name="__codelineno-0-195"></a><span class="sd">            string, or a dict of `Rectangle` kwargs.</span>
+<a id="__codelineno-0-196" name="__codelineno-0-196"></a><span class="sd">        zorder: The draw order for the furniture. `None` uses a high default</span>
+<a id="__codelineno-0-197" name="__codelineno-0-197"></a><span class="sd">            that sits above the data.</span>
+<a id="__codelineno-0-198" name="__codelineno-0-198"></a>
+<a id="__codelineno-0-199" name="__codelineno-0-199"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-200" name="__codelineno-0-200"></a><span class="sd">        Axes: The frameless inset axes the bar was drawn on, so the caller can</span>
+<a id="__codelineno-0-201" name="__codelineno-0-201"></a><span class="sd">        adjust it further.</span>
+<a id="__codelineno-0-202" name="__codelineno-0-202"></a>
+<a id="__codelineno-0-203" name="__codelineno-0-203"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-0-204" name="__codelineno-0-204"></a><span class="sd">        ValueError: If `location` is not a corner, `length` is not finite and</span>
+<a id="__codelineno-0-205" name="__codelineno-0-205"></a><span class="sd">            positive, `pad` is out of range, `segments &lt; 1`, `label_location`</span>
+<a id="__codelineno-0-206" name="__codelineno-0-206"></a><span class="sd">            is not `"top"` / `"bottom"`, the axes has a zero-width x-range, or</span>
+<a id="__codelineno-0-207" name="__codelineno-0-207"></a><span class="sd">            `pad + bar width` leaves no room on the axes.</span>
+<a id="__codelineno-0-208" name="__codelineno-0-208"></a>
+<a id="__codelineno-0-209" name="__codelineno-0-209"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-210" name="__codelineno-0-210"></a><span class="sd">        - A four-block "100 km" bar in the lower-left corner:</span>
+<a id="__codelineno-0-211" name="__codelineno-0-211"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-212" name="__codelineno-0-212"></a><span class="sd">            &gt;&gt;&gt; import matplotlib</span>
+<a id="__codelineno-0-213" name="__codelineno-0-213"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use("Agg")</span>
+<a id="__codelineno-0-214" name="__codelineno-0-214"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.furniture import add_scale_bar</span>
+<a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-217" name="__codelineno-0-217"></a><span class="sd">            &gt;&gt;&gt; ax.set_xlim(0, 500_000)</span>
+<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">            (0.0, 500000.0)</span>
+<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">            &gt;&gt;&gt; bar = add_scale_bar(ax, 100_000, label="100 km", location="lower left",</span>
+<a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="sd">            ...                     segments=4)</span>
+<a id="__codelineno-0-221" name="__codelineno-0-221"></a><span class="sd">            &gt;&gt;&gt; len(bar.patches)   # four alternating blocks</span>
+<a id="__codelineno-0-222" name="__codelineno-0-222"></a><span class="sd">            4</span>
+<a id="__codelineno-0-223" name="__codelineno-0-223"></a><span class="sd">            &gt;&gt;&gt; plt.close(fig)</span>
+<a id="__codelineno-0-224" name="__codelineno-0-224"></a>
+<a id="__codelineno-0-225" name="__codelineno-0-225"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-226" name="__codelineno-0-226"></a><span class="sd">    """</span>
+<a id="__codelineno-0-227" name="__codelineno-0-227"></a>    <span class="k">if</span> <span class="n">location</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_CORNERS</span><span class="p">:</span>
+<a id="__codelineno-0-228" name="__codelineno-0-228"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"location must be one of </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">_CORNERS</span><span class="p">)</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">location</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+<a id="__codelineno-0-229" name="__codelineno-0-229"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">length</span><span class="p">)</span> <span class="ow">or</span> <span class="n">length</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+<a id="__codelineno-0-230" name="__codelineno-0-230"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"length must be a finite positive number, got </span><span class="si">{</span><span class="n">length</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+<a id="__codelineno-0-231" name="__codelineno-0-231"></a>    <span class="k">if</span> <span class="n">segments</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+<a id="__codelineno-0-232" name="__codelineno-0-232"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"segments must be &gt;= 1, got </span><span class="si">{</span><span class="n">segments</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+<a id="__codelineno-0-233" name="__codelineno-0-233"></a>    <span class="k">if</span> <span class="n">label_location</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"top"</span><span class="p">,</span> <span class="s2">"bottom"</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
+<a id="__codelineno-0-234" name="__codelineno-0-234"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-235" name="__codelineno-0-235"></a>            <span class="sa">f</span><span class="s2">"label_location must be 'top', 'bottom', or None, got </span><span class="si">{</span><span class="n">label_location</span><span class="si">!r}</span><span class="s2">."</span>
+<a id="__codelineno-0-236" name="__codelineno-0-236"></a>        <span class="p">)</span>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a>    <span class="k">if</span> <span class="n">label_location</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-238" name="__codelineno-0-238"></a>        <span class="c1"># Default: grow the tick numbers / caption toward the axes interior, so a</span>
+<a id="__codelineno-0-239" name="__codelineno-0-239"></a>        <span class="c1"># bar in a lower corner labels above the bar and one in an upper corner</span>
+<a id="__codelineno-0-240" name="__codelineno-0-240"></a>        <span class="c1"># labels below -- otherwise a default lower-corner bar spills its caption</span>
+<a id="__codelineno-0-241" name="__codelineno-0-241"></a>        <span class="c1"># off the bottom edge, over the axis tick labels.</span>
+<a id="__codelineno-0-242" name="__codelineno-0-242"></a>        <span class="n">label_location</span> <span class="o">=</span> <span class="s2">"top"</span> <span class="k">if</span> <span class="n">location</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"lower"</span><span class="p">)</span> <span class="k">else</span> <span class="s2">"bottom"</span>
+<a id="__codelineno-0-243" name="__codelineno-0-243"></a>    <span class="n">pad_x</span><span class="p">,</span> <span class="n">pad_y</span> <span class="o">=</span> <span class="n">_as_margins</span><span class="p">(</span><span class="n">pad</span><span class="p">)</span>
+<a id="__codelineno-0-244" name="__codelineno-0-244"></a>
+<a id="__codelineno-0-245" name="__codelineno-0-245"></a>    <span class="n">x0d</span><span class="p">,</span> <span class="n">x1d</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
+<a id="__codelineno-0-246" name="__codelineno-0-246"></a>    <span class="n">data_range</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x1d</span><span class="p">)</span> <span class="o">-</span> <span class="nb">float</span><span class="p">(</span><span class="n">x0d</span><span class="p">))</span>
+<a id="__codelineno-0-247" name="__codelineno-0-247"></a>    <span class="k">if</span> <span class="n">data_range</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
+<a id="__codelineno-0-248" name="__codelineno-0-248"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"the axes has a zero-width x-range; cannot size a scale bar."</span><span class="p">)</span>
+<a id="__codelineno-0-249" name="__codelineno-0-249"></a>    <span class="n">width</span> <span class="o">=</span> <span class="n">length</span> <span class="o">/</span> <span class="n">data_range</span>
+<a id="__codelineno-0-250" name="__codelineno-0-250"></a>    <span class="k">if</span> <span class="n">pad_x</span> <span class="o">+</span> <span class="n">width</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">:</span>
+<a id="__codelineno-0-251" name="__codelineno-0-251"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-252" name="__codelineno-0-252"></a>            <span class="sa">f</span><span class="s2">"the bar spans </span><span class="si">{</span><span class="n">width</span><span class="si">:</span><span class="s2">.3g</span><span class="si">}</span><span class="s2"> of the axes width; with pad_x=</span><span class="si">{</span><span class="n">pad_x</span><span class="si">}</span><span class="s2"> it does "</span>
+<a id="__codelineno-0-253" name="__codelineno-0-253"></a>            <span class="s2">"not fit. Shorten `length`, zoom out, or reduce `pad`."</span>
+<a id="__codelineno-0-254" name="__codelineno-0-254"></a>        <span class="p">)</span>
+<a id="__codelineno-0-255" name="__codelineno-0-255"></a>
+<a id="__codelineno-0-256" name="__codelineno-0-256"></a>    <span class="n">z</span> <span class="o">=</span> <span class="n">_FURNITURE_ZORDER</span> <span class="k">if</span> <span class="n">zorder</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">zorder</span>
+<a id="__codelineno-0-257" name="__codelineno-0-257"></a>    <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="n">_corner_origin</span><span class="p">(</span><span class="n">location</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">pad_x</span><span class="p">,</span> <span class="n">pad_y</span><span class="p">)</span>
+<a id="__codelineno-0-258" name="__codelineno-0-258"></a>
+<a id="__codelineno-0-259" name="__codelineno-0-259"></a>    <span class="n">text_color</span> <span class="o">=</span> <span class="n">color</span>
+<a id="__codelineno-0-260" name="__codelineno-0-260"></a>    <span class="n">at_top</span> <span class="o">=</span> <span class="n">label_location</span> <span class="o">==</span> <span class="s2">"top"</span>
+<a id="__codelineno-0-261" name="__codelineno-0-261"></a>    <span class="c1"># The tick marks / numbers / caption grow away from the bar on the label</span>
+<a id="__codelineno-0-262" name="__codelineno-0-262"></a>    <span class="c1"># side. `sign` points from the bar toward that side in axes fraction.</span>
+<a id="__codelineno-0-263" name="__codelineno-0-263"></a>    <span class="n">sign</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="k">if</span> <span class="n">at_top</span> <span class="k">else</span> <span class="o">-</span><span class="mf">1.0</span>
+<a id="__codelineno-0-264" name="__codelineno-0-264"></a>    <span class="n">bar_edge</span> <span class="o">=</span> <span class="p">(</span><span class="n">y0</span> <span class="o">+</span> <span class="n">height</span><span class="p">)</span> <span class="k">if</span> <span class="n">at_top</span> <span class="k">else</span> <span class="n">y0</span>
+<a id="__codelineno-0-265" name="__codelineno-0-265"></a>    <span class="n">text_va</span> <span class="o">=</span> <span class="s2">"bottom"</span> <span class="k">if</span> <span class="n">at_top</span> <span class="k">else</span> <span class="s2">"top"</span>
+<a id="__codelineno-0-266" name="__codelineno-0-266"></a>
+<a id="__codelineno-0-267" name="__codelineno-0-267"></a>    <span class="n">_draw_scale_box</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">sign</span><span class="p">,</span> <span class="n">bar_edge</span><span class="p">,</span> <span class="nb">bool</span><span class="p">(</span><span class="n">ticks</span><span class="p">),</span> <span class="n">box</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+<a id="__codelineno-0-268" name="__codelineno-0-268"></a>
+<a id="__codelineno-0-269" name="__codelineno-0-269"></a>    <span class="n">inset</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">inset_axes</span><span class="p">(</span>
+<a id="__codelineno-0-270" name="__codelineno-0-270"></a>        <span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">),</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="n">z</span> <span class="o">+</span> <span class="mf">0.1</span>
+<a id="__codelineno-0-271" name="__codelineno-0-271"></a>    <span class="p">)</span>
+<a id="__codelineno-0-272" name="__codelineno-0-272"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+<a id="__codelineno-0-273" name="__codelineno-0-273"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+<a id="__codelineno-0-274" name="__codelineno-0-274"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">set_navigate</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-0-275" name="__codelineno-0-275"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">set_in_layout</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-0-276" name="__codelineno-0-276"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">"off"</span><span class="p">)</span>
+<a id="__codelineno-0-277" name="__codelineno-0-277"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">patch</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-0-278" name="__codelineno-0-278"></a>    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">fill</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">_segment_fills</span><span class="p">(</span><span class="n">segments</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">edge_color</span><span class="p">)):</span>
+<a id="__codelineno-0-279" name="__codelineno-0-279"></a>        <span class="n">inset</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span>
+<a id="__codelineno-0-280" name="__codelineno-0-280"></a>            <span class="n">Rectangle</span><span class="p">(</span>
+<a id="__codelineno-0-281" name="__codelineno-0-281"></a>                <span class="p">(</span><span class="n">i</span> <span class="o">/</span> <span class="n">segments</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+<a id="__codelineno-0-282" name="__codelineno-0-282"></a>                <span class="mf">1.0</span> <span class="o">/</span> <span class="n">segments</span><span class="p">,</span>
+<a id="__codelineno-0-283" name="__codelineno-0-283"></a>                <span class="mf">1.0</span><span class="p">,</span>
+<a id="__codelineno-0-284" name="__codelineno-0-284"></a>                <span class="n">facecolor</span><span class="o">=</span><span class="n">fill</span><span class="p">,</span>
+<a id="__codelineno-0-285" name="__codelineno-0-285"></a>                <span class="n">edgecolor</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
+<a id="__codelineno-0-286" name="__codelineno-0-286"></a>                <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+<a id="__codelineno-0-287" name="__codelineno-0-287"></a>            <span class="p">)</span>
+<a id="__codelineno-0-288" name="__codelineno-0-288"></a>        <span class="p">)</span>
+<a id="__codelineno-0-289" name="__codelineno-0-289"></a>
+<a id="__codelineno-0-290" name="__codelineno-0-290"></a>    <span class="k">if</span> <span class="n">ticks</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+<a id="__codelineno-0-291" name="__codelineno-0-291"></a>        <span class="c1"># Number the segment boundaries 0 .. length.</span>
+<a id="__codelineno-0-292" name="__codelineno-0-292"></a>        <span class="n">tick_positions</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="o">/</span> <span class="n">segments</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">segments</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+<a id="__codelineno-0-293" name="__codelineno-0-293"></a>        <span class="n">tick_values</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="o">*</span> <span class="n">length</span> <span class="o">/</span> <span class="n">segments</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">segments</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+<a id="__codelineno-0-294" name="__codelineno-0-294"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-295" name="__codelineno-0-295"></a>        <span class="n">tick_positions</span><span class="p">,</span> <span class="n">tick_values</span> <span class="o">=</span> <span class="n">_scale_bar_ticks</span><span class="p">(</span><span class="n">ticks</span><span class="p">,</span> <span class="n">length</span><span class="p">)</span>
+<a id="__codelineno-0-296" name="__codelineno-0-296"></a>    <span class="k">for</span> <span class="n">frac</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">tick_positions</span><span class="p">,</span> <span class="n">tick_values</span><span class="p">):</span>
+<a id="__codelineno-0-297" name="__codelineno-0-297"></a>        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+<a id="__codelineno-0-298" name="__codelineno-0-298"></a>            <span class="p">[</span><span class="n">x0</span> <span class="o">+</span> <span class="n">frac</span> <span class="o">*</span> <span class="n">width</span><span class="p">,</span> <span class="n">x0</span> <span class="o">+</span> <span class="n">frac</span> <span class="o">*</span> <span class="n">width</span><span class="p">],</span>
+<a id="__codelineno-0-299" name="__codelineno-0-299"></a>            <span class="p">[</span><span class="n">bar_edge</span><span class="p">,</span> <span class="n">bar_edge</span> <span class="o">+</span> <span class="n">sign</span> <span class="o">*</span> <span class="n">_TICK_LEN</span><span class="p">],</span>
+<a id="__codelineno-0-300" name="__codelineno-0-300"></a>            <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
+<a id="__codelineno-0-301" name="__codelineno-0-301"></a>            <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+<a id="__codelineno-0-302" name="__codelineno-0-302"></a>            <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span>
+<a id="__codelineno-0-303" name="__codelineno-0-303"></a>            <span class="n">zorder</span><span class="o">=</span><span class="n">z</span> <span class="o">+</span> <span class="mf">0.1</span><span class="p">,</span>
+<a id="__codelineno-0-304" name="__codelineno-0-304"></a>            <span class="n">clip_on</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-305" name="__codelineno-0-305"></a>        <span class="p">)</span>
+<a id="__codelineno-0-306" name="__codelineno-0-306"></a>        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
+<a id="__codelineno-0-307" name="__codelineno-0-307"></a>            <span class="n">x0</span> <span class="o">+</span> <span class="n">frac</span> <span class="o">*</span> <span class="n">width</span><span class="p">,</span>
+<a id="__codelineno-0-308" name="__codelineno-0-308"></a>            <span class="n">bar_edge</span> <span class="o">+</span> <span class="n">sign</span> <span class="o">*</span> <span class="p">(</span><span class="n">_TICK_LEN</span> <span class="o">+</span> <span class="mf">0.006</span><span class="p">),</span>
+<a id="__codelineno-0-309" name="__codelineno-0-309"></a>            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+<a id="__codelineno-0-310" name="__codelineno-0-310"></a>            <span class="n">ha</span><span class="o">=</span><span class="s2">"center"</span><span class="p">,</span>
+<a id="__codelineno-0-311" name="__codelineno-0-311"></a>            <span class="n">va</span><span class="o">=</span><span class="n">text_va</span><span class="p">,</span>
+<a id="__codelineno-0-312" name="__codelineno-0-312"></a>            <span class="n">color</span><span class="o">=</span><span class="n">text_color</span><span class="p">,</span>
+<a id="__codelineno-0-313" name="__codelineno-0-313"></a>            <span class="n">fontsize</span><span class="o">=</span><span class="n">label_size</span><span class="p">,</span>
+<a id="__codelineno-0-314" name="__codelineno-0-314"></a>            <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span>
+<a id="__codelineno-0-315" name="__codelineno-0-315"></a>            <span class="n">zorder</span><span class="o">=</span><span class="n">z</span> <span class="o">+</span> <span class="mf">0.1</span><span class="p">,</span>
+<a id="__codelineno-0-316" name="__codelineno-0-316"></a>            <span class="n">clip_on</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-317" name="__codelineno-0-317"></a>        <span class="p">)</span>
+<a id="__codelineno-0-318" name="__codelineno-0-318"></a>
+<a id="__codelineno-0-319" name="__codelineno-0-319"></a>    <span class="n">caption</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">length</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">label</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">label</span>
+<a id="__codelineno-0-320" name="__codelineno-0-320"></a>    <span class="n">caption_offset</span> <span class="o">=</span> <span class="p">(</span><span class="n">_TICK_LEN</span> <span class="o">+</span> <span class="mf">0.05</span><span class="p">)</span> <span class="k">if</span> <span class="n">tick_positions</span> <span class="k">else</span> <span class="mf">0.008</span>
+<a id="__codelineno-0-321" name="__codelineno-0-321"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
+<a id="__codelineno-0-322" name="__codelineno-0-322"></a>        <span class="n">x0</span> <span class="o">+</span> <span class="n">width</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">,</span>
+<a id="__codelineno-0-323" name="__codelineno-0-323"></a>        <span class="n">bar_edge</span> <span class="o">+</span> <span class="n">sign</span> <span class="o">*</span> <span class="n">caption_offset</span><span class="p">,</span>
+<a id="__codelineno-0-324" name="__codelineno-0-324"></a>        <span class="n">caption</span><span class="p">,</span>
+<a id="__codelineno-0-325" name="__codelineno-0-325"></a>        <span class="n">ha</span><span class="o">=</span><span class="s2">"center"</span><span class="p">,</span>
+<a id="__codelineno-0-326" name="__codelineno-0-326"></a>        <span class="n">va</span><span class="o">=</span><span class="n">text_va</span><span class="p">,</span>
+<a id="__codelineno-0-327" name="__codelineno-0-327"></a>        <span class="n">color</span><span class="o">=</span><span class="n">text_color</span><span class="p">,</span>
+<a id="__codelineno-0-328" name="__codelineno-0-328"></a>        <span class="n">fontsize</span><span class="o">=</span><span class="n">label_size</span><span class="p">,</span>
+<a id="__codelineno-0-329" name="__codelineno-0-329"></a>        <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span>
+<a id="__codelineno-0-330" name="__codelineno-0-330"></a>        <span class="n">zorder</span><span class="o">=</span><span class="n">z</span> <span class="o">+</span> <span class="mf">0.1</span><span class="p">,</span>
+<a id="__codelineno-0-331" name="__codelineno-0-331"></a>        <span class="n">clip_on</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-332" name="__codelineno-0-332"></a>    <span class="p">)</span>
+<a id="__codelineno-0-333" name="__codelineno-0-333"></a>    <span class="k">return</span> <span class="n">inset</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3577,7 +3576,9 @@ convergence at the map centre). Must be finite. Defaults to <code>0</code>.</p>
             <td>
               <div class="doc-md-description">
                 <p><code>"arrow"</code> (a single filled arrow), <code>"needle"</code> (a two-tone
-compass needle), or <code>"rose"</code> (a four-point compass star).</p>
+compass diamond), or <code>"rose"</code> (a four-point compass star). The
+needle and rose split each spike into a <code>color</code> flank and an
+<code>edge_color</code> flank.</p>
               </div>
             </td>
             <td>
@@ -3625,7 +3626,7 @@ compass needle), or <code>"rose"</code> (a four-point compass star).</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The secondary fill (the south half of a needle / rose).</p>
+                <p>The secondary (alternating) flank fill of a needle / rose.</p>
               </div>
             </td>
             <td>
@@ -3751,13 +3752,7 @@ leaves no room on the axes.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/cleopatra/styling/furniture.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-532">532</a></span>
-<span class="normal"><a href="#__codelineno-0-533">533</a></span>
-<span class="normal"><a href="#__codelineno-0-534">534</a></span>
-<span class="normal"><a href="#__codelineno-0-535">535</a></span>
-<span class="normal"><a href="#__codelineno-0-536">536</a></span>
-<span class="normal"><a href="#__codelineno-0-537">537</a></span>
-<span class="normal"><a href="#__codelineno-0-538">538</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-538">538</a></span>
 <span class="normal"><a href="#__codelineno-0-539">539</a></span>
 <span class="normal"><a href="#__codelineno-0-540">540</a></span>
 <span class="normal"><a href="#__codelineno-0-541">541</a></span>
@@ -3870,126 +3865,136 @@ leaves no room on the axes.</p>
 <span class="normal"><a href="#__codelineno-0-648">648</a></span>
 <span class="normal"><a href="#__codelineno-0-649">649</a></span>
 <span class="normal"><a href="#__codelineno-0-650">650</a></span>
-<span class="normal"><a href="#__codelineno-0-651">651</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-532" name="__codelineno-0-532"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_north_arrow</span><span class="p">(</span>
-<a id="__codelineno-0-533" name="__codelineno-0-533"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span><span class="p">,</span>
-<a id="__codelineno-0-534" name="__codelineno-0-534"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-535" name="__codelineno-0-535"></a>    <span class="n">rotation</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
-<a id="__codelineno-0-536" name="__codelineno-0-536"></a>    <span class="n">location</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"upper right"</span><span class="p">,</span>
-<a id="__codelineno-0-537" name="__codelineno-0-537"></a>    <span class="n">pad</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.025</span><span class="p">,</span>
-<a id="__codelineno-0-538" name="__codelineno-0-538"></a>    <span class="n">size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.06</span><span class="p">,</span>
-<a id="__codelineno-0-539" name="__codelineno-0-539"></a>    <span class="n">style</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"arrow"</span><span class="p">,</span>
-<a id="__codelineno-0-540" name="__codelineno-0-540"></a>    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">"N"</span><span class="p">,</span>
-<a id="__codelineno-0-541" name="__codelineno-0-541"></a>    <span class="n">color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"black"</span><span class="p">,</span>
-<a id="__codelineno-0-542" name="__codelineno-0-542"></a>    <span class="n">edge_color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"white"</span><span class="p">,</span>
-<a id="__codelineno-0-543" name="__codelineno-0-543"></a>    <span class="n">label_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-544" name="__codelineno-0-544"></a>    <span class="n">box</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-545" name="__codelineno-0-545"></a>    <span class="n">zorder</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-546" name="__codelineno-0-546"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
-<a id="__codelineno-0-547" name="__codelineno-0-547"></a><span class="w">    </span><span class="sd">"""Draw a north arrow on `ax`, rotated by a caller-supplied angle.</span>
-<a id="__codelineno-0-548" name="__codelineno-0-548"></a>
-<a id="__codelineno-0-549" name="__codelineno-0-549"></a><span class="sd">    The arrow is drawn undistorted on a frameless inset axes anchored in one</span>
-<a id="__codelineno-0-550" name="__codelineno-0-550"></a><span class="sd">    corner and rotated `rotation` degrees clockwise from straight up (the caller</span>
-<a id="__codelineno-0-551" name="__codelineno-0-551"></a><span class="sd">    supplies the grid convergence -- cleopatra owns no CRS). The `"N"` label</span>
-<a id="__codelineno-0-552" name="__codelineno-0-552"></a><span class="sd">    rotates with it.</span>
-<a id="__codelineno-0-553" name="__codelineno-0-553"></a>
-<a id="__codelineno-0-554" name="__codelineno-0-554"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-555" name="__codelineno-0-555"></a><span class="sd">        ax: The axes to decorate.</span>
-<a id="__codelineno-0-556" name="__codelineno-0-556"></a><span class="sd">        rotation: Degrees clockwise from up to rotate the arrow (e.g. the grid</span>
-<a id="__codelineno-0-557" name="__codelineno-0-557"></a><span class="sd">            convergence at the map centre). Must be finite. Defaults to `0`.</span>
-<a id="__codelineno-0-558" name="__codelineno-0-558"></a><span class="sd">        location: Which corner to anchor to -- one of `"upper right"` (default),</span>
-<a id="__codelineno-0-559" name="__codelineno-0-559"></a><span class="sd">            `"upper left"`, `"lower right"`, `"lower left"`.</span>
-<a id="__codelineno-0-560" name="__codelineno-0-560"></a><span class="sd">        pad: The gap to the axes edges, as an axes fraction -- a scalar or an</span>
-<a id="__codelineno-0-561" name="__codelineno-0-561"></a><span class="sd">            `(x, y)` pair, each in `[0, 1)`.</span>
-<a id="__codelineno-0-562" name="__codelineno-0-562"></a><span class="sd">        size: The arrow height as an axes fraction. Defaults to `0.06`.</span>
-<a id="__codelineno-0-563" name="__codelineno-0-563"></a><span class="sd">        style: `"arrow"` (a single filled arrow), `"needle"` (a two-tone</span>
-<a id="__codelineno-0-564" name="__codelineno-0-564"></a><span class="sd">            compass needle), or `"rose"` (a four-point compass star).</span>
-<a id="__codelineno-0-565" name="__codelineno-0-565"></a><span class="sd">        label: The label at the arrow tip. Defaults to `"N"`; `None` draws none.</span>
-<a id="__codelineno-0-566" name="__codelineno-0-566"></a><span class="sd">        color: The primary fill and the outline / label colour.</span>
-<a id="__codelineno-0-567" name="__codelineno-0-567"></a><span class="sd">        edge_color: The secondary fill (the south half of a needle / rose).</span>
-<a id="__codelineno-0-568" name="__codelineno-0-568"></a><span class="sd">        label_size: Font size (points) for the label. `None` uses the default.</span>
-<a id="__codelineno-0-569" name="__codelineno-0-569"></a><span class="sd">        box: A backing panel, using `ColorBar`'s `box` vocabulary (see</span>
-<a id="__codelineno-0-570" name="__codelineno-0-570"></a><span class="sd">            `add_scale_bar`).</span>
-<a id="__codelineno-0-571" name="__codelineno-0-571"></a><span class="sd">        zorder: The draw order. `None` uses a high default above the data.</span>
-<a id="__codelineno-0-572" name="__codelineno-0-572"></a>
-<a id="__codelineno-0-573" name="__codelineno-0-573"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-574" name="__codelineno-0-574"></a><span class="sd">        Axes: The frameless inset axes the arrow was drawn on.</span>
-<a id="__codelineno-0-575" name="__codelineno-0-575"></a>
-<a id="__codelineno-0-576" name="__codelineno-0-576"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-577" name="__codelineno-0-577"></a><span class="sd">        ValueError: If `location` is not a corner, `style` is unknown,</span>
-<a id="__codelineno-0-578" name="__codelineno-0-578"></a><span class="sd">            `rotation` is not finite, `pad` is out of range, or `pad + size`</span>
-<a id="__codelineno-0-579" name="__codelineno-0-579"></a><span class="sd">            leaves no room on the axes.</span>
+<span class="normal"><a href="#__codelineno-0-651">651</a></span>
+<span class="normal"><a href="#__codelineno-0-652">652</a></span>
+<span class="normal"><a href="#__codelineno-0-653">653</a></span>
+<span class="normal"><a href="#__codelineno-0-654">654</a></span>
+<span class="normal"><a href="#__codelineno-0-655">655</a></span>
+<span class="normal"><a href="#__codelineno-0-656">656</a></span>
+<span class="normal"><a href="#__codelineno-0-657">657</a></span>
+<span class="normal"><a href="#__codelineno-0-658">658</a></span>
+<span class="normal"><a href="#__codelineno-0-659">659</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-538" name="__codelineno-0-538"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_north_arrow</span><span class="p">(</span>
+<a id="__codelineno-0-539" name="__codelineno-0-539"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span><span class="p">,</span>
+<a id="__codelineno-0-540" name="__codelineno-0-540"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-541" name="__codelineno-0-541"></a>    <span class="n">rotation</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+<a id="__codelineno-0-542" name="__codelineno-0-542"></a>    <span class="n">location</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"upper right"</span><span class="p">,</span>
+<a id="__codelineno-0-543" name="__codelineno-0-543"></a>    <span class="n">pad</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.025</span><span class="p">,</span>
+<a id="__codelineno-0-544" name="__codelineno-0-544"></a>    <span class="n">size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.06</span><span class="p">,</span>
+<a id="__codelineno-0-545" name="__codelineno-0-545"></a>    <span class="n">style</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"arrow"</span><span class="p">,</span>
+<a id="__codelineno-0-546" name="__codelineno-0-546"></a>    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">"N"</span><span class="p">,</span>
+<a id="__codelineno-0-547" name="__codelineno-0-547"></a>    <span class="n">color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"black"</span><span class="p">,</span>
+<a id="__codelineno-0-548" name="__codelineno-0-548"></a>    <span class="n">edge_color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"white"</span><span class="p">,</span>
+<a id="__codelineno-0-549" name="__codelineno-0-549"></a>    <span class="n">label_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-550" name="__codelineno-0-550"></a>    <span class="n">box</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-551" name="__codelineno-0-551"></a>    <span class="n">zorder</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-552" name="__codelineno-0-552"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+<a id="__codelineno-0-553" name="__codelineno-0-553"></a><span class="w">    </span><span class="sd">"""Draw a north arrow on `ax`, rotated by a caller-supplied angle.</span>
+<a id="__codelineno-0-554" name="__codelineno-0-554"></a>
+<a id="__codelineno-0-555" name="__codelineno-0-555"></a><span class="sd">    The arrow is drawn undistorted on a frameless inset axes anchored in one</span>
+<a id="__codelineno-0-556" name="__codelineno-0-556"></a><span class="sd">    corner and rotated `rotation` degrees clockwise from straight up (the caller</span>
+<a id="__codelineno-0-557" name="__codelineno-0-557"></a><span class="sd">    supplies the grid convergence -- cleopatra owns no CRS). The `"N"` label</span>
+<a id="__codelineno-0-558" name="__codelineno-0-558"></a><span class="sd">    rotates with it.</span>
+<a id="__codelineno-0-559" name="__codelineno-0-559"></a>
+<a id="__codelineno-0-560" name="__codelineno-0-560"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-561" name="__codelineno-0-561"></a><span class="sd">        ax: The axes to decorate.</span>
+<a id="__codelineno-0-562" name="__codelineno-0-562"></a><span class="sd">        rotation: Degrees clockwise from up to rotate the arrow (e.g. the grid</span>
+<a id="__codelineno-0-563" name="__codelineno-0-563"></a><span class="sd">            convergence at the map centre). Must be finite. Defaults to `0`.</span>
+<a id="__codelineno-0-564" name="__codelineno-0-564"></a><span class="sd">        location: Which corner to anchor to -- one of `"upper right"` (default),</span>
+<a id="__codelineno-0-565" name="__codelineno-0-565"></a><span class="sd">            `"upper left"`, `"lower right"`, `"lower left"`.</span>
+<a id="__codelineno-0-566" name="__codelineno-0-566"></a><span class="sd">        pad: The gap to the axes edges, as an axes fraction -- a scalar or an</span>
+<a id="__codelineno-0-567" name="__codelineno-0-567"></a><span class="sd">            `(x, y)` pair, each in `[0, 1)`.</span>
+<a id="__codelineno-0-568" name="__codelineno-0-568"></a><span class="sd">        size: The arrow height as an axes fraction. Defaults to `0.06`.</span>
+<a id="__codelineno-0-569" name="__codelineno-0-569"></a><span class="sd">        style: `"arrow"` (a single filled arrow), `"needle"` (a two-tone</span>
+<a id="__codelineno-0-570" name="__codelineno-0-570"></a><span class="sd">            compass diamond), or `"rose"` (a four-point compass star). The</span>
+<a id="__codelineno-0-571" name="__codelineno-0-571"></a><span class="sd">            needle and rose split each spike into a `color` flank and an</span>
+<a id="__codelineno-0-572" name="__codelineno-0-572"></a><span class="sd">            `edge_color` flank.</span>
+<a id="__codelineno-0-573" name="__codelineno-0-573"></a><span class="sd">        label: The label at the arrow tip. Defaults to `"N"`; `None` draws none.</span>
+<a id="__codelineno-0-574" name="__codelineno-0-574"></a><span class="sd">        color: The primary fill and the outline / label colour.</span>
+<a id="__codelineno-0-575" name="__codelineno-0-575"></a><span class="sd">        edge_color: The secondary (alternating) flank fill of a needle / rose.</span>
+<a id="__codelineno-0-576" name="__codelineno-0-576"></a><span class="sd">        label_size: Font size (points) for the label. `None` uses the default.</span>
+<a id="__codelineno-0-577" name="__codelineno-0-577"></a><span class="sd">        box: A backing panel, using `ColorBar`'s `box` vocabulary (see</span>
+<a id="__codelineno-0-578" name="__codelineno-0-578"></a><span class="sd">            `add_scale_bar`).</span>
+<a id="__codelineno-0-579" name="__codelineno-0-579"></a><span class="sd">        zorder: The draw order. `None` uses a high default above the data.</span>
 <a id="__codelineno-0-580" name="__codelineno-0-580"></a>
-<a id="__codelineno-0-581" name="__codelineno-0-581"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-582" name="__codelineno-0-582"></a><span class="sd">        - A plain north arrow in the upper-right corner:</span>
-<a id="__codelineno-0-583" name="__codelineno-0-583"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-584" name="__codelineno-0-584"></a><span class="sd">            &gt;&gt;&gt; import matplotlib</span>
-<a id="__codelineno-0-585" name="__codelineno-0-585"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use("Agg")</span>
-<a id="__codelineno-0-586" name="__codelineno-0-586"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-587" name="__codelineno-0-587"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.furniture import add_north_arrow</span>
-<a id="__codelineno-0-588" name="__codelineno-0-588"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-589" name="__codelineno-0-589"></a><span class="sd">            &gt;&gt;&gt; arrow = add_north_arrow(ax, rotation=0.0)</span>
-<a id="__codelineno-0-590" name="__codelineno-0-590"></a><span class="sd">            &gt;&gt;&gt; len(arrow.patches)   # one filled arrow</span>
-<a id="__codelineno-0-591" name="__codelineno-0-591"></a><span class="sd">            1</span>
-<a id="__codelineno-0-592" name="__codelineno-0-592"></a><span class="sd">            &gt;&gt;&gt; plt.close(fig)</span>
-<a id="__codelineno-0-593" name="__codelineno-0-593"></a>
-<a id="__codelineno-0-594" name="__codelineno-0-594"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-595" name="__codelineno-0-595"></a><span class="sd">    """</span>
-<a id="__codelineno-0-596" name="__codelineno-0-596"></a>    <span class="k">if</span> <span class="n">location</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_CORNERS</span><span class="p">:</span>
-<a id="__codelineno-0-597" name="__codelineno-0-597"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"location must be one of </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">_CORNERS</span><span class="p">)</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">location</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
-<a id="__codelineno-0-598" name="__codelineno-0-598"></a>    <span class="k">if</span> <span class="n">style</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_NORTH_STYLES</span><span class="p">:</span>
-<a id="__codelineno-0-599" name="__codelineno-0-599"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"style must be one of </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">_NORTH_STYLES</span><span class="p">)</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">style</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
-<a id="__codelineno-0-600" name="__codelineno-0-600"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">rotation</span><span class="p">):</span>
-<a id="__codelineno-0-601" name="__codelineno-0-601"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"rotation must be a finite number, got </span><span class="si">{</span><span class="n">rotation</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
-<a id="__codelineno-0-602" name="__codelineno-0-602"></a>    <span class="n">pad_x</span><span class="p">,</span> <span class="n">pad_y</span> <span class="o">=</span> <span class="n">_as_margins</span><span class="p">(</span><span class="n">pad</span><span class="p">)</span>
-<a id="__codelineno-0-603" name="__codelineno-0-603"></a>
-<a id="__codelineno-0-604" name="__codelineno-0-604"></a>    <span class="c1"># Keep the arrow square on screen: scale the inset's axes-fraction width by</span>
-<a id="__codelineno-0-605" name="__codelineno-0-605"></a>    <span class="c1"># the axes' inch aspect so a unit box maps to a square, and a rotation in</span>
-<a id="__codelineno-0-606" name="__codelineno-0-606"></a>    <span class="c1"># that box is a true screen rotation.</span>
-<a id="__codelineno-0-607" name="__codelineno-0-607"></a>    <span class="n">fig_w_in</span><span class="p">,</span> <span class="n">fig_h_in</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">get_size_inches</span><span class="p">()</span>
-<a id="__codelineno-0-608" name="__codelineno-0-608"></a>    <span class="n">ax_pos</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_position</span><span class="p">()</span>
-<a id="__codelineno-0-609" name="__codelineno-0-609"></a>    <span class="n">ax_w_in</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">ax_pos</span><span class="o">.</span><span class="n">width</span> <span class="o">*</span> <span class="n">fig_w_in</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">)</span>
-<a id="__codelineno-0-610" name="__codelineno-0-610"></a>    <span class="n">ax_h_in</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">ax_pos</span><span class="o">.</span><span class="n">height</span> <span class="o">*</span> <span class="n">fig_h_in</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">)</span>
-<a id="__codelineno-0-611" name="__codelineno-0-611"></a>    <span class="n">width</span> <span class="o">=</span> <span class="n">size</span> <span class="o">*</span> <span class="p">(</span><span class="n">ax_h_in</span> <span class="o">/</span> <span class="n">ax_w_in</span><span class="p">)</span>
-<a id="__codelineno-0-612" name="__codelineno-0-612"></a>    <span class="k">if</span> <span class="n">pad_x</span> <span class="o">+</span> <span class="n">width</span> <span class="o">&gt;</span> <span class="mf">1.0</span> <span class="ow">or</span> <span class="n">pad_y</span> <span class="o">+</span> <span class="n">size</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">:</span>
-<a id="__codelineno-0-613" name="__codelineno-0-613"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-614" name="__codelineno-0-614"></a>            <span class="sa">f</span><span class="s2">"pad + arrow size leaves no room on the axes (needs </span><span class="si">{</span><span class="n">width</span><span class="si">:</span><span class="s2">.3g</span><span class="si">}</span><span class="s2"> x "</span>
-<a id="__codelineno-0-615" name="__codelineno-0-615"></a>            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">size</span><span class="si">:</span><span class="s2">.3g</span><span class="si">}</span><span class="s2"> in axes fraction). Reduce `size` or `pad`."</span>
-<a id="__codelineno-0-616" name="__codelineno-0-616"></a>        <span class="p">)</span>
-<a id="__codelineno-0-617" name="__codelineno-0-617"></a>
-<a id="__codelineno-0-618" name="__codelineno-0-618"></a>    <span class="n">z</span> <span class="o">=</span> <span class="n">_FURNITURE_ZORDER</span> <span class="k">if</span> <span class="n">zorder</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">zorder</span>
-<a id="__codelineno-0-619" name="__codelineno-0-619"></a>    <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="n">_corner_origin</span><span class="p">(</span><span class="n">location</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">pad_x</span><span class="p">,</span> <span class="n">pad_y</span><span class="p">)</span>
-<a id="__codelineno-0-620" name="__codelineno-0-620"></a>
-<a id="__codelineno-0-621" name="__codelineno-0-621"></a>    <span class="n">_draw_box</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">box</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
-<a id="__codelineno-0-622" name="__codelineno-0-622"></a>
-<a id="__codelineno-0-623" name="__codelineno-0-623"></a>    <span class="n">inset</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">inset_axes</span><span class="p">((</span><span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">size</span><span class="p">),</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="n">z</span> <span class="o">+</span> <span class="mf">0.1</span><span class="p">)</span>
-<a id="__codelineno-0-624" name="__codelineno-0-624"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
-<a id="__codelineno-0-625" name="__codelineno-0-625"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
-<a id="__codelineno-0-626" name="__codelineno-0-626"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">set_navigate</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-<a id="__codelineno-0-627" name="__codelineno-0-627"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">set_in_layout</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-<a id="__codelineno-0-628" name="__codelineno-0-628"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">"off"</span><span class="p">)</span>
-<a id="__codelineno-0-629" name="__codelineno-0-629"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">patch</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-0-581" name="__codelineno-0-581"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-582" name="__codelineno-0-582"></a><span class="sd">        Axes: The frameless inset axes the arrow was drawn on.</span>
+<a id="__codelineno-0-583" name="__codelineno-0-583"></a>
+<a id="__codelineno-0-584" name="__codelineno-0-584"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-0-585" name="__codelineno-0-585"></a><span class="sd">        ValueError: If `location` is not a corner, `style` is unknown,</span>
+<a id="__codelineno-0-586" name="__codelineno-0-586"></a><span class="sd">            `rotation` is not finite, `pad` is out of range, or `pad + size`</span>
+<a id="__codelineno-0-587" name="__codelineno-0-587"></a><span class="sd">            leaves no room on the axes.</span>
+<a id="__codelineno-0-588" name="__codelineno-0-588"></a>
+<a id="__codelineno-0-589" name="__codelineno-0-589"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-590" name="__codelineno-0-590"></a><span class="sd">        - A plain north arrow in the upper-right corner:</span>
+<a id="__codelineno-0-591" name="__codelineno-0-591"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-592" name="__codelineno-0-592"></a><span class="sd">            &gt;&gt;&gt; import matplotlib</span>
+<a id="__codelineno-0-593" name="__codelineno-0-593"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use("Agg")</span>
+<a id="__codelineno-0-594" name="__codelineno-0-594"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-595" name="__codelineno-0-595"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.furniture import add_north_arrow</span>
+<a id="__codelineno-0-596" name="__codelineno-0-596"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-597" name="__codelineno-0-597"></a><span class="sd">            &gt;&gt;&gt; arrow = add_north_arrow(ax, rotation=0.0)</span>
+<a id="__codelineno-0-598" name="__codelineno-0-598"></a><span class="sd">            &gt;&gt;&gt; len(arrow.patches)   # one filled arrow</span>
+<a id="__codelineno-0-599" name="__codelineno-0-599"></a><span class="sd">            1</span>
+<a id="__codelineno-0-600" name="__codelineno-0-600"></a><span class="sd">            &gt;&gt;&gt; plt.close(fig)</span>
+<a id="__codelineno-0-601" name="__codelineno-0-601"></a>
+<a id="__codelineno-0-602" name="__codelineno-0-602"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-603" name="__codelineno-0-603"></a><span class="sd">    """</span>
+<a id="__codelineno-0-604" name="__codelineno-0-604"></a>    <span class="k">if</span> <span class="n">location</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_CORNERS</span><span class="p">:</span>
+<a id="__codelineno-0-605" name="__codelineno-0-605"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"location must be one of </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">_CORNERS</span><span class="p">)</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">location</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+<a id="__codelineno-0-606" name="__codelineno-0-606"></a>    <span class="k">if</span> <span class="n">style</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_NORTH_STYLES</span><span class="p">:</span>
+<a id="__codelineno-0-607" name="__codelineno-0-607"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"style must be one of </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">_NORTH_STYLES</span><span class="p">)</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">style</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+<a id="__codelineno-0-608" name="__codelineno-0-608"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">rotation</span><span class="p">):</span>
+<a id="__codelineno-0-609" name="__codelineno-0-609"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"rotation must be a finite number, got </span><span class="si">{</span><span class="n">rotation</span><span class="si">!r}</span><span class="s2">."</span><span class="p">)</span>
+<a id="__codelineno-0-610" name="__codelineno-0-610"></a>    <span class="n">pad_x</span><span class="p">,</span> <span class="n">pad_y</span> <span class="o">=</span> <span class="n">_as_margins</span><span class="p">(</span><span class="n">pad</span><span class="p">)</span>
+<a id="__codelineno-0-611" name="__codelineno-0-611"></a>
+<a id="__codelineno-0-612" name="__codelineno-0-612"></a>    <span class="c1"># Keep the arrow square on screen: scale the inset's axes-fraction width by</span>
+<a id="__codelineno-0-613" name="__codelineno-0-613"></a>    <span class="c1"># the axes' inch aspect so a unit box maps to a square, and a rotation in</span>
+<a id="__codelineno-0-614" name="__codelineno-0-614"></a>    <span class="c1"># that box is a true screen rotation.</span>
+<a id="__codelineno-0-615" name="__codelineno-0-615"></a>    <span class="n">fig_w_in</span><span class="p">,</span> <span class="n">fig_h_in</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">get_size_inches</span><span class="p">()</span>
+<a id="__codelineno-0-616" name="__codelineno-0-616"></a>    <span class="n">ax_pos</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_position</span><span class="p">()</span>
+<a id="__codelineno-0-617" name="__codelineno-0-617"></a>    <span class="n">ax_w_in</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">ax_pos</span><span class="o">.</span><span class="n">width</span> <span class="o">*</span> <span class="n">fig_w_in</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">)</span>
+<a id="__codelineno-0-618" name="__codelineno-0-618"></a>    <span class="n">ax_h_in</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">ax_pos</span><span class="o">.</span><span class="n">height</span> <span class="o">*</span> <span class="n">fig_h_in</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">)</span>
+<a id="__codelineno-0-619" name="__codelineno-0-619"></a>    <span class="n">width</span> <span class="o">=</span> <span class="n">size</span> <span class="o">*</span> <span class="p">(</span><span class="n">ax_h_in</span> <span class="o">/</span> <span class="n">ax_w_in</span><span class="p">)</span>
+<a id="__codelineno-0-620" name="__codelineno-0-620"></a>    <span class="k">if</span> <span class="n">pad_x</span> <span class="o">+</span> <span class="n">width</span> <span class="o">&gt;</span> <span class="mf">1.0</span> <span class="ow">or</span> <span class="n">pad_y</span> <span class="o">+</span> <span class="n">size</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">:</span>
+<a id="__codelineno-0-621" name="__codelineno-0-621"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-622" name="__codelineno-0-622"></a>            <span class="sa">f</span><span class="s2">"pad + arrow size leaves no room on the axes (needs </span><span class="si">{</span><span class="n">width</span><span class="si">:</span><span class="s2">.3g</span><span class="si">}</span><span class="s2"> x "</span>
+<a id="__codelineno-0-623" name="__codelineno-0-623"></a>            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">size</span><span class="si">:</span><span class="s2">.3g</span><span class="si">}</span><span class="s2"> in axes fraction). Reduce `size` or `pad`."</span>
+<a id="__codelineno-0-624" name="__codelineno-0-624"></a>        <span class="p">)</span>
+<a id="__codelineno-0-625" name="__codelineno-0-625"></a>
+<a id="__codelineno-0-626" name="__codelineno-0-626"></a>    <span class="n">z</span> <span class="o">=</span> <span class="n">_FURNITURE_ZORDER</span> <span class="k">if</span> <span class="n">zorder</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">zorder</span>
+<a id="__codelineno-0-627" name="__codelineno-0-627"></a>    <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="n">_corner_origin</span><span class="p">(</span><span class="n">location</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">pad_x</span><span class="p">,</span> <span class="n">pad_y</span><span class="p">)</span>
+<a id="__codelineno-0-628" name="__codelineno-0-628"></a>
+<a id="__codelineno-0-629" name="__codelineno-0-629"></a>    <span class="n">_draw_box</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">box</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
 <a id="__codelineno-0-630" name="__codelineno-0-630"></a>
-<a id="__codelineno-0-631" name="__codelineno-0-631"></a>    <span class="n">rot</span> <span class="o">=</span> <span class="n">Affine2D</span><span class="p">()</span><span class="o">.</span><span class="n">rotate_deg_around</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="o">-</span><span class="n">rotation</span><span class="p">)</span> <span class="o">+</span> <span class="n">inset</span><span class="o">.</span><span class="n">transData</span>
-<a id="__codelineno-0-632" name="__codelineno-0-632"></a>    <span class="k">for</span> <span class="n">patch</span> <span class="ow">in</span> <span class="n">_north_arrow_patches</span><span class="p">(</span><span class="n">style</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">edge_color</span><span class="p">):</span>
-<a id="__codelineno-0-633" name="__codelineno-0-633"></a>        <span class="n">patch</span><span class="o">.</span><span class="n">set_transform</span><span class="p">(</span><span class="n">rot</span><span class="p">)</span>
-<a id="__codelineno-0-634" name="__codelineno-0-634"></a>        <span class="n">inset</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">patch</span><span class="p">)</span>
-<a id="__codelineno-0-635" name="__codelineno-0-635"></a>
-<a id="__codelineno-0-636" name="__codelineno-0-636"></a>    <span class="k">if</span> <span class="n">label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-637" name="__codelineno-0-637"></a>        <span class="n">inset</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
-<a id="__codelineno-0-638" name="__codelineno-0-638"></a>            <span class="mf">0.5</span><span class="p">,</span>
-<a id="__codelineno-0-639" name="__codelineno-0-639"></a>            <span class="mf">0.99</span><span class="p">,</span>
-<a id="__codelineno-0-640" name="__codelineno-0-640"></a>            <span class="n">label</span><span class="p">,</span>
-<a id="__codelineno-0-641" name="__codelineno-0-641"></a>            <span class="n">ha</span><span class="o">=</span><span class="s2">"center"</span><span class="p">,</span>
-<a id="__codelineno-0-642" name="__codelineno-0-642"></a>            <span class="n">va</span><span class="o">=</span><span class="s2">"bottom"</span><span class="p">,</span>
-<a id="__codelineno-0-643" name="__codelineno-0-643"></a>            <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
-<a id="__codelineno-0-644" name="__codelineno-0-644"></a>            <span class="n">fontsize</span><span class="o">=</span><span class="n">label_size</span><span class="p">,</span>
-<a id="__codelineno-0-645" name="__codelineno-0-645"></a>            <span class="n">fontweight</span><span class="o">=</span><span class="s2">"bold"</span><span class="p">,</span>
-<a id="__codelineno-0-646" name="__codelineno-0-646"></a>            <span class="n">rotation</span><span class="o">=-</span><span class="n">rotation</span><span class="p">,</span>
-<a id="__codelineno-0-647" name="__codelineno-0-647"></a>            <span class="n">rotation_mode</span><span class="o">=</span><span class="s2">"anchor"</span><span class="p">,</span>
-<a id="__codelineno-0-648" name="__codelineno-0-648"></a>            <span class="n">transform</span><span class="o">=</span><span class="n">rot</span><span class="p">,</span>
-<a id="__codelineno-0-649" name="__codelineno-0-649"></a>            <span class="n">clip_on</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-650" name="__codelineno-0-650"></a>        <span class="p">)</span>
-<a id="__codelineno-0-651" name="__codelineno-0-651"></a>    <span class="k">return</span> <span class="n">inset</span>
+<a id="__codelineno-0-631" name="__codelineno-0-631"></a>    <span class="n">inset</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">inset_axes</span><span class="p">((</span><span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">size</span><span class="p">),</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="n">z</span> <span class="o">+</span> <span class="mf">0.1</span><span class="p">)</span>
+<a id="__codelineno-0-632" name="__codelineno-0-632"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+<a id="__codelineno-0-633" name="__codelineno-0-633"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+<a id="__codelineno-0-634" name="__codelineno-0-634"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">set_navigate</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-0-635" name="__codelineno-0-635"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">set_in_layout</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-0-636" name="__codelineno-0-636"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">"off"</span><span class="p">)</span>
+<a id="__codelineno-0-637" name="__codelineno-0-637"></a>    <span class="n">inset</span><span class="o">.</span><span class="n">patch</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-0-638" name="__codelineno-0-638"></a>
+<a id="__codelineno-0-639" name="__codelineno-0-639"></a>    <span class="n">rot</span> <span class="o">=</span> <span class="n">Affine2D</span><span class="p">()</span><span class="o">.</span><span class="n">rotate_deg_around</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="o">-</span><span class="n">rotation</span><span class="p">)</span> <span class="o">+</span> <span class="n">inset</span><span class="o">.</span><span class="n">transData</span>
+<a id="__codelineno-0-640" name="__codelineno-0-640"></a>    <span class="k">for</span> <span class="n">patch</span> <span class="ow">in</span> <span class="n">_north_arrow_patches</span><span class="p">(</span><span class="n">style</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">edge_color</span><span class="p">):</span>
+<a id="__codelineno-0-641" name="__codelineno-0-641"></a>        <span class="n">patch</span><span class="o">.</span><span class="n">set_transform</span><span class="p">(</span><span class="n">rot</span><span class="p">)</span>
+<a id="__codelineno-0-642" name="__codelineno-0-642"></a>        <span class="n">inset</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">patch</span><span class="p">)</span>
+<a id="__codelineno-0-643" name="__codelineno-0-643"></a>
+<a id="__codelineno-0-644" name="__codelineno-0-644"></a>    <span class="k">if</span> <span class="n">label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-645" name="__codelineno-0-645"></a>        <span class="n">inset</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
+<a id="__codelineno-0-646" name="__codelineno-0-646"></a>            <span class="mf">0.5</span><span class="p">,</span>
+<a id="__codelineno-0-647" name="__codelineno-0-647"></a>            <span class="mf">0.99</span><span class="p">,</span>
+<a id="__codelineno-0-648" name="__codelineno-0-648"></a>            <span class="n">label</span><span class="p">,</span>
+<a id="__codelineno-0-649" name="__codelineno-0-649"></a>            <span class="n">ha</span><span class="o">=</span><span class="s2">"center"</span><span class="p">,</span>
+<a id="__codelineno-0-650" name="__codelineno-0-650"></a>            <span class="n">va</span><span class="o">=</span><span class="s2">"bottom"</span><span class="p">,</span>
+<a id="__codelineno-0-651" name="__codelineno-0-651"></a>            <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span>
+<a id="__codelineno-0-652" name="__codelineno-0-652"></a>            <span class="n">fontsize</span><span class="o">=</span><span class="n">label_size</span><span class="p">,</span>
+<a id="__codelineno-0-653" name="__codelineno-0-653"></a>            <span class="n">fontweight</span><span class="o">=</span><span class="s2">"bold"</span><span class="p">,</span>
+<a id="__codelineno-0-654" name="__codelineno-0-654"></a>            <span class="n">rotation</span><span class="o">=-</span><span class="n">rotation</span><span class="p">,</span>
+<a id="__codelineno-0-655" name="__codelineno-0-655"></a>            <span class="n">rotation_mode</span><span class="o">=</span><span class="s2">"anchor"</span><span class="p">,</span>
+<a id="__codelineno-0-656" name="__codelineno-0-656"></a>            <span class="n">transform</span><span class="o">=</span><span class="n">rot</span><span class="p">,</span>
+<a id="__codelineno-0-657" name="__codelineno-0-657"></a>            <span class="n">clip_on</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-658" name="__codelineno-0-658"></a>        <span class="p">)</span>
+<a id="__codelineno-0-659" name="__codelineno-0-659"></a>    <span class="k">return</span> <span class="n">inset</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
