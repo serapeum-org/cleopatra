@@ -116,6 +116,7 @@ nav:
     - LineGlyph: reference/line-glyph.md
     - PolygonGlyph: reference/polygon-glyph.md
     - KDEGlyph: reference/kde-glyph.md
+    - HexbinGlyph: reference/hexbin-glyph.md
     - TexturedGlobeGlyph (3-D): reference/textured-globe-glyph.md
     - Tiles (basemaps): reference/tiles.md
     - OGC services (WMS/WMTS): reference/ogc.md

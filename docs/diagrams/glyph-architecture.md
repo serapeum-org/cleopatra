@@ -21,10 +21,11 @@ All diagrams use [Mermaid](https://mermaid.js.org/) (rendered by the
 ## 1. Class hierarchy
 
 `ArrayGlyph`, `MeshGlyph`, `ScatterGlyph`, `PolygonGlyph`, `VectorGlyph`,
-`FlowGlyph`, `LineGlyph`, and `KDEGlyph` subclass `Glyph`. `HistogramGlyph` is
-independent. The six geographic glyphs (`ArrayGlyph`, `MeshGlyph`, `ScatterGlyph`,
-`VectorGlyph`, `FlowGlyph`, `PolygonGlyph`) also mix in `GeoMixin` for basemap
-methods — omitted here to keep the colour-pipeline focus.
+`FlowGlyph`, `LineGlyph`, `KDEGlyph`, and `HexbinGlyph` subclass `Glyph`.
+`HistogramGlyph` is independent. The seven geographic glyphs (`ArrayGlyph`,
+`MeshGlyph`, `ScatterGlyph`, `VectorGlyph`, `FlowGlyph`, `PolygonGlyph`,
+`HexbinGlyph`) also mix in `GeoMixin` for basemap methods — omitted here to keep
+the colour-pipeline focus.
 
 ```mermaid
 classDiagram
@@ -103,6 +104,15 @@ classDiagram
         +bar()
         +fill_between()
     }
+    class HexbinGlyph {
+        +x
+        +y
+        +values
+        +evaluate()
+        +plot()
+        #_reduce_function()
+        #_hexbin_kwargs()
+    }
     class HistogramGlyph {
         +plot()
     }
@@ -114,6 +124,7 @@ classDiagram
     Glyph <|-- VectorGlyph
     Glyph <|-- FlowGlyph
     Glyph <|-- KDEGlyph
+    Glyph <|-- HexbinGlyph
     Glyph <|-- LineGlyph
 
     note for HistogramGlyph "Stands alone — 1-D/2-D histograms,\ndoes not subclass Glyph"
@@ -127,6 +138,7 @@ classDiagram
     style VectorGlyph fill:#d1e7dd,stroke:#0f5132,color:#000
     style FlowGlyph fill:#d1e7dd,stroke:#0f5132,color:#000
     style KDEGlyph fill:#d1e7dd,stroke:#0f5132,color:#000
+    style HexbinGlyph fill:#d1e7dd,stroke:#0f5132,color:#000
     style LineGlyph fill:#d1e7dd,stroke:#0f5132,color:#000
     style HistogramGlyph fill:#e2e3e5,stroke:#41464b,color:#000
 ```
@@ -136,7 +148,8 @@ classDiagram
 ## 2. Shared colour / scale pipeline
 
 Every colour-by-value glyph that routes through `_prepare_scalar_mapping`
-(`ScatterGlyph`, `PolygonGlyph`, `VectorGlyph`, `FlowGlyph`, `KDEGlyph`) shares
+(`ScatterGlyph`, `PolygonGlyph`, `VectorGlyph`, `FlowGlyph`, `KDEGlyph`,
+`HexbinGlyph`) shares
 one contract. Since the geoplot-upstream work, a `scheme` option short-circuits
 to classified (discrete) colouring; otherwise the continuous `color_scale` /
 `levels` path runs. `ArrayGlyph` / `MeshGlyph` build their norm directly via
