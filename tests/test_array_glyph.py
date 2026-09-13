@@ -4280,7 +4280,7 @@ class TestFacetingEdgeCases:
         """
         nan_stack = np.full((2, 3, 3), np.nan)
         with pytest.raises(ValueError, match="no finite values"):
-            ArrayGlyph(nan_stack).facet(col="t")
+            ArrayGlyph(nan_stack)
 
     def test_facet_all_nan_stack_with_explicit_limits(self) -> None:
         """Explicit `vmin`/`vmax` let an all-NaN stack be faceted anyway.
