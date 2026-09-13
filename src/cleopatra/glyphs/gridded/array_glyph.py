@@ -119,6 +119,9 @@ ARRAY_DEFAULT_OPTIONS: dict[str, Any] = {
     "cbar_tick_color": None,
     "labels": False,
     "label_kw": None,
+    "hatches": None,
+    "fill": None,
+    "hatch_color": None,
     "hillshade": False,
     "style": None,
     "projection": None,
@@ -2554,12 +2557,23 @@ class ArrayGlyph(GeoMixin, Glyph):
             if isinstance(plot_arr, ma.MaskedArray):
                 plot_arr = plot_arr.filled(np.nan)
             plot_fn = ax.contour if kind == "contour" else ax.contourf
-            contour_kwargs = {"cmap": cmap}
-            if norm is None:
-                contour_kwargs["vmin"] = vmin
-                contour_kwargs["vmax"] = vmax
+            hatches = self.default_options.get("hatches")
+            hatch_color = self.default_options.get("hatch_color")
+            contour_kwargs: dict[str, Any]
+            if kind == "contourf" and self.default_options.get("fill") is False:
+                # Unfilled overlay: only the hatch marks draw. matplotlib rejects
+                # cmap and colors together, and an unfilled set is not
+                # colour-mapped, so vmin/vmax/norm are dropped with the cmap.
+                contour_kwargs = {"colors": "none"}
             else:
-                contour_kwargs["norm"] = norm
+                contour_kwargs = {"cmap": cmap}
+                if norm is None:
+                    contour_kwargs["vmin"] = vmin
+                    contour_kwargs["vmax"] = vmax
+                else:
+                    contour_kwargs["norm"] = norm
+            if hatches is not None:
+                contour_kwargs["hatches"] = hatches
             level_edges = self._levels_to_bounds(levels, vmin, vmax)
             base_args = (
                 (coords[0], coords[1], plot_arr) if coords is not None else (plot_arr,)
@@ -2568,6 +2582,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                 im = plot_fn(*base_args, level_edges, **contour_kwargs)
             else:
                 im = plot_fn(*base_args, **contour_kwargs)
+            if hatch_color is not None:
+                # Per-set stroke colour, sidestepping the global hatch.color rcParam.
+                im.set_edgecolor(hatch_color)
             if kind == "contour" and self.default_options.get("labels"):
                 label_kw = {
                     "inline": True,
@@ -4076,6 +4093,10 @@ class ArrayGlyph(GeoMixin, Glyph):
             degenerate_contour = (
                 effective_kind == "contour" and self._vmax == self._vmin
             )
+            unfilled_contourf = (
+                effective_kind == "contourf"
+                and self.default_options.get("fill") is False
+            )
             if self._draws_own_colorbar(compose, colorbar):
                 if degenerate_contour:
                     warnings.warn(
@@ -4083,6 +4104,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                         "the colorbar for kind='contour'.",
                         stacklevel=2,
                     )
+                elif unfilled_contourf:
+                    # An unfilled (colors="none") set is not colour-mapped, so
+                    # there is nothing to colorbar -- the hatch-overlay form.
+                    pass
                 else:
                     self.cbar = self.create_color_bar(ax, im, cbar_kw)
 

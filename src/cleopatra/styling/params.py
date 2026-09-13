@@ -25,12 +25,16 @@ from typing import Any
 class Contour:
     """Contour discretisation and inline-label options.
 
-    Groups the `levels` / `labels` / `label_kw` options. `levels` applies
-    to every colour-mapped glyph that discretises a scale (array, vector,
-    flow, polygon, scatter, kde); `labels` / `label_kw` draw inline numeric
-    labels on isolines and are honoured only by the glyphs that render
-    contour lines (`ArrayGlyph` with `kind="contour"`, `MeshGlyph` node
-    contours).
+    Groups the `levels` / `labels` / `label_kw` options plus the hatch
+    encoding (`hatches` / `fill` / `hatch_color`). `levels` applies to every
+    colour-mapped glyph that discretises a scale (array, vector, flow,
+    polygon, scatter, kde); `labels` / `label_kw` draw inline numeric labels
+    on isolines and are honoured only by the glyphs that render contour lines
+    (`ArrayGlyph` with `kind="contour"`, `MeshGlyph` node contours). The hatch
+    fields draw a *pattern* per band on the `contourf` path (`ArrayGlyph`
+    today), so a mask can be marked without spending the colour channel --
+    `fill=False` leaves only the hatching, the significance/uncertainty
+    overlay form.
 
     Attributes:
         levels: Discrete colour levels -- an int count or an explicit
@@ -39,6 +43,16 @@ class Contour:
             glyph default (`False`).
         label_kw: Extra keyword arguments forwarded to `ax.clabel` when
             `labels` is true.
+        hatches: A hatch pattern per band, e.g. `["", "///"]` or
+            `["...", None]` -- one entry per interval between `levels`
+            (matplotlib cycles a short list). `None` draws no hatching.
+            Honoured on the `contourf` render path.
+        fill: `False` renders the bands unfilled (`colors="none"`), so only
+            the hatch marks draw -- the overlay form used for a significance
+            or uncertainty mask. `None` keeps the default filled behaviour.
+        hatch_color: Colour of the hatch strokes for this set only, applied
+            via `QuadContourSet.set_edgecolor` so it does not touch the global
+            `hatch.color` rcParam. `None` leaves matplotlib's default.
 
     Examples:
         - Only the set fields are emitted:
@@ -50,18 +64,29 @@ class Contour:
             {'labels': True, 'label_kw': {'fontsize': 8}}
 
             ```
+        - A hatch overlay emits its own keys and nothing else:
+            ```python
+            >>> from cleopatra.styling.params import Contour
+            >>> Contour(hatches=["///"], fill=False, hatch_color="0.2").to_options()
+            {'hatches': ['///'], 'fill': False, 'hatch_color': '0.2'}
+
+            ```
     """
 
     levels: int | Sequence[float] | None = None
     labels: bool | None = None
     label_kw: dict[str, Any] | None = None
+    hatches: Sequence[str | None] | None = None
+    fill: bool | None = None
+    hatch_color: str | None = None
 
     def to_options(self) -> dict[str, Any]:
         """Flatten the explicitly-set fields into `default_options` keys.
 
         Returns:
-            dict: `levels` / `labels` / `label_kw` for the fields that were
-                set (non-`None`); an empty dict when nothing was set.
+            dict: `levels` / `labels` / `label_kw` / `hatches` / `fill` /
+                `hatch_color` for the fields that were set (non-`None`); an
+                empty dict when nothing was set.
         """
         options: dict[str, Any] = {}
         if self.levels is not None:
@@ -70,6 +95,12 @@ class Contour:
             options["labels"] = self.labels
         if self.label_kw is not None:
             options["label_kw"] = self.label_kw
+        if self.hatches is not None:
+            options["hatches"] = self.hatches
+        if self.fill is not None:
+            options["fill"] = self.fill
+        if self.hatch_color is not None:
+            options["hatch_color"] = self.hatch_color
         return options
 
 

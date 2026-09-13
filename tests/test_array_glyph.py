@@ -1282,6 +1282,41 @@ class TestPlotKindDispatch:
         assert isinstance(fig, Figure)
         assert len(ax.collections) >= 1
 
+    def test_contourf_hatches_are_carried(self):
+        """`Contour(hatches=...)` reaches the filled contour set, keeping its bar."""
+        glyph = ArrayGlyph(self._sample_arr())
+        glyph.plot(
+            kind="contourf", contour=Contour(levels=4, hatches=["", "///", "...", "xx"])
+        )
+        assert list(glyph.im.hatches) == ["", "///", "...", "xx"], (
+            f"hatches not forwarded: {getattr(glyph.im, 'hatches', None)}"
+        )
+        assert glyph.cbar is not None, "a filled hatched set still gets a colorbar"
+
+    def test_contourf_unfilled_overlay_hatches_only_and_skips_colorbar(self):
+        """`fill=False` renders an unfilled hatch overlay with no colorbar."""
+        sample = self._sample_arr()
+        mask = (sample > float(sample.mean())).astype(float)
+        glyph = ArrayGlyph(mask)
+        glyph.plot(
+            kind="contourf",
+            contour=Contour(
+                levels=[0.5, 1.5], hatches=["///"], fill=False, hatch_color="0.2"
+            ),
+        )
+        assert list(glyph.im.hatches) == ["///"], (
+            f"hatches not forwarded: {getattr(glyph.im, 'hatches', None)}"
+        )
+        assert glyph.cbar is None, (
+            "an unfilled (colors='none') set is not colour-mapped, so no colorbar"
+        )
+
+    def test_loose_hatches_kwarg_rejected_with_contour_hint(self):
+        """A loose `hatches=` is rejected, pointing at `contour=Contour(...)`."""
+        glyph = ArrayGlyph(self._sample_arr())
+        with pytest.raises(ValueError, match="contour=Contour"):
+            glyph.plot(kind="contourf", hatches=["///"])
+
     def test_invalid_kind_raises(self):
         """`kind="bogus"` raises `ValueError` listing the valid kinds."""
         glyph = ArrayGlyph(self._sample_arr())

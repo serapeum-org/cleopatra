@@ -21,6 +21,7 @@ from cleopatra.styling.styles import (
     apply_blank_canvas,
     colorbar_legend,
     disjoint_legend,
+    hatch_legend,
     histogram_legend,
     swatch_legend,
 )
@@ -190,6 +191,39 @@ class TestDisjointLegend:
         """
         with pytest.raises(ValueError, match="same length") as exc:
             disjoint_legend(ax, colors, labels)
+        assert "same length" in str(exc.value), f"Unexpected message: {exc.value}"
+
+
+class TestHatchLegend:
+    """Tests for cleopatra.styling.styles.hatch_legend."""
+
+    @pytest.fixture()
+    def ax(self):
+        """A fresh axes, closed after the test to bound figure count."""
+        fig, ax = plt.subplots()
+        yield ax
+        plt.close(fig)
+
+    def test_returns_legend_with_labels(self, ax):
+        """The helper returns a Legend attached to the axes, carrying the labels."""
+        legend = hatch_legend(ax, ["///", "..."], ["significant", "uncertain"])
+        assert isinstance(legend, Legend), f"expected a Legend, got {type(legend)}"
+        assert ax.get_legend() is legend, "legend should be attached to the axes"
+        assert [t.get_text() for t in legend.get_texts()] == [
+            "significant",
+            "uncertain",
+        ], "labels should be preserved in order"
+
+    def test_patches_carry_the_hatch(self, ax):
+        """Each proxy Patch carries its requested hatch pattern."""
+        legend = hatch_legend(ax, ["///", "xx"], ["a", "b"])
+        hatches = [h.get_hatch() for h in legend.legend_handles]
+        assert hatches == ["///", "xx"], f"hatches not applied to patches: {hatches}"
+
+    def test_length_mismatch_raises(self, ax):
+        """Mismatched hatches/labels lengths raise a descriptive ValueError."""
+        with pytest.raises(ValueError, match="same length") as exc:
+            hatch_legend(ax, ["///", "..."], ["only-one"])
         assert "same length" in str(exc.value), f"Unexpected message: {exc.value}"
 
 

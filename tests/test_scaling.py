@@ -500,6 +500,11 @@ class TestParamGroupsEmitOnlySetFields:
             "labels": True,
             "label_kw": {"fmt": "%.2f"},
         }
+        assert Contour(hatches=["///"], fill=False, hatch_color="0.2").to_options() == {
+            "hatches": ["///"],
+            "fill": False,
+            "hatch_color": "0.2",
+        }
         assert CellValues(show=True, size=8, background_threshold=0.5).to_options() == {
             "display_cell_value": True,
             "num_size": 8,

@@ -16,11 +16,12 @@ import pytest
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph  # noqa: E402
 from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph  # noqa: E402
 from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph  # noqa: E402
 from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph  # noqa: E402
 from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph  # noqa: E402
-from cleopatra.styling.params import Classify  # noqa: E402
+from cleopatra.styling.params import Classify, Contour, DataStyle  # noqa: E402
 from cleopatra.styling.scaling import ColorScaling  # noqa: E402
 
 
@@ -89,4 +90,19 @@ def test_failed_plot_rolls_back_co_passed_color(name):
     assert glyph.default_options["gamma"] == 0.5, (
         f"{name}: gamma must roll back to its default"
     )
+    plt.close("all")
+
+
+def test_failed_array_plot_rolls_back_co_passed_hatch_keys():
+    """A failed ArrayGlyph plot must not leak co-passed Contour hatch keys."""
+    glyph = ArrayGlyph(np.arange(100, dtype=float).reshape(10, 10))
+    hatched = Contour(hatches=["///"], fill=False, hatch_color="0.2")
+    with pytest.raises(ValueError):
+        glyph.plot(
+            kind="contourf", contour=hatched, data_style=DataStyle(style="not_a_preset")
+        )
+    assert glyph.default_options["hatches"] is None, "hatches must roll back to None"
+    assert glyph.default_options["fill"] is None, "fill must roll back to None"
+    assert glyph.default_options["hatch_color"] is None, "hatch_color must roll back"
+    glyph.plot(kind="contourf")  # not bricked
     plt.close("all")

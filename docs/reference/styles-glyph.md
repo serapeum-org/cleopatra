@@ -73,6 +73,8 @@ areas, `FlowGlyph` line widths).
 Reusable, glyph-independent legend helpers that attach a legend to any `Axes`:
 
 - `disjoint_legend` — a categorical (disjoint) swatch legend.
+- `hatch_legend` — a legend whose swatch *pattern* (hatch) encodes a mask or class,
+  the pattern counterpart to `disjoint_legend` (used for a `Contour(hatches=..., fill=False)` overlay).
 - `swatch_legend` — a compact colour-swatch legend for named layers (used by the
   `colors.apply_data_style` "haze" presets).
 - `size_legend` — a legend whose marker *sizes* encode magnitude.
@@ -81,6 +83,8 @@ Reusable, glyph-independent legend helpers that attach a legend to any `Axes`:
 - `histogram_legend` — a colour-mapped histogram drawn as a compact legend.
 
 ::: cleopatra.styling.styles.disjoint_legend
+
+::: cleopatra.styling.styles.hatch_legend
     options:
       show_root_heading: true
       show_source: true
