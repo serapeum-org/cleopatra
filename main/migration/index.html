@@ -994,6 +994,8 @@
       
         
       
+        
+      
     
     
     
@@ -1616,6 +1618,34 @@
     
   
     Watermark (figure mark)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/furniture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Furniture (scale bar / north arrow)
   
 
     
@@ -3074,7 +3104,19 @@ objects in a prior release; passing them as loose keywords <strong>raises</stron
 </tr>
 <tr>
 <td><code>scheme</code>, <code>k</code>, <code>category_legend_kwargs</code></td>
-<td><code>cleopatra.styling.params.Classify</code> (passed as <code>classify=</code> on the scatter/vector/flow/polygon glyphs)</td>
+<td><code>cleopatra.styling.params.Classify</code> (passed as <code>classify=</code> on the scatter/vector/flow/polygon glyphs and on <code>ArrayGlyph.plot</code> / <code>facet</code> / <code>animate</code>)</td>
+</tr>
+<tr>
+<td><code>interval</code>, <code>frame_label</code>, <code>cell_value_text_colors</code>, <code>data_getter</code> (on <code>ArrayGlyph.animate</code>)</td>
+<td><code>cleopatra.glyphs.gridded.array_glyph.Animation</code> (passed as <code>animate(playback=Animation(...))</code>)</td>
+</tr>
+<tr>
+<td><code>label</code>, <code>location</code>, <code>pad</code>, <code>height</code>, <code>segments</code>, <code>ticks</code>, <code>color</code>, <code>edge_color</code>, <code>label_location</code>, <code>label_size</code>, <code>box</code>, <code>zorder</code> (on <code>furniture.add_scale_bar</code>)</td>
+<td><code>cleopatra.styling.furniture.ScaleBar</code> (passed as <code>add_scale_bar(ax, length, ScaleBar(...))</code>)</td>
+</tr>
+<tr>
+<td><code>location</code>, <code>pad</code>, <code>size</code>, <code>style</code>, <code>label</code>, <code>color</code>, <code>edge_color</code>, <code>label_size</code>, <code>box</code>, <code>zorder</code> (on <code>furniture.add_north_arrow</code>)</td>
+<td><code>cleopatra.styling.furniture.NorthArrow</code> (passed as <code>add_north_arrow(ax, rotation, NorthArrow(...))</code>)</td>
 </tr>
 </tbody>
 </table>

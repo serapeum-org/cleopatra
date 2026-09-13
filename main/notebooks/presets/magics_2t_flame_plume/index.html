@@ -737,6 +737,8 @@
       
         
       
+        
+      
     
     
     
@@ -1359,6 +1361,34 @@
     
   
     Watermark (figure mark)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/furniture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Furniture (scale bar / north arrow)
   
 
     
@@ -3339,7 +3369,7 @@ fade into the relief. <code>ArrayGlyph</code> applies the preset and runs the an
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.base.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">embed_gif</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span><span class="p">,</span> <span class="n">FrameLabel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">Animation</span><span class="p">,</span> <span class="n">ArrayGlyph</span><span class="p">,</span> <span class="n">FrameLabel</span>
 
 <span class="c1"># --- data: an ERA5-Land 2 m-temperature stack over Europe (°C, 23 daily frames) ---</span>
 <span class="n">npz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"../../../examples/data/europe_t2m.npz"</span><span class="p">),</span> <span class="n">allow_pickle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -3373,7 +3403,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from cleopatra.glyphs.base.animation import embed_gif
-from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph, FrameLabel
+from cleopatra.glyphs.gridded.array_glyph import Animation, ArrayGlyph, FrameLabel
 
 # --- data: an ERA5-Land 2 m-temperature stack over Europe (°C, 23 daily frames) ---
 npz = np.load(Path("../../../examples/data/europe_t2m.npz"), allow_pickle=True)
@@ -3524,20 +3554,12 @@ plt.show()</div>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">celsius</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">extent</span><span class="p">)</span>
 <span class="n">add_backdrop</span><span class="p">(</span><span class="n">glyph</span><span class="p">)</span>  <span class="c1"># dark hillshaded backdrop, drawn before the frames</span>
-<span class="n">anim_a</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span><span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">"temperature_flame"</span><span class="p">),</span> 
-    <span class="n">time</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
-    <span class="n">add_colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">frame_label</span><span class="o">=</span><span class="n">FrameLabel</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">"white"</span><span class="p">),</span>
-<span class="p">)</span>
+<span class="n">anim_a</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span><span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">"temperature_flame"</span><span class="p">),</span> <span class="n">time</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span> <span class="n">add_colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">playback</span><span class="o">=</span><span class="n">Animation</span><span class="p">(</span><span class="n">frame_label</span><span class="o">=</span><span class="n">FrameLabel</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">"white"</span><span class="p">)))</span>
 <span class="n">embed_gif</span><span class="p">(</span><span class="n">anim_a</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-3">glyph = ArrayGlyph(celsius, extent=extent)
 add_backdrop(glyph)  # dark hillshaded backdrop, drawn before the frames
-anim_a = glyph.animate(data_style=DataStyle(style="temperature_flame"), 
-    time=labels,
-    add_colorbar=False,
-    frame_label=FrameLabel(color="white"),
-)
+anim_a = glyph.animate(data_style=DataStyle(style="temperature_flame"), time=labels, add_colorbar=False, playback=Animation(frame_label=FrameLabel(color="white")))
 embed_gif(anim_a, fps=8)</div>
 </div>
 </div>
@@ -3594,20 +3616,12 @@ embed_gif(anim_a, fps=8)</div>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">celsius</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">extent</span><span class="p">)</span>
 <span class="n">add_backdrop</span><span class="p">(</span><span class="n">glyph</span><span class="p">)</span>
-<span class="n">anim_b</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span><span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">"temperature_flame_amber"</span><span class="p">),</span> 
-    <span class="n">time</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
-    <span class="n">add_colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">frame_label</span><span class="o">=</span><span class="n">FrameLabel</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">"white"</span><span class="p">),</span>
-<span class="p">)</span>
+<span class="n">anim_b</span> <span class="o">=</span> <span class="n">glyph</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span><span class="n">data_style</span><span class="o">=</span><span class="n">DataStyle</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">"temperature_flame_amber"</span><span class="p">),</span> <span class="n">time</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span> <span class="n">add_colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">playback</span><span class="o">=</span><span class="n">Animation</span><span class="p">(</span><span class="n">frame_label</span><span class="o">=</span><span class="n">FrameLabel</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">"white"</span><span class="p">)))</span>
 <span class="n">embed_gif</span><span class="p">(</span><span class="n">anim_b</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-4">glyph = ArrayGlyph(celsius, extent=extent)
 add_backdrop(glyph)
-anim_b = glyph.animate(data_style=DataStyle(style="temperature_flame_amber"), 
-    time=labels,
-    add_colorbar=False,
-    frame_label=FrameLabel(color="white"),
-)
+anim_b = glyph.animate(data_style=DataStyle(style="temperature_flame_amber"), time=labels, add_colorbar=False, playback=Animation(frame_label=FrameLabel(color="white")))
 embed_gif(anim_b, fps=8)</div>
 </div>
 </div>

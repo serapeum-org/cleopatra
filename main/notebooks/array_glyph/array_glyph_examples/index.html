@@ -737,6 +737,8 @@
       
         
       
+        
+      
     
     
     
@@ -1359,6 +1361,34 @@
     
   
     Watermark (figure mark)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/furniture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Furniture (scale bar / north arrow)
   
 
     
@@ -3723,7 +3753,7 @@ The ArrayGlyph class provides functionality for visualizing arrays and creating 
 
 <span class="n">Config</span><span class="o">.</span><span class="n">set_matplotlib_backend</span><span class="p">()</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.base.animation</span><span class="w"> </span><span class="kn">import</span> <span class="n">embed_gif</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span><span class="p">,</span> <span class="n">ColorBar</span><span class="p">,</span> <span class="n">PointOverlay</span><span class="p">,</span> <span class="n">RgbBands</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">Animation</span><span class="p">,</span> <span class="n">ArrayGlyph</span><span class="p">,</span> <span class="n">ColorBar</span><span class="p">,</span> <span class="n">PointOverlay</span><span class="p">,</span> <span class="n">RgbBands</span>
 
 <span class="c1"># Set the random seed for reproducibility</span>
 <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
@@ -3739,7 +3769,7 @@ from cleopatra.config import Config
 
 Config.set_matplotlib_backend()
 from cleopatra.glyphs.base.animation import embed_gif
-from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph, ColorBar, PointOverlay, RgbBands
+from cleopatra.glyphs.gridded.array_glyph import Animation, ArrayGlyph, ColorBar, PointOverlay, RgbBands
 
 # Set the random seed for reproducibility
 np.random.seed(42)
@@ -4588,12 +4618,11 @@ fig, ax = array_glyph_points.plot(
 
 <span class="c1"># Create the animation</span>
 <span class="n">anim</span> <span class="o">=</span> <span class="n">array_glyph_animation</span><span class="o">.</span><span class="n">animate</span><span class="p">(</span>
-    <span class="n">time</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_frames</span><span class="p">)),</span>  <span class="c1"># Time points</span>
-    <span class="n">points</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># No points to display</span>
-    <span class="n">interval</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>  <span class="c1"># Interval between frames (ms)</span>
+    <span class="n">time</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_frames</span><span class="p">)),</span>  <span class="c1"># frame labels</span>
     <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span>  <span class="c1"># Use the viridis colormap</span>
     <span class="n">title</span><span class="o">=</span><span class="s2">"Array Animation"</span><span class="p">,</span>
     <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span>
+    <span class="n">playback</span><span class="o">=</span><span class="n">Animation</span><span class="p">(</span><span class="n">interval</span><span class="o">=</span><span class="mi">200</span><span class="p">),</span>  <span class="c1"># 200 ms between frames</span>
 <span class="p">)</span>
 
 <span class="c1"># Display the animation inline as a looping GIF. `embed_gif` renders it to a GIF</span>
@@ -4622,12 +4651,11 @@ array_glyph_animation = ArrayGlyph(animation_array)
 
 # Create the animation
 anim = array_glyph_animation.animate(
-    time=list(range(n_frames)),  # Time points
-    points=None,  # No points to display
-    interval=200,  # Interval between frames (ms)
+    time=list(range(n_frames)),  # frame labels
     cmap="viridis",  # Use the viridis colormap
     title="Array Animation",
     figsize=(10, 8),
+    playback=Animation(interval=200),  # 200 ms between frames
 )
 
 # Display the animation inline as a looping GIF. `embed_gif` renders it to a GIF
