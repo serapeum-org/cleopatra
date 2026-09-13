@@ -761,9 +761,9 @@ class TestAddNightshade:
 
         Test scenario:
             An orthographic CRS is undefined for the hemisphere facing away from
-            its centre; the solstice night region spans that far side, so the raw
-            reprojection is riddled with NaN. add_nightshade must drop those and
-            still draw a non-empty, all-finite fill.
+            its centre; the solstice night region spans that far side, so pyproj
+            returns non-finite (inf) coordinates there. add_nightshade must drop
+            those and still draw a non-empty, all-finite fill.
         """
         _, ax = plt.subplots()
         art = add_nightshade(
@@ -890,6 +890,23 @@ class TestAddNightshade:
         assert paths, "expected a fill from the finite (southern) vertices"
         verts = np.vstack([p.vertices for p in paths])
         assert np.isfinite(verts).all(), "non-finite transform output not dropped"
+
+    def test_all_vertices_dropped_yields_empty_artist(self):
+        """Test a fully out-of-domain mapping yields a registered but empty artist.
+
+        Test scenario:
+            A transform that maps every vertex to NaN leaves each ring with < 3
+            finite vertices, so all are dropped; add_nightshade still returns a
+            registered PolyCollection, just with zero paths, rather than raising.
+        """
+        _, ax = plt.subplots()
+        art = add_nightshade(
+            ax, JUN_SOLSTICE, transform=lambda a: np.full_like(a, np.nan)
+        )
+        assert len(art.get_paths()) == 0, (
+            f"expected 0 paths, got {len(art.get_paths())}"
+        )
+        assert art in ax.collections, "empty artist not registered"
 
 
 class TestAddTissot:
