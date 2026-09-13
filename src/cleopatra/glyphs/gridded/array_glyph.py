@@ -4272,9 +4272,15 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `FacetGrid.fig` is still the root `Figure` (a `SubFigure` host is
                 resolved to its parent). When supplied, cleopatra does not own
                 the figure: it neither `tight_layout`s nor closes it, and only
-                the empty slots *inside the supplied block* are hidden. `None`
-                (default) builds and owns a fresh figure. Mutually exclusive with
-                `figure_size=`.
+                the empty slots *inside the supplied block* are hidden. A
+                `GridSpec` / `SubplotSpec` host should be **empty** -- drawing
+                into cells the caller already populated adds overlapping axes
+                rather than reusing them. On a mid-render failure cleopatra
+                removes the subplots it created on a host and closes a figure it
+                owns, but caller-supplied pre-existing axes are left untouched,
+                so any panels already drawn before the failure remain on them.
+                `None` (default) builds and owns a fresh figure. Mutually
+                exclusive with `figure_size=`.
             extents: Optional per-panel spatial extents — one
                 `[xmin, ymin, xmax, ymax]` (user-facing order) for each
                 rendered subplot, in row-major order (`extents[k]`
@@ -4301,7 +4307,14 @@ class ArrayGlyph(GeoMixin, Glyph):
                 frame, graticule or basemap) instead of clearing it -- the
                 intended companion to `axes=` when panels are drawn onto
                 pre-decorated axes. Default `False` (each panel clears its axes,
-                the prior behaviour).
+                the prior behaviour). Two consequences to note: (1) like
+                `plot(compose=True)`, composing **suppresses the per-panel
+                colorbar by default**, so `result.cbar` is `None` unless you also
+                pass `colorbar=True` (or a `ColorBar` spec) to keep the shared
+                colorbar; (2) `compose=True` is only meaningful together with
+                `axes=` (or otherwise pre-decorated axes) -- on a self-built grid
+                the fresh axes are empty, so it merely drops the colorbar for no
+                benefit.
             **kwargs: Forwarded to each subplot. Recognised keys
                 include the same colour / colorbar / level kwargs as
                 `plot`. `vmin` / `vmax` win over the
