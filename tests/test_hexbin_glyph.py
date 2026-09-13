@@ -216,6 +216,14 @@ class TestHexbinPlot:
         _, used, _ = HexbinGlyph(x, y).plot(ax=ax)
         assert used is ax, "the supplied axes should be used"
 
+    def test_replot_without_ax_reuses_bound_axes(self, cloud):
+        """A second plot() with no ax reuses the axes bound by the first."""
+        x, y, _ = cloud
+        glyph = HexbinGlyph(x, y)
+        _, ax1, _ = glyph.plot()
+        _, ax2, _ = glyph.plot()
+        assert ax2 is ax1, "re-plot without ax should reuse the bound axes"
+
 
 class TestHexbinClassify:
     """Tests for the classify / colour-scale group parameters."""
