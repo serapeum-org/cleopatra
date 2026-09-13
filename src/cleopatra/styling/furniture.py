@@ -373,7 +373,7 @@ def _draw_scale_box(
     sign: float,
     bar_edge: float,
     has_ticks: bool,
-    box: bool | str | dict,
+    box: bool | str | dict | None,
     zorder: float,
 ) -> None:
     """Draw the backing panel behind a scale bar on the parent axes.
