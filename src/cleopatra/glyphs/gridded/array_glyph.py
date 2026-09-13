@@ -4267,10 +4267,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `SubplotSpec` region (subdivided into the panel grid). A block
                 that does not reproduce the `(nrows, ncols)` grid is rejected,
                 so `col_wrap` is honoured and `FacetGrid.axes` keeps its shape.
-                If those axes already carry content you want to keep (a
-                projection frame, graticule or basemap), also pass
-                `compose=True`; otherwise each panel clears its axes before
-                drawing (the default), wiping that content.
+                Plain matplotlib content you drew on those axes (a projection
+                frame, graticule or basemap) is preserved; only a prior
+                *cleopatra* layer on an axes is replaced unless you pass
+                `compose=True` (see `compose`).
                 The shared colour scale
                 is computed and applied exactly as for the self-built grid.
                 `FacetGrid.fig` is still the root `Figure` (a `SubFigure` host is
@@ -4306,19 +4306,21 @@ class ArrayGlyph(GeoMixin, Glyph):
                 spec). Prefer this typed form over the loose `cbar_*`
                 kwargs, here as on `plot` / `animate`.
 
-            compose: Forwarded to each panel's `plot`. `True` draws each panel
-                *over* whatever the caller already put on its axes (a projection
-                frame, graticule or basemap) instead of clearing it -- the
-                intended companion to `axes=` when panels are drawn onto
-                pre-decorated axes. Default `False` (each panel clears its axes,
-                the prior behaviour). Two consequences to note: (1) like
-                `plot(compose=True)`, composing **suppresses the per-panel
-                colorbar by default**, so `result.cbar` is `None` unless you also
-                pass `colorbar=True` (or a `ColorBar` spec) to keep the shared
-                colorbar; (2) `compose=True` is only meaningful together with
-                `axes=` (or otherwise pre-decorated axes) -- on a self-built grid
-                the fresh axes are empty, so it merely drops the colorbar for no
-                benefit.
+            compose: Forwarded to each panel's `plot`. Controls what a panel
+                does with a **prior cleopatra render** already on its axes:
+                `False` (default) clears it first (the replace-don't-orphan
+                behaviour of `plot`), `True` draws the panel *over* it. Only
+                cleopatra-drawn layers are affected -- plain matplotlib content
+                the caller added (a basemap, graticule or frame) is left in place
+                either way -- so pass `compose=True` when the supplied axes
+                already carry a cleopatra layer (e.g. a relief drawn via
+                cleopatra) you want kept beneath the panel. Two consequences:
+                (1) like `plot(compose=True)`, composing **suppresses the
+                per-panel colorbar by default**, so `result.cbar` is `None`
+                unless you also pass `colorbar=True` (or a `ColorBar` spec);
+                (2) `compose=True` is only meaningful when there is a prior
+                cleopatra layer to preserve -- on a self-built grid the axes are
+                empty, so it just drops the colorbar for no benefit.
             **kwargs: Forwarded to each subplot. Recognised keys
                 include the same colour / colorbar / level kwargs as
                 `plot`. `vmin` / `vmax` win over the
