@@ -300,9 +300,16 @@ def _merge_params(
     `format=image/jpeg` and left the service to pick -- the opposite of the
     override the caller asked for.
 
+    The reconciliation is between the generated parameters and `extra_params`
+    only. A parameter baked into the endpoint's own query is kept verbatim by
+    `_query` and is never overridden -- so an endpoint of
+    `https://host/wms?FORMAT=image/jpeg` plus `extra_params={"format": ...}`
+    sends both, and the service chooses. Put such a parameter in
+    `extra_params` rather than in the `url` if you need to control it.
+
     Args:
         generated: The parameters this provider builds.
-        extra: The caller's `extra_params`, which win.
+        extra: The caller's `extra_params`, which win over the generated ones.
 
     Returns:
         dict[str, str]: The merged parameters, in generated-then-extra order.
@@ -485,8 +492,9 @@ class WMTSProvider:
         extra_params: Extra query parameters, merged last so they can also
             override a generated one -- matched case-insensitively, as OGC
             parameter names are, so `{"format": ...}` replaces the
-            generated `FORMAT` rather than joining it. This is where an API
-            key or token goes.
+            generated `FORMAT` rather than joining it. A parameter already
+            in the `url`'s own query is kept verbatim and is *not*
+            overridden this way. This is where an API key or token goes.
             Keys and values are coerced to `str` and stored read-only.
 
     Raises:
@@ -831,8 +839,9 @@ class WMSProvider:
         extra_params: Extra query parameters, merged last so they can also
             override a generated one -- matched case-insensitively, as OGC
             parameter names are, so `{"format": ...}` replaces the
-            generated `FORMAT` rather than joining it. This is where an API
-            key or token goes.
+            generated `FORMAT` rather than joining it. A parameter already
+            in the `url`'s own query is kept verbatim and is *not*
+            overridden this way. This is where an API key or token goes.
             Keys and values are coerced to `str` and stored read-only.
 
     Raises:
