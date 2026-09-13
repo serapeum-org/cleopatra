@@ -17,6 +17,10 @@ importing the standalone helpers:
   lon/lat graticule, °W/°N labels, and a subtle frame.
 - `add_labels` → `cleopatra.basemap.geo.add_point_labels` (dot + text markers for named
   points, e.g. cities).
+- `add_scale_bar` → [`cleopatra.styling.furniture.add_scale_bar`](furniture.md) (a segmented
+  scale bar; `length` is in axis data units — the caller owns the geodesy).
+- `add_north_arrow` → [`cleopatra.styling.furniture.add_north_arrow`](furniture.md) (a
+  rotatable north arrow; the caller supplies the `rotation`).
 
 Each basemap method is a thin wrapper: it draws on `self.ax` (the axes produced
 when you plot the glyph) and forwards its arguments to the matching standalone

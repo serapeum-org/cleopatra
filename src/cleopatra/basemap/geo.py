@@ -37,6 +37,7 @@ import numpy as np
 from matplotlib.ticker import FuncFormatter, MultipleLocator
 
 from cleopatra.basemap import reference, tiles
+from cleopatra.styling import furniture
 
 #: Built-in reference-map style presets for `GeoMixin.add_reference_map`.
 #: `"light"` is tuned for light backgrounds; `"dark"` uses lighter
@@ -688,6 +689,68 @@ class GeoMixin:
             self._basemap_axes(ax), *args, **self._basemap_kwargs(kwargs)
         )
 
+    def add_scale_bar(self, length: float, *, ax: Any = None, **kwargs: Any) -> Any:
+        """Draw a scale bar on the glyph's axes.
+
+        Thin sugar over `cleopatra.styling.furniture.add_scale_bar`; the free
+        function stays the API and this only supplies the axes. `length` is in
+        the axes' **data units** and cleopatra draws exactly that -- computing
+        the ground distance (the CRS / geodesy) is the caller's job.
+
+        Args:
+            length: The bar length in the axes' x data units.
+            ax: Axes to draw on. Defaults to the glyph's `self.ax`.
+            **kwargs: Keyword arguments for
+                `cleopatra.styling.furniture.add_scale_bar` (`label`,
+                `location`, `segments`, `box`, ...).
+
+        Returns:
+            matplotlib.axes.Axes: The frameless inset axes the bar was drawn on.
+
+        Raises:
+            RuntimeError: Only if there is no axes, no `ax` is given, and the
+                glyph cannot create one (a bare `GeoMixin`); only `ArrayGlyph`
+                creates and seeds its axes on demand, so the pre-plot builder
+                flow is ArrayGlyph-only -- plot the other glyphs first (or pass
+                `ax=`).
+
+        See Also:
+            cleopatra.styling.furniture.add_scale_bar: The underlying function
+                and its full parameter list.
+        """
+        return furniture.add_scale_bar(self._basemap_axes(ax), length, **kwargs)
+
+    def add_north_arrow(self, *, ax: Any = None, **kwargs: Any) -> Any:
+        """Draw a north arrow on the glyph's axes.
+
+        Thin sugar over `cleopatra.styling.furniture.add_north_arrow`; the free
+        function stays the API and this only supplies the axes. `rotation` (grid
+        convergence, in degrees) is the caller's to supply -- cleopatra owns no
+        CRS and never derives it.
+
+        Args:
+            ax: Axes to draw on. Defaults to the glyph's `self.ax`.
+            **kwargs: Keyword arguments for
+                `cleopatra.styling.furniture.add_north_arrow` (`rotation`,
+                `location`, `size`, `style`, `label`, `box`, ...).
+
+        Returns:
+            matplotlib.axes.Axes: The frameless inset axes the arrow was drawn
+            on.
+
+        Raises:
+            RuntimeError: Only if there is no axes, no `ax` is given, and the
+                glyph cannot create one (a bare `GeoMixin`); only `ArrayGlyph`
+                creates and seeds its axes on demand, so the pre-plot builder
+                flow is ArrayGlyph-only -- plot the other glyphs first (or pass
+                `ax=`).
+
+        See Also:
+            cleopatra.styling.furniture.add_north_arrow: The underlying function
+                and its full parameter list.
+        """
+        return furniture.add_north_arrow(self._basemap_axes(ax), **kwargs)
+
     def add_labels(
         self, points: dict[str, tuple[float, float]], *, ax: Any = None, **kwargs: Any
     ) -> Any:
@@ -906,7 +969,9 @@ class GeoMixin:
 
         def agreement(shift_x: float, shift_y: float) -> float:
             lons = np.linspace(xmin + shift_x, xmax + shift_x, cols)
-            lats = np.linspace(ymax + shift_y, ymin + shift_y, rows)  # high to low: upper image origin
+            lats = np.linspace(
+                ymax + shift_y, ymin + shift_y, rows
+            )  # high to low: upper image origin
             col = np.clip(((lons + 180.0) / 360.0 * rel_w).astype(int), 0, rel_w - 1)
             row = np.clip(((90.0 - lats) / 180.0 * rel_h).astype(int), 0, rel_h - 1)
             return float((ref_land[np.ix_(row, col)] == land).mean())
