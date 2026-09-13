@@ -1618,6 +1618,13 @@ class TestRoundTwoHardening:
             f"a single non-string key should coerce: {dict(provider.extra_params)}"
         )
 
+    @pytest.mark.parametrize(
+        "template",
+        [
+            "https://example.org/wmts/{Layer}.png",
+            "https://example.org/wmts/{Style}/{TileMatrixSet}.png",
+        ],
+    )
     def test_a_template_of_only_optional_placeholders_is_refused(self, template):
         """Owning a placeholder is not the same as addressing a tile.
 
