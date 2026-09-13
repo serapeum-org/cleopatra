@@ -140,9 +140,8 @@ class TestResolveBox:
             An explicit edgecolor overrides while the white face default stays.
         """
         kw = _resolve_box({"edgecolor": "navy"})
-        assert kw["edgecolor"] == "navy" and kw["facecolor"] == "white", (
-            "dict merges over defaults"
-        )
+        assert kw["edgecolor"] == "navy", "explicit edgecolor should override"
+        assert kw["facecolor"] == "white", "the white face default should remain"
 
 
 class TestScaleBarTicksHelper:
@@ -171,9 +170,8 @@ class TestScaleBarTicksHelper:
             Positions 0/50/100 on a length-100 bar map to fractions 0/0.5/1.
         """
         fracs, vals = _scale_bar_ticks([0.0, 50.0, 100.0], 100.0)
-        assert fracs == [0.0, 0.5, 1.0] and vals == [0.0, 50.0, 100.0], (
-            f"unexpected ticks {fracs}, {vals}"
-        )
+        assert fracs == [0.0, 0.5, 1.0], f"unexpected fractions {fracs}"
+        assert vals == [0.0, 50.0, 100.0], f"unexpected values {vals}"
 
     def test_out_of_range_raises(self):
         """A tick outside `[0, length]` raises.
@@ -224,7 +222,8 @@ class TestAddScaleBar:
             An `Axes` is returned and it is not the parent.
         """
         bar = add_scale_bar(ax, 100_000)
-        assert isinstance(bar, Axes) and bar is not ax, "should return the inset axes"
+        assert isinstance(bar, Axes), "should return an Axes"
+        assert bar is not ax, "should return the inset axes, not the parent"
 
     def test_segment_geometry(self, ax):
         """`segments` alternating blocks tile the bar left to right.
@@ -325,7 +324,8 @@ class TestAddScaleBar:
         """
         add_scale_bar(ax, 100_000)
         ys = [t.get_position()[1] for t in ax.texts]
-        assert ys and all(0.0 <= y <= 1.0 for y in ys), (
+        assert ys, "the default call should draw tick numbers and a caption"
+        assert all(0.0 <= y <= 1.0 for y in ys), (
             f"furniture text spilled off the axes: {ys}"
         )
 
@@ -363,7 +363,8 @@ class TestAddScaleBar:
         before = len(ax.patches)
         add_scale_bar(ax, 100_000, box=True)
         rects = [p for p in ax.patches if isinstance(p, Rectangle)]
-        assert len(ax.patches) == before + 1 and rects, "one backing panel"
+        assert len(ax.patches) == before + 1, "one backing panel added"
+        assert rects, "the backing panel is a Rectangle"
 
     def test_box_top_label(self, ax):
         """A backing box also works with a top caption.
@@ -692,7 +693,8 @@ class TestGeoMixinFurniture:
         )
         glyph.plot()
         bar = glyph.add_scale_bar(100_000, segments=3, label="100 km")
-        assert isinstance(bar, Axes) and len(bar.patches) == 3, "sugar draws the bar"
+        assert isinstance(bar, Axes), "sugar returns an Axes"
+        assert len(bar.patches) == 3, "sugar draws the three blocks"
         plt.close(glyph.fig)
 
     def test_north_arrow_sugar(self):
@@ -706,5 +708,6 @@ class TestGeoMixinFurniture:
         )
         glyph.plot()
         arrow = glyph.add_north_arrow(rotation=10.0, style="needle")
-        assert isinstance(arrow, Axes) and len(arrow.patches) == 4, "sugar draws arrow"
+        assert isinstance(arrow, Axes), "sugar returns an Axes"
+        assert len(arrow.patches) == 4, "sugar draws the needle polygons"
         plt.close(glyph.fig)

@@ -730,7 +730,7 @@ class TestPolygonGlyphScheme:
 class TestArrayGlyphScheme:
     """Integration tests for `classify` through ArrayGlyph (classified raster, #351)."""
 
-    @pytest.fixture()
+    @pytest.fixture
     def ramp(self):
         """A 10x10 raster carrying a 0..99 value ramp.
 
@@ -853,8 +853,9 @@ class TestArrayGlyphScheme:
             categorical scheme raises.
         """
         glyph = ArrayGlyph(ramp)
+        categorical = Classify(scheme="categorical")
         with pytest.raises(ValueError, match="categorical"):
-            glyph.plot(classify=Classify(scheme="categorical"))
+            glyph.plot(classify=categorical)
 
     def test_data_style_over_classify_warns(self, ramp):
         """A `data_style` preset alongside `classify` warns that classify is dropped.
@@ -865,11 +866,10 @@ class TestArrayGlyphScheme:
             so rather than silently discarding the classification.
         """
         glyph = ArrayGlyph(ramp.reshape(10, 10))
+        classify_spec = Classify(scheme="quantiles", k=4)
+        style_spec = DataStyle(style="elevation")
         with pytest.warns(UserWarning, match="classify.*ignored with 'style'"):
-            glyph.plot(
-                classify=Classify(scheme="quantiles", k=4),
-                data_style=DataStyle(style="elevation"),
-            )
+            glyph.plot(classify=classify_spec, data_style=style_spec)
 
     def test_conflict_warning_attributed_to_caller(self, ramp):
         """The scheme/scale conflict warning points at the caller, not internals.
@@ -902,8 +902,9 @@ class TestArrayGlyphScheme:
             plain `plot()` succeeds.
         """
         glyph = ArrayGlyph(ramp)
+        bad = Classify(scheme="rainbow")
         with pytest.raises(ValueError):
-            glyph.plot(classify=Classify(scheme="rainbow"))
+            glyph.plot(classify=bad)
         assert glyph.default_options.get("scheme") is None, (
             "a failed classified plot must not leave scheme set"
         )
@@ -934,9 +935,8 @@ class TestArrayGlyphScheme:
         ]
         assert len(norms) == 3, "three panels should be drawn"
         assert all(n == norms[0] for n in norms), "all panels share one set of classes"
-        assert norms[0][0] == 0.0 and norms[0][-1] == 1099.0, (
-            "class edges should span the whole stack"
-        )
+        assert norms[0][0] == 0.0, "class edges should start at the stack min"
+        assert norms[0][-1] == 1099.0, "class edges should end at the stack max"
 
     def test_classified_raster_ignores_nan(self):
         """A classified raster bins only its finite cells, ignoring NaN.
@@ -966,8 +966,9 @@ class TestArrayGlyphScheme:
             [np.arange(100.0).reshape(10, 10), np.arange(100.0, 200.0).reshape(10, 10)]
         )
         glyph = ArrayGlyph(stack)
+        bad = Classify(scheme="rainbow")
         with pytest.raises(ValueError):
-            glyph.animate(["t0", "t1"], classify=Classify(scheme="rainbow"))
+            glyph.animate(["t0", "t1"], classify=bad)
         assert glyph.default_options.get("scheme") is None, (
             "a failed classified animation must not leave scheme set"
         )
@@ -1051,8 +1052,10 @@ class TestArrayGlyphScheme:
         glyph = ArrayGlyph(stack)
         calls = []
         monkeypatch.setattr(glyph, "_facet_axes", lambda *a, **k: calls.append(1))
+        layout = FacetLayout(col="time")
+        spec = Classify(scheme="quantiles")
         with pytest.raises(ValueError, match="spread"):
-            glyph.facet(FacetLayout(col="time"), classify=Classify(scheme="quantiles"))
+            glyph.facet(layout, classify=spec)
         assert not calls, "edge resolution must fail before the figure is created"
 
     def test_animate_shares_classes_over_frames(self):
