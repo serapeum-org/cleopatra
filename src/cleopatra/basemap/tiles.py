@@ -1049,7 +1049,10 @@ def add_tiles(
             `OpenStreetMap.Mapnik`. A dot-separated string such as
             `"CartoDB.Positron"` is resolved via
             `get_provider`. An `xyzservices.TileProvider` is
-            used directly.
+            used directly, and so is any object exposing
+            `build_url(x=, y=, z=)` -- which is how
+            `cleopatra.basemap.ogc.WMSProvider` and `WMTSProvider` bring OGC
+            services through this same path.
         crs: CRS of the data on `ax`. An integer is interpreted as an
             EPSG code; a string is passed through (`"EPSG:XXXX"` or
             WKT). `None` is treated as EPSG:3857.
@@ -1428,7 +1431,11 @@ def world_texture(
 
     Args:
         provider: An `xyzservices` provider name (e.g. `"Esri.WorldImagery"`) or
-            a resolved `xyzservices.TileProvider` (as `add_tiles` accepts);
+            a resolved `xyzservices.TileProvider`. Unlike `add_tiles` this
+            needs a Mapping-like provider, because the disk cache is keyed on
+            `provider.get("name", ...)` -- so the OGC providers in
+            `cleopatra.basemap.ogc` raise `AttributeError` here and are
+            supported only through `add_tiles`;
             `None` uses the default (`OpenStreetMap.Mapnik`). A name is resolved
             by `get_provider`.
         zoom: Tile zoom level (0..6); the world grid is `2**zoom` tiles per side.
