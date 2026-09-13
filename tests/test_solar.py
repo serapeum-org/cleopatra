@@ -16,6 +16,7 @@ from datetime import UTC, datetime, timedelta, timezone
 
 import numpy as np
 import pytest
+from matplotlib.path import Path as MplPath
 
 from cleopatra.basemap import solar
 from cleopatra.basemap.solar import (
@@ -84,6 +85,30 @@ def _sphere_fraction(rings):
         dlon = (dlon + np.pi) % (2 * np.pi) - np.pi
         total += np.sum(dlon * (2 + np.sin(lat[:-1]) + np.sin(lat[1:]))) / 2.0
     return abs(total) / (4 * np.pi)
+
+
+def _fill_night_fraction(rings):
+    """Return the rasterised night fraction of the sphere by filling ``rings``.
+
+    Unlike `_sphere_fraction` (a shoelace on lon/lat that cancels an
+    antimeridian smear), this does a real point-in-polygon fill on a lon/lat
+    grid, cos-lat weighted, so a ring smeared across the map inflates the result.
+
+    Args:
+        rings: Sequence of ``(m, 2)`` lon/lat arrays.
+
+    Returns:
+        float: Filled area as a cos-lat-weighted fraction of the sphere.
+    """
+    lon = np.linspace(-179.5, 179.5, 720)
+    lat = np.linspace(-89.5, 89.5, 360)
+    grid_lon, grid_lat = np.meshgrid(lon, lat)
+    points = np.column_stack([grid_lon.ravel(), grid_lat.ravel()])
+    inside = np.zeros(len(points), dtype=bool)
+    for ring in rings:
+        inside |= MplPath(ring).contains_points(points)
+    weights = np.cos(np.radians(grid_lat)).ravel()
+    return float((inside * weights).sum() / weights.sum())
 
 
 class TestModuleConstants:
@@ -306,6 +331,33 @@ class TestTerminator:
             f"south extreme {term[:, 1].min()} != {-reach}"
         )
 
+    @pytest.mark.parametrize("refraction", [0.1, 5.0, -90.0, -100.0])
+    def test_invalid_refraction_raises(self, refraction):
+        """Test out-of-domain refraction values are rejected.
+
+        Args:
+            refraction: An invalid solar altitude in degrees.
+
+        Test scenario:
+            Positive refraction is not a terminator and -90 or below is
+            degenerate; both must raise ValueError rather than mis-branch.
+        """
+        with pytest.raises(ValueError, match="refraction"):
+            terminator(JUN_SOLSTICE, refraction=refraction)
+
+    @pytest.mark.parametrize("n", [0, 1, 2])
+    def test_too_few_samples_raises(self, n):
+        """Test a sample count below 3 is rejected.
+
+        Args:
+            n: An invalid vertex count.
+
+        Test scenario:
+            A ring needs at least 3 vertices; fewer must raise ValueError.
+        """
+        with pytest.raises(ValueError, match="at least 3"):
+            terminator(JUN_SOLSTICE, n=n)
+
 
 class TestNightPolygon:
     """Tests for night_polygon."""
@@ -407,6 +459,63 @@ class TestNightPolygon:
         """
         frac = _sphere_fraction(night_polygon(JUN_SOLSTICE, n=180))
         assert 0.47 < frac < 0.51, f"night fraction {frac} not ~0.49 at n=180"
+
+    @pytest.mark.parametrize(
+        "when",
+        [
+            datetime(2026, 3, 20, 0, 0, tzinfo=UTC),
+            datetime(2026, 3, 20, 12, 0, tzinfo=UTC),
+            datetime(2026, 3, 20, 18, 0, tzinfo=UTC),
+            JUN_SOLSTICE,
+            DEC_SOLSTICE,
+        ],
+    )
+    def test_rings_fill_about_half_the_sphere(self, when):
+        """Test a real point-in-polygon fill covers ~half the sphere.
+
+        Args:
+            when: Datetime to evaluate.
+
+        Test scenario:
+            Rasterising the returned rings (not the shoelace area, which cancels
+            an antimeridian smear) must give ~0.49, catching the class of bug
+            where a straddling ring is smeared across the whole map.
+        """
+        frac = _fill_night_fraction(night_polygon(when))
+        assert 0.46 < frac < 0.52, f"filled night fraction {frac} not ~0.49 for {when}"
+
+    def test_straddling_pieces_do_not_span_the_map(self):
+        """Test each straddling piece stays a narrow seam strip, not a whole band.
+
+        Test scenario:
+            When the night region splits at the antimeridian, neither piece may
+            span close to 360 deg of longitude (that would be the smear bug); the
+            two seam-hugging halves are each well under 200 deg wide.
+        """
+        rings = night_polygon(datetime(2026, 3, 20, 12, 0, tzinfo=UTC))
+        assert len(rings) == 2, f"expected 2 straddling rings, got {len(rings)}"
+        for ring in rings:
+            span = float(ring[:, 0].max() - ring[:, 0].min())
+            assert span < 200.0, f"ring spans {span} deg -- smeared across the map"
+
+    def test_invalid_refraction_propagates(self):
+        """Test night_polygon rejects out-of-domain refraction via terminator.
+
+        Test scenario:
+            refraction > 0 would mis-branch (both poles dark); it must raise
+            rather than return a wrong region.
+        """
+        with pytest.raises(ValueError, match="refraction"):
+            night_polygon(JUN_SOLSTICE, refraction=30.0)
+
+    def test_too_few_samples_propagates(self):
+        """Test night_polygon rejects n < 3 via terminator.
+
+        Test scenario:
+            A ring needs at least 3 vertices; fewer must raise ValueError.
+        """
+        with pytest.raises(ValueError, match="at least 3"):
+            night_polygon(JUN_SOLSTICE, n=2)
 
 
 class TestUnimplementedArtists:
