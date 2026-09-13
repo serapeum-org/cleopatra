@@ -2,6 +2,7 @@ import os
 import re
 import shutil
 import warnings
+from unittest.mock import patch
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -11,6 +12,7 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.collections import PathCollection
 from matplotlib.colors import BoundaryNorm, Normalize, PowerNorm, to_rgba
 from matplotlib.figure import Figure
+from matplotlib.gridspec import GridSpec
 from matplotlib.text import Text
 from matplotlib.transforms import Bbox
 from PIL import Image
@@ -8217,3 +8219,127 @@ class TestFigAxResolution:
 
     def test_clear_projection_frame_none_is_noop(self):
         assert _clear_projection_frame(None) is False
+
+
+class TestFacetSuppliedAxes:
+    """`ArrayGlyph.facet(axes=...)` draws into caller-supplied axes (issue #357)."""
+
+    @staticmethod
+    def _stack(n: int = 3, h: int = 5, w: int = 5) -> np.ndarray:
+        """A 3-D `(n, h, w)` stack with a known, non-degenerate value range."""
+        return np.arange(n * h * w, dtype=float).reshape(n, h, w)
+
+    def test_2d_axes_block_uses_caller_figure(self):
+        """A 2-D block of axes is drawn into and the caller's figure is returned."""
+        stack = self._stack(n=3)
+        fig, axs = plt.subplots(1, 3, squeeze=False)
+        result = ArrayGlyph(stack).facet(col="t", axes=axs)
+        assert result.fig is fig
+        assert result.axes[0, 0] is axs[0, 0]
+        for ax in axs.ravel():
+            assert len(ax.get_images()) >= 1
+        plt.close("all")
+
+    def test_flat_sequence_reshaped_to_grid(self):
+        """A flat sequence of axes is accepted and reshaped to (nrows, ncols)."""
+        stack = self._stack(n=3)
+        fig, axs = plt.subplots(1, 3)
+        result = ArrayGlyph(stack).facet(col="t", axes=list(axs.ravel()))
+        assert result.fig is fig
+        assert result.axes.shape == (1, 3)
+        plt.close("all")
+
+    def test_subfigure_host_returns_root_figure(self):
+        """A `SubFigure` host lays panels inside it; `fig` is the root `Figure`."""
+        stack = self._stack(n=3)
+        fig = plt.figure()
+        top, _bottom = fig.subfigures(2, 1)
+        result = ArrayGlyph(stack).facet(col="t", axes=top)
+        assert result.fig is fig
+        assert result.axes[0, 0].get_figure() is top
+        plt.close("all")
+
+    def test_subplotspec_host_is_subdivided(self):
+        """A `SubplotSpec` region is subdivided into the panel grid."""
+        stack = self._stack(n=3)
+        fig = plt.figure()
+        gs = GridSpec(2, 1, figure=fig)
+        result = ArrayGlyph(stack).facet(col="t", axes=gs[0])
+        assert result.fig is fig
+        assert result.axes.shape == (1, 3)
+        plt.close("all")
+
+    def test_gridspec_host(self):
+        """A `GridSpec` host draws the panels into its first nrows x ncols cells."""
+        stack = self._stack(n=3)
+        fig = plt.figure()
+        gs = GridSpec(1, 3, figure=fig)
+        result = ArrayGlyph(stack).facet(col="t", axes=gs)
+        assert result.fig is fig
+        assert result.axes.shape == (1, 3)
+        plt.close("all")
+
+    def test_axes_and_figure_size_are_mutually_exclusive(self):
+        """Supplying both `axes=` and `figure_size=` raises `ValueError`."""
+        stack = self._stack(n=3)
+        fig, axs = plt.subplots(1, 3, squeeze=False)
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            ArrayGlyph(stack).facet(col="t", axes=axs, figure_size=(6, 3))
+        plt.close("all")
+
+    def test_too_few_axes_raises_before_drawing(self):
+        """An axes block smaller than the panel count is rejected up front."""
+        stack = self._stack(n=3)
+        fig, axs = plt.subplots(1, 2, squeeze=False)
+        with pytest.raises(ValueError, match="at least 3"):
+            ArrayGlyph(stack).facet(col="t", axes=axs)
+        plt.close("all")
+
+    def test_empty_slots_hidden_only_inside_block(self):
+        """Wrapped panels hide only the empty slots within the supplied block."""
+        stack = self._stack(n=3)
+        fig, axs = plt.subplots(2, 2, squeeze=False)
+        result = ArrayGlyph(stack).facet(col="t", col_wrap=2, axes=axs)
+        assert [ax.get_visible() for ax in axs.ravel()] == [True, True, True, False]
+        assert result.fig is fig
+        plt.close("all")
+
+    def test_shared_scale_matches_self_built_path(self):
+        """The stack-wide vmin/vmax matches whether or not facet owns the figure."""
+        stack = self._stack(n=3)
+        own = ArrayGlyph(stack).facet(col="t")
+        own_norm = own.axes.flat[0].get_images()[0].norm
+        own_limits = (own_norm.vmin, own_norm.vmax)
+        plt.close("all")
+        fig, axs = plt.subplots(1, 3, squeeze=False)
+        supplied = ArrayGlyph(stack).facet(col="t", axes=axs)
+        sup_norm = supplied.axes[0, 0].get_images()[0].norm
+        assert (sup_norm.vmin, sup_norm.vmax) == own_limits
+        plt.close("all")
+
+    def test_caller_figure_not_closed_on_failure(self):
+        """A render failure must not close the caller's figure (it owns it)."""
+        stack = self._stack(n=3)
+        fig, axs = plt.subplots(1, 3, squeeze=False)
+        bad = DataStyle(style="not_a_style")
+        with pytest.raises(ValueError):
+            ArrayGlyph(stack).facet(col="t", axes=axs, data_style=bad)
+        assert plt.fignum_exists(fig.number)  # caller's figure left intact
+        plt.close("all")
+
+    def test_caller_figure_not_tight_laid_out(self):
+        """cleopatra must not `tight_layout` a figure it does not own."""
+        stack = self._stack(n=3)
+        fig, axs = plt.subplots(1, 3, squeeze=False)
+        with patch.object(fig, "tight_layout") as mock_tight_layout:
+            ArrayGlyph(stack).facet(col="t", axes=axs)
+        mock_tight_layout.assert_not_called()
+        plt.close("all")
+
+    def test_self_built_path_still_owns_and_lays_out(self):
+        """With `axes=None` cleopatra still builds, lays out, and owns the figure."""
+        stack = self._stack(n=3)
+        result = ArrayGlyph(stack).facet(col="t")
+        assert isinstance(result.fig, Figure)
+        assert result.axes.shape == (1, 3)
+        plt.close("all")
