@@ -917,11 +917,14 @@ def _flatten_axes(axes: Any) -> list[Axes]:
 
 
 def _axes_grid_2d(axes: Any, flat: list[Axes], nrows: int, ncols: int) -> np.ndarray:
-    """Shape a supplied axes block into the 2-D grid `FacetGrid.axes` expects.
+    """Shape a validated axes block into the `(nrows, ncols)` grid.
 
-    A 2-D `ndarray` is returned unchanged (it already has the caller's layout);
-    anything else is rebuilt from the flat, row-major `flat` list -- reshaped to
-    `(nrows, ncols)` when it fits exactly, otherwise to a single row.
+    A 2-D `ndarray` already has the caller's layout and is returned unchanged;
+    anything else is rebuilt row-major from `flat`. The caller
+    (`ArrayGlyph._facet_axes`) has already checked that the block reproduces the
+    grid (a 2-D array's shape is `(nrows, ncols)`, or `len(flat) == nrows *
+    ncols`), so the reshape always succeeds and `FacetGrid.axes` keeps its
+    documented `(nrows, ncols)` shape.
 
     Args:
         axes: The original `axes=` value the caller passed.
@@ -930,13 +933,11 @@ def _axes_grid_2d(axes: Any, flat: list[Axes], nrows: int, ncols: int) -> np.nda
         ncols: Facet grid column count.
 
     Returns:
-        np.ndarray: A 2-D object array of `Axes`.
+        np.ndarray: A 2-D object array of `Axes` with shape `(nrows, ncols)`.
     """
     if isinstance(axes, np.ndarray) and axes.ndim == 2:
         return axes
-    if len(flat) == nrows * ncols:
-        return np.asarray(flat, dtype=object).reshape(nrows, ncols)
-    return np.asarray(flat, dtype=object).reshape(1, len(flat))
+    return np.asarray(flat, dtype=object).reshape(nrows, ncols)
 
 
 class FacetGrid:
@@ -4059,7 +4060,6 @@ class ArrayGlyph(GeoMixin, Glyph):
         self,
         nrows: int,
         ncols: int,
-        n_panels: int,
         figure_size: tuple[float, float] | None,
         axes: Any,
     ) -> tuple[Figure, np.ndarray, list[Axes], bool]:
@@ -4068,12 +4068,13 @@ class ArrayGlyph(GeoMixin, Glyph):
         With `axes=None` a fresh figure is created and cleopatra owns it (it may
         re-lay-out and close it). Otherwise the panels are laid into the axes /
         host the caller supplied, the *root* `Figure` is returned, and cleopatra
-        does not own it -- `facet` must not `tight_layout` or close it.
+        does not own it -- `facet` must not `tight_layout` or close it. The
+        returned axes grid is always shape `(nrows, ncols)`, so `FacetGrid.axes`
+        keeps its documented shape on every path.
 
         Args:
             nrows: Number of grid rows.
             ncols: Number of grid columns.
-            n_panels: Number of rendered panels (`<= nrows * ncols`).
             figure_size: `(width, height)` for the self-built figure; must be
                 `None` when `axes` is supplied.
             axes: `None` (self-built), an `Axes` block (2-D `ndarray`, nested or
@@ -4082,14 +4083,15 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         Returns:
             tuple: `(fig, axes_grid, flat_axes, owns_figure)` -- the root figure,
-            the 2-D axes array for the `FacetGrid`, the row-major flat list the
-            panel loop indexes, and whether cleopatra owns the figure.
+            the `(nrows, ncols)` axes array for the `FacetGrid`, its row-major
+            flattening the panel loop indexes, and whether cleopatra owns the
+            figure.
 
         Raises:
             ValueError: If `axes=` and `figure_size=` are both given, if a host
                 grid spec has no figure or is too small, or if a supplied axes
-                block is empty, holds non-`Axes` items, or has fewer than
-                `n_panels` axes.
+                block is empty, holds non-`Axes` items, or does not reproduce
+                the `(nrows, ncols)` grid.
         """
         if axes is None:
             if figure_size is None:
@@ -4151,13 +4153,26 @@ class ArrayGlyph(GeoMixin, Glyph):
                 "flat sequence of Axes), a Figure / SubFigure, or a GridSpec / "
                 "SubplotSpec."
             )
-        if len(flat) < n_panels:
+        # The supplied block must reproduce the facet's (nrows, ncols) grid so
+        # `FacetGrid.axes` keeps its documented shape and `col_wrap` is honoured
+        # -- a 2-D array must match exactly, a flat/nested block must hold
+        # nrows*ncols axes (the full grid, empty slots included, as the
+        # self-built `plt.subplots` path produces).
+        if isinstance(axes, np.ndarray) and axes.ndim == 2:
+            if axes.shape != (nrows, ncols):
+                raise ValueError(
+                    f"`axes=` is a {axes.shape[0]}x{axes.shape[1]} block but the "
+                    f"facet grid is {nrows}x{ncols}; supply a matching block."
+                )
+        elif len(flat) != nrows * ncols:
             raise ValueError(
-                f"`axes=` supplies {len(flat)} axes but the facet has {n_panels} "
-                f"panels; provide at least {n_panels}."
+                f"`axes=` supplies {len(flat)} axes but the facet grid is "
+                f"{nrows}x{ncols} ({nrows * ncols} cells); supply exactly "
+                f"{nrows * ncols}."
             )
         grid = _axes_grid_2d(axes, flat, nrows, ncols)
-        return _root_figure(flat[0]), grid, flat, False
+        flat_axes = list(grid.ravel())
+        return _root_figure(flat_axes[0]), grid, flat_axes, False
 
     def facet(
         self,
@@ -4232,12 +4247,16 @@ class ArrayGlyph(GeoMixin, Glyph):
                 Defaults to `(4 * ncols, 3.5 * nrows)`. Mutually exclusive with
                 `axes=` (cleopatra never sizes a figure it does not own).
             axes: Draw the panels into axes the caller supplies instead of
-                building a new figure. Accepts a 2-D `ndarray` (the shape
-                `FacetGrid.axes` has) or a nested / flat sequence of `Axes`
-                (row-major, at least `n_panels` of them); a `Figure` or
-                `SubFigure` host (panels are created on it via
-                `host.subplots(nrows, ncols)`); or a `GridSpec` / `SubplotSpec`
-                region (subdivided into the panel grid). The shared colour scale
+                building a new figure. Accepts a 2-D `ndarray` of shape
+                `(nrows, ncols)` (the shape `FacetGrid.axes` has) or a nested /
+                flat sequence of exactly `nrows * ncols` `Axes` (row-major, one
+                per grid cell -- empty slots included, as `plt.subplots` would
+                produce); a `Figure` or `SubFigure` host (panels are created on
+                it via `host.subplots(nrows, ncols)`); or a `GridSpec` /
+                `SubplotSpec` region (subdivided into the panel grid). A block
+                that does not reproduce the `(nrows, ncols)` grid is rejected,
+                so `col_wrap` is honoured and `FacetGrid.axes` keeps its shape.
+                The shared colour scale
                 is computed and applied exactly as for the self-built grid.
                 `FacetGrid.fig` is still the root `Figure` (a `SubFigure` host is
                 resolved to its parent). When supplied, cleopatra does not own
@@ -4292,9 +4311,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                 passed -- `figsize` (renamed to `figure_size`) or
                 `col_coords` / `row_coords` (replaced by
                 `labels=PanelLabels(...)`). Also if `axes=` is combined with
-                `figure_size=`, or an `axes=` block supplies fewer than
-                `n_panels` axes / holds non-`Axes` items / (for a grid-spec host)
-                is not attached to a figure or is too small.
+                `figure_size=`, or an `axes=` block does not reproduce the
+                `(nrows, ncols)` grid / holds non-`Axes` items / (for a grid-spec
+                host) is not attached to a figure or is too small.
 
         Examples:
             - Facet a 3-D stack into a 1xN row of subplots:
@@ -4451,7 +4470,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         col = cast(str, col)  # guaranteed non-None by the validation above
 
         fig, axes_grid, flat_axes, owns_figure = self._facet_axes(
-            nrows, ncols, n_panels, figure_size, axes
+            nrows, ncols, figure_size, axes
         )
 
         vmin_user = kwargs.get("vmin")

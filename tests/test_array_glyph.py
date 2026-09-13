@@ -8288,10 +8288,10 @@ class TestFacetSuppliedAxes:
         plt.close("all")
 
     def test_too_few_axes_raises_before_drawing(self):
-        """An axes block smaller than the panel count is rejected up front."""
+        """An axes block smaller than the grid is rejected up front."""
         stack = self._stack(n=3)
         fig, axs = plt.subplots(1, 2, squeeze=False)
-        with pytest.raises(ValueError, match="at least 3"):
+        with pytest.raises(ValueError, match="1x2 block but the facet grid is 1x3"):
             ArrayGlyph(stack).facet(col="t", axes=axs)
         plt.close("all")
 
@@ -8374,13 +8374,48 @@ class TestFacetSuppliedAxes:
             ArrayGlyph(stack).facet(col="t", axes=block)
         plt.close("all")
 
-    def test_flat_block_with_extra_axes_reshaped_to_single_row(self):
-        """A flat block whose length differs from nrows*ncols reshapes to one row."""
+    def test_flat_block_wrong_count_rejected(self):
+        """A flat block that cannot fill the (nrows, ncols) grid is rejected."""
         stack = self._stack(n=3)
         fig, axs = plt.subplots(2, 2, squeeze=False)
-        result = ArrayGlyph(stack).facet(col="t", col_wrap=2, axes=list(axs.ravel())[:3])
-        assert result.axes.shape == (1, 3)  # 3 axes, but the grid is 2x2
+        with pytest.raises(ValueError, match="supply exactly 4"):
+            ArrayGlyph(stack).facet(col="t", col_wrap=2, axes=list(axs.ravel())[:3])
+        plt.close("all")
+
+    def test_2d_block_shape_must_match_grid(self):
+        """A 2-D block whose shape contradicts col_wrap is rejected, not reflowed."""
+        stack = self._stack(n=6)
+        fig, axs = plt.subplots(3, 2, squeeze=False)  # 3x2, but col_wrap=3 wants 2x3
+        with pytest.raises(ValueError, match="3x2 block but the facet grid is 2x3"):
+            ArrayGlyph(stack).facet(col="t", col_wrap=3, axes=axs)
+        plt.close("all")
+
+    def test_wrapped_supplied_block_preserves_grid_shape(self):
+        """A correctly-shaped wrapped block keeps FacetGrid.axes at (nrows, ncols)."""
+        stack = self._stack(n=3)
+        fig, axs = plt.subplots(2, 2, squeeze=False)
+        result = ArrayGlyph(stack).facet(col="t", col_wrap=2, axes=axs)
+        assert result.axes.shape == (2, 2)  # col_wrap honoured, contract preserved
         assert result.fig is fig
+        plt.close("all")
+
+    def test_nested_list_of_lists_block(self):
+        """A nested list-of-lists of Axes is accepted and flattened row-major."""
+        stack = self._stack(n=4)
+        fig, axs = plt.subplots(2, 2, squeeze=False)
+        block = [[axs[0, 0], axs[0, 1]], [axs[1, 0], axs[1, 1]]]
+        result = ArrayGlyph(stack).facet(col="t", col_wrap=2, axes=block)
+        assert result.fig is fig
+        assert result.axes.shape == (2, 2)
+        plt.close("all")
+
+    def test_4d_row_col_with_supplied_axes(self):
+        """4-D row+col faceting draws into a matching supplied (nrows, ncols) block."""
+        stack = np.arange(2 * 3 * 4 * 4, dtype=float).reshape(2, 3, 4, 4)
+        fig, axs = plt.subplots(3, 2, squeeze=False)  # nrows=n_row=3, ncols=n_col=2
+        result = ArrayGlyph(stack).facet(col="t", row="z", axes=axs)
+        assert result.fig is fig
+        assert result.axes.shape == (3, 2)
         plt.close("all")
 
     def test_subplotspec_without_figure_rejected(self):
