@@ -1248,7 +1248,7 @@ class TestProvidersAreImmutable:
             part-way through would produce a mosaic from two services.
         """
         provider = wmts if kind == "wmts" else wms
-        with pytest.raises(AttributeError):
+        with pytest.raises(AttributeError, match="cannot assign to field"):
             provider.url = "https://elsewhere.invalid/"
 
     @pytest.mark.parametrize("kind", ["wmts", "wms"])
@@ -1329,7 +1329,7 @@ class TestProvidersAreImmutable:
             The other half of the copy: reaching into the attribute must fail
             too, not silently succeed on a private copy.
         """
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError, match="does not support item assignment"):
             wms.extra_params["token"] = "sneaked in"
 
     def test_two_identically_configured_providers_are_equal(self):
@@ -1387,7 +1387,7 @@ class TestProvidersAreImmutable:
         assert dict(copy.extra_params) == {"token": "t"}, (
             f"extra_params lost in the copy: {dict(copy.extra_params)}"
         )
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError, match="does not support item assignment"):
             copy.extra_params["token"] = "sneaked in"
 
 
@@ -1478,8 +1478,27 @@ class TestProvidersDriveFetchSingleTile:
 
         assert data == ONE_PIXEL_PNG, "the fetched bytes were not passed through"
         assert tile == Tile(4, 2, 3), f"the tile was not echoed back: {tile}"
-        assert recorded_urls == [provider.build_url(x=4, y=2, z=3)], (
-            f"requested {recorded_urls}, not the provider's URL"
+        # Asserted against an independently spelled-out URL rather than
+        # `provider.build_url(...)`, which would only prove the pipeline called
+        # the method -- not that it called it with the right tile.
+        expected = {
+            "wmts": (
+                "https://example.org/wmts?SERVICE=WMTS&REQUEST=GetTile"
+                "&VERSION=1.0.0&LAYER=TrueColor&STYLE=default"
+                "&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX=3&TILEROW=2"
+                "&TILECOL=4&FORMAT=image%2Fpng"
+            ),
+            "wms": (
+                "https://example.org/wms?SERVICE=WMS&REQUEST=GetMap"
+                "&VERSION=1.3.0&LAYERS=ortho&STYLES=&CRS=EPSG%3A3857"
+                "&BBOX=0%2C5009377.085697310976684093475341796875"
+                "%2C5009377.085697310976684093475341796875"
+                "%2C10018754.17139462195336818695068359375"
+                "&WIDTH=256&HEIGHT=256&FORMAT=image%2Fpng&TRANSPARENT=TRUE"
+            ),
+        }[kind]
+        assert recorded_urls == [expected], (
+            f"requested {recorded_urls}, expected [{expected}]"
         )
 
 
