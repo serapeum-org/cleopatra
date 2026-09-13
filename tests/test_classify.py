@@ -845,6 +845,20 @@ class TestArrayGlyphScheme:
             "classified contourf should use a BoundaryNorm"
         )
 
+    def test_classify_with_unfilled_contour_warns(self, ramp):
+        """classify + Contour(fill=False) warns that class colours are not drawn.
+
+        Test scenario:
+            An unfilled (hatch-only) contourf overlay draws no colour, so a
+            co-passed classify only sets the band edges -- a warning says so
+            rather than the stepped colorbar implying colours were applied.
+        """
+        glyph = ArrayGlyph(ramp.reshape(10, 10))
+        spec = Classify(scheme="quantiles", k=4)
+        hatch = Contour(hatches=["///"], fill=False)
+        with pytest.warns(UserWarning, match="class colours are not drawn"):
+            glyph.plot(kind="contourf", classify=spec, contour=hatch)
+
     def test_categorical_rejected(self, ramp):
         """`scheme="categorical"` is rejected for a raster.
 

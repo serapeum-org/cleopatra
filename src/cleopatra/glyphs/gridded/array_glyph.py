@@ -2669,6 +2669,14 @@ class ArrayGlyph(GeoMixin, Glyph):
                 # Unfilled overlay: only the hatch marks draw. matplotlib rejects
                 # cmap and colors together, and an unfilled set is not
                 # colour-mapped, so vmin/vmax/norm are dropped with the cmap.
+                if self.default_options.get("scheme") is not None:
+                    warnings.warn(
+                        "fill=False draws an unfilled (hatch-only) overlay with no "
+                        "colour, so 'classify' only sets the band edges here -- its "
+                        "class colours are not drawn; drop fill=False to fill the "
+                        "classes.",
+                        stacklevel=3,
+                    )
                 contour_kwargs = {"colors": "none"}
             else:
                 contour_kwargs = {"cmap": cmap}
