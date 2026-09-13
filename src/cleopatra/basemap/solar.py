@@ -33,10 +33,10 @@ overlay needs. No ephemeris dependency.
 
 Example (lon/lat axes)::
 
-    from datetime import datetime, timezone
+    from datetime import UTC, datetime
     from cleopatra.basemap.solar import add_nightshade
 
-    when = datetime(2026, 6, 21, 12, tzinfo=timezone.utc)
+    when = datetime(2026, 6, 21, 12, tzinfo=UTC)
     add_nightshade(ax, when, alpha=0.35, color="black", zorder=5)
 
 See also `cleopatra.glyphs.globe.textured_globe_glyph` for the 3-D globe's
@@ -47,7 +47,7 @@ not geometry on a flat map).
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import numpy as np
@@ -88,9 +88,48 @@ def subsolar_point(when: datetime) -> tuple[float, float]:
         tuple[float, float]: ``(lon, lat)`` in degrees, ``lon`` in
         ``(-180, 180]`` and ``lat`` in ``[-90, 90]``.
     """
-    # TODO(#356): NOAA/Meeus low-precision solar position -> declination + eqn of
-    # time -> subsolar (lon, lat). ~20 lines, no dependency. See issue #356.
-    raise NotImplementedError("subsolar_point is not implemented yet (see #356).")
+    dt = when.replace(tzinfo=UTC) if when.tzinfo is None else when.astimezone(UTC)
+    hours = dt.hour + dt.minute / 60.0 + dt.second / 3600.0 + dt.microsecond / 3.6e9
+
+    # Julian Day (Gregorian) then Julian centuries since J2000.0.
+    a = (14 - dt.month) // 12
+    y = dt.year + 4800 - a
+    m = dt.month + 12 * a - 3
+    jdn = dt.day + (153 * m + 2) // 5 + 365 * y + y // 4 - y // 100 + y // 400 - 32045
+    jd = jdn + (hours - 12.0) / 24.0
+    t = (jd - 2451545.0) / 36525.0
+
+    # NOAA low-precision solar position (Meeus, Astronomical Algorithms).
+    mean_long = np.radians((280.46646 + t * (36000.76983 + t * 0.0003032)) % 360.0)
+    mean_anom = np.radians(357.52911 + t * (35999.05029 - 0.0001537 * t))
+    eccentricity = 0.016708634 - t * (0.000042037 + 0.0000001267 * t)
+    center = (
+        np.sin(mean_anom) * (1.914602 - t * (0.004817 + 0.000014 * t))
+        + np.sin(2 * mean_anom) * (0.019993 - 0.000101 * t)
+        + np.sin(3 * mean_anom) * 0.000289
+    )
+    true_long = np.degrees(mean_long) + center
+    omega = np.radians(125.04 - 1934.136 * t)
+    app_long = np.radians(true_long - 0.00569 - 0.00478 * np.sin(omega))
+    obliquity = np.radians(
+        23.0
+        + (26.0 + (21.448 - t * (46.8150 + t * (0.00059 - t * 0.001813))) / 60.0) / 60.0
+        + 0.00256 * np.cos(omega)
+    )
+
+    declination = np.degrees(np.arcsin(np.sin(obliquity) * np.sin(app_long)))
+
+    # Equation of time (minutes) -> subsolar longitude via apparent solar time.
+    var_y = np.tan(obliquity / 2.0) ** 2
+    eqn_time = 4.0 * np.degrees(
+        var_y * np.sin(2 * mean_long)
+        - 2 * eccentricity * np.sin(mean_anom)
+        + 4 * eccentricity * var_y * np.sin(mean_anom) * np.cos(2 * mean_long)
+        - 0.5 * var_y**2 * np.sin(4 * mean_long)
+        - 1.25 * eccentricity**2 * np.sin(2 * mean_anom)
+    )
+    lon = -15.0 * (hours - 12.0 + eqn_time / 60.0)
+    return float(_wrap_longitude(lon)), float(declination)
 
 
 def terminator(
@@ -113,11 +152,23 @@ def terminator(
 
     Returns:
         numpy.ndarray: An ``(n, 2)`` array of ``(lon, lat)`` degrees, densified
-        for a smooth curve.
+        for a smooth curve. The ring is closed (last vertex equals the first).
     """
-    # TODO(#356): great circle at (90 - refraction) from subsolar_point(when),
-    # densified to n points, returned as (n, 2) lon/lat.
-    raise NotImplementedError("terminator is not implemented yet (see #356).")
+    lon_s, lat_s = subsolar_point(when)
+    lon0, lat0 = np.radians(lon_s), np.radians(lat_s)
+    # Points where the solar altitude equals ``refraction`` lie a great-circle
+    # distance ``90 - refraction`` from the subsolar point.
+    rho = np.radians(90.0 - refraction)
+    bearing = np.linspace(0.0, 2.0 * np.pi, n)
+
+    lat = np.arcsin(
+        np.sin(lat0) * np.cos(rho) + np.cos(lat0) * np.sin(rho) * np.cos(bearing)
+    )
+    lon = lon0 + np.arctan2(
+        np.sin(bearing) * np.sin(rho) * np.cos(lat0),
+        np.cos(rho) - np.sin(lat0) * np.sin(lat),
+    )
+    return np.column_stack([_wrap_longitude(np.degrees(lon)), np.degrees(lat)])
 
 
 def night_polygon(
@@ -141,9 +192,22 @@ def night_polygon(
         list[numpy.ndarray]: One or more ``(m, 2)`` lon/lat rings covering the
         night side; more than one where the region crosses the antimeridian.
     """
-    # TODO(#356): close the terminator into the night hemisphere, split any ring
-    # crossing +/-180 longitude into separate rings so a flat map fills cleanly.
-    raise NotImplementedError("night_polygon is not implemented yet (see #356).")
+    _, lat_s = subsolar_point(when)
+    ring = terminator(when, refraction=refraction, n=n)
+
+    # The sun's altitude at the north/south pole is +lat_s / -lat_s. A pole is
+    # in night when its altitude drops below ``refraction``.
+    north_dark = lat_s < refraction
+    south_dark = -lat_s < refraction
+    if north_dark != south_dark:
+        # A geographic pole is enclosed: the night cap wraps every longitude, so
+        # close the (single-valued) terminator along that pole's map edge.
+        dark_lat = 90.0 if north_dark else -90.0
+        return [_pole_cap_ring(ring, dark_lat)]
+
+    # No pole enclosed: the night cap is a simple sub-hemispheric region bounded
+    # by the terminator loop. Split it wherever it crosses the antimeridian.
+    return _split_antimeridian(ring)
 
 
 # --------------------------------------------------------------------------- #
@@ -255,3 +319,79 @@ def add_tissot(ax: Any, ellipses: Sequence[np.ndarray], **style: Any) -> PolyCol
     # TODO(#356): draw `ellipses` unchanged via PolygonGlyph (outline-only by
     # default); preserve axis limits; return the artist.
     raise NotImplementedError("add_tissot is not implemented yet (see #356).")
+
+
+# --------------------------------------------------------------------------- #
+# Internal helpers                                                            #
+# --------------------------------------------------------------------------- #
+def _wrap_longitude(lon: Any) -> np.ndarray:
+    """Wrap longitudes (deg) into the half-open range ``(-180, 180]``."""
+    wrapped = (np.asarray(lon, dtype=float) + 180.0) % 360.0 - 180.0
+    return np.where(wrapped == -180.0, 180.0, wrapped)
+
+
+def _pole_cap_ring(ring: np.ndarray, dark_lat: float) -> np.ndarray:
+    """Close a pole-enclosing terminator into a fillable lon/lat ring.
+
+    The terminator of a night cap that contains a geographic pole is single
+    valued in longitude, so it is sorted by longitude, extended to the map edges
+    (longitude is periodic, so the latitude at -180 equals the latitude at +180)
+    and closed along the dark pole's edge (``dark_lat`` = +90 or -90).
+    """
+    boundary = ring[np.argsort(ring[:, 0])]
+    edges = np.array([[-180.0, boundary[-1, 1]], [180.0, boundary[0, 1]]])
+    boundary = np.vstack([edges[:1], boundary, edges[1:]])
+    closure = np.array([[180.0, dark_lat], [-180.0, dark_lat]])
+    return np.vstack([boundary, closure])
+
+
+def _split_antimeridian(ring: np.ndarray) -> list[np.ndarray]:
+    """Split a lon/lat ring into pieces that each stay within ``(-180, 180]``.
+
+    The ring is unwrapped to continuous longitudes, then it and its +/-360 shifts
+    are clipped to the ``[-180, 180]`` longitude strip. A ring straddling the
+    antimeridian yields two pieces; one that does not yields a single piece.
+    """
+    lon_unwrapped = np.degrees(np.unwrap(np.radians(ring[:, 0])))
+    poly = np.column_stack([lon_unwrapped, ring[:, 1]])
+    rings: list[np.ndarray] = []
+    for shift in (-360.0, 0.0, 360.0):
+        clipped = _clip_lon_strip(poly + np.array([shift, 0.0]), -180.0, 180.0)
+        if len(clipped) >= 3:
+            rings.append(_wrap_seam(clipped))
+    return rings if rings else [ring]
+
+
+def _wrap_seam(poly: np.ndarray) -> np.ndarray:
+    """Return ``poly`` with longitudes wrapped to ``(-180, 180]`` in place."""
+    return np.column_stack([_wrap_longitude(poly[:, 0]), poly[:, 1]])
+
+
+def _clip_lon_strip(poly: np.ndarray, lo: float, hi: float) -> np.ndarray:
+    """Sutherland-Hodgman clip of ``poly`` to the longitude strip ``[lo, hi]``."""
+    clipped = _clip_halfplane(poly, hi, keep_below=True)
+    if len(clipped) == 0:
+        return clipped
+    return _clip_halfplane(clipped, lo, keep_below=False)
+
+
+def _clip_halfplane(poly: np.ndarray, bound: float, *, keep_below: bool) -> np.ndarray:
+    """Clip ``poly`` to the half-plane ``x <= bound`` (or ``x >= bound``)."""
+    out: list[np.ndarray] = []
+    for i in range(len(poly)):
+        cur, prev = poly[i], poly[i - 1]
+        cur_in = cur[0] <= bound if keep_below else cur[0] >= bound
+        prev_in = prev[0] <= bound if keep_below else prev[0] >= bound
+        if cur_in:
+            if not prev_in:
+                out.append(_intersect_x(prev, cur, bound))
+            out.append(cur)
+        elif prev_in:
+            out.append(_intersect_x(prev, cur, bound))
+    return np.array(out) if out else np.empty((0, 2))
+
+
+def _intersect_x(p: np.ndarray, q: np.ndarray, x: float) -> np.ndarray:
+    """Return the point where segment ``p->q`` crosses the vertical line ``x``."""
+    t = (x - p[0]) / (q[0] - p[0])
+    return np.array([x, p[1] + t * (q[1] - p[1])])
