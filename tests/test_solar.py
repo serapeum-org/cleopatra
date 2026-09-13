@@ -345,18 +345,53 @@ class TestTerminator:
         with pytest.raises(ValueError, match="refraction"):
             terminator(JUN_SOLSTICE, refraction=refraction)
 
-    @pytest.mark.parametrize("n", [0, 1, 2])
+    @pytest.mark.parametrize("n", [0, 1, 2, 3])
     def test_too_few_samples_raises(self, n):
-        """Test a sample count below 3 is rejected.
+        """Test a sample count below 4 is rejected.
 
         Args:
             n: An invalid vertex count.
 
         Test scenario:
-            A ring needs at least 3 vertices; fewer must raise ValueError.
+            The ring's duplicated endpoint means n=3 gives only 2 distinct
+            vertices (a line), so the fewest that form a real ring is n=4;
+            anything below must raise ValueError.
         """
-        with pytest.raises(ValueError, match="at least 3"):
+        with pytest.raises(ValueError, match="at least 4"):
             terminator(JUN_SOLSTICE, n=n)
+
+    def test_minimum_valid_sample_count(self):
+        """Test n=4 is accepted and yields 3 distinct vertices plus the closure.
+
+        Test scenario:
+            n=4 is the smallest non-degenerate ring; its first three vertices are
+            distinct and the fourth duplicates the first.
+        """
+        ring = terminator(JUN_SOLSTICE, n=4)
+        assert ring.shape == (4, 2), f"expected (4, 2), got {ring.shape}"
+        assert np.allclose(ring[0], ring[-1]), (
+            "n=4 ring should close (endpoint duplicates start)"
+        )
+        assert not np.allclose(ring[0], ring[1]), "vertices 0 and 1 should differ"
+        assert not np.allclose(ring[1], ring[2]), "vertices 1 and 2 should differ"
+        assert not np.allclose(ring[0], ring[2]), "vertices 0 and 2 should differ"
+
+    def test_finite_at_terminator_through_pole(self):
+        """Test the terminator stays finite when it grazes a pole.
+
+        Test scenario:
+            Setting refraction to the subsolar latitude places the terminator
+            exactly through a pole (lat_s == refraction), where the arcsin
+            argument reaches +/-1 and a missing clip would emit NaN vertices.
+        """
+        lat_s = subsolar_point(DEC_SOLSTICE)[1]
+        ring = terminator(DEC_SOLSTICE, refraction=lat_s, n=721)
+        assert np.isfinite(ring).all(), (
+            "terminator produced non-finite vertices at the pole"
+        )
+        assert np.all(np.abs(ring[:, 1]) <= 90.0 + 1e-9), (
+            "latitude out of range at the pole"
+        )
 
 
 class TestNightPolygon:
@@ -530,14 +565,18 @@ class TestNightPolygon:
         with pytest.raises(ValueError, match="refraction"):
             night_polygon(JUN_SOLSTICE, refraction=30.0)
 
-    def test_too_few_samples_propagates(self):
-        """Test night_polygon rejects n < 3 via terminator.
+    @pytest.mark.parametrize("n", [2, 3])
+    def test_too_few_samples_propagates(self, n):
+        """Test night_polygon rejects n < 4 via terminator.
+
+        Args:
+            n: An invalid vertex count.
 
         Test scenario:
-            A ring needs at least 3 vertices; fewer must raise ValueError.
+            A non-degenerate ring needs n >= 4; fewer must raise ValueError.
         """
-        with pytest.raises(ValueError, match="at least 3"):
-            night_polygon(JUN_SOLSTICE, n=2)
+        with pytest.raises(ValueError, match="at least 4"):
+            night_polygon(JUN_SOLSTICE, n=n)
 
 
 class TestUnimplementedArtists:

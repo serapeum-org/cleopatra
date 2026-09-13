@@ -186,7 +186,9 @@ def terminator(
     Raises:
         ValueError: If ``refraction`` is outside ``(-90, 0]`` (0 is the
             geometric terminator; a positive value is not a terminator and a
-            value of -90 or below is degenerate), or if ``n < 3``.
+            value of -90 or below is degenerate), or if ``n < 4`` (the ring's
+            duplicated endpoint means 4 samples are the fewest that give 3
+            distinct vertices).
 
     Examples:
         - The default terminator is a closed ring of 720 lon/lat vertices:
@@ -218,8 +220,10 @@ def terminator(
             "refraction must be in (-90, 0] degrees (0 is the geometric "
             f"terminator; -6/-12/-18 are the twilight lines); got {refraction}."
         )
-    if n < 3:
-        raise ValueError(f"n must be at least 3 to form a ring; got {n}.")
+    if n < 4:
+        # linspace(0, 2*pi, n) duplicates the endpoint, so n counts one closing
+        # vertex; a non-degenerate ring needs 3 distinct vertices, i.e. n >= 4.
+        raise ValueError(f"n must be at least 4 to form a ring; got {n}.")
 
     lon_s, lat_s = subsolar_point(when)
     lon0, lat0 = np.radians(lon_s), np.radians(lat_s)
@@ -228,8 +232,15 @@ def terminator(
     rho = np.radians(90.0 - refraction)
     bearing = np.linspace(0.0, 2.0 * np.pi, n)
 
+    # Clip guards the sum-of-products against a 1-ULP overshoot of +/-1 at the
+    # terminator-through-pole boundary (lat_s == refraction), which would make
+    # arcsin return NaN.
     lat = np.arcsin(
-        np.sin(lat0) * np.cos(rho) + np.cos(lat0) * np.sin(rho) * np.cos(bearing)
+        np.clip(
+            np.sin(lat0) * np.cos(rho) + np.cos(lat0) * np.sin(rho) * np.cos(bearing),
+            -1.0,
+            1.0,
+        )
     )
     lon = lon0 + np.arctan2(
         np.sin(bearing) * np.sin(rho) * np.cos(lat0),
@@ -262,7 +273,7 @@ def night_polygon(
         on fill.
 
     Raises:
-        ValueError: If ``refraction`` is outside ``(-90, 0]`` or ``n < 3`` (via
+        ValueError: If ``refraction`` is outside ``(-90, 0]`` or ``n < 4`` (via
             `terminator`).
 
     Examples:
