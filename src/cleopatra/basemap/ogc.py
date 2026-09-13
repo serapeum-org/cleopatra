@@ -50,9 +50,10 @@ service fixes the format and version in its own template, so `image_format` and
 Adding these providers did change one thing next door. Because `extra_params`
 is documented here as the place to put an API key, `tiles.fetch_single_tile`
 now logs a *redacted* URL when an attempt fails: `tiles._redact_url` keeps the
-query parameter names -- which is what makes a failure diagnosable -- and drops
-every value, so a credential no longer outlives the session in a debug log. The
-request that goes on the wire is untouched.
+values of the OGC parameters these providers generate -- `BBOX`, `TILEROW` and
+the rest, which is what tells one failed tile from another -- and masks every
+other value, so a credential a caller added no longer outlives the session in a
+debug log. The request that goes on the wire is untouched.
 
 Importing this module pulls in nothing from the `[tiles]` extra -- neither
 `xyzservices` nor `pyproj` is touched, and the tile-grid helpers it does use are
@@ -131,11 +132,15 @@ def _validate_endpoint(url: str, field_name: str) -> None:
         None
 
     Raises:
-        ValueError: If `url` is not a string, is empty or blank, carries
-            leading or trailing whitespace, or does not use the `http` or
-            `https` scheme. The message names `field_name`. Padding is refused
-            rather than trimmed: the value is stored and sent verbatim, so
-            trimming it silently would hide a copy-paste error.
+        ValueError: If `url` is not a string, is empty or blank, contains
+            whitespace *anywhere* -- leading, trailing or interior -- or does
+            not use the `http` or `https` scheme. The message names
+            `field_name`. Whitespace is refused rather than repaired: padding
+            is stored and sent verbatim, so trimming it silently would hide a
+            copy-paste error, while an interior tab or newline is dropped by
+            the URL parser, so the request would differ from what was written.
+            A percent-encoded space (`%20`) is not whitespace and is accepted,
+            since the check reads the URL as written.
     """
     if not isinstance(url, str) or not url.strip():
         raise ValueError(f"{field_name} must be a non-empty string, got {url!r}.")
@@ -206,6 +211,14 @@ def _validate_identifier(value: str, field_name: str) -> None:
 #: requested and *what* operation it is; overriding them does not customise the
 #: request, it detaches every tile of the mosaic from the tile it is placed at --
 #: silently, since each request still succeeds.
+#:
+#: The list stops exactly there, which is why it is shorter than the set of
+#: parameters the two providers generate. `FORMAT`, `LAYER`/`LAYERS` and
+#: `STYLE`/`STYLES` are left out deliberately: overriding those is what
+#: `extra_params` is *for* -- a service that publishes its own spelling of a
+#: format or style needs no code change -- and getting one of them wrong fails
+#: loudly, as a service exception or an undecodable tile, rather than as a
+#: mosaic quietly assembled from the wrong tiles.
 _PROTECTED_PARAMS = frozenset(
     {
         "SERVICE",
@@ -230,12 +243,22 @@ def _validate_extra_params(extra_params: Mapping[str, str]) -> None:
     casings -- `{"format": ..., "FORMAT": ...}` -- sends both to a service that
     reads names case-insensitively, so which one wins is the service's choice.
 
+    Both checks fold the key with `upper()`, so they are run on the frozen copy
+    `_freeze_params` returns rather than on the caller's raw mapping: a key that
+    arrived as an `int` has become a `str` by then, which is the coercion
+    `_freeze_params` exists to perform.
+
     Args:
-        extra_params: The mapping the caller passed.
+        extra_params: The already-frozen mapping, every key a `str`.
+
+    Returns:
+        None
 
     Raises:
-        ValueError: If a protected parameter is present, or if two keys differ
-            only by case.
+        ValueError: If a key names a parameter in `_PROTECTED_PARAMS`, however
+            cased, or if two keys differ only by case. The message names both
+            offending keys in the second case, and lists the protected set in
+            the first.
     """
     seen: dict[str, str] = {}
     for key in extra_params:
@@ -263,12 +286,19 @@ def _freeze_params(extra_params: Mapping[str, str]) -> Mapping[str, str]:
     dict it holds, so a caller's later edit would otherwise change the provider's
     URLs underneath it.
 
-    Keys and values are passed through `str`, so a token or version id that
+    Both keys and values are passed through `str`, so a token or version id that
     arrives from JSON or YAML as an `int` is stored exactly as the equivalent
     string literal would be, and two providers configured alike compare equal
     whatever literal types built them. An already-frozen view -- what
     `dataclasses.replace` feeds back in -- is a `Mapping` too, so it is copied
     again rather than aliased into the new instance.
+
+    Coercion can make two distinct keys collide: `{5: "x", "5": "y"}` is two
+    entries going in and one coming out. That is refused rather than allowed to
+    resolve itself, because the loser vanishes with nothing on the wire to show
+    for it -- and silently dropping half of what a caller supplied is the
+    failure this whole module was written to stop doing. A single non-`str` key
+    is not a collision and is still coerced and kept.
 
     Args:
         extra_params: The mapping the caller passed.
@@ -276,11 +306,6 @@ def _freeze_params(extra_params: Mapping[str, str]) -> Mapping[str, str]:
     Returns:
         Mapping[str, str]: A read-only `MappingProxyType` over a fresh copy,
         with every key and value coerced to `str`.
-
-    Keys and values are coerced with `str`, so a non-string key is usable --
-    but two keys that coerce to the *same* name are refused rather than left to
-    overwrite one another. Dropping half of what the caller passed, silently, is
-    the failure this whole module was written to stop doing.
 
     Raises:
         TypeError: If `extra_params` is not a mapping.
@@ -530,13 +555,15 @@ def _repr_provider(provider: object) -> str:
     help here, because this happens before any URL exists.
 
     The parameter *names* are kept, since knowing a token was supplied is the
-    diagnostically useful half.
+    diagnostically useful half. Only mapping-valued fields are masked; every
+    other field prints as it always did, so the `repr` stays useful for the
+    debugging it exists for.
 
     Args:
         provider: The dataclass instance to render.
 
     Returns:
-        str: A `repr` with every `extra_params` value replaced by `...`.
+        str: A `repr` with every value of every mapping field replaced by `...`.
 
     Examples:
         - The key survives, the secret does not:
@@ -550,6 +577,21 @@ def _repr_provider(provider: object) -> str:
             >>> "s3cret" in repr(provider)
             False
             >>> "'token': '...'" in repr(provider)
+            True
+
+            ```
+        - The rest of the service description is still there to read:
+            ```python
+            >>> from cleopatra.basemap.ogc import WMTSProvider
+            >>> provider = WMTSProvider(
+            ...     url="https://example.org/wmts",
+            ...     layer="TrueColor",
+            ...     extra_params={"key": "s3cret"},
+            ... )
+            >>> rendered = repr(provider)
+            >>> rendered.startswith("WMTSProvider(url='https://example.org/wmts'")
+            True
+            >>> "layer='TrueColor'" in rendered
             True
 
             ```
@@ -572,11 +614,19 @@ def _reduce_provider(provider: object) -> tuple:
     through the constructor with a plain dict avoids that, and has the side
     benefit of re-running validation on the rebuilt copy.
 
+    The arguments are collected positionally, so only fields the constructor
+    takes are gathered: a field declared `init=False` is skipped rather than
+    passed along as an argument the constructor has no parameter for. No field
+    on either provider is `init=False` today; the filter is there so that adding
+    one later cannot break pickling silently.
+
     Args:
         provider: The dataclass instance to reduce.
 
     Returns:
-        tuple: The `(callable, args)` pair `pickle` and `copy` use to rebuild.
+        tuple: The `(callable, args)` pair `pickle` and `copy` use to rebuild --
+        the provider's own type, and its constructor fields in declaration
+        order, with any mapping copied back to a plain `dict`.
     """
     values = []
     for spec in fields(provider):
@@ -638,7 +688,10 @@ class WMTSProvider:
     and a `GetTile` query is built. A template has to address a tile, so one
     carrying placeholders but missing `{TileMatrix}`, `{TileRow}` or
     `{TileCol}` is refused at construction rather than shipped as a mosaic of
-    one repeated image.
+    one repeated image. So is one whose placeholders are *none* of this
+    module's -- an XYZ `{z}/{x}/{y}` template, say, which belongs in
+    `add_tiles(source=...)` as an `xyzservices` provider: taking it as a KVP
+    endpoint would ship the braces to the service literally.
 
     The service description is checked once, at construction -- including on a
     `dataclasses.replace` copy, which is the supported way to vary a frozen
@@ -650,8 +703,11 @@ class WMTSProvider:
         url: The `GetTile` KVP endpoint, or a RESTful template containing
             `{TileMatrix}`, `{TileRow}` and `{TileCol}` -- all three, in any
             casing -- and optionally `{TileMatrixSet}`, `{Layer}` or
-            `{Style}`. Leading or trailing whitespace is refused rather than
-            trimmed, because the value is sent verbatim.
+            `{Style}`. A template carrying only placeholders this module does
+            not own is refused, since the braces would be sent literally.
+            Whitespace anywhere in the value is refused rather than repaired,
+            because the value is sent verbatim; an escaped `%20` is not
+            whitespace and is accepted.
         layer: The `Layer` identifier to request.
         tile_matrix_set: The tile-matrix set identifier, defaulting to
             `GOOGLE_MAPS_COMPATIBLE`. Only `GoogleMapsCompatible` (or a
@@ -684,18 +740,25 @@ class WMTSProvider:
             in the `url`'s own query is kept verbatim and is *not*
             overridden this way. On the RESTful branch there are no generated
             parameters to override, so these are simply appended as the query.
-            This is where an API key or token goes; a failed fetch logs the
-            URL with every query value redacted, so the key does not reach the
-            debug log. Keys and values are coerced to `str` and stored
-            read-only.
+            This is where an API key or token goes; a failed fetch logs the URL
+            with every value cleopatra did not itself generate replaced by
+            `...`, so the key does not reach the debug log. Keys and values are
+            coerced to `str` and stored read-only. Three things are refused
+            rather than merged: a parameter that addresses the tile
+            (`_PROTECTED_PARAMS`), two keys differing only in case, and two
+            keys that become one name once coerced to `str`.
 
     Raises:
-        ValueError: If `url` is not a non-empty http(s) string or carries
-            leading or trailing whitespace; if `layer`, `tile_matrix_set`,
-            `style`, `image_format` or `version` is not a non-empty string; if
-            `version` is anything but `1.0.0`; if `attribution` is not a string
-            (empty is allowed); or if `url` carries RESTful placeholders
-            without all of `{TileMatrix}`, `{TileRow}` and `{TileCol}`.
+        ValueError: If `url` is not a non-empty http(s) string or contains
+            whitespace anywhere; if `layer`, `tile_matrix_set`, `style`,
+            `image_format` or `version` is not a non-empty string; if `version`
+            is anything but `1.0.0`; if `attribution` is not a string (empty is
+            allowed); if `url` carries RESTful placeholders without all of
+            `{TileMatrix}`, `{TileRow}` and `{TileCol}`; if `url` carries
+            placeholders of which *none* are this module's; if `extra_params`
+            names a tile-addressing parameter such as `TILEROW` or `REQUEST`,
+            however cased; if two of its keys differ only by case; or if two of
+            its keys coerce to the same name.
         TypeError: If `extra_params` is not a mapping.
 
     Examples:
@@ -799,19 +862,30 @@ class WMTSProvider:
         class of mistake; `attribution` may be empty but is still required to
         be a string, since a non-string one would reach the axes as its `repr`;
         and a template carrying placeholders is required to carry the three
-        that identify a tile.
+        that identify a tile -- or, if it carries none this module owns at all,
+        is refused outright rather than read as a KVP endpoint whose braces go
+        on the wire.
+
+        `extra_params` is frozen before it is validated, not after: the
+        protected and duplicate checks both fold keys with `upper()`, which an
+        `int` key -- exactly the type `_freeze_params` is there to coerce --
+        does not have.
 
         Returns:
             None
 
         Raises:
-            ValueError: If `url` is not a non-empty http(s) string or carries
-                leading or trailing whitespace; if `layer`, `tile_matrix_set`,
-                `style`, `image_format` or `version` is not a non-empty string;
-                if `version` is anything but `1.0.0`; if `attribution` is not a
-                string (empty is allowed); or if `url` carries RESTful
+            ValueError: If `url` is not a non-empty http(s) string or contains
+                whitespace anywhere; if `layer`, `tile_matrix_set`, `style`,
+                `image_format` or `version` is not a non-empty string; if
+                `version` is anything but `1.0.0`; if `attribution` is not a
+                string (empty is allowed); if `url` carries RESTful
                 placeholders without all of `{TileMatrix}`, `{TileRow}` and
-                `{TileCol}`.
+                `{TileCol}`; if `url` carries placeholders of which *none* are
+                this module's; if `extra_params` names a tile-addressing
+                parameter such as `TILEROW` or `REQUEST`, however cased; if two
+                of its keys differ only by case; or if two of its keys coerce
+                to the same name.
             TypeError: If `extra_params` is not a mapping.
         """
         _validate_endpoint(self.url, "url")
@@ -1136,8 +1210,9 @@ class WMSProvider:
 
     Args:
         url: The `GetMap` endpoint. An existing query string is preserved.
-            Leading or trailing whitespace is refused rather than trimmed,
-            because the value is sent verbatim.
+            Whitespace anywhere in the value is refused rather than repaired,
+            because the value is sent verbatim; an escaped `%20` is not
+            whitespace and is accepted.
         layers: The comma-separated `Layers` value to request.
         styles: The comma-separated `Styles` value. Empty means the service's
             default style, which is what most callers want -- so this is the
@@ -1167,18 +1242,23 @@ class WMSProvider:
             generated `FORMAT` rather than joining it. A parameter already
             in the `url`'s own query is kept verbatim and is *not*
             overridden this way. This is where an API key or token goes; a
-            failed fetch logs the URL with every query value redacted, so the
-            key does not reach the debug log. Keys and values are coerced to
-            `str` and stored read-only.
+            failed fetch logs the URL with every value cleopatra did not itself
+            generate replaced by `...`, so the key does not reach the debug
+            log. Keys and values are coerced to `str` and stored read-only.
+            Three things are refused rather than merged: a parameter that
+            addresses the tile (`_PROTECTED_PARAMS`), two keys differing only
+            in case, and two keys that become one name once coerced to `str`.
 
     Raises:
-        ValueError: If `url` is not a non-empty http(s) string or carries
-            leading or trailing whitespace; if `layers`, `image_format` or
-            `version` is not a non-empty string; if `version` is not one of
-            `1.1.0`, `1.1.1` or `1.3.0`; if `styles` or `attribution`
-            is not a string (empty is allowed); if `transparent` is not a
-            `bool`; or if `tile_size` is not a positive `int` (`bool` is
-            rejected too).
+        ValueError: If `url` is not a non-empty http(s) string or contains
+            whitespace anywhere; if `layers`, `image_format` or `version` is
+            not a non-empty string; if `version` is not one of `1.1.0`, `1.1.1`
+            or `1.3.0`; if `styles` or `attribution` is not a string (empty is
+            allowed); if `transparent` is not a `bool`; if `tile_size` is not a
+            positive `int` (`bool` is rejected too); if `extra_params` names a
+            tile-addressing parameter such as `BBOX` or `WIDTH`, however cased;
+            if two of its keys differ only by case; or if two of its keys
+            coerce to the same name.
         TypeError: If `extra_params` is not a mapping.
 
     Examples:
@@ -1248,6 +1328,30 @@ class WMSProvider:
             styles must be a string (empty is allowed), got None.
 
             ```
+        - `extra_params` may retune the request but not re-address it, so the
+          mosaic cannot be assembled from tiles it did not ask for:
+            ```python
+            >>> from urllib.parse import parse_qs, urlsplit
+            >>> from cleopatra.basemap.ogc import WMSProvider
+            >>> tuned = WMSProvider(
+            ...     url="https://example.org/wms",
+            ...     layers="ortho",
+            ...     extra_params={"format": "image/gif", "token": "abc"},
+            ... )
+            >>> query = parse_qs(urlsplit(tuned.build_url(x=0, y=0, z=0)).query)
+            >>> query["format"], query["token"]
+            (['image/gif'], ['abc'])
+            >>> try:
+            ...     WMSProvider(
+            ...         url="https://example.org/wms",
+            ...         layers="ortho",
+            ...         extra_params={"bbox": "0,0,1,1"},
+            ...     )
+            ... except ValueError as error:
+            ...     print(str(error).split(":")[0])
+            extra_params may not set 'bbox'
+
+            ```
 
     See Also:
         WMTSProvider: The same idea for a WMTS `GetTile` service.
@@ -1276,17 +1380,24 @@ class WMSProvider:
         check and, with it, any type check at all -- and `transparent` must be
         a real `bool` rather than merely truthy.
 
+        `extra_params` is frozen before it is validated, not after: the
+        protected and duplicate checks both fold keys with `upper()`, which an
+        `int` key -- exactly the type `_freeze_params` is there to coerce --
+        does not have.
+
         Returns:
             None
 
         Raises:
-            ValueError: If `url` is not a non-empty http(s) string or carries
-                leading or trailing whitespace; if `layers`, `image_format` or
-                `version` is not a non-empty string; if `version` is not one of
-                `1.1.0`, `1.1.1` or `1.3.0`; if `styles` or
-                `attribution` is not a string (empty is allowed); if
-                `transparent` is not a `bool`; or if `tile_size` is not a
-                positive `int` (`bool` is rejected too).
+            ValueError: If `url` is not a non-empty http(s) string or contains
+                whitespace anywhere; if `layers`, `image_format` or `version`
+                is not a non-empty string; if `version` is not one of `1.1.0`,
+                `1.1.1` or `1.3.0`; if `styles` or `attribution` is not a
+                string (empty is allowed); if `transparent` is not a `bool`; if
+                `tile_size` is not a positive `int` (`bool` is rejected too);
+                if `extra_params` names a tile-addressing parameter such as
+                `BBOX` or `WIDTH`, however cased; if two of its keys differ
+                only by case; or if two of its keys coerce to the same name.
             TypeError: If `extra_params` is not a mapping.
         """
         _validate_endpoint(self.url, "url")

@@ -620,9 +620,21 @@ def _looks_like_image(data: bytes) -> bool:
     )
 
 
-#: Query parameters safe to write to a log: the OGC and XYZ names that say
-#: *which* tile was requested. Everything else is masked, so the rule is
-#: default-deny -- a credential under an unexpected name is still covered.
+#: Query parameters safe to write to a log: the OGC names that say *which* tile
+#: was requested. Everything else is masked, so the rule is default-deny -- a
+#: credential under an unexpected name is still covered. An XYZ template carries
+#: the tile in its path rather than its query, so it contributes no names here
+#: and its query, whatever it holds, is masked entirely.
+#:
+#: The membership rule is what keeps that safe as the module grows: these are
+#: exactly the parameters `cleopatra.basemap.ogc` generates itself -- the union
+#: of `WMSProvider.build_url`'s `GetMap` set and `WMTSProvider.build_url`'s
+#: `GetTile` set. So the line is drawn between values cleopatra put in the URL,
+#: which cannot be secret because cleopatra computed them, and values a caller
+#: added, which are where a token comes from. Names are folded with `upper()`
+#: before the lookup, because services publish `bbox=` and `TileRow=` as
+#: readily as `BBOX=`, and matching is by exact membership, not substring: a
+#: credential named `LAYERSTOKEN` must not inherit `LAYERS`' pass.
 _LOGGABLE_QUERY_KEYS = frozenset(
     {
         "SERVICE",
@@ -658,21 +670,29 @@ def _redact_url(url: str) -> str:
     Masking *everything* is the obvious fix and the wrong one: the tile's
     identity lives in `BBOX` / `TILEROW` / `TILECOL`, so a fully-masked line is
     byte-identical for every tile of a mosaic and the retry log can no longer
-    say which tile failed. The OGC and XYZ parameter names that describe the
+    say which tile failed. The OGC parameter names that describe the
     request are therefore kept (`_LOGGABLE_QUERY_KEYS`) and everything else is
-    masked. The list is an allow-list rather than a deny-list, so a credential
-    under an unexpected name is masked by default.
+    masked. It is an allow-list, not a deny-list, and membership is exact: an
+    unforeseen parameter name is masked because it is not on the list, rather
+    than surviving because nobody thought to add it to one. Names are matched
+    case-insensitively, so a service publishing `bbox=` or `TileRow=` still
+    logs readably. A parameter with no `=` has no value to mask and is kept as
+    written.
 
-    Userinfo in the netloc is masked too. A key embedded in the *path* -- the
-    usual shape for a keyed XYZ template -- cannot be told apart from an
-    ordinary path segment, so it is not masked; that is a real limit of
-    logging URLs at all, not something this function can close.
+    Userinfo in the netloc is masked too, in the same pass, so a URL carrying
+    both a token in its query and a password in its netloc loses both. A key
+    embedded in the *path* -- the usual shape for a keyed XYZ template --
+    cannot be told apart from an ordinary path segment, so it is not masked;
+    that is a real limit of logging URLs at all, not something this function
+    can close.
 
     Args:
         url: The request URL.
 
     Returns:
-        str: The URL with credential-shaped values replaced by `...`.
+        str: The URL with every query value outside `_LOGGABLE_QUERY_KEYS`, and
+        any userinfo, replaced by `...`. A URL with neither is returned
+        unchanged.
 
     Examples:
         - A token is masked while the tile's identity survives:
@@ -694,6 +714,28 @@ def _redact_url(url: str) -> str:
             >>> from cleopatra.basemap.tiles import _redact_url
             >>> _redact_url("https://example.org/tiles/3/2/4.png")
             'https://example.org/tiles/3/2/4.png'
+
+            ```
+        - Membership is exact, so a name that merely contains an allow-listed
+          one does not inherit its pass:
+            ```python
+            >>> from cleopatra.basemap.tiles import _redact_url
+            >>> _redact_url("https://example.org/wms?layers=ortho&LAYERSTOKEN=s3cret")
+            'https://example.org/wms?layers=ortho&LAYERSTOKEN=...'
+
+            ```
+        - Each tile of a mosaic still logs as itself, which is the whole point
+          of keeping some values:
+            ```python
+            >>> from cleopatra.basemap.tiles import _redact_url
+            >>> lines = [
+            ...     _redact_url(f"https://e.org/wms?BBOX=0,0,{n},{n}&token=s3cret")
+            ...     for n in range(3)
+            ... ]
+            >>> len(set(lines))
+            3
+            >>> lines[2]
+            'https://e.org/wms?BBOX=0,0,2,2&token=...'
 
             ```
     """
@@ -727,13 +769,16 @@ def fetch_single_tile(
 ) -> tuple[Any, bytes]:
     """Fetch a single tile, retrying on transient failures.
 
-    Every failed attempt is logged at debug level with a *redacted* URL: the
-    query parameter names survive, because they are what makes a failure
-    diagnosable, and every value is replaced with `...` (see `_redact_url`). A
-    tile URL is not always safe to write to a log -- an XYZ template can embed
-    an API key, and `cleopatra.basemap.ogc` documents `extra_params` as the
-    place to put a token -- and a debug log outlives the session. The request
-    that goes on the wire is the unredacted URL; only the log line is masked.
+    Every failed attempt is logged at debug level with a *redacted* URL. A tile
+    URL is not always safe to write to a log -- an XYZ template can embed an API
+    key, and `cleopatra.basemap.ogc` documents `extra_params` as the place to
+    put a token -- and a debug log outlives the session. Every parameter name
+    survives, and so do the values of the OGC parameters that say which tile was
+    asked for, so an OGC line still identifies the failing tile; every other
+    value is replaced with `...` (see `_redact_url`). An XYZ URL carries its
+    tile in the path, which is not masked, so its line stays distinguishable
+    too. The request that goes on the wire is the unredacted URL; only the log
+    line is masked.
 
     Args:
         tile: Tile to fetch (has `x`, `y`, `z` attributes).
