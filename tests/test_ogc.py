@@ -1075,6 +1075,93 @@ class TestWMSProviderValidation:
             WMSProvider(**kwargs)
 
 
+class TestOptionalFieldsAreStillTyped:
+    """A field that may be empty is still required to be the right type."""
+
+    @pytest.mark.parametrize(
+        "kwargs, field_name",
+        [
+            ({"styles": None}, "styles"),
+            ({"styles": 5}, "styles"),
+            ({"attribution": None}, "attribution"),
+        ],
+    )
+    def test_a_non_string_optional_field_raises(self, kwargs, field_name):
+        """`styles` and `attribution` accept empty, not `None`.
+
+        Args:
+            kwargs: The constructor argument that should be rejected.
+            field_name: The field expected in the message.
+
+        Test scenario:
+            Both may legitimately be empty, so they escaped the non-empty check
+            and with it any type check -- `styles=None` was sent to the service
+            as the four characters `None`, and came back as a service exception
+            disguised as an unreadable tile.
+        """
+        with pytest.raises(ValueError, match=field_name):
+            WMSProvider(url="https://example.org/wms", layers="ortho", **kwargs)
+
+    def test_empty_is_still_accepted(self):
+        """The empty string remains valid for both.
+
+        Test scenario:
+            Tightening the type must not narrow the contract: an empty
+            `styles` means "the service's default", which is the common case.
+        """
+        provider = WMSProvider(
+            url="https://example.org/wms", layers="ortho", styles="", attribution=""
+        )
+        # `parse_qs` drops blank values unless asked to keep them, so an empty
+        # STYLES is invisible to `query_of` -- which is how it went untested.
+        query = parse_qs(
+            urlsplit(provider.build_url(x=0, y=0, z=0)).query, keep_blank_values=True
+        )
+        assert query["STYLES"] == [""], f"an empty STYLES was not sent: {query}"
+
+    @pytest.mark.parametrize("bad", ["no", 1, 0, None])
+    def test_a_non_bool_transparent_raises(self, bad):
+        """`transparent` must be an actual bool.
+
+        Args:
+            bad: The rejected value.
+
+        Test scenario:
+            Any truthy value would send `TRANSPARENT=TRUE`, so `"no"` would
+            have meant its own opposite.
+        """
+        with pytest.raises(ValueError, match="transparent must be a bool"):
+            WMSProvider(url="https://example.org/wms", layers="ortho", transparent=bad)
+
+    @pytest.mark.parametrize(
+        "padded", [" https://example.org/wms", "https://example.org/wms "]
+    )
+    def test_a_whitespace_padded_url_raises(self, padded):
+        """A padded endpoint is refused rather than quietly trimmed.
+
+        Args:
+            padded: The rejected URL.
+
+        Test scenario:
+            The emptiness check used `.strip()` but the value was stored and
+            sent verbatim, so the padding reached the request. Trimming it
+            silently would hide a copy-paste error the caller should see.
+        """
+        with pytest.raises(ValueError, match="whitespace"):
+            WMSProvider(url=padded, layers="ortho")
+
+    def test_an_unsupported_wmts_version_raises(self):
+        """`WMTSProvider.version` is validated like the WMS one.
+
+        Test scenario:
+            One provider refusing an unknown version while the other accepted
+            any non-empty string was an inconsistency a caller would meet only
+            by accident. OGC has only ever published WMTS 1.0.0.
+        """
+        with pytest.raises(ValueError, match="version must be one of"):
+            WMTSProvider(url="https://example.org/wmts", layer="L", version="2.0.0")
+
+
 class TestProvidersAreImmutable:
     """Both dataclasses are frozen, including the mapping they hold."""
 

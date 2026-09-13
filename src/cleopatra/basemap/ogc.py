@@ -70,6 +70,11 @@ _WMS_SRS_VERSIONS = ("1.0.0", "1.1.0", "1.1.1")
 #: WMS versions that send the CRS as `CRS=`.
 _WMS_CRS_VERSIONS = ("1.3.0",)
 
+#: The published WMTS versions. OGC has only ever issued 1.0.0; validating it
+#: keeps the two providers consistent, rather than one refusing an unknown
+#: version and the other accepting any non-empty string.
+_WMTS_VERSIONS = ("1.0.0",)
+
 #: Matches one `{}`-delimited placeholder in a RESTful WMTS template.
 _PLACEHOLDER_RE = re.compile(r"\{([A-Za-z]+)\}")
 
@@ -111,10 +116,37 @@ def _validate_endpoint(url: str, field_name: str) -> None:
     """
     if not isinstance(url, str) or not url.strip():
         raise ValueError(f"{field_name} must be a non-empty string, got {url!r}.")
+    if url != url.strip():
+        raise ValueError(
+            f"{field_name} has leading or trailing whitespace, got {url!r}. It would "
+            f"be sent verbatim, so it is refused rather than quietly trimmed."
+        )
     scheme = urllib.parse.urlsplit(url).scheme.lower()
     if scheme not in ("http", "https"):
         raise ValueError(
             f"{field_name} must be an http(s) URL, got {url!r} (scheme {scheme!r})."
+        )
+
+
+def _validate_text(value: str, field_name: str) -> None:
+    """Reject a non-string where an optional string is expected.
+
+    `styles` and `attribution` may legitimately be empty, so they escaped the
+    non-empty check -- and with it any type check at all. `styles=None` was
+    then sent to the service as the four characters `None`, which is a style
+    name it does not have, and the resulting service exception arrived here as
+    an unreadable tile.
+
+    Args:
+        value: The value to check.
+        field_name: The dataclass field the value came from, for the message.
+
+    Raises:
+        ValueError: If `value` is not a string.
+    """
+    if not isinstance(value, str):
+        raise ValueError(
+            f"{field_name} must be a string (empty is allowed), got {value!r}."
         )
 
 
@@ -528,6 +560,11 @@ class WMTSProvider:
         _validate_identifier(self.style, "style")
         _validate_identifier(self.image_format, "image_format")
         _validate_identifier(self.version, "version")
+        if self.version not in _WMTS_VERSIONS:
+            listed = ", ".join(repr(v) for v in _WMTS_VERSIONS)
+            raise ValueError(f"version must be one of {listed}, got {self.version!r}.")
+        _validate_text(self.style, "style")
+        _validate_text(self.attribution, "attribution")
         present = _restful_placeholders(self.url)
         if present:
             missing = [f for f in _REQUIRED_RESTFUL_FIELDS if f not in present]
@@ -844,6 +881,13 @@ class WMSProvider:
         if self.version not in supported:
             listed = ", ".join(repr(v) for v in supported)
             raise ValueError(f"version must be one of {listed}, got {self.version!r}.")
+        _validate_text(self.styles, "styles")
+        _validate_text(self.attribution, "attribution")
+        if not isinstance(self.transparent, bool):
+            raise ValueError(
+                f"transparent must be a bool, got {self.transparent!r}. Any truthy "
+                f"value would otherwise send TRANSPARENT=TRUE."
+            )
         if (
             not isinstance(self.tile_size, int)
             or isinstance(self.tile_size, bool)
