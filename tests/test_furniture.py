@@ -463,8 +463,9 @@ class TestAddScaleBar:
         Test scenario:
             `location="middle"` is rejected.
         """
+        spec = ScaleBar(location="middle")
         with pytest.raises(ValueError, match="location must be one of"):
-            add_scale_bar(ax, 100_000, ScaleBar(location="middle"))
+            add_scale_bar(ax, 100_000, spec)
 
     @pytest.mark.parametrize("bad", [-1.0, 0.0, float("nan"), float("inf")])
     def test_bad_length_raises(self, ax, bad):
@@ -486,8 +487,9 @@ class TestAddScaleBar:
         Test scenario:
             `pad=1.5` is outside `[0, 1)`.
         """
+        spec = ScaleBar(pad=1.5)
         with pytest.raises(ValueError, match="margin must be in"):
-            add_scale_bar(ax, 100_000, ScaleBar(pad=1.5))
+            add_scale_bar(ax, 100_000, spec)
 
     def test_segments_below_one_raises(self, ax):
         """`segments < 1` raises.
@@ -495,8 +497,9 @@ class TestAddScaleBar:
         Test scenario:
             Zero segments is rejected.
         """
+        spec = ScaleBar(segments=0)
         with pytest.raises(ValueError, match="segments must be >= 1"):
-            add_scale_bar(ax, 100_000, ScaleBar(segments=0))
+            add_scale_bar(ax, 100_000, spec)
 
     def test_bad_label_location_raises(self, ax):
         """An unknown `label_location` raises.
@@ -504,8 +507,9 @@ class TestAddScaleBar:
         Test scenario:
             `label_location="left"` is rejected.
         """
+        spec = ScaleBar(label_location="left")
         with pytest.raises(ValueError, match="label_location must be"):
-            add_scale_bar(ax, 100_000, ScaleBar(label_location="left"))
+            add_scale_bar(ax, 100_000, spec)
 
     def test_zero_width_range_raises(self, ax):
         """A zero-width x-range raises.
@@ -656,8 +660,9 @@ class TestAddNorthArrow:
         Test scenario:
             `location="center"` is rejected.
         """
+        spec = NorthArrow(location="center")
         with pytest.raises(ValueError, match="location must be one of"):
-            add_north_arrow(ax, spec=NorthArrow(location="center"))
+            add_north_arrow(ax, spec=spec)
 
     def test_bad_style_raises(self, ax):
         """An unknown `style` raises.
@@ -665,8 +670,9 @@ class TestAddNorthArrow:
         Test scenario:
             `style="compass"` is rejected.
         """
+        spec = NorthArrow(style="compass")
         with pytest.raises(ValueError, match="style must be one of"):
-            add_north_arrow(ax, spec=NorthArrow(style="compass"))
+            add_north_arrow(ax, spec=spec)
 
     def test_non_finite_rotation_raises(self, ax):
         """A non-finite `rotation` raises.
@@ -683,8 +689,9 @@ class TestAddNorthArrow:
         Test scenario:
             `size=1.5` does not fit.
         """
+        spec = NorthArrow(size=1.5)
         with pytest.raises(ValueError, match="leaves no room"):
-            add_north_arrow(ax, spec=NorthArrow(size=1.5))
+            add_north_arrow(ax, spec=spec)
 
 
 class TestGeoMixinFurniture:

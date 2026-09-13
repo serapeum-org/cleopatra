@@ -1036,11 +1036,9 @@ class TestAnimateRGB:
             `ValueError` mentioning that the spatial dims do not match.
         """
         glyph = ArrayGlyph(np.zeros((8, 8)))
+        playback = Animation(data_getter=lambda i: np.zeros((5, 5, 3)))
         with pytest.raises(ValueError, match="do not match") as exc:
-            glyph.animate(
-                self._LABELS,
-                playback=Animation(data_getter=lambda i: np.zeros((5, 5, 3))),
-            )
+            glyph.animate(self._LABELS, playback=playback)
         assert "do not match" in str(exc.value), (
             f"unexpected error message: {exc.value}"
         )
@@ -3721,11 +3719,9 @@ class TestAnimateDataGetter:
         stack = self._stack(n=4)
         template = stack[0]
         glyph = ArrayGlyph(template)
+        playback = Animation(data_getter=lambda i: np.zeros((99, 99)))
         with pytest.raises(ValueError, match="do not match"):
-            glyph.animate(
-                time=list(range(4)),
-                playback=Animation(data_getter=lambda i: np.zeros((99, 99))),
-            )
+            glyph.animate(time=list(range(4)), playback=playback)
 
     def test_data_getter_none_falls_back_to_self_arr(
         self,
@@ -4704,10 +4700,9 @@ class TestAnimateDataGetterEdgeCases:
         def bad_getter(i):
             raise RuntimeError(f"boom at i={i}")
 
+        playback = Animation(data_getter=bad_getter)
         with pytest.raises(RuntimeError, match="boom at i=0"):
-            glyph.animate(
-                time=list(range(3)), playback=Animation(data_getter=bad_getter)
-            )
+            glyph.animate(time=list(range(3)), playback=playback)
 
     def test_data_getter_called_per_time_entry(self, tmp_path) -> None:
         """`n_frames` equals `len(time)` when `data_getter` is set.
