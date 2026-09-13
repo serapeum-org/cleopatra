@@ -28,6 +28,7 @@ tick numbers, caption and backing panel are drawn on the parent axes in
 from __future__ import annotations
 
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -39,7 +40,7 @@ from cleopatra.styling.watermark import _CORNERS, _as_margins, _corner_origin
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
 
-__all__ = ["add_scale_bar", "add_north_arrow"]
+__all__ = ["ScaleBar", "add_scale_bar", "add_north_arrow"]
 
 #: Furniture sits above ordinary data artists (images ~0, collections ~1-3).
 _FURNITURE_ZORDER = 6.0
@@ -136,58 +137,33 @@ def _segment_fills(segments: int, color: str, edge_color: str) -> list[str]:
     return [color if i % 2 == 0 else edge_color for i in range(segments)]
 
 
-def add_scale_bar(
-    ax: Axes,
-    length: float,
-    *,
-    label: str | None = None,
-    location: str = "lower right",
-    pad: float | tuple[float, float] = 0.025,
-    height: float = 0.012,
-    segments: int = 2,
-    ticks: bool | Sequence[float] = True,
-    color: str = "black",
-    edge_color: str = "white",
-    label_location: str | None = None,
-    label_size: float | None = None,
-    box: bool | str | dict | None = None,
-    zorder: float | None = None,
-) -> Axes:
-    """Draw a segmented scale bar on `ax`, sized in the axes' own data units.
+@dataclass(frozen=True)
+class ScaleBar:
+    """Presentation options for `add_scale_bar` (everything but the axes/length).
 
-    The bar is `length` **data units** wide (the caller computes that number --
-    cleopatra owns no geodesy), rendered as `segments` alternating blocks on a
-    frameless inset axes anchored in one corner. Tick numbers at the block
-    boundaries and the `label` caption are drawn on the parent axes in
-    axes-fraction coordinates, so the whole assembly stays put across a dpi or
-    limits change instead of drifting like a data-coordinate `Rectangle`.
+    Grouped into one object -- mirroring `FacetLayout` / `ColorBar` -- so the
+    scale-bar call stays small: `add_scale_bar(ax, length, ScaleBar(...))`.
 
-    Args:
-        ax: The axes to decorate. Its current x-limits set the data-to-figure
-            scale, so call this after the data is plotted and the limits are
-            final.
-        length: The bar length in the axes' **x data units**. Must be finite
-            and `> 0`.
+    Attributes:
         label: The caption under (or over) the bar, e.g. `"100 km"`. Defaults
-            to `f"{length:g}"`.
+            to `f"{length:g}"` when `None`.
         location: Which corner to anchor to -- one of `"lower right"`,
             `"lower left"`, `"upper right"`, `"upper left"`.
         pad: The gap between the bar and the axes edges, as an axes fraction --
             a scalar for both axes or an `(x, y)` pair, each in `[0, 1)`.
-        height: The bar thickness as an axes fraction. Defaults to `0.012`.
+        height: The bar thickness as an axes fraction.
         segments: The number of alternating blocks. `1` draws a plain bar.
-            Must be `>= 1`. Defaults to `2`.
-        ticks: `True` (default) numbers the `segments + 1` block boundaries
-            `0 .. length`; a sequence places tick numbers at those data
-            positions (each in `[0, length]`); `False` draws no tick numbers.
+            Must be `>= 1`.
+        ticks: `True` numbers the `segments + 1` block boundaries `0 .. length`;
+            a sequence places tick numbers at those data positions (each in
+            `[0, length]`); `False` draws no tick numbers.
         color: The fill of the even blocks and the colour of the block outline,
             the ticks and the text.
         edge_color: The fill of the odd blocks (the alternating light blocks).
         label_location: `"top"` or `"bottom"` -- which side of the bar the tick
-            numbers and caption sit on. `None` (default) picks the side facing
-            the axes interior for the chosen corner (a lower corner labels
-            above the bar, an upper corner below), so the caption never spills
-            off the axes edge.
+            numbers and caption sit on. `None` picks the side facing the axes
+            interior for the chosen corner (a lower corner labels above the bar,
+            an upper corner below), so the caption never spills off the edge.
         label_size: Font size (points) for the tick numbers and caption.
             `None` uses matplotlib's default.
         box: A backing panel behind the bar, using `ColorBar`'s vocabulary --
@@ -195,16 +171,50 @@ def add_scale_bar(
             string, or a dict of `Rectangle` kwargs.
         zorder: The draw order for the furniture. `None` uses a high default
             that sits above the data.
+    """
+
+    label: str | None = None
+    location: str = "lower right"
+    pad: float | tuple[float, float] = 0.025
+    height: float = 0.012
+    segments: int = 2
+    ticks: bool | Sequence[float] = True
+    color: str = "black"
+    edge_color: str = "white"
+    label_location: str | None = None
+    label_size: float | None = None
+    box: bool | str | dict | None = None
+    zorder: float | None = None
+
+
+def add_scale_bar(ax: Axes, length: float, spec: ScaleBar | None = None) -> Axes:
+    """Draw a segmented scale bar on `ax`, sized in the axes' own data units.
+
+    The bar is `length` **data units** wide (the caller computes that number --
+    cleopatra owns no geodesy), rendered as `spec.segments` alternating blocks
+    on a frameless inset axes anchored in one corner. Tick numbers at the block
+    boundaries and the caption are drawn on the parent axes in axes-fraction
+    coordinates, so the whole assembly stays put across a dpi or limits change
+    instead of drifting like a data-coordinate `Rectangle`.
+
+    Args:
+        ax: The axes to decorate. Its current x-limits set the data-to-figure
+            scale, so call this after the data is plotted and the limits are
+            final.
+        length: The bar length in the axes' **x data units**. Must be finite
+            and `> 0`.
+        spec: The presentation options as a `ScaleBar` (label, location, pad,
+            segments, colours, box, ...). `None` uses all defaults.
 
     Returns:
         Axes: The frameless inset axes the bar was drawn on, so the caller can
         adjust it further.
 
     Raises:
-        ValueError: If `location` is not a corner, `length` is not finite and
-            positive, `pad` is out of range, `segments < 1`, `label_location`
-            is not `"top"` / `"bottom"`, the axes has a zero-width x-range, or
-            `pad + bar width` leaves no room on the axes.
+        ValueError: If `spec.location` is not a corner, `length` is not finite
+            and positive, `spec.pad` is out of range, `spec.segments < 1`,
+            `spec.label_location` is not `"top"` / `"bottom"`, the axes has a
+            zero-width x-range, or `pad + bar width` leaves no room on the axes.
 
     Examples:
         - A four-block "100 km" bar in the lower-left corner:
@@ -212,18 +222,33 @@ def add_scale_bar(
             >>> import matplotlib
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.styling.furniture import add_scale_bar
+            >>> from cleopatra.styling.furniture import add_scale_bar, ScaleBar
             >>> fig, ax = plt.subplots()
             >>> ax.set_xlim(0, 500_000)
             (0.0, 500000.0)
-            >>> bar = add_scale_bar(ax, 100_000, label="100 km", location="lower left",
-            ...                     segments=4)
+            >>> bar = add_scale_bar(
+            ...     ax, 100_000, ScaleBar(label="100 km", location="lower left", segments=4)
+            ... )
             >>> len(bar.patches)   # four alternating blocks
             4
             >>> plt.close(fig)
 
             ```
     """
+    spec = spec or ScaleBar()
+    label = spec.label
+    location = spec.location
+    pad = spec.pad
+    height = spec.height
+    segments = spec.segments
+    ticks = spec.ticks
+    color = spec.color
+    edge_color = spec.edge_color
+    label_location = spec.label_location
+    label_size = spec.label_size
+    box = spec.box
+    zorder = spec.zorder
+
     if location not in _CORNERS:
         raise ValueError(f"location must be one of {list(_CORNERS)}, got {location!r}.")
     if not np.isfinite(length) or length <= 0.0:

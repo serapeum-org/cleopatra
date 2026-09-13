@@ -689,7 +689,9 @@ class GeoMixin:
             self._basemap_axes(ax), *args, **self._basemap_kwargs(kwargs)
         )
 
-    def add_scale_bar(self, length: float, *, ax: Any = None, **kwargs: Any) -> Any:
+    def add_scale_bar(
+        self, length: float, spec: Any = None, *, ax: Any = None
+    ) -> Any:
         """Draw a scale bar on the glyph's axes.
 
         Thin sugar over `cleopatra.styling.furniture.add_scale_bar`; the free
@@ -699,10 +701,10 @@ class GeoMixin:
 
         Args:
             length: The bar length in the axes' x data units.
+            spec: The presentation options as a
+                `cleopatra.styling.furniture.ScaleBar` (label, location,
+                segments, box, ...); `None` uses all defaults.
             ax: Axes to draw on. Defaults to the glyph's `self.ax`.
-            **kwargs: Keyword arguments for
-                `cleopatra.styling.furniture.add_scale_bar` (`label`,
-                `location`, `segments`, `box`, ...).
 
         Returns:
             matplotlib.axes.Axes: The frameless inset axes the bar was drawn on.
@@ -718,7 +720,7 @@ class GeoMixin:
             cleopatra.styling.furniture.add_scale_bar: The underlying function
                 and its full parameter list.
         """
-        return furniture.add_scale_bar(self._basemap_axes(ax), length, **kwargs)
+        return furniture.add_scale_bar(self._basemap_axes(ax), length, spec)
 
     def add_north_arrow(self, *, ax: Any = None, **kwargs: Any) -> Any:
         """Draw a north arrow on the glyph's axes.

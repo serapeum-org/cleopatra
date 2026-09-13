@@ -28,22 +28,23 @@ data-coordinate `Rectangle`, and sits at a high zorder above the data.
 ```python
 import matplotlib.pyplot as plt
 import numpy as np
-from cleopatra.styling.furniture import add_scale_bar
+from cleopatra.styling.furniture import add_scale_bar, ScaleBar
 
 fig, ax = plt.subplots()
 ax.imshow(np.random.default_rng(0).random((100, 100)), extent=[0, 500_000, 0, 500_000])
 
 # the consumer computes the ground distance in axis units; cleopatra draws it
-add_scale_bar(ax, 100_000, label="100 km", location="lower left", segments=4, box=True)
+add_scale_bar(ax, 100_000, ScaleBar(label="100 km", location="lower left", segments=4, box=True))
 ```
 
-`length` is in the axes' **x data units** and `label` is the caption you supply (defaulting to
-`f"{length:g}"`). `segments` sets the number of alternating blocks (`1` draws a plain bar);
-`ticks=True` (default) numbers the block boundaries `0 .. length`, a sequence numbers those data
-positions, and `False` draws no numbers. `location` is one of the four corners; `pad`, `height`
-and the two colours are axes-fraction / matplotlib values; `label_location` (`"bottom"` /
-`"top"`) picks the caption side; `box` adds a backing panel (`True`, a colour, or a dict of
-`Rectangle` kwargs).
+`length` is in the axes' **x data units**; all the presentation options are grouped into a
+`ScaleBar` object (mirroring `FacetLayout` / `ColorBar`), so the call stays small. `label` is the
+caption you supply (defaulting to `f"{length:g}"`); `segments` sets the number of alternating
+blocks (`1` draws a plain bar); `ticks=True` (default) numbers the block boundaries `0 .. length`,
+a sequence numbers those data positions, and `False` draws no numbers. `location` is one of the
+four corners; `pad`, `height` and the two colours are axes-fraction / matplotlib values;
+`label_location` (`"bottom"` / `"top"` / `None` for the interior side) picks the caption side;
+`box` adds a backing panel (`True`, a colour, or a dict of `Rectangle` kwargs).
 
 ## North arrow
 
@@ -67,11 +68,13 @@ can decorate a glyph without importing the free functions or repeating the axes:
 
 ```python
 glyph.plot()
-glyph.add_scale_bar(100_000, label="100 km", location="lower left")
+glyph.add_scale_bar(100_000, ScaleBar(label="100 km", location="lower left"))
 glyph.add_north_arrow(rotation=grid_convergence_deg)
 ```
 
 The free functions stay the API; the methods only supply the glyph's axes.
+
+::: cleopatra.styling.furniture.ScaleBar
 
 ::: cleopatra.styling.furniture.add_scale_bar
 

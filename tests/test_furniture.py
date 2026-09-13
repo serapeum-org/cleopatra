@@ -22,6 +22,7 @@ from matplotlib.patches import Polygon, Rectangle
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 from cleopatra.styling.furniture import (
     _NORTH_STYLES,
+    ScaleBar,
     _north_arrow_patches,
     _resolve_box,
     _rose_base,
@@ -208,7 +209,7 @@ class TestAddScaleBar:
             The inset's axes-fraction origin sits `pad` from the expected edges;
             a 100000-unit bar on a 500000 range is 0.2 wide.
         """
-        bar = add_scale_bar(ax, 100_000, location=location, pad=0.025)
+        bar = add_scale_bar(ax, 100_000, ScaleBar(location=location, pad=0.025))
         x0, y0, w, h = _axfrac(ax, bar)
         assert w == pytest.approx(0.2, abs=1e-6), f"bar width {w} != 0.2"
         assert x0 == pytest.approx(0.775 if at_right else 0.025, abs=1e-6), f"x0={x0}"
@@ -231,7 +232,7 @@ class TestAddScaleBar:
         Test scenario:
             Four blocks each span a quarter of the inset width.
         """
-        bar = add_scale_bar(ax, 100_000, segments=4)
+        bar = add_scale_bar(ax, 100_000, ScaleBar(segments=4))
         assert len(bar.patches) == 4, "four blocks"
         first = bar.patches[0]
         assert first.get_xy() == (0.0, 0.0), "first block starts at the origin"
@@ -243,7 +244,9 @@ class TestAddScaleBar:
         Test scenario:
             Block 0 is `color` and block 1 is `edge_color`.
         """
-        bar = add_scale_bar(ax, 100_000, segments=2, color="black", edge_color="white")
+        bar = add_scale_bar(
+            ax, 100_000, ScaleBar(segments=2, color="black", edge_color="white")
+        )
         assert bar.patches[0].get_facecolor() != bar.patches[1].get_facecolor(), (
             "adjacent blocks differ"
         )
@@ -254,7 +257,7 @@ class TestAddScaleBar:
         Test scenario:
             A 4-segment 100000 bar labels 0, 25000, 50000, 75000, 100000.
         """
-        add_scale_bar(ax, 100_000, segments=4, ticks=True, label="d")
+        add_scale_bar(ax, 100_000, ScaleBar(segments=4, ticks=True, label="d"))
         texts = [t.get_text() for t in ax.texts]
         for expected in ("0", "25000", "50000", "75000", "100000"):
             assert expected in texts, f"missing tick number {expected} in {texts}"
@@ -265,7 +268,7 @@ class TestAddScaleBar:
         Test scenario:
             Ticks at 0 / 250000 (as data values, not boundaries).
         """
-        add_scale_bar(ax, 400_000, ticks=[0.0, 250_000.0], label="d")
+        add_scale_bar(ax, 400_000, ScaleBar(ticks=[0.0, 250_000.0], label="d"))
         texts = [t.get_text() for t in ax.texts]
         assert "250000" in texts, f"explicit tick 250000 missing in {texts}"
 
@@ -275,7 +278,7 @@ class TestAddScaleBar:
         Test scenario:
             The only parent text is the caption.
         """
-        add_scale_bar(ax, 100_000, ticks=False, label="100 km")
+        add_scale_bar(ax, 100_000, ScaleBar(ticks=False, label="100 km"))
         assert [t.get_text() for t in ax.texts] == ["100 km"], "only the caption"
 
     def test_default_label_is_length(self, ax):
@@ -284,7 +287,7 @@ class TestAddScaleBar:
         Test scenario:
             No `label` gives a `"100000"` caption.
         """
-        add_scale_bar(ax, 100_000, ticks=False)
+        add_scale_bar(ax, 100_000, ScaleBar(ticks=False))
         assert ax.texts[-1].get_text() == "100000", "caption defaults to the length"
 
     def test_caption_centered(self, ax):
@@ -293,7 +296,9 @@ class TestAddScaleBar:
         Test scenario:
             The caption x is the bar centre (0.025 + 0.2/2 = 0.125).
         """
-        add_scale_bar(ax, 100_000, location="lower left", ticks=False, label="100 km")
+        add_scale_bar(
+            ax, 100_000, ScaleBar(location="lower left", ticks=False, label="100 km")
+        )
         caption = ax.texts[-1]
         assert caption.get_position()[0] == pytest.approx(0.125), "caption centred"
         assert caption.get_ha() == "center", "caption horizontally centred"
@@ -311,7 +316,9 @@ class TestAddScaleBar:
             A bottom caption is top-aligned (grows down); a top one is
             bottom-aligned (grows up).
         """
-        add_scale_bar(ax, 100_000, ticks=False, label="x", label_location=side)
+        add_scale_bar(
+            ax, 100_000, ScaleBar(ticks=False, label="x", label_location=side)
+        )
         assert ax.texts[-1].get_va() == va, f"{side} caption should be va={va}"
 
     def test_default_text_stays_on_axes(self, ax):
@@ -351,7 +358,7 @@ class TestAddScaleBar:
             With no explicit `label_location`, a lower corner labels above the
             bar and an upper corner below, so the caption stays interior.
         """
-        add_scale_bar(ax, 100_000, location=location, ticks=False, label="x")
+        add_scale_bar(ax, 100_000, ScaleBar(location=location, ticks=False, label="x"))
         assert ax.texts[-1].get_va() == va, f"{location} caption should be va={va}"
 
     def test_box_draws_panel(self, ax):
@@ -361,7 +368,7 @@ class TestAddScaleBar:
             The parent gains a single `Rectangle` patch.
         """
         before = len(ax.patches)
-        add_scale_bar(ax, 100_000, box=True)
+        add_scale_bar(ax, 100_000, ScaleBar(box=True))
         rects = [p for p in ax.patches if isinstance(p, Rectangle)]
         assert len(ax.patches) == before + 1, "one backing panel added"
         assert rects, "the backing panel is a Rectangle"
@@ -374,7 +381,7 @@ class TestAddScaleBar:
             box grows above the bar rather than below).
         """
         before = len(ax.patches)
-        add_scale_bar(ax, 100_000, box=True, label_location="top")
+        add_scale_bar(ax, 100_000, ScaleBar(box=True, label_location="top"))
         assert len(ax.patches) == before + 1, "one backing panel for a top caption"
 
     def test_box_bottom_label(self, ax):
@@ -385,7 +392,7 @@ class TestAddScaleBar:
             below the bar (the `sign < 0` branch).
         """
         before = len(ax.patches)
-        add_scale_bar(ax, 100_000, box=True, label_location="bottom")
+        add_scale_bar(ax, 100_000, ScaleBar(box=True, label_location="bottom"))
         assert len(ax.patches) == before + 1, "one backing panel for a bottom caption"
 
     def test_box_covers_caption_without_ticks(self, ax):
@@ -396,7 +403,7 @@ class TestAddScaleBar:
             to the length), the panel's vertical span contains the caption's
             anchor, rather than sizing itself as if no text were drawn.
         """
-        bar = add_scale_bar(ax, 100_000, box=True, ticks=False)
+        bar = add_scale_bar(ax, 100_000, ScaleBar(box=True, ticks=False))
         panel = ax.patches[-1]
         py0 = panel.get_y()
         py1 = py0 + panel.get_height()
@@ -412,7 +419,7 @@ class TestAddScaleBar:
         Test scenario:
             `box="yellow"` draws a yellow panel.
         """
-        add_scale_bar(ax, 100_000, box="yellow")
+        add_scale_bar(ax, 100_000, ScaleBar(box="yellow"))
         panel = ax.patches[-1]
         assert panel.get_facecolor()[:3] == pytest.approx((1.0, 1.0, 0.0)), (
             "panel should be yellow"
@@ -434,7 +441,7 @@ class TestAddScaleBar:
         Test scenario:
             `zorder=42` sets the inset draw order near that value.
         """
-        bar = add_scale_bar(ax, 100_000, zorder=42.0)
+        bar = add_scale_bar(ax, 100_000, ScaleBar(zorder=42.0))
         assert bar.get_zorder() >= 42.0, "explicit zorder should be honoured"
 
     def test_stable_across_set_xlim(self, ax):
@@ -444,7 +451,7 @@ class TestAddScaleBar:
             Changing the x-limits does not move the inset (axes-fraction
             placement), unlike a data-coordinate rectangle.
         """
-        bar = add_scale_bar(ax, 100_000, location="lower left")
+        bar = add_scale_bar(ax, 100_000, ScaleBar(location="lower left"))
         before = tuple(bar.get_position().bounds)
         ax.set_xlim(0.0, 1_000_000.0)
         assert tuple(bar.get_position().bounds) == before, "placement must be stable"
@@ -456,7 +463,7 @@ class TestAddScaleBar:
             `location="middle"` is rejected.
         """
         with pytest.raises(ValueError, match="location must be one of"):
-            add_scale_bar(ax, 100_000, location="middle")
+            add_scale_bar(ax, 100_000, ScaleBar(location="middle"))
 
     @pytest.mark.parametrize("bad", [-1.0, 0.0, float("nan"), float("inf")])
     def test_bad_length_raises(self, ax, bad):
@@ -479,7 +486,7 @@ class TestAddScaleBar:
             `pad=1.5` is outside `[0, 1)`.
         """
         with pytest.raises(ValueError, match="margin must be in"):
-            add_scale_bar(ax, 100_000, pad=1.5)
+            add_scale_bar(ax, 100_000, ScaleBar(pad=1.5))
 
     def test_segments_below_one_raises(self, ax):
         """`segments < 1` raises.
@@ -488,7 +495,7 @@ class TestAddScaleBar:
             Zero segments is rejected.
         """
         with pytest.raises(ValueError, match="segments must be >= 1"):
-            add_scale_bar(ax, 100_000, segments=0)
+            add_scale_bar(ax, 100_000, ScaleBar(segments=0))
 
     def test_bad_label_location_raises(self, ax):
         """An unknown `label_location` raises.
@@ -497,7 +504,7 @@ class TestAddScaleBar:
             `label_location="left"` is rejected.
         """
         with pytest.raises(ValueError, match="label_location must be"):
-            add_scale_bar(ax, 100_000, label_location="left")
+            add_scale_bar(ax, 100_000, ScaleBar(label_location="left"))
 
     def test_zero_width_range_raises(self, ax):
         """A zero-width x-range raises.
@@ -692,7 +699,7 @@ class TestGeoMixinFurniture:
             np.arange(100.0).reshape(10, 10), extent=[0, 0, 500_000, 500_000]
         )
         glyph.plot()
-        bar = glyph.add_scale_bar(100_000, segments=3, label="100 km")
+        bar = glyph.add_scale_bar(100_000, ScaleBar(segments=3, label="100 km"))
         assert isinstance(bar, Axes), "sugar returns an Axes"
         assert len(bar.patches) == 3, "sugar draws the three blocks"
         plt.close(glyph.fig)
