@@ -244,7 +244,7 @@ def add_scale_bar(
 
     x0d, x1d = ax.get_xlim()
     data_range = abs(float(x1d) - float(x0d))
-    if data_range == 0.0:
+    if not data_range:
         raise ValueError("the axes has a zero-width x-range; cannot size a scale bar.")
     width = length / data_range
     if pad_x + width > 1.0:
@@ -256,7 +256,6 @@ def add_scale_bar(
     z = _FURNITURE_ZORDER if zorder is None else zorder
     x0, y0 = _corner_origin(location, width, height, pad_x, pad_y)
 
-    text_color = color
     at_top = label_location == "top"
     # The tick marks / numbers / caption grow away from the bar on the label
     # side. `sign` points from the bar toward that side in axes fraction.
@@ -265,9 +264,56 @@ def add_scale_bar(
     text_va = "bottom" if at_top else "top"
 
     _draw_scale_box(ax, x0, y0, width, height, sign, bar_edge, bool(ticks), box, z)
+    inset = _draw_bar_segments(
+        ax, x0, y0, width, height, segments, color, edge_color, z
+    )
+    _label_scale_bar(
+        ax,
+        x0,
+        width,
+        bar_edge,
+        sign,
+        text_va,
+        ticks,
+        length,
+        segments,
+        label,
+        color,
+        label_size,
+        z,
+    )
+    return inset
 
+
+def _draw_bar_segments(
+    ax: Axes,
+    x0: float,
+    y0: float,
+    width: float,
+    height: float,
+    segments: int,
+    color: str,
+    edge_color: str,
+    zorder: float,
+) -> Axes:
+    """Draw the alternating scale-bar blocks on a frameless inset axes.
+
+    Args:
+        ax: The parent axes.
+        x0: The bar's left edge in axes fraction.
+        y0: The bar's bottom edge in axes fraction.
+        width: The bar width in axes fraction.
+        height: The bar thickness in axes fraction.
+        segments: The number of alternating blocks.
+        color: The even-block fill and the block outline.
+        edge_color: The odd-block fill.
+        zorder: The furniture draw order (the inset sits just above it).
+
+    Returns:
+        Axes: The frameless inset the blocks were drawn on.
+    """
     inset = ax.inset_axes(
-        (x0, y0, width, height), transform=ax.transAxes, zorder=z + 0.1
+        (x0, y0, width, height), transform=ax.transAxes, zorder=zorder + 0.1
     )
     inset.set_xlim(0.0, 1.0)
     inset.set_ylim(0.0, 1.0)
@@ -286,7 +332,42 @@ def add_scale_bar(
                 linewidth=0.8,
             )
         )
+    return inset
 
+
+def _label_scale_bar(
+    ax: Axes,
+    x0: float,
+    width: float,
+    bar_edge: float,
+    sign: float,
+    text_va: str,
+    ticks: bool | Sequence[float],
+    length: float,
+    segments: int,
+    label: str | None,
+    color: str,
+    label_size: float | None,
+    zorder: float,
+) -> None:
+    """Draw the tick marks / numbers and the caption on the parent axes.
+
+    Args:
+        ax: The parent axes.
+        x0: The bar's left edge in axes fraction.
+        width: The bar width in axes fraction.
+        bar_edge: The bar edge (top or bottom) the text grows from.
+        sign: `+1` when the text is above the bar, `-1` when below.
+        text_va: The text vertical alignment (`"top"` / `"bottom"`).
+        ticks: The `ticks` option (`True` numbers the block boundaries, a
+            sequence numbers those data positions, falsy draws none).
+        length: The bar length in data units.
+        segments: The number of blocks (sets the `True` boundary count).
+        label: The caption; defaults to `f"{length:g}"` when `None`.
+        color: The tick / text colour.
+        label_size: Font size (points) for the tick numbers and caption.
+        zorder: The furniture draw order.
+    """
     if ticks is True:
         # Number the segment boundaries 0 .. length.
         tick_positions = [i / segments for i in range(segments + 1)]
@@ -300,7 +381,7 @@ def add_scale_bar(
             color=color,
             linewidth=0.8,
             transform=ax.transAxes,
-            zorder=z + 0.1,
+            zorder=zorder + 0.1,
             clip_on=False,
         )
         ax.text(
@@ -309,10 +390,10 @@ def add_scale_bar(
             f"{value:g}",
             ha="center",
             va=text_va,
-            color=text_color,
+            color=color,
             fontsize=label_size,
             transform=ax.transAxes,
-            zorder=z + 0.1,
+            zorder=zorder + 0.1,
             clip_on=False,
         )
 
@@ -324,13 +405,12 @@ def add_scale_bar(
         caption,
         ha="center",
         va=text_va,
-        color=text_color,
+        color=color,
         fontsize=label_size,
         transform=ax.transAxes,
-        zorder=z + 0.1,
+        zorder=zorder + 0.1,
         clip_on=False,
     )
-    return inset
 
 
 def _scale_bar_ticks(
