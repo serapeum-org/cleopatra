@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from math import ceil
 from typing import Any, Literal, TypedDict, Unpack, cast
 
@@ -39,7 +40,12 @@ from matplotlib.cm import ScalarMappable
 from matplotlib.collections import PathCollection
 from matplotlib.colorbar import Colorbar
 from matplotlib.colors import BoundaryNorm, Colormap, ListedColormap, Normalize
-from matplotlib.figure import Figure
+from matplotlib.figure import Figure, SubFigure
+from matplotlib.gridspec import (
+    GridSpecBase,
+    GridSpecFromSubplotSpec,
+    SubplotSpec,
+)
 from matplotlib.ticker import MaxNLocator
 from PIL import Image
 
@@ -593,10 +599,14 @@ class PanelLabels:
         - Label the columns of a 3-D stack and read them back off the grid:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph, PanelLabels
+            >>> from cleopatra.glyphs.gridded.array_glyph import (
+            ...     ArrayGlyph,
+            ...     FacetLayout,
+            ...     PanelLabels,
+            ... )
             >>> stack = np.arange(3 * 5 * 5, dtype=float).reshape(3, 5, 5)
             >>> labels = PanelLabels(col=["Jan", "Feb", "Mar"])
-            >>> g = ArrayGlyph(stack).facet(col="month", labels=labels)
+            >>> g = ArrayGlyph(stack).facet(FacetLayout(col="month", labels=labels))
             >>> g.name_dicts[0]
             {'month': 'Jan'}
 
@@ -605,10 +615,16 @@ class PanelLabels:
             the coordinate for both facet dimensions:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph, PanelLabels
+            >>> from cleopatra.glyphs.gridded.array_glyph import (
+            ...     ArrayGlyph,
+            ...     FacetLayout,
+            ...     PanelLabels,
+            ... )
             >>> stack = np.arange(2 * 2 * 4 * 4, dtype=float).reshape(2, 2, 4, 4)
             >>> labels = PanelLabels(col=["A", "B"], row=[10, 20])
-            >>> g = ArrayGlyph(stack).facet(col="t", row="lev", labels=labels)
+            >>> g = ArrayGlyph(stack).facet(
+            ...     FacetLayout(col="t", row="lev", labels=labels)
+            ... )
             >>> g.name_dicts[0]
             {'t': 'A', 'lev': 10}
 
@@ -884,6 +900,131 @@ class RgbBands:
         return array
 
 
+def _flatten_axes(axes: Any) -> list[Axes]:
+    """Flatten a supplied axes block into a row-major list of `Axes`.
+
+    Accepts a single `Axes`, an `ndarray` of `Axes`, or a (possibly nested)
+    `list` / `tuple` of them, and returns every element it finds in row-major
+    order. Only `list` / `tuple` / `ndarray` are descended into; anything else
+    (a `str`, an `int`, an arbitrary object) is treated as a single leaf and
+    returned as-is, so `ArrayGlyph._facet_axes`'s downstream `isinstance(...,
+    Axes)` check can reject it with a clear error instead of, say, recursing
+    forever into a string.
+
+    Args:
+        axes: An `Axes`, an `ndarray` of `Axes`, or a (possibly nested) `list`
+            / `tuple` of `Axes`.
+
+    Returns:
+        list[Axes]: The contained elements, flattened row-major (non-`Axes`
+            leaves are included so the caller can reject them).
+    """
+    if isinstance(axes, Axes):
+        return [axes]
+    if isinstance(axes, np.ndarray):
+        return list(axes.ravel())
+    if isinstance(axes, (list, tuple)):
+        flat: list[Axes] = []
+        for item in axes:
+            flat.extend(_flatten_axes(item))
+        return flat
+    return [axes]  # a leaf (str, int, ...); the caller's validation rejects it
+
+
+def _axes_grid_2d(axes: Any, flat: list[Axes], nrows: int, ncols: int) -> np.ndarray:
+    """Shape a validated axes block into the `(nrows, ncols)` grid.
+
+    A 2-D `ndarray` already has the caller's layout and is returned unchanged;
+    anything else is rebuilt row-major from `flat`. The caller
+    (`ArrayGlyph._facet_axes`) has already checked that the block reproduces the
+    grid (a 2-D array's shape is `(nrows, ncols)`, or `len(flat) == nrows *
+    ncols`), so the reshape always succeeds and `FacetGrid.axes` keeps its
+    documented `(nrows, ncols)` shape.
+
+    Args:
+        axes: The original `axes=` value the caller passed.
+        flat: The row-major flattening of `axes` (from `_flatten_axes`).
+        nrows: Facet grid row count.
+        ncols: Facet grid column count.
+
+    Returns:
+        np.ndarray: A 2-D object array of `Axes` with shape `(nrows, ncols)`.
+    """
+    if isinstance(axes, np.ndarray) and axes.ndim == 2:
+        return axes
+    return np.asarray(flat, dtype=object).reshape(nrows, ncols)
+
+
+@dataclass(frozen=True)
+class FacetLayout:
+    """The layout of an `ArrayGlyph.facet` grid: what to facet and where to draw.
+
+    Groups the layout / target parameters `facet` used to take as loose
+    keywords, so `facet`'s own signature stays focused on per-panel render
+    options (`kind`, `colorbar`, `color`, ...). Pass an instance as the first
+    argument: `glyph.facet(FacetLayout(col="time", col_wrap=3), color=...)`.
+
+    Attributes:
+        col: Name of the column-facet dimension (e.g. `"time"`), used in each
+            panel's title and in `FacetGrid.name_dicts`. Required when `row` is
+            not given.
+        row: Name of the row-facet dimension (e.g. `"level"`). Required when
+            faceting a 4-D stack.
+        col_wrap: Wrap the N column panels into `col_wrap` columns x
+            `ceil(N / col_wrap)` rows. Ignored when `row` is set.
+        labels: Optional `PanelLabels` supplying per-panel title labels; each
+            sequence's length must match its facet axis.
+        figure_size: Optional `(width, height)` for a self-built figure.
+            Mutually exclusive with `axes`.
+        axes: Draw the panels into axes the caller supplies instead of building
+            a figure -- a 2-D `ndarray`, a nested / flat sequence of `Axes`, a
+            `Figure` / `SubFigure` host, or a `GridSpec` / `SubplotSpec` region.
+            Mutually exclusive with `figure_size`.
+        extents: Optional per-panel spatial extents, one
+            `[xmin, ymin, xmax, ymax]` per rendered panel in row-major order.
+
+    Examples:
+        - Read back the fields of a column facet with wrapping:
+            ```python
+            >>> from cleopatra.glyphs.gridded.array_glyph import FacetLayout
+            >>> layout = FacetLayout(col="time", col_wrap=3)
+            >>> (layout.col, layout.col_wrap, layout.row)
+            ('time', 3, None)
+
+            ```
+    """
+
+    col: str | None = None
+    row: str | None = None
+    col_wrap: int | None = None
+    labels: PanelLabels | None = None
+    figure_size: tuple[float, float] | None = None
+    axes: (
+        np.ndarray
+        | Sequence[Axes]
+        | Sequence[Sequence[Axes]]
+        | Figure
+        | SubFigure
+        | GridSpecBase
+        | SubplotSpec
+        | None
+    ) = None
+    extents: Sequence[Sequence[float]] | None = None
+
+
+#: Keyword names that moved from `ArrayGlyph.facet` onto `FacetLayout`; a loose
+#: one in `facet(**kwargs)` gets a clear "moved onto FacetLayout" error.
+_FACET_LAYOUT_KEYS = (
+    "col",
+    "row",
+    "col_wrap",
+    "labels",
+    "figure_size",
+    "axes",
+    "extents",
+)
+
+
 class FacetGrid:
     """Result object for a multi-subplot facet plot.
 
@@ -909,9 +1050,12 @@ class FacetGrid:
         - Inspect the grid shape returned by `ArrayGlyph.facet`:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+            >>> from cleopatra.glyphs.gridded.array_glyph import (
+            ...     ArrayGlyph,
+            ...     FacetLayout,
+            ... )
             >>> stack = np.arange(4 * 5 * 5, dtype=float).reshape(4, 5, 5)
-            >>> g = ArrayGlyph(stack).facet(col="t")
+            >>> g = ArrayGlyph(stack).facet(FacetLayout(col="t"))
             >>> g.axes.shape
             (1, 4)
             >>> len(g.name_dicts)
@@ -4000,21 +4144,188 @@ class ArrayGlyph(GeoMixin, Glyph):
             self._tighten_figure()
         return fig, ax
 
+    def _facet_axes(
+        self,
+        nrows: int,
+        ncols: int,
+        figure_size: tuple[float, float] | None,
+        axes: Any,
+    ) -> tuple[Figure, np.ndarray, list[Axes], bool, bool]:
+        """Resolve the figure and axes grid `facet` draws into.
+
+        With `axes=None` a fresh figure is created and cleopatra owns it (it may
+        re-lay-out and close it). Otherwise the panels are laid into the axes /
+        host the caller supplied, the *root* `Figure` is returned, and cleopatra
+        does not own it -- `facet` must not `tight_layout` or close it. The
+        returned axes grid is always shape `(nrows, ncols)`, so `FacetGrid.axes`
+        keeps its documented shape on every path.
+
+        `created_axes` distinguishes the two non-owning paths: when cleopatra
+        created the axes on a caller's host (`Figure` / `SubFigure` / grid spec)
+        it can remove them again on failure, but when the caller supplied
+        pre-existing axes it must leave them alone.
+
+        Args:
+            nrows: Number of grid rows.
+            ncols: Number of grid columns.
+            figure_size: `(width, height)` for the self-built figure; must be
+                `None` when `axes` is supplied.
+            axes: `None` (self-built), an `Axes` block (2-D `ndarray`, nested or
+                flat sequence), a `Figure` / `SubFigure` host, or a `GridSpec` /
+                `SubplotSpec` region to subdivide.
+
+        Returns:
+            tuple: `(fig, axes_grid, flat_axes, owns_figure, created_axes)` --
+            the root figure, the `(nrows, ncols)` axes array for the
+            `FacetGrid`, its row-major flattening the panel loop indexes,
+            whether cleopatra owns the figure, and whether cleopatra created the
+            axes (so a failure can undo them on a host but not on caller-owned
+            pre-existing axes).
+
+        Raises:
+            ValueError: If `axes=` and `figure_size=` are both given, if a host
+                grid spec has no figure or is too small, or if a supplied axes
+                block is empty, holds non-`Axes` items, or does not reproduce
+                the `(nrows, ncols)` grid.
+        """
+        if axes is None:
+            if figure_size is None:
+                figure_size = (4.0 * ncols, 3.5 * nrows)
+            fig, grid = plt.subplots(
+                nrows=nrows, ncols=ncols, figsize=figure_size, squeeze=False
+            )
+            return fig, grid, list(grid.ravel()), True, True
+
+        if figure_size is not None:
+            raise ValueError(
+                "`axes=` and `figure_size=` are mutually exclusive: with `axes=` "
+                "cleopatra draws into the axes you supply and never sizes a figure."
+            )
+
+        if isinstance(axes, (Figure, SubFigure)):
+            grid = axes.subplots(nrows=nrows, ncols=ncols, squeeze=False)
+            flat = list(grid.ravel())
+            return _root_figure(flat[0]), grid, flat, False, True
+
+        if isinstance(axes, (SubplotSpec, GridSpecBase)):
+            fig, grid = self._facet_gridspec_grid(axes, nrows, ncols)
+            return fig, grid, list(grid.ravel()), False, True
+
+        fig, grid = self._facet_block_grid(axes, nrows, ncols)
+        return fig, grid, list(grid.ravel()), False, False
+
+    @staticmethod
+    def _facet_gridspec_grid(
+        axes: SubplotSpec | GridSpecBase, nrows: int, ncols: int
+    ) -> tuple[Figure, np.ndarray]:
+        """Create the panel grid on a `SubplotSpec` / grid-spec host.
+
+        A `SubplotSpec` is subdivided into a fresh `nrows x ncols`
+        `GridSpecFromSubplotSpec`; a `GridSpecBase` (a `GridSpec` or a
+        `GridSpecFromSubplotSpec`) is used directly, and must be at least
+        `nrows x ncols`. Either way a subplot is added per cell on the host
+        figure.
+
+        Args:
+            axes: The `SubplotSpec` region or grid spec to lay panels into.
+            nrows: Number of grid rows.
+            ncols: Number of grid columns.
+
+        Returns:
+            tuple: `(root_figure, (nrows, ncols) axes array)`.
+
+        Raises:
+            ValueError: If the host is not attached to a figure, or a grid spec
+                is smaller than `nrows x ncols`.
+        """
+        if isinstance(axes, SubplotSpec):
+            host = axes.get_gridspec().figure
+            if host is None:
+                raise ValueError(
+                    "the supplied SubplotSpec is not attached to a figure; build "
+                    "its GridSpec with `GridSpec(..., figure=fig)`."
+                )
+            cells: SubplotSpec | GridSpecBase = GridSpecFromSubplotSpec(
+                nrows, ncols, subplot_spec=axes
+            )
+        else:
+            host = axes.figure
+            if host is None:
+                raise ValueError(
+                    "the supplied grid spec is not attached to a figure; build it "
+                    "with `GridSpec(..., figure=fig)`."
+                )
+            if axes.nrows < nrows or axes.ncols < ncols:
+                raise ValueError(
+                    f"the supplied grid spec is {axes.nrows}x{axes.ncols}, too "
+                    f"small for a {nrows}x{ncols} facet grid."
+                )
+            cells = axes
+        grid = np.empty((nrows, ncols), dtype=object)
+        for r in range(nrows):
+            for c in range(ncols):
+                grid[r, c] = host.add_subplot(cells[r, c])
+        return _root_figure(grid[0, 0]), grid
+
+    @staticmethod
+    def _facet_block_grid(
+        axes: Any, nrows: int, ncols: int
+    ) -> tuple[Figure, np.ndarray]:
+        """Validate a supplied `Axes` block and shape it into the panel grid.
+
+        The block must reproduce the facet's `(nrows, ncols)` grid so
+        `FacetGrid.axes` keeps its documented shape and `col_wrap` is honoured:
+        a 2-D `ndarray` must match exactly, a flat/nested block must hold
+        `nrows*ncols` axes (the full grid, empty slots included, as the
+        self-built `plt.subplots` path produces).
+
+        Args:
+            axes: A 2-D `ndarray`, or a nested/flat sequence of `Axes`.
+            nrows: Number of grid rows.
+            ncols: Number of grid columns.
+
+        Returns:
+            tuple: `(root_figure, (nrows, ncols) axes array)`.
+
+        Raises:
+            ValueError: If the block is empty, holds non-`Axes` items, or does
+                not reproduce the `(nrows, ncols)` grid.
+        """
+        flat = _flatten_axes(axes)
+        if not flat:
+            raise ValueError("`axes=` is empty; supply at least one Axes.")
+        if any(not isinstance(a, Axes) for a in flat):
+            raise ValueError(
+                "`axes=` must be matplotlib Axes (a 2-D array, or a nested or "
+                "flat sequence of Axes), a Figure / SubFigure, or a GridSpec / "
+                "SubplotSpec."
+            )
+        if isinstance(axes, np.ndarray) and axes.ndim == 2:
+            if axes.shape != (nrows, ncols):
+                raise ValueError(
+                    f"`axes=` is a {axes.shape[0]}x{axes.shape[1]} block but the "
+                    f"facet grid is {nrows}x{ncols}; supply a matching block."
+                )
+        elif len(flat) != nrows * ncols:
+            raise ValueError(
+                f"`axes=` supplies {len(flat)} axes but the facet grid is "
+                f"{nrows}x{ncols} ({nrows * ncols} cells); supply exactly "
+                f"{nrows * ncols}."
+            )
+        grid = _axes_grid_2d(axes, flat, nrows, ncols)
+        return _root_figure(grid.ravel()[0]), grid
+
     def facet(
         self,
+        layout: FacetLayout | None = None,
         *,
-        col: str | None = None,
-        row: str | None = None,
-        col_wrap: int | None = None,
-        labels: PanelLabels | None = None,
         kind: str = "auto",
-        figure_size: tuple[float, float] | None = None,
-        extents: Sequence[Sequence[float]] | None = None,
         colorbar: bool | ColorBar | None = None,
         color: ColorScaling | Normalize | None = None,
         contour: Contour | None = None,
         cells: CellValues | None = None,
         data_style: DataStyle | None = None,
+        compose: bool = False,
         **kwargs,
     ) -> FacetGrid:
         """Render a grid of subplots from a 3-D or 4-D stack.
@@ -4039,35 +4350,27 @@ class ArrayGlyph(GeoMixin, Glyph):
         instances into your own `plt.subplots` grid instead.)
 
         Args:
-            col: Name of the column-facet dimension (e.g. `"time"`).
-                Used as a label in the per-subplot title and in
-                `FacetGrid.name_dicts`. Required when `row` is
-                not given.
-            row: Name of the row-facet dimension (e.g. `"level"`).
-                Required when faceting a 4-D stack.
-            col_wrap: When only `col` is given, wrap the N subplots
-                into `col_wrap` columns × `ceil(N/col_wrap)` rows.
-                Ignored when `row` is set.
-            labels: Optional `PanelLabels` supplying per-panel title
-                labels for the facet axes (`labels.col` / `labels.row`).
-                Each sequence's length must match its axis size; when
-                given, the per-subplot title contains the label instead of
-                the integer index. `labels.row` is only honoured when
-                `row` is set. `None` (default) titles every panel with its
-                integer slice index.
+            layout: The facet grid layout, as a `FacetLayout` (see that class
+                for the full field list). Bundles which dimension(s) to facet
+                (`col` / `row`), optional `col_wrap`, per-panel `labels`,
+                per-panel `extents`, and the drawing target: either a self-built
+                figure sized by `figure_size`, or caller-supplied `axes` (a 2-D
+                `ndarray` of shape `(nrows, ncols)`, a nested / flat sequence of
+                exactly `nrows * ncols` `Axes`, a `Figure` / `SubFigure` host, or
+                a `GridSpec` / `SubplotSpec` region). `figure_size` and `axes`
+                are mutually exclusive, and a supplied block must reproduce the
+                `(nrows, ncols)` grid so `col_wrap` is honoured and
+                `FacetGrid.axes` keeps that shape. With `axes` supplied cleopatra
+                does not own the figure: it never `tight_layout`s or closes it,
+                hides only the empty slots inside the block, and on a mid-render
+                failure removes only the subplots it created on a host (a
+                grid-spec host should be empty); caller-supplied pre-existing
+                axes are left as they are, and plain matplotlib content on them
+                is preserved. The shared colour scale and `FacetGrid.fig`
+                (always the root `Figure`) are identical on every path.
             kind: Render kind, forwarded to the per-subplot dispatch.
                 One of `"auto"`, `"imshow"`, `"pcolormesh"`,
                 `"contour"`, `"contourf"`. Default `"auto"`.
-            figure_size: Optional `(width, height)` for the shared figure.
-                Defaults to `(4 * ncols, 3.5 * nrows)`.
-            extents: Optional per-panel spatial extents — one
-                `[xmin, ymin, xmax, ymax]` (user-facing order) for each
-                rendered subplot, in row-major order (`extents[k]`
-                applies to `result.axes.flat[k]`). Length must equal the
-                number of panels. Mutually exclusive with the parent
-                glyph's `extent` and with `coords`. `None` (default)
-                reuses the parent's `extent` on every panel (or index
-                space when the parent has none).
             colorbar: The shared colour bar, mirroring `plot` / `animate`.
                 `None` (default) keeps each panel's default colour legend --
                 a colour bar, or a preset style's swatch -- (the prior
@@ -4081,6 +4384,21 @@ class ArrayGlyph(GeoMixin, Glyph):
                 spec). Prefer this typed form over the loose `cbar_*`
                 kwargs, here as on `plot` / `animate`.
 
+            compose: Forwarded to each panel's `plot`. Controls what a panel
+                does with a **prior cleopatra render** already on its axes:
+                `False` (default) clears it first (the replace-don't-orphan
+                behaviour of `plot`), `True` draws the panel *over* it. Only
+                cleopatra-drawn layers are affected -- plain matplotlib content
+                the caller added (a basemap, graticule or frame) is left in place
+                either way -- so pass `compose=True` when the supplied axes
+                already carry a cleopatra layer (e.g. a relief drawn via
+                cleopatra) you want kept beneath the panel. Two consequences:
+                (1) like `plot(compose=True)`, composing **suppresses the
+                per-panel colorbar by default**, so `result.cbar` is `None`
+                unless you also pass `colorbar=True` (or a `ColorBar` spec);
+                (2) `compose=True` is only meaningful when there is a prior
+                cleopatra layer to preserve -- on a self-built grid the axes are
+                empty, so it just drops the colorbar for no benefit.
             **kwargs: Forwarded to each subplot. Recognised keys
                 include the same colour / colorbar / level kwargs as
                 `plot`. `vmin` / `vmax` win over the
@@ -4092,23 +4410,29 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `cbar`, and `name_dicts`.
 
         Raises:
-            ValueError: If neither `col` nor `row` is given, if the
-                array shape does not match the requested facet
-                dimensions, if `labels.col` / `labels.row` lengths
-                are wrong, if `extents` is combined with the parent's
-                `extent` or `coords`, if `extents` has the wrong
+            ValueError: If `layout` is omitted, if a layout keyword is passed
+                loosely instead of on `FacetLayout` (e.g. `facet(col=...)`), if
+                neither `layout.col` nor `layout.row` is given, if the array
+                shape does not match the requested facet dimensions, if
+                `layout.labels` lengths are wrong, if `layout.extents` is
+                combined with the parent's `extent` / `coords` or has the wrong
                 length or a non-length-4 element, or if a removed keyword is
-                passed -- `figsize` (renamed to `figure_size`) or
-                `col_coords` / `row_coords` (replaced by
-                `labels=PanelLabels(...)`).
+                passed -- `figsize` or `col_coords` / `row_coords`. Also if
+                `layout.figure_size` and `layout.axes` are both given, or
+                `layout.axes` does not reproduce the `(nrows, ncols)` grid /
+                holds non-`Axes` items / (for a grid-spec host) is not attached
+                to a figure or is too small.
 
         Examples:
             - Facet a 3-D stack into a 1xN row of subplots:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import (
+                ...     ArrayGlyph,
+                ...     FacetLayout,
+                ... )
                 >>> stack = np.arange(4 * 5 * 5, dtype=float).reshape(4, 5, 5)
-                >>> g = ArrayGlyph(stack).facet(col="t")
+                >>> g = ArrayGlyph(stack).facet(FacetLayout(col="t"))
                 >>> g.axes.shape
                 (1, 4)
                 >>> g.name_dicts[0]
@@ -4118,9 +4442,12 @@ class ArrayGlyph(GeoMixin, Glyph):
             - Wrap N=6 panels into a 2x3 grid with `col_wrap=3`:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import (
+                ...     ArrayGlyph,
+                ...     FacetLayout,
+                ... )
                 >>> stack = np.arange(6 * 5 * 5, dtype=float).reshape(6, 5, 5)
-                >>> g = ArrayGlyph(stack).facet(col="t", col_wrap=3)
+                >>> g = ArrayGlyph(stack).facet(FacetLayout(col="t", col_wrap=3))
                 >>> g.axes.shape
                 (2, 3)
 
@@ -4130,12 +4457,15 @@ class ArrayGlyph(GeoMixin, Glyph):
                 >>> import numpy as np
                 >>> from cleopatra.glyphs.gridded.array_glyph import (
                 ...     ArrayGlyph,
+                ...     FacetLayout,
                 ...     PanelLabels,
                 ... )
                 >>> stack = np.arange(3 * 5 * 5, dtype=float).reshape(3, 5, 5)
                 >>> g = ArrayGlyph(stack).facet(
-                ...     col="month",
-                ...     labels=PanelLabels(col=["Jan", "Feb", "Mar"]),
+                ...     FacetLayout(
+                ...         col="month",
+                ...         labels=PanelLabels(col=["Jan", "Feb", "Mar"]),
+                ...     )
                 ... )
                 >>> [d["month"] for d in g.name_dicts]
                 ['Jan', 'Feb', 'Mar']
@@ -4145,11 +4475,16 @@ class ArrayGlyph(GeoMixin, Glyph):
                 windows (one `[xmin, ymin, xmax, ymax]` per subplot):
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import (
+                ...     ArrayGlyph,
+                ...     FacetLayout,
+                ... )
                 >>> stack = np.arange(2 * 4 * 4, dtype=float).reshape(2, 4, 4)
                 >>> g = ArrayGlyph(stack).facet(
-                ...     col="region",
-                ...     extents=[[0, 0, 10, 10], [10, 0, 20, 10]],
+                ...     FacetLayout(
+                ...         col="region",
+                ...         extents=[[0, 0, 10, 10], [10, 0, 20, 10]],
+                ...     )
                 ... )
                 >>> [tuple(int(v) for v in im.get_extent()) for im in
                 ...  (ax.get_images()[0] for ax in g.axes.flat)]
@@ -4159,12 +4494,35 @@ class ArrayGlyph(GeoMixin, Glyph):
             - Configure the shared colour bar with a typed `ColorBar`:
                 ```python
                 >>> import numpy as np
-                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+                >>> from cleopatra.glyphs.gridded.array_glyph import (
+                ...     ArrayGlyph,
+                ...     FacetLayout,
+                ... )
                 >>> from cleopatra.styling.colorbar import ColorBar
                 >>> stack = np.arange(3 * 5 * 5, dtype=float).reshape(3, 5, 5)
-                >>> g = ArrayGlyph(stack).facet(col="t", colorbar=ColorBar(label="mm"))
+                >>> g = ArrayGlyph(stack).facet(
+                ...     FacetLayout(col="t"), colorbar=ColorBar(label="mm")
+                ... )
                 >>> g.cbar.ax.get_ylabel()
                 'mm'
+
+                ```
+            - Draw into axes the caller already created (and could decorate):
+                ```python
+                >>> import matplotlib.pyplot as plt
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.array_glyph import (
+                ...     ArrayGlyph,
+                ...     FacetLayout,
+                ... )
+                >>> stack = np.arange(3 * 5 * 5, dtype=float).reshape(3, 5, 5)
+                >>> fig, axs = plt.subplots(1, 3, figsize=(9, 3), squeeze=False)
+                >>> g = ArrayGlyph(stack).facet(FacetLayout(col="t", axes=axs))
+                >>> g.fig is fig
+                True
+                >>> g.axes[0, 0] is axs[0, 0]
+                True
+                >>> plt.close(fig)
 
                 ```
         """
@@ -4179,6 +4537,27 @@ class ArrayGlyph(GeoMixin, Glyph):
                 "arguments; pass panel-title labels via "
                 "`labels=PanelLabels(col=..., row=...)` instead."
             )
+        moved = [k for k in _FACET_LAYOUT_KEYS if k in kwargs]
+        if moved:
+            raise ValueError(
+                f"{', '.join(moved)} moved onto FacetLayout; pass "
+                f"`facet(FacetLayout({moved[0]}=...), ...)` instead of a loose "
+                f"`{moved[0]}=` keyword."
+            )
+        if layout is None:
+            raise ValueError(
+                "`facet` requires a `FacetLayout`, e.g. "
+                "`facet(FacetLayout(col='time'))`."
+            )
+
+        col = layout.col
+        row = layout.row
+        col_wrap = layout.col_wrap
+        labels = layout.labels
+        figure_size = layout.figure_size
+        axes = layout.axes
+        extents = layout.extents
+
         if col is None and row is None:
             raise ValueError("at least one of `col`/`row` must be given")
         labels = labels or PanelLabels()
@@ -4242,10 +4621,8 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         col = cast(str, col)  # guaranteed non-None by the validation above
 
-        if figure_size is None:
-            figure_size = (4.0 * ncols, 3.5 * nrows)
-        fig, axes = plt.subplots(
-            nrows=nrows, ncols=ncols, figsize=figure_size, squeeze=False
+        fig, axes_grid, flat_axes, owns_figure, created_axes = self._facet_axes(
+            nrows, ncols, figure_size, axes
         )
 
         vmin_user = kwargs.get("vmin")
@@ -4274,7 +4651,6 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         name_dicts: list[dict[str, Any]] = []
         cbar: Colorbar | None = None
-        flat_axes = axes.ravel()
 
         try:
             for panel_idx, (col_idx, row_idx) in enumerate(panel_indices):
@@ -4316,6 +4692,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     contour=contour,
                     cells=cells,
                     data_style=data_style,
+                    compose=compose,
                 )
 
                 title, name_dict = labels.panel_title(col, col_idx, row, row_idx)
@@ -4325,14 +4702,26 @@ class ArrayGlyph(GeoMixin, Glyph):
                 if panel_idx == 0 and getattr(sub, "cbar", None) is not None:
                     cbar = sub.cbar
 
-            for hidden_idx in range(n_panels, nrows * ncols):
-                flat_axes[hidden_idx].set_visible(False)
+            # Hide the empty slots -- only the ones inside the block we drew into
+            # (every axis beyond the rendered panels), never the host's others.
+            for hidden_ax in flat_axes[n_panels:]:
+                hidden_ax.set_visible(False)
 
-            fig.tight_layout()
+            # Only re-lay-out a figure cleopatra created; a caller's figure is
+            # theirs to arrange.
+            if owns_figure:
+                fig.tight_layout()
         except Exception:
-            plt.close(fig)
+            # Roll back what cleopatra created: close a figure it owns; on a
+            # caller's host, remove the subplots it added (but never touch
+            # pre-existing axes the caller supplied).
+            if owns_figure:
+                plt.close(fig)
+            elif created_axes:
+                for panel_ax in flat_axes:
+                    panel_ax.remove()
             raise
-        result = FacetGrid(fig=fig, axes=axes, cbar=cbar, name_dicts=name_dicts)
+        result = FacetGrid(fig=fig, axes=axes_grid, cbar=cbar, name_dicts=name_dicts)
         return result
 
     def _apply_full_bleed(self, facecolor: str | None = None) -> None:

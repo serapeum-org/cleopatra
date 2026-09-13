@@ -65,10 +65,14 @@ to title `facet` panels by coordinate.
 - **`ArrayGlyph(..., coords=(x, y))`** — plot curvilinear / non-uniform grids (1-D cell
   centres or 2-D meshgrids); with `kind="auto"` this routes to `pcolormesh`. Mutually
   exclusive with `extent`.
-- **`ArrayGlyph.facet(col=, row=, col_wrap=, labels=, kind=, figure_size=, extents=)`** — a grid
-  of subplots from a 3-D `(N, H, W)` or 4-D `(N, M, H, W)` stack with one shared colour scale
-  and colorbar. Pass `labels=PanelLabels(col=..., row=...)` to title panels by coordinate
-  value instead of the integer slice index.
+- **`ArrayGlyph.facet(FacetLayout(col=, row=, col_wrap=, labels=, figure_size=, axes=, extents=),
+  *, kind=, colorbar=, color=, contour=, cells=, data_style=, compose=)`** — a grid of subplots
+  from a 3-D `(N, H, W)` or 4-D `(N, M, H, W)` stack with one shared colour scale and colorbar.
+  The grid layout (which dimension(s) to facet, wrapping, panel labels, per-panel extents, and
+  the target figure/axes) is bundled into a `FacetLayout`; per-panel render options stay as
+  `facet` keywords. Pass `labels=PanelLabels(col=..., row=...)` on the `FacetLayout` to title
+  panels by coordinate value instead of the integer slice index, and `axes=` to draw the panels
+  into axes you already created (see the `axes=` reference below).
 - **`animate(..., data_getter=callable)`** — supply each frame lazily (e.g. a NetCDF time
   slab) instead of holding the whole stack in memory.
 - **The colour scale is chosen via the `ColorScaling` group object** —
@@ -152,11 +156,25 @@ fig, ax = ArrayGlyph(arr, coords=(x, y)).plot(kind="auto")  # -> pcolormesh
 
 ```python
 import numpy as np
-from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph, FacetLayout
 
 stack = np.random.default_rng(0).random((6, 20, 20))
-g = ArrayGlyph(stack).facet(col="time", col_wrap=3, robust=True)
+g = ArrayGlyph(stack).facet(FacetLayout(col="time", col_wrap=3), robust=True)
 g.fig.savefig("facet.png")     # g.axes is a (2, 3) ndarray of Axes; g.cbar is shared
+```
+
+Draw into axes you already own by passing them on the `FacetLayout` (cleopatra keeps the
+shared colour scale but won't resize or close your figure):
+
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph, FacetLayout
+
+stack = np.random.default_rng(0).random((6, 20, 20))
+fig, axs = plt.subplots(2, 3, figsize=(14, 7))
+g = ArrayGlyph(stack).facet(FacetLayout(col="time", col_wrap=3, axes=axs))
+assert g.fig is fig and g.axes[0, 0] is axs[0, 0]
 ```
 
 ### Animation

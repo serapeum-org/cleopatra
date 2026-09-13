@@ -190,6 +190,16 @@ See the [Tiles reference](reference/tiles.md) and [Reference data reference](ref
 See the [Haze-style presets example](notebooks/presets/haze_preset_examples.ipynb) and the
 [Projection reference](reference/projection.md).
 
+### Day/night terminator & Tissot indicatrix — `cleopatra.basemap.solar`
+
+- `subsolar_point` / `terminator` / `night_polygon` compute the sun's overhead point, the terminator small
+  circle, and the filled night region for a datetime — CRS-free lon/lat maths, no ephemeris dependency.
+- `add_nightshade` shades the night region on a plain lon/lat axes (or via a `transform=`/`crs=` mapping), and
+  `add_tissot` draws distortion circles (from `tissot_circles`) that you have projected yourself. cleopatra
+  computes lon/lat and draws; it never resolves a projection.
+
+See the [Solar (terminator/Tissot) reference](reference/solar.md).
+
 ### `Colors`, `styles`, `config`
 
 - `Colors` — convert between hex / RGB(0–255) / normalized-RGB(0–1) and build colormaps from images; plus the

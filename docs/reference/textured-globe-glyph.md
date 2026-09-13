@@ -63,6 +63,12 @@ is applied per frame from the already-rotated vertices — no texture re-samplin
 with a spinning globe sweeps the terminator across the surface. `sun=None` (the default) renders
 evenly.
 
+!!! note
+    This is the **3-D** globe's directional lighting (shading on a sphere). For a day/night
+    terminator on an ordinary flat (lon/lat) axes, use
+    [`cleopatra.basemap.solar`](solar.md) — `add_nightshade` draws the terminator and night region
+    as lon/lat geometry rather than shading a sphere.
+
 ```python
 from cleopatra.basemap.reference import relief
 from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph
