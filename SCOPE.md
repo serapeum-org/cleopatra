@@ -53,8 +53,10 @@ colorbars, ticks, classification, and animation.
   quantiles, equal-interval, percentiles, std-mean, Fisher-Jenks/natural-breaks
   — all NumPy-native), and reusable legend builders (disjoint/size/width/
   histogram/colorbar).
-- `tiles` (optional `cleopatra[tiles]` extra): fetch + stitch XYZ web-tile
-  basemaps; reprojection helpers.
+- `tiles` (optional `cleopatra[tiles]` extra): fetch + stitch web-tile
+  basemaps — XYZ templates, and OGC WMS / WMTS services via the provider
+  objects in `basemap.ogc`; reprojection helpers. What belongs here is the
+  fetch-stitch-compose path, not a catalogue of *which* services exist.
 - `reference` (uses the `cleopatra[tiles]` extra for relief decoding /
   reprojection): fetch + draw fixed public reference-basemap data *under* your
   plot — Natural Earth vector layers (`add_features`) and a global hypsometric

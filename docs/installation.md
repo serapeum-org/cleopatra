@@ -20,7 +20,8 @@
 ### Optional dependencies — the `tiles` extra
 
 The geospatial basemap features need three extra packages: the web-tile basemap helper
-(`cleopatra.basemap.tiles.add_tiles`), the reference-data layers (`cleopatra.basemap.reference.add_relief`
+(`cleopatra.basemap.tiles.add_tiles`, including the OGC WMS/WMTS providers in
+`cleopatra.basemap.ogc`), the reference-data layers (`cleopatra.basemap.reference.add_relief`
 for relief PNG decoding, and `cleopatra.basemap.reference.add_features(..., crs=...)` for
 reprojection), the orthographic globe presets in `cleopatra.basemap.projection`, and CRS
 reprojection on the geographic glyphs (`GeoMixin.add_tiles` / `add_features` / `add_relief`
