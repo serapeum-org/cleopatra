@@ -2732,7 +2732,7 @@ has no colour-by-value path and is not part of this pipeline.</p>
 
     D -- "no" --&gt; H["get_ticks()"]
     H --&gt; I["_create_norm_and_cbar_kw(ticks)"]
-    I --&gt; J["norm (linear / power / sym-log /\nboundary / midpoint) or None"]
+    I --&gt; J["norm (linear / power / sym-log /\nboundary / midpoint / equalize) or None"]
     J --&gt; K
 
     subgraph bypass["ArrayGlyph / MeshGlyph (bypass)"]
@@ -2786,6 +2786,7 @@ driven purely by the norm.</p>
         LOGNORM
         BOUNDARY_NORM
         MIDPOINT
+        EQUALIZE
     }
     class CLASSIFY_OPTIONS {
         &lt;&lt;dict&gt;&gt;
