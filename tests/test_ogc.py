@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 import pytest
 
 from cleopatra.basemap import tiles as tiles_mod
-from cleopatra.basemap.ogc import WMSProvider, WMTSProvider
+from cleopatra.basemap.ogc import WMSProvider, WMTSProvider, _query
 from cleopatra.basemap.tiles import (
     _TILES_AVAILABLE,
     Tile,
@@ -312,6 +312,88 @@ class TestWMTSProviderBuildUrl:
         )
         assert query_of(provider.build_url(x=0, y=0, z=0))["version_id"] == ["42"], (
             "the coerced value did not reach the query"
+        )
+
+
+class TestQueryAssembly:
+    """`_query` puts a URL back together rather than concatenating onto it."""
+
+    def test_a_trailing_question_mark_is_not_doubled(self):
+        """An endpoint ending in `?` gets one query, not two.
+
+        Test scenario:
+            `urlsplit("https://h/wms?").query` is the empty string, so choosing
+            the separator by truthiness appended a second `?` and renamed the
+            first parameter to `?SERVICE`. WMTS requires `SERVICE`, so every
+            tile of a MapServer/GeoServer-style `.../service?` endpoint failed
+            with a misleading `ConnectionError`.
+        """
+        built = _query("https://example.org/service?", {"SERVICE": "WMTS"})
+        assert built == "https://example.org/service?SERVICE=WMTS", (
+            f"trailing '?' mishandled: {built!r}"
+        )
+
+    def test_a_fragment_does_not_swallow_the_query(self):
+        """The query goes before the fragment, where it is transmitted.
+
+        Test scenario:
+            Appending `?a=b` to `https://h/wms#frag` puts the whole query
+            inside the fragment, so the server receives none of it.
+        """
+        built = _query("https://example.org/wms#layers", {"SERVICE": "WMS"})
+        assert urlsplit(built).query == "SERVICE=WMS", f"query lost: {built!r}"
+        assert urlsplit(built).fragment == "layers", f"fragment lost: {built!r}"
+
+    def test_an_existing_query_is_extended(self):
+        """A mandatory parameter already on the endpoint survives.
+
+        Test scenario:
+            Some services publish an endpoint with a parameter baked in;
+            replacing rather than extending its query would drop it.
+        """
+        built = _query("https://example.org/wms?map=/etc/base.map", {"A": "1"})
+        query = parse_qs(urlsplit(built).query)
+        assert query["map"] == ["/etc/base.map"], f"pre-existing lost: {built!r}"
+        assert query["A"] == ["1"], f"added parameter lost: {built!r}"
+
+    def test_no_parameters_leaves_the_url_untouched(self):
+        """An empty mapping returns the endpoint verbatim.
+
+        Test scenario:
+            The early return keeps a RESTful template free of a stray `?`.
+        """
+        assert _query("https://example.org/wms?", {}) == "https://example.org/wms?", (
+            "an empty mapping should not rewrite the URL"
+        )
+
+
+class TestProvidersHandleAwkwardEndpoints:
+    """Both providers survive endpoint shapes that broke naive concatenation."""
+
+    def test_wmts_on_a_trailing_question_mark_endpoint(self):
+        """A `.../service?` WMTS endpoint still sends `SERVICE`.
+
+        Test scenario:
+            The end-to-end form of the `_query` case: WMTS `GetTile` mandates
+            `SERVICE`, and mangling it to `?SERVICE` is a hard failure.
+        """
+        provider = WMTSProvider(url="https://example.org/service?", layer="L")
+        query = parse_qs(urlsplit(provider.build_url(x=1, y=2, z=3)).query)
+        assert query["SERVICE"] == ["WMTS"], f"SERVICE mangled: {query}"
+        assert "?SERVICE" not in query, f"a bogus '?SERVICE' key was produced: {query}"
+
+    def test_wms_on_a_fragment_endpoint(self):
+        """A fragment on the endpoint does not cost the GetMap its parameters.
+
+        Test scenario:
+            Every GetMap parameter has to reach the service; losing them all
+            to the fragment would return the service's default image, or an
+            exception, rather than the requested tile.
+        """
+        provider = WMSProvider(url="https://example.org/wms#layers", layers="ortho")
+        query = parse_qs(urlsplit(provider.build_url(x=0, y=0, z=0)).query)
+        assert query["REQUEST"] == ["GetMap"], (
+            f"parameters lost to the fragment: {query}"
         )
 
 

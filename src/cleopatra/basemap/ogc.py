@@ -156,9 +156,13 @@ def _freeze_params(extra_params: Mapping[str, str]) -> Mapping[str, str]:
 def _query(base: str, params: Mapping[str, str]) -> str:
     """Append `params` to `base`, preserving any query it already carries.
 
-    The separator is chosen from `base` itself -- `?` when it has no query yet,
-    `&` when it does -- so an endpoint that publishes a mandatory parameter of
-    its own survives having more added after it. Keys and values are
+    The URL is taken apart and put back together rather than concatenated, so
+    an endpoint that publishes a mandatory parameter of its own survives having
+    more added after it, and two shapes that broke naive concatenation are
+    handled: a trailing `?` (which carries an *empty* query, so testing the
+    query for truthiness appended a second `?` and renamed the first parameter
+    to `?SERVICE`), and a fragment (which would otherwise swallow the whole
+    generated query, transmitting none of it). Keys and values are
     percent-encoded by `urllib.parse.urlencode`.
 
     Args:
@@ -184,6 +188,20 @@ def _query(base: str, params: Mapping[str, str]) -> str:
             'https://example.org/wms?map=/etc/base.map&token=a%26b'
 
             ```
+        - A trailing `?` is absorbed rather than doubled:
+            ```python
+            >>> from cleopatra.basemap.ogc import _query
+            >>> _query("https://example.org/wms?", {"SERVICE": "WMS"})
+            'https://example.org/wms?SERVICE=WMS'
+
+            ```
+        - A fragment stays at the end, where it cannot swallow the query:
+            ```python
+            >>> from cleopatra.basemap.ogc import _query
+            >>> _query("https://example.org/wms#layers", {"SERVICE": "WMS"})
+            'https://example.org/wms?SERVICE=WMS#layers'
+
+            ```
         - Nothing to add leaves the endpoint alone:
             ```python
             >>> from cleopatra.basemap.ogc import _query
@@ -195,8 +213,9 @@ def _query(base: str, params: Mapping[str, str]) -> str:
     encoded = urllib.parse.urlencode(params)
     if not encoded:
         return base
-    separator = "&" if urllib.parse.urlsplit(base).query else "?"
-    return f"{base}{separator}{encoded}"
+    parts = urllib.parse.urlsplit(base)
+    merged = f"{parts.query}&{encoded}" if parts.query else encoded
+    return urllib.parse.urlunsplit(parts._replace(query=merged))
 
 
 def _hash_provider(provider: object) -> int:
