@@ -167,6 +167,28 @@ def _reject_loose_alpha(kwargs: dict) -> None:
         )
 
 
+def _reject_loose_fill(kwargs: dict) -> None:
+    """Raise if a loose `fill=` keyword was passed to `ArrayGlyph`.
+
+    The contourf fill toggle moved onto `contour=Contour(fill=...)`. Like
+    `alpha`, `fill` is a generic name a caller of another glyph (e.g. filled
+    polygons) might pass legitimately, so it is rejected here -- locally to
+    `ArrayGlyph` -- rather than in the shared `_GROUPED_KWARG_HINTS` map that
+    gates every glyph's construction.
+
+    Args:
+        kwargs: The keyword-argument mapping to check.
+
+    Raises:
+        ValueError: If `kwargs` contains a `fill` key.
+    """
+    if "fill" in kwargs:
+        raise ValueError(
+            "The 'fill' option moved onto a grouped parameter object; pass "
+            "contour=Contour(fill=False) instead of a loose fill= keyword."
+        )
+
+
 #: Tuple of accepted `kind=` values for `ArrayGlyph.plot`.
 VALID_PLOT_KINDS = ("auto", "imshow", "pcolormesh", "contour", "contourf")
 #: Tuple of accepted values for the xarray-aligned `extend` colorbar kwarg.
@@ -1444,6 +1466,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         ```
         """
         _reject_loose_alpha(kwargs)
+        _reject_loose_fill(kwargs)
         super().__init__(
             default_options=ARRAY_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs
         )
@@ -3227,6 +3250,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         _reject_grouped_kwargs(kwargs)
         _reject_loose_alpha(kwargs)
+        _reject_loose_fill(kwargs)
         for key, val in kwargs.items():
             if key not in self.default_options.keys():
                 raise ValueError(
