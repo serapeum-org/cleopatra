@@ -4263,6 +4263,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `SubplotSpec` region (subdivided into the panel grid). A block
                 that does not reproduce the `(nrows, ncols)` grid is rejected,
                 so `col_wrap` is honoured and `FacetGrid.axes` keeps its shape.
+                If those axes already carry content you want to keep (a
+                projection frame, graticule or basemap), also pass
+                `compose=True`; otherwise each panel clears its axes before
+                drawing (the default), wiping that content.
                 The shared colour scale
                 is computed and applied exactly as for the self-built grid.
                 `FacetGrid.fig` is still the root `Figure` (a `SubFigure` host is
@@ -4399,6 +4403,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 True
                 >>> g.axes[0, 0] is axs[0, 0]
                 True
+                >>> plt.close(fig)
 
                 ```
         """
