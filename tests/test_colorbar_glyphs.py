@@ -19,6 +19,7 @@ from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
 from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
 from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
 from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
+from cleopatra.glyphs.stats.hexbin_glyph import HexbinGlyph
 from cleopatra.glyphs.stats.kde_glyph import KDEGlyph
 from cleopatra.styling.colorbar import ColorBar
 from cleopatra.styling.params import Classify
@@ -49,7 +50,9 @@ def _vector():
 
 def _scatter():
     """A value-coloured ScatterGlyph."""
-    return ScatterGlyph(list(_RNG.random(12)), list(_RNG.random(12)), values=np.array(_RNG.random(12)))
+    return ScatterGlyph(
+        list(_RNG.random(12)), list(_RNG.random(12)), values=np.array(_RNG.random(12))
+    )
 
 
 def _polygon():
@@ -62,25 +65,69 @@ def _kde():
     return KDEGlyph(_RNG.random(60), _RNG.random(60))
 
 
+def _hexbin():
+    """A HexbinGlyph over a random point cloud."""
+    return HexbinGlyph(_RNG.random(80), _RNG.random(80), gridsize=8)
+
+
 #: name -> (make glyph, draw with a colorbar= spec, read the drawn colorbar,
 #: trigger a loose cbar_* kwarg). MeshGlyph stores its bar on `_cbar` and takes
 #: loose kwargs at plot time; the others store `cbar` and take them at construction.
 GLYPHS = {
-    "flow": (_flow, lambda g, cb: g.plot(colorbar=cb), lambda g: g.cbar,
-             lambda: FlowGlyph(_FLOW_PATHS, values=np.array([3.0, 7.0]), cbar_label="X")),
-    "vector": (_vector, lambda g, cb: g.plot(colorbar=cb), lambda g: g.cbar,
-               lambda: VectorGlyph(*np.meshgrid(np.arange(4.0), np.arange(4.0)),
-                                   _RNG.random((4, 4)), _RNG.random((4, 4)), cbar_label="X")),
-    "scatter": (_scatter, lambda g, cb: g.plot(colorbar=cb), lambda g: g.cbar,
-                lambda: ScatterGlyph(list(_RNG.random(6)), list(_RNG.random(6)),
-                                     values=np.array(_RNG.random(6)), cbar_label="X")),
-    "polygon": (_polygon, lambda g, cb: g.plot(colorbar=cb), lambda g: g.cbar,
-                lambda: PolygonGlyph(_SQUARES, values=np.array([1.0, 2.0]), cbar_label="X")),
-    "kde": (_kde, lambda g, cb: g.plot(colorbar=cb), lambda g: g.cbar,
-            lambda: KDEGlyph(_RNG.random(60), _RNG.random(60), cbar_label="X")),
-    "mesh": (lambda: MeshGlyph(_MESH_NX, _MESH_NY, _MESH_FACES),
-             lambda g, cb: g.plot(_MESH_DATA, colorbar=cb), lambda g: g._cbar,
-             lambda: MeshGlyph(_MESH_NX, _MESH_NY, _MESH_FACES).plot(_MESH_DATA, cbar_label="X")),
+    "flow": (
+        _flow,
+        lambda g, cb: g.plot(colorbar=cb),
+        lambda g: g.cbar,
+        lambda: FlowGlyph(_FLOW_PATHS, values=np.array([3.0, 7.0]), cbar_label="X"),
+    ),
+    "vector": (
+        _vector,
+        lambda g, cb: g.plot(colorbar=cb),
+        lambda g: g.cbar,
+        lambda: VectorGlyph(
+            *np.meshgrid(np.arange(4.0), np.arange(4.0)),
+            _RNG.random((4, 4)),
+            _RNG.random((4, 4)),
+            cbar_label="X",
+        ),
+    ),
+    "scatter": (
+        _scatter,
+        lambda g, cb: g.plot(colorbar=cb),
+        lambda g: g.cbar,
+        lambda: ScatterGlyph(
+            list(_RNG.random(6)),
+            list(_RNG.random(6)),
+            values=np.array(_RNG.random(6)),
+            cbar_label="X",
+        ),
+    ),
+    "polygon": (
+        _polygon,
+        lambda g, cb: g.plot(colorbar=cb),
+        lambda g: g.cbar,
+        lambda: PolygonGlyph(_SQUARES, values=np.array([1.0, 2.0]), cbar_label="X"),
+    ),
+    "kde": (
+        _kde,
+        lambda g, cb: g.plot(colorbar=cb),
+        lambda g: g.cbar,
+        lambda: KDEGlyph(_RNG.random(60), _RNG.random(60), cbar_label="X"),
+    ),
+    "hexbin": (
+        _hexbin,
+        lambda g, cb: g.plot(colorbar=cb),
+        lambda g: g.cbar,
+        lambda: HexbinGlyph(_RNG.random(80), _RNG.random(80), cbar_label="X"),
+    ),
+    "mesh": (
+        lambda: MeshGlyph(_MESH_NX, _MESH_NY, _MESH_FACES),
+        lambda g, cb: g.plot(_MESH_DATA, colorbar=cb),
+        lambda g: g._cbar,
+        lambda: MeshGlyph(_MESH_NX, _MESH_NY, _MESH_FACES).plot(
+            _MESH_DATA, cbar_label="X"
+        ),
+    ),
 }
 
 
@@ -107,7 +154,9 @@ def test_colorbar_spec_configures_and_draws(name):
     draw(glyph, ColorBar(orientation="horizontal", label="Value"))
     cbar = read_cbar(glyph)
     assert cbar is not None, f"{name}: colorbar=ColorBar should draw a colorbar"
-    assert cbar.orientation == "horizontal", f"{name}: spec orientation not applied, got {cbar.orientation}"
+    assert cbar.orientation == "horizontal", (
+        f"{name}: spec orientation not applied, got {cbar.orientation}"
+    )
 
 
 @pytest.mark.parametrize("name", list(GLYPHS))
@@ -124,7 +173,9 @@ def test_colorbar_false_suppresses(name):
     make, draw, read_cbar, _ = GLYPHS[name]
     glyph = make()
     draw(glyph, False)
-    assert read_cbar(glyph) is None, f"{name}: colorbar=False should suppress the colorbar"
+    assert read_cbar(glyph) is None, (
+        f"{name}: colorbar=False should suppress the colorbar"
+    )
 
 
 @pytest.mark.parametrize("name", list(GLYPHS))
@@ -155,13 +206,21 @@ def test_mesh_animate_colorbar_spec_and_suppression():
     """
     frames = [_MESH_DATA, _MESH_DATA * 2]
     g = MeshGlyph(_MESH_NX, _MESH_NY, _MESH_FACES)
-    g.animate(frames, time=[0, 1], colorbar=ColorBar(orientation="horizontal", ticks_spacing=2.5))
+    g.animate(
+        frames,
+        time=[0, 1],
+        colorbar=ColorBar(orientation="horizontal", ticks_spacing=2.5),
+    )
     assert g._cbar is not None, "animate spec should draw a colorbar"
     assert g._cbar.orientation == "horizontal", "animate spec orientation not applied"
-    assert g.default_options["ticks_spacing"] == 2.5, "animate spec ticks_spacing not honored"
+    assert g.default_options["ticks_spacing"] == 2.5, (
+        "animate spec ticks_spacing not honored"
+    )
     g2 = MeshGlyph(_MESH_NX, _MESH_NY, _MESH_FACES)
     g2.animate(frames, time=[0, 1], colorbar=False)
-    assert getattr(g2, "_cbar", None) is None, "animate colorbar=False should suppress the bar"
+    assert getattr(g2, "_cbar", None) is None, (
+        "animate colorbar=False should suppress the bar"
+    )
 
 
 def test_unvalidated_label_location_errors_clearly_at_render():
@@ -190,9 +249,13 @@ def test_colorbar_spec_is_sticky_like_arrayglyph():
     glyph.plot(colorbar=ColorBar(orientation="horizontal"))
     assert glyph.cbar.orientation == "horizontal", "spec should apply"
     glyph.plot()
-    assert glyph.cbar.orientation == "horizontal", "spec should persist across plain plot() calls"
+    assert glyph.cbar.orientation == "horizontal", (
+        "spec should persist across plain plot() calls"
+    )
     glyph.plot(colorbar=True)
-    assert glyph.cbar.orientation == "vertical", "colorbar=True should reset to the default bar"
+    assert glyph.cbar.orientation == "vertical", (
+        "colorbar=True should reset to the default bar"
+    )
 
 
 def test_colorbar_placement_renders_on_non_array_glyph():
@@ -206,7 +269,9 @@ def test_colorbar_placement_renders_on_non_array_glyph():
     glyph = _scatter()
     glyph.plot(colorbar=ColorBar(location="bottom", inside=True, box=True))
     assert glyph.cbar is not None, "placement spec should draw a colorbar"
-    assert glyph.cbar.orientation == "horizontal", "location='bottom' should force horizontal"
+    assert glyph.cbar.orientation == "horizontal", (
+        "location='bottom' should force horizontal"
+    )
 
 
 @pytest.mark.parametrize("name", list(GLYPHS))
@@ -223,7 +288,9 @@ def test_colorbar_none_draws_default(name):
     make, draw, read_cbar, _ = GLYPHS[name]
     glyph = make()
     draw(glyph, None)
-    assert read_cbar(glyph) is not None, f"{name}: colorbar=None should draw the default bar"
+    assert read_cbar(glyph) is not None, (
+        f"{name}: colorbar=None should draw the default bar"
+    )
 
 
 def test_colorbar_false_suppresses_under_categorical_scheme():
@@ -234,11 +301,14 @@ def test_colorbar_false_suppresses_under_categorical_scheme():
         `colorbar=False` must still leave `cbar` unset.
     """
     glyph = ScatterGlyph(
-        list(_RNG.random(9)), list(_RNG.random(9)),
+        list(_RNG.random(9)),
+        list(_RNG.random(9)),
         values=np.array([0, 1, 2, 0, 1, 2, 0, 1, 2]),
     )
     glyph.plot(colorbar=False, classify=Classify(scheme="categorical"))
-    assert glyph.cbar is None, "colorbar=False should suppress the bar under a categorical scheme"
+    assert glyph.cbar is None, (
+        "colorbar=False should suppress the bar under a categorical scheme"
+    )
 
 
 class TestColorBarMethods:
@@ -283,7 +353,9 @@ class TestColorBarMethods:
         Test scenario:
             `False` suppresses the colorbar and nothing else.
         """
-        assert ColorBar.resolve(False) == {"add_colorbar": False}, "False should suppress"
+        assert ColorBar.resolve(False) == {"add_colorbar": False}, (
+            "False should suppress"
+        )
 
     def test_resolve_true_matches_reset_options(self):
         """`resolve(True)` returns the `reset_options` default dict.
@@ -302,7 +374,9 @@ class TestColorBarMethods:
             A `ColorBar` instance resolves to exactly its `to_options()` dict.
         """
         cb = ColorBar(location="bottom")
-        assert ColorBar.resolve(cb) == cb.to_options(), "instance should delegate to to_options"
+        assert ColorBar.resolve(cb) == cb.to_options(), (
+            "instance should delegate to to_options"
+        )
 
     def test_resolve_invalid_type_raises(self):
         """`resolve` rejects a non-bool / non-`ColorBar` / non-`None` argument.
@@ -353,4 +427,6 @@ class TestColorBarMethods:
             a caption-only spec yields False.
         """
         got = ColorBar(**kwargs).specifies_placement()
-        assert got is expected, f"specifies_placement({kwargs}) -> {got}, expected {expected}"
+        assert got is expected, (
+            f"specifies_placement({kwargs}) -> {got}, expected {expected}"
+        )
