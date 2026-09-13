@@ -367,9 +367,9 @@ def add_nightshade(
         ImportError: If ``crs`` requires reprojection but ``pyproj`` (the
             ``[tiles]`` extra) is not installed.
     """
-    # TODO(#356): reject transform+crs together; build night_polygon(when, ...);
-    # apply transform() or reference._make_transformer(crs)/_reproject_arr; add a
-    # PolyCollection on ax.transData; save/restore get_xlim()/get_ylim(); return it.
+    # Planned for #356: reject transform+crs together; build night_polygon(when,
+    # ...); apply transform() or reference._make_transformer(crs)/_reproject_arr;
+    # add a PolyCollection on ax.transData; save/restore the limits; return it.
     raise NotImplementedError("add_nightshade is not implemented yet (see #356).")
 
 
@@ -397,8 +397,9 @@ def tissot_circles(
         list[numpy.ndarray]: One ``(n, 2)`` lon/lat ring per centre, in input
         order.
     """
-    # TODO(#356): for each (lon, lat), sample n bearings and step the angular
-    # radius radius_m / MEAN_EARTH_RADIUS_M along a great circle -> (n, 2) lon/lat.
+    # Planned for #356: for each (lon, lat), sample n bearings and step the
+    # angular radius radius_m / MEAN_EARTH_RADIUS_M along a great circle to
+    # (n, 2) lon/lat.
     raise NotImplementedError("tissot_circles is not implemented yet (see #356).")
 
 
@@ -422,8 +423,8 @@ def add_tissot(ax: Any, ellipses: Sequence[np.ndarray], **style: Any) -> PolyCol
     Returns:
         matplotlib.collections.PolyCollection: The Tissot artist.
     """
-    # TODO(#356): draw `ellipses` unchanged via PolygonGlyph (outline-only by
-    # default); preserve axis limits; return the artist.
+    # Planned for #356: draw `ellipses` unchanged via PolygonGlyph (outline-only
+    # by default); preserve axis limits; return the artist.
     raise NotImplementedError("add_tissot is not implemented yet (see #356).")
 
 
