@@ -338,7 +338,8 @@ def add_nightshade(
     Vertices that a ``transform`` or ``crs`` maps to non-finite values -- the
     night region always spans ~half the globe, so a non-global projection sends
     its far side outside the projection's domain -- are dropped so the fill stays
-    valid (as `cleopatra.basemap.reference.add_features` does).
+    valid (as `cleopatra.basemap.reference.add_features` does). If a mapping drops
+    every vertex, the returned artist has no polygons (nothing is drawn).
 
     Args:
         ax: A matplotlib `~matplotlib.axes.Axes` with data already plotted.
@@ -405,11 +406,12 @@ def add_nightshade(
         transformer = _make_transformer(crs)
         rings = [_reproject_arr(ring, transformer) for ring in rings]
 
-    # A transform or reprojection can map points at a projection singularity (a
-    # non-global projection's undefined domain, or a conformal projection's poles)
-    # to non-finite values; the night region always spans ~half the globe, so drop
-    # those rows per ring -- and rings left with < 3 vertices -- to keep the fill
-    # valid, mirroring cleopatra.basemap.reference.add_features.
+    # A transform or reprojection can map points outside the projection's domain
+    # (e.g. a non-global projection's far side) to non-finite values; the night
+    # region always spans ~half the globe, so drop those rows per ring -- and
+    # rings left with < 3 vertices -- to keep the fill valid, mirroring
+    # cleopatra.basemap.reference.add_features. If every vertex is dropped the
+    # artist is simply empty.
     rings = [ring[np.isfinite(ring).all(axis=1)] for ring in rings]
     rings = [ring for ring in rings if len(ring) >= 3]
 

@@ -62,11 +62,14 @@ fig.savefig("nightshade.png")
     ask: pass a `transform` callable, or the optional `crs=` shortcut (which needs the
     `cleopatra[tiles]` extra and raises an actionable `ImportError` without it). `transform=` and
     `crs=` are mutually exclusive. The night region always spans about half the globe, so a
-    non-global projection (orthographic, azimuthal, a regional CRS) — or a conformal projection at
-    its poles — maps the far side outside the projection's domain, to non-finite coordinates.
-    `add_nightshade` drops those vertices so the fill stays valid, but the drawn region is then only
-    the part that lies inside the projection; choose a projection whose domain covers the area you
-    are shading.
+    non-global projection (orthographic, azimuthal, a regional CRS) maps the far side outside its
+    domain, to non-finite coordinates; `add_nightshade` drops those vertices, so the drawn region is
+    then only the part that lies inside the projection — choose a projection whose domain covers the
+    area you are shading. If an out-of-domain mapping drops *every* vertex, the returned artist is
+    empty (nothing is drawn). A conformal projection such as Web Mercator (`crs=3857`) instead maps
+    the poles to very large but finite coordinates: nothing is dropped, and a pole-covering fill is
+    simply drawn far outside the usual map extent (the axis limits, which `add_nightshade` preserves,
+    crop it).
 
 ## Module Documentation
 
