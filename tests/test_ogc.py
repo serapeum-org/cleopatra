@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import base64
 import dataclasses
+from dataclasses import replace
 from unittest.mock import MagicMock, patch
 from urllib.parse import parse_qs, urlsplit
 
@@ -26,6 +27,7 @@ from cleopatra.basemap.ogc import (
     WMSProvider,
     WMTSProvider,
     _format_coordinate,
+    _merge_params,
     _query,
 )
 from cleopatra.basemap.tiles import (
@@ -318,6 +320,84 @@ class TestWMTSProviderBuildUrl:
         assert query_of(provider.build_url(x=0, y=0, z=0))["version_id"] == ["42"], (
             "the coerced value did not reach the query"
         )
+
+
+class TestCaseInsensitiveOverride:
+    """`extra_params` replaces a generated parameter whatever its casing."""
+
+    @pytest.mark.parametrize(
+        "kind, key, value, generated",
+        [
+            ("wmts", "format", "image/jpeg", "FORMAT"),
+            ("wmts", "Layer", "Other", "LAYER"),
+            ("wms", "transparent", "FALSE", "TRANSPARENT"),
+            ("wms", "styles", "shaded", "STYLES"),
+        ],
+    )
+    def test_a_differently_cased_key_replaces_rather_than_duplicates(
+        self, kind, key, value, generated, wmts, wms
+    ):
+        """The service receives one value for the parameter, not two.
+
+        Args:
+            kind: Which provider to check.
+            key: The caller's spelling of the parameter.
+            value: The value they want sent.
+            generated: The provider's own spelling of the same parameter.
+            wmts: The WMTS fixture.
+            wms: The WMS fixture.
+
+        Test scenario:
+            OGC parameter names are case-insensitive, so merging with `**` on an
+            exact match sent both `FORMAT=image/png` and `format=image/jpeg` and
+            left the service to choose -- the opposite of the documented
+            override.
+        """
+        base = wmts if kind == "wmts" else wms
+        provider = replace(base, extra_params={key: value})
+        query = query_of(provider.build_url(x=0, y=0, z=0))
+        present = [k for k in query if k.upper() == generated]
+        assert present == [key], f"expected only {key!r}, got {present}"
+        assert query[key] == [value], f"the caller's value did not win: {query}"
+
+    def test_an_unrelated_key_is_still_added(self, wms):
+        """Overriding does not stop `extra_params` adding new parameters.
+
+        Args:
+            wms: The GetMap provider fixture.
+
+        Test scenario:
+            The credential case: a token shares no name with anything the
+            provider generates and must simply arrive.
+        """
+        provider = replace(wms, extra_params={"token": "abc"})
+        query = query_of(provider.build_url(x=0, y=0, z=0))
+        assert query["token"] == ["abc"], f"token missing: {query}"
+        assert query["FORMAT"] == ["image/png"], f"generated key lost: {query}"
+
+
+class TestMergeParams:
+    """`_merge_params` is the case-insensitive merge both providers use."""
+
+    def test_case_insensitive_replacement(self):
+        """A lower-case key displaces the generated upper-case one.
+
+        Test scenario:
+            The unit-level statement of the rule, so a future caller of the
+            helper inherits it rather than re-deriving it.
+        """
+        merged = _merge_params({"FORMAT": "image/png"}, {"format": "image/jpeg"})
+        assert merged == {"format": "image/jpeg"}, f"not replaced: {merged}"
+
+    def test_generated_order_is_kept(self):
+        """Untouched generated keys stay in front, in their original order.
+
+        Test scenario:
+            A stable parameter order keeps the URLs diffable and the doctests
+            deterministic.
+        """
+        merged = _merge_params({"A": "1", "B": "2"}, {"c": "3"})
+        assert list(merged) == ["A", "B", "c"], f"order changed: {list(merged)}"
 
 
 class TestQueryAssembly:

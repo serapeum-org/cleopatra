@@ -219,6 +219,48 @@ def _query(base: str, params: Mapping[str, str]) -> str:
     return urllib.parse.urlunsplit(parts._replace(query=merged))
 
 
+def _merge_params(
+    generated: Mapping[str, str], extra: Mapping[str, str]
+) -> dict[str, str]:
+    """Merge `extra` over `generated`, matching keys case-insensitively.
+
+    OGC parameter names are case-insensitive, so `{"format": "image/jpeg"}` is
+    meant to replace the generated `FORMAT`. Merging with `**` only replaces on
+    an exact match, which instead sent both `FORMAT=image/png` and
+    `format=image/jpeg` and left the service to pick -- the opposite of the
+    override the caller asked for.
+
+    Args:
+        generated: The parameters this provider builds.
+        extra: The caller's `extra_params`, which win.
+
+    Returns:
+        dict[str, str]: The merged parameters, in generated-then-extra order.
+
+    Examples:
+        - A differently-cased key replaces rather than duplicates:
+            ```python
+            >>> from cleopatra.basemap.ogc import _merge_params
+            >>> _merge_params({"FORMAT": "image/png"}, {"format": "image/jpeg"})
+            {'format': 'image/jpeg'}
+
+            ```
+        - An unrelated key is simply added:
+            ```python
+            >>> from cleopatra.basemap.ogc import _merge_params
+            >>> _merge_params({"FORMAT": "image/png"}, {"token": "abc"})
+            {'FORMAT': 'image/png', 'token': 'abc'}
+
+            ```
+    """
+    overridden = {key.upper() for key in extra}
+    merged = {
+        key: value for key, value in generated.items() if key.upper() not in overridden
+    }
+    merged.update(extra)
+    return merged
+
+
 def _format_coordinate(value: float) -> str:
     """Render one BBOX coordinate in plain decimal notation, losing nothing.
 
@@ -342,7 +384,10 @@ class WMTSProvider:
         attribution: Credit line. `add_tiles(attribution=True)` reads this
             attribute and draws it on the axes.
         extra_params: Extra query parameters, merged last so they can also
-            override a generated one. This is where an API key or token goes.
+            override a generated one -- matched case-insensitively, as OGC
+            parameter names are, so `{"format": ...}` replaces the
+            generated `FORMAT` rather than joining it. This is where an API
+            key or token goes.
             Keys and values are coerced to `str` and stored read-only.
 
     Raises:
@@ -602,9 +647,8 @@ class WMTSProvider:
             "TILEROW": str(y),
             "TILECOL": str(x),
             "FORMAT": self.image_format,
-            **self.extra_params,
         }
-        return _query(self.url, params)
+        return _query(self.url, _merge_params(params, self.extra_params))
 
 
 @dataclass(frozen=True)
@@ -654,7 +698,10 @@ class WMSProvider:
         attribution: Credit line. `add_tiles(attribution=True)` reads this
             attribute and draws it on the axes.
         extra_params: Extra query parameters, merged last so they can also
-            override a generated one. This is where an API key or token goes.
+            override a generated one -- matched case-insensitively, as OGC
+            parameter names are, so `{"format": ...}` replaces the
+            generated `FORMAT` rather than joining it. This is where an API
+            key or token goes.
             Keys and values are coerced to `str` and stored read-only.
 
     Raises:
@@ -903,6 +950,5 @@ class WMSProvider:
             "HEIGHT": str(self.tile_size),
             "FORMAT": self.image_format,
             "TRANSPARENT": "TRUE" if self.transparent else "FALSE",
-            **self.extra_params,
         }
-        return _query(self.url, params)
+        return _query(self.url, _merge_params(params, self.extra_params))
