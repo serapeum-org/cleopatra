@@ -40,6 +40,13 @@ the single grid the surrounding module implements. A WMTS published on any other
 matrix set (NASA GIBS' `EPSG4326_250m`, a national grid such as EPSG:28992) will
 return tiles that do not line up; see `WMTSProvider.tile_matrix_set`.
 
+Two limits are worth knowing before you reach them. `tiles.world_texture` keys
+its disk cache on `provider.get("name", ...)`, so it needs a Mapping-like
+provider and raises `AttributeError` on these dataclasses -- use `add_tiles`,
+or an XYZ provider for a world texture. And on the RESTful WMTS branch the
+service fixes the format and version in its own template, so `image_format` and
+`version` are validated but never sent; they apply to the KVP branch only.
+
 Importing this module pulls in nothing from the `[tiles]` extra -- neither
 `xyzservices` nor `pyproj` is touched, and the tile-grid helpers it does use are
 plain arithmetic. The extra is required only once you actually render, and
@@ -468,8 +475,11 @@ class WMTSProvider:
         style: The `Style` identifier. Most services publish `"default"`.
         image_format: The `Format` to request. `tiles._looks_like_image`
             accepts PNG, JPEG, GIF and WebP, so a TIFF or SVG format will be
-            rejected as an unreadable tile.
-        version: The WMTS version, sent as `VERSION` in KVP requests.
+            rejected as an unreadable tile. Sent on the KVP branch only -- a
+            RESTful template fixes the format in its own path.
+        version: The WMTS version. Sent as `VERSION` on the KVP branch only;
+            a RESTful template encodes it in the endpoint. OGC has published
+            only 1.0.0.
         attribution: Credit line. `add_tiles(attribution=True)` reads this
             attribute and draws it on the axes.
         extra_params: Extra query parameters, merged last so they can also

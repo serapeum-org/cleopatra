@@ -78,6 +78,16 @@ WMSProvider(url="https://example.org/wms", layers="ortho", extra_params={"token"
     mosaic of many. `add_tiles(..., min_tiles_across=1)` lowers the tile count towards a
     single `GetMap` without a separate code path.
 
+!!! note "`world_texture` is XYZ-only"
+    `cleopatra.basemap.tiles.world_texture` keys its disk cache on
+    `provider.get("name", ...)`, so it needs a Mapping-like provider and raises
+    `AttributeError: 'WMTSProvider' object has no attribute 'get'` on these dataclasses. Use `add_tiles` for an
+    OGC service, and an `xyzservices` provider when you want a cached world texture.
+
+!!! note "RESTful templates fix their own format and version"
+    On the RESTful WMTS branch the service encodes the format and version in the template path, so
+    `image_format` and `version` are validated but never sent. They apply to the KVP branch only.
+
 !!! note "Image formats and service exceptions"
     Only PNG, JPEG, GIF and WebP are recognised, so `image/tiff` and `image/svg+xml` are not
     supported. A service that answers with an XML `ServiceExceptionReport` — the usual reply
