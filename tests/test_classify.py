@@ -884,6 +884,24 @@ class TestArrayGlyphScheme:
             "class edges should span the whole stack"
         )
 
+    def test_animate_bad_scheme_rolls_back(self):
+        """A bad scheme on `animate` leaves no half-applied option.
+
+        Test scenario:
+            A failed classified animation restores `scheme` to `None`, so a
+            later plain `animate` succeeds.
+        """
+        stack = np.stack(
+            [np.arange(100.0).reshape(10, 10), np.arange(100.0, 200.0).reshape(10, 10)]
+        )
+        glyph = ArrayGlyph(stack)
+        with pytest.raises(ValueError):
+            glyph.animate(["t0", "t1"], classify=Classify(scheme="rainbow"))
+        assert glyph.default_options.get("scheme") is None, (
+            "a failed classified animation must not leave scheme set"
+        )
+        glyph.animate(["t0", "t1"])
+
     def test_animate_shares_classes_over_frames(self):
         """Animate resolves one set of classes over the whole stack.
 
