@@ -900,9 +900,8 @@ class TestWMSProviderBuildUrl:
             url="https://example.org/wms", layers="ortho", tile_size=512
         )
         query = query_of(provider.build_url(x=0, y=0, z=0))
-        assert query["WIDTH"] == ["512"] and query["HEIGHT"] == ["512"], (
-            f"tile_size not applied: {query}"
-        )
+        assert query["WIDTH"] == ["512"], f"WIDTH not applied: {query}"
+        assert query["HEIGHT"] == ["512"], f"HEIGHT not applied: {query}"
 
     def test_styles_is_sent_even_when_empty(self, wms):
         """The mandatory `STYLES` key is present, with an empty value by default.
@@ -1980,12 +1979,13 @@ class TestCredentialsAreNotLogged:
         def explode(request, timeout=None):
             raise OSError("connection reset")
 
+        tile = Tile(0, 0, 0)
         with (
             caplog.at_level("DEBUG", logger="cleopatra.basemap.tiles"),
             patch.object(tiles_mod, "urlopen_http", side_effect=explode),
-            pytest.raises(ConnectionError),
         ):
-            fetch_single_tile(Tile(0, 0, 0), provider, timeout=1, retries=0)
+            with pytest.raises(ConnectionError):
+                fetch_single_tile(tile, provider, timeout=1, retries=0)
 
         assert "S3CRET-VALUE" not in caplog.text, "the credential reached the log"
         assert "token=..." in caplog.text, (

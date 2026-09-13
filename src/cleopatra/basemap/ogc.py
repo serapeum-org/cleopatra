@@ -600,7 +600,7 @@ def _repr_provider(provider: object) -> str:
     for spec in fields(provider):
         value = getattr(provider, spec.name)
         if isinstance(value, Mapping):
-            value = {key: "..." for key in value}
+            value = dict.fromkeys(value, "...")
         rendered.append(f"{spec.name}={value!r}")
     return f"{type(provider).__name__}({', '.join(rendered)})"
 
