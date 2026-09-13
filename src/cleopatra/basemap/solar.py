@@ -87,6 +87,29 @@ def subsolar_point(when: datetime) -> tuple[float, float]:
     Returns:
         tuple[float, float]: ``(lon, lat)`` in degrees, ``lon`` in
         ``(-180, 180]`` and ``lat`` in ``[-90, 90]``.
+
+    Examples:
+        - At the June solstice the sun is overhead near the Tropic of Cancer
+          (~23.4 deg N), close to Greenwich at 12:00 UTC:
+            ```python
+            >>> from datetime import UTC, datetime
+            >>> lon, lat = subsolar_point(datetime(2026, 6, 21, 12, 0, tzinfo=UTC))
+            >>> 23.0 < lat < 24.0
+            True
+            >>> abs(lon) < 5.0
+            True
+
+            ```
+        - The subsolar meridian tracks the sun ~15 deg westward each hour:
+            ```python
+            >>> from datetime import UTC, datetime, timedelta
+            >>> noon = datetime(2026, 3, 20, 12, 0, tzinfo=UTC)
+            >>> before, _ = subsolar_point(noon)
+            >>> after, _ = subsolar_point(noon + timedelta(hours=1))
+            >>> -15.5 < after - before < -14.5
+            True
+
+            ```
     """
     dt = when.replace(tzinfo=UTC) if when.tzinfo is None else when.astimezone(UTC)
     hours = dt.hour + dt.minute / 60.0 + dt.second / 3600.0 + dt.microsecond / 3.6e9
@@ -153,6 +176,31 @@ def terminator(
     Returns:
         numpy.ndarray: An ``(n, 2)`` array of ``(lon, lat)`` degrees, densified
         for a smooth curve. The ring is closed (last vertex equals the first).
+
+    Examples:
+        - The default terminator is a closed ring of 720 lon/lat vertices:
+            ```python
+            >>> import numpy as np
+            >>> from datetime import UTC, datetime
+            >>> ring = terminator(datetime(2026, 6, 21, 12, 0, tzinfo=UTC))
+            >>> ring.shape
+            (720, 2)
+            >>> bool(np.allclose(ring[0], ring[-1]))
+            True
+
+            ```
+        - A coarser ring stays within the lon/lat bounds; ``refraction`` shifts
+          the ring's angular radius (``-6`` gives the civil-twilight line):
+            ```python
+            >>> import numpy as np
+            >>> from datetime import UTC, datetime
+            >>> ring = terminator(datetime(2026, 6, 21, 12, 0, tzinfo=UTC), refraction=-6.0, n=180)
+            >>> ring.shape
+            (180, 2)
+            >>> bool(np.all(np.abs(ring[:, 0]) <= 180.0) and np.all(np.abs(ring[:, 1]) <= 90.0))
+            True
+
+            ```
     """
     lon_s, lat_s = subsolar_point(when)
     lon0, lat0 = np.radians(lon_s), np.radians(lat_s)
@@ -191,6 +239,28 @@ def night_polygon(
     Returns:
         list[numpy.ndarray]: One or more ``(m, 2)`` lon/lat rings covering the
         night side; more than one where the region crosses the antimeridian.
+
+    Examples:
+        - At a solstice one pole is in darkness, so the night region is a single
+          ring that runs to that pole (the south pole, lat -90, in June):
+            ```python
+            >>> from datetime import UTC, datetime
+            >>> rings = night_polygon(datetime(2026, 6, 21, 12, 0, tzinfo=UTC))
+            >>> len(rings)
+            1
+            >>> float(rings[0][:, 1].min())
+            -90.0
+
+            ```
+        - When the night region straddles the antimeridian it is split into two
+          rings so a flat map does not smear a band across the world:
+            ```python
+            >>> from datetime import UTC, datetime
+            >>> rings = night_polygon(datetime(2026, 3, 20, 12, 0, tzinfo=UTC))
+            >>> len(rings)
+            2
+
+            ```
     """
     _, lat_s = subsolar_point(when)
     ring = terminator(when, refraction=refraction, n=n)
