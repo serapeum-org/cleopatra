@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from matplotlib.collections import PolyCollection
+from matplotlib.colors import BoundaryNorm, LogNorm, to_rgba
 
 from cleopatra.glyphs.stats.hexbin_glyph import HexbinGlyph
 from cleopatra.styling.params import Classify, Contour
@@ -110,6 +111,15 @@ class TestHexbinEvaluate:
         glyph = HexbinGlyph(x, y)
         glyph.evaluate()
         assert glyph.ax is None, "evaluate must not create or bind the glyph's axes"
+
+    def test_does_not_leak_a_global_figure(self, cloud):
+        """evaluate renders on a bare Figure() and leaks no pyplot-managed figure."""
+        x, y, _ = cloud
+        before = set(plt.get_fignums())
+        HexbinGlyph(x, y).evaluate()
+        assert set(plt.get_fignums()) == before, (
+            "evaluate must not leak a global figure"
+        )
 
 
 class TestHexbinReduce:
@@ -238,14 +248,29 @@ class TestHexbinPlot:
         _, ax2, _ = glyph.plot()
         assert ax2 is ax1, "re-plot without ax should reuse the bound axes"
 
+    def test_edge_color_and_line_width_reach_collection(self, cloud):
+        """edge_color and line_width options reach the drawn PolyCollection."""
+        x, y, _ = cloud
+        _, _, pc = HexbinGlyph(x, y, edge_color="red", line_width=1.5).plot()
+        assert pc.get_linewidths()[0] == pytest.approx(1.5), "line_width not applied"
+        assert tuple(pc.get_edgecolors()[0]) == to_rgba("red"), "edge_color not applied"
+
+    def test_extent_crops_the_binning_window(self):
+        """A valid extent bounds the bin centres to that window."""
+        rng = np.random.default_rng(7)
+        x, y = rng.uniform(0.0, 10.0, 600), rng.uniform(0.0, 10.0, 600)
+        cx, cy, _ = HexbinGlyph(
+            x, y, gridsize=8, extent=(2.0, 6.0, 3.0, 7.0)
+        ).evaluate()
+        assert 1.5 <= cx.min() and cx.max() <= 6.5, "extent did not bound x centres"
+        assert 2.5 <= cy.min() and cy.max() <= 7.5, "extent did not bound y centres"
+
 
 class TestHexbinClassify:
     """Tests for the classify / colour-scale group parameters."""
 
     def test_quantiles_scheme_discretises(self, cloud):
         """classify=Classify(scheme='quantiles') yields a BoundaryNorm and a colorbar."""
-        from matplotlib.colors import BoundaryNorm
-
         x, y, v = cloud
         glyph = HexbinGlyph(x, y, v, gridsize=10)
         _, _, pc = glyph.plot(classify=Classify(scheme="quantiles", k=4))
@@ -263,8 +288,6 @@ class TestHexbinClassify:
 
     def test_contour_levels_discretise(self, cloud):
         """contour=Contour(levels=n) discretises the colour scale."""
-        from matplotlib.colors import BoundaryNorm
-
         x, y, _ = cloud
         _, _, pc = HexbinGlyph(x, y, gridsize=10, min_count=1).plot(
             contour=Contour(levels=5)
@@ -273,8 +296,6 @@ class TestHexbinClassify:
 
     def test_color_scaling_applied(self, cloud):
         """color=ColorScaling.log() applies a log norm to positive counts."""
-        from matplotlib.colors import LogNorm
-
         x, y, _ = cloud
         _, _, pc = HexbinGlyph(x, y, gridsize=10, min_count=1).plot(
             color=ColorScaling.log()
