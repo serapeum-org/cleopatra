@@ -632,17 +632,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#hexbinglyph-hexagonal-binning" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HexbinGlyph — hexagonal binning
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#geospatial-basemaps-geomixin" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -922,8 +911,6 @@
   
     
     
-      
-        
       
         
       
@@ -1317,34 +1304,6 @@
     
   
     KDEGlyph
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="reference/hexbin-glyph/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    HexbinGlyph
   
 
     
@@ -2782,17 +2741,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#hexbinglyph-hexagonal-binning" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        HexbinGlyph — hexagonal binning
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#geospatial-basemaps-geomixin" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2919,7 +2867,6 @@ sensible scientific defaults.</p>
         line_glyph["&lt;b&gt;line_glyph&lt;/b&gt;&lt;br/&gt;LineGlyph&lt;br/&gt;line / bar / band"]
         polygon_glyph["&lt;b&gt;polygon_glyph&lt;/b&gt;&lt;br/&gt;PolygonGlyph&lt;br/&gt;polygon collections"]
         kde_glyph["&lt;b&gt;kde_glyph&lt;/b&gt;&lt;br/&gt;KDEGlyph&lt;br/&gt;2D kernel density"]
-        hexbin_glyph["&lt;b&gt;hexbin_glyph&lt;/b&gt;&lt;br/&gt;HexbinGlyph&lt;br/&gt;hexagonal binning"]
     end
 
     subgraph standalone["Standalone"]
@@ -2951,10 +2898,9 @@ sensible scientific defaults.</p>
 <li>The user-facing visualizers all subclass <code>Glyph</code> and share its colour-mapping / colorbar pipeline —
   <code>array_glyph</code> (<code>ArrayGlyph</code>, <code>FacetGrid</code>), <code>mesh_glyph</code> (<code>MeshGlyph</code>), <code>scatter_glyph</code> (<code>ScatterGlyph</code>),
   <code>vector_glyph</code> (<code>VectorGlyph</code>), <code>flow_glyph</code> (<code>FlowGlyph</code>), <code>line_glyph</code> (<code>LineGlyph</code>), <code>polygon_glyph</code>
-  (<code>PolygonGlyph</code>), <code>kde_glyph</code> (<code>KDEGlyph</code>), and <code>hexbin_glyph</code> (<code>HexbinGlyph</code>). <code>histogram_glyph</code>
-  (<code>HistogramGlyph</code>) stands alone.</li>
-<li><code>geo</code> provides <code>GeoMixin</code>, mixed into the seven geographic visualizers (<code>array_glyph</code>, <code>mesh_glyph</code>,
-  <code>scatter_glyph</code>, <code>vector_glyph</code>, <code>flow_glyph</code>, <code>polygon_glyph</code>, <code>hexbin_glyph</code> — not <code>line_glyph</code>, <code>kde_glyph</code>, or
+  (<code>PolygonGlyph</code>), and <code>kde_glyph</code> (<code>KDEGlyph</code>). <code>histogram_glyph</code> (<code>HistogramGlyph</code>) stands alone.</li>
+<li><code>geo</code> provides <code>GeoMixin</code>, mixed into the six geographic visualizers (<code>array_glyph</code>, <code>mesh_glyph</code>,
+  <code>scatter_glyph</code>, <code>vector_glyph</code>, <code>flow_glyph</code>, <code>polygon_glyph</code> — not <code>line_glyph</code>, <code>kde_glyph</code>, or
   <code>histogram_glyph</code>), adding a settable <code>crs</code> and one-call basemap helpers on the glyph's own axes:
   <code>add_tiles</code>, <code>add_features</code>, <code>add_relief</code>, <code>add_reference_map</code>, and <code>add_labels</code>.</li>
 <li><code>tiles</code> and <code>reference</code> are the optional (<code>cleopatra[tiles]</code>) basemap data sources <code>geo</code> wraps — <code>tiles</code>
@@ -3029,16 +2975,10 @@ sensible scientific defaults.</p>
 <li>2-D Gaussian kernel-density contours (filled or line), NumPy only — no scipy.</li>
 </ul>
 <p>See the <a href="reference/kde-glyph/">KDEGlyph reference</a>.</p>
-<h3 id="hexbinglyph-hexagonal-binning"><a class="toclink" href="#hexbinglyph-hexagonal-binning"><code>HexbinGlyph</code> — hexagonal binning</a><a class="headerlink" href="#hexbinglyph-hexagonal-binning" title="Permanent link">#</a></h3>
-<ul>
-<li>Bin an <code>(x, y)</code> cloud onto a hexagonal lattice, coloured by a per-bin count (or the <code>reduce</code> of a per-point
-  <code>values</code> array) — the discrete counterpart of <code>KDEGlyph</code>.</li>
-</ul>
-<p>See the <a href="reference/hexbin-glyph/">HexbinGlyph reference</a>.</p>
 <h3 id="geospatial-basemaps-geomixin"><a class="toclink" href="#geospatial-basemaps-geomixin">Geospatial basemaps — <code>GeoMixin</code></a><a class="headerlink" href="#geospatial-basemaps-geomixin" title="Permanent link">#</a></h3>
 <ul>
-<li><code>ArrayGlyph</code>, <code>MeshGlyph</code>, <code>ScatterGlyph</code>, <code>VectorGlyph</code>, <code>FlowGlyph</code>, <code>PolygonGlyph</code>, and <code>HexbinGlyph</code> mix in
-  <code>GeoMixin</code>, adding a settable <code>crs</code> plus one-call basemap helpers on <code>glyph.ax</code>: <code>add_tiles</code> (XYZ web-tile mosaics),
+<li><code>ArrayGlyph</code>, <code>MeshGlyph</code>, <code>ScatterGlyph</code>, <code>VectorGlyph</code>, <code>FlowGlyph</code>, and <code>PolygonGlyph</code> mix in <code>GeoMixin</code>,
+  adding a settable <code>crs</code> plus one-call basemap helpers on <code>glyph.ax</code>: <code>add_tiles</code> (XYZ web-tile mosaics),
   <code>add_features</code> / <code>add_relief</code> (Natural Earth coastlines, borders, land, ocean, rivers, lakes, and a hypsometric
   relief backdrop), a one-call <code>add_reference_map</code> preset (<code>"light"</code>, <code>"dark"</code>, or <code>"auto"</code>), and
   <code>add_labels</code> for city/point labels.</li>
