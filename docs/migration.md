@@ -95,6 +95,8 @@ objects in a prior release; passing them as loose keywords **raises** with a poi
 | `display_cell_value`, `num_size`, `background_color_threshold` | `cleopatra.styling.params.CellValues` |
 | `style`, `hillshade`, `bands`, `alpha`, `alpha_range` | `cleopatra.styling.params.DataStyle` |
 | `scheme`, `k`, `category_legend_kwargs` | `cleopatra.styling.params.Classify` (passed as `classify=` on the scatter/vector/flow/polygon glyphs and on `ArrayGlyph.plot` / `facet` / `animate`) |
+| `interval`, `frame_label`, `cell_value_text_colors`, `data_getter` (on `ArrayGlyph.animate`) | `cleopatra.glyphs.gridded.array_glyph.Animation` (passed as `animate(playback=Animation(...))`) |
+| `label`, `location`, `pad`, `height`, `segments`, `ticks`, `color`, `edge_color`, `label_location`, `label_size`, `box`, `zorder` (on `furniture.add_scale_bar`) | `cleopatra.styling.furniture.ScaleBar` (passed as `add_scale_bar(ax, length, ScaleBar(...))`) |
 
 ### Colour bars — `cbar_*` still work
 

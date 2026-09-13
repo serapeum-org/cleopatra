@@ -475,7 +475,7 @@ class FrameLabel:
     Bundles the two frame-label parameters (`location`, `color`) that
     `animate` previously accepted as separate `label_location` /
     `label_color` arguments. Pass an instance as
-    `animate(frame_label=...)` instead.
+    `animate(playback=Animation(frame_label=...))` instead.
 
     Attributes:
         location: `[x, y]` position for the label, by default `None`.
@@ -498,11 +498,17 @@ class FrameLabel:
         - Build a frame label and pass it to `animate`:
             ```python
             >>> import numpy as np
-            >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph, FrameLabel
+            >>> from cleopatra.glyphs.gridded.array_glyph import (
+            ...     Animation,
+            ...     ArrayGlyph,
+            ...     FrameLabel,
+            ... )
             >>> stack = np.arange(3 * 9, dtype=float).reshape(3, 3, 3)
             >>> label = FrameLabel(location=[0.1, 0.1], color="white")
             >>> glyph = ArrayGlyph(stack)
-            >>> anim_obj = glyph.animate(["t0", "t1", "t2"], frame_label=label)
+            >>> anim_obj = glyph.animate(
+            ...     ["t0", "t1", "t2"], playback=Animation(frame_label=label)
+            ... )
             >>> label.color
             'white'
 
@@ -595,6 +601,46 @@ class FrameLabel:
             transform=ax.transAxes if is_default else ax.transData,
             va="top" if is_default else "baseline",
         )
+
+
+@dataclass(frozen=True)
+class Animation:
+    """Playback options for `ArrayGlyph.animate` (grouped to keep the call small).
+
+    Bundles the animation-specific settings -- frame delay, the per-frame time
+    label, the cell-value text colours, and the lazy frame source -- into one
+    object, mirroring the other grouped-parameter objects. Pass an instance as
+    `animate(playback=Animation(...))`; the render / colour options
+    (`color` / `contour` / `cells` / `classify` / `data_style` / `colorbar` /
+    ...) stay their own arguments, shared with `plot`.
+
+    Attributes:
+        interval: Delay between frames in milliseconds. Defaults to `200`.
+        frame_label: Styling for the per-frame time label as a `FrameLabel`.
+            `None` uses the default label placement / colour.
+        cell_value_text_colors: The two colours (low, high) for the cell-value
+            text overlay, switched at the background threshold for contrast.
+        data_getter: Optional callable `f(i) -> ndarray` supplying frame `i`
+            lazily (e.g. a NetCDF time slab), instead of holding the whole
+            stack in memory. `None` iterates `self.arr`.
+
+    Examples:
+        - Bundle a slower interval and a white-on-dark frame label:
+            ```python
+            >>> from cleopatra.glyphs.gridded.array_glyph import Animation, FrameLabel
+            >>> play = Animation(interval=500, frame_label=FrameLabel(color="white"))
+            >>> play.interval
+            500
+            >>> play.frame_label.color
+            'white'
+
+            ```
+    """
+
+    interval: int = 200
+    frame_label: FrameLabel | None = None
+    cell_value_text_colors: tuple[str, str] = ("white", "black")
+    data_getter: Callable[[int], np.ndarray] | None = None
 
 
 class PanelLabels:
@@ -5001,16 +5047,13 @@ class ArrayGlyph(GeoMixin, Glyph):
         self,
         time: list[Any],
         points: PointOverlay | None = None,
-        cell_value_text_colors: tuple[str, str] = ("white", "black"),
-        interval: int = 200,
-        frame_label: FrameLabel | None = None,
         *,
+        playback: Animation | None = None,
         color: ColorScaling | Normalize | None = None,
         contour: Contour | None = None,
         cells: CellValues | None = None,
         classify: Classify | None = None,
         data_style: DataStyle | None = None,
-        data_getter: Callable[[int], np.ndarray] | None = None,
         full_bleed: bool | str = False,
         basemap: bool | dict | Basemap | Callable[[Any], None] | None = None,
         colorbar: bool | ColorBar | None = None,
@@ -5046,19 +5089,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `[value, row, col]` per point together with the marker /
                 value-label styling (`color` / `size` / `label_color` /
                 `label_size`).
-            cell_value_text_colors: Two colors to be used for cell value
-                text, by default ("white", "black"). The first color is
-                used when the cell value is below the
-                background_color_threshold, and the second color is used
-                when the cell value is above the threshold.
-            interval: Delay between frames in milliseconds, by default 200.
-                Controls the speed of the animation (smaller values = faster animation).
-            frame_label: Styling for the per-frame time label, by default
-                None (a `FrameLabel` with its own defaults: auto-anchored
-                top-left, black text). See `FrameLabel` for the
-                `location`/`color` fields and the top-left anchoring
-                behaviour when `location` is left unset. `ArrayGlyph`-only;
-                `MeshGlyph.animate()` does not yet expose this option.
+            playback: Animation-specific options as an
+                `cleopatra.glyphs.gridded.array_glyph.Animation`, by default
+                `None` (all defaults). Bundles `interval` (frame delay, ms),
+                `frame_label` (a `FrameLabel` for the per-frame time label),
+                `cell_value_text_colors` (the low/high cell-value text colours),
+                and `data_getter` (a lazy `f(i) -> ndarray` frame source). The
+                render / colour options below stay their own arguments.
             color: Colour-scale group object
                 (`cleopatra.styling.scaling.ColorScaling`), e.g.
                 `ColorScaling.power(gamma=0.7)`. Replaces the loose
@@ -5073,8 +5110,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                 (`cleopatra.styling.params.CellValues`), e.g.
                 `CellValues(show=True, size=8)`. Replaces the loose
                 `display_cell_value` / `num_size` /
-                `background_color_threshold` keywords. (`precision` and
-                `cell_value_text_colors` remain explicit parameters.)
+                `background_color_threshold` keywords. (`precision` remains an
+                explicit parameter; the cell-value text colours moved onto
+                `playback=Animation(cell_value_text_colors=...)`.)
             classify: Value-classification group object
                 (`cleopatra.styling.params.Classify`), by default `None`
                 (a continuous colour scale). Bins the stack's finite cells into
@@ -5088,17 +5126,6 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `DataStyle(style="temperature_2m", bands=6, alpha=0.5)`.
                 Replaces the loose `style` / `hillshade` keywords and the
                 per-call preset overrides `bands` / `alpha` / `alpha_range`.
-            data_getter: Optional callable `f(i) -> ndarray` that
-                returns the frame for index `i`, by default None.
-                When set, `self.arr` is no longer iterated; each
-                frame is fetched lazily through the callback — useful
-                for streaming frames from a remote / lazy source
-                (e.g. a NetCDF time slab). The frame may be a 2-D
-                single-band array or a `(rows, cols, 3|4)` RGB / RGBA
-                array; either way its spatial dims (the first two
-                axes) must match `self.arr.shape[-2:]`. When None
-                (default) the existing behaviour is preserved and
-                `self.arr[i]` supplies frame `i`.
             full_bleed: Fill the whole figure edge-to-edge with no chrome, by
                 default False. `True` hides ticks and spines, resizes the figure
                 so its aspect matches the georeferenced data box (from `extent`,
@@ -5273,10 +5300,10 @@ class ArrayGlyph(GeoMixin, Glyph):
         ```python
         >>> animated_array = ArrayGlyph(arr, figsize=(8, 8), title="Animated Array")
         >>> # Slower animation (500ms between frames)
-        >>> anim_obj = animated_array.animate(frame_labels, interval=500)
+        >>> anim_obj = animated_array.animate(frame_labels, playback=Animation(interval=500))
         >>> animated_array = ArrayGlyph(arr, figsize=(8, 8), title="Animated Array")
         >>> # Faster animation (100ms between frames)
-        >>> anim_obj = animated_array.animate(frame_labels, interval=100)
+        >>> anim_obj = animated_array.animate(frame_labels, playback=Animation(interval=100))
 
         ```
         Animation with points:
@@ -5300,7 +5327,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         >>> anim_obj = animated_array.animate(
         ...     frame_labels,
         ...     cells=CellValues(show=True, size=10),
-        ...     cell_value_text_colors=("yellow", "blue")
+        ...     playback=Animation(cell_value_text_colors=("yellow", "blue")),
         ... )
 
         ```
@@ -5328,7 +5355,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         >>> labels = ["t0", "t1", "t2"]
         >>> def get_frame(i):
         ...     return np.full((6, 6), float(i)) + np.arange(36).reshape(6, 6)
-        >>> anim_obj = glyph.animate(labels, data_getter=get_frame)
+        >>> anim_obj = glyph.animate(labels, playback=Animation(data_getter=get_frame))
         >>> anim_obj._fig is glyph.fig
         True
 
@@ -5377,7 +5404,11 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         ```
         """
-        frame_label = frame_label or FrameLabel()
+        playback = playback or Animation()
+        cell_value_text_colors = playback.cell_value_text_colors
+        interval = playback.interval
+        data_getter = playback.data_getter
+        frame_label = playback.frame_label or FrameLabel()
 
         self._warn_norm_shadows_scale(color, kwargs.get("norm"))
         pre_group_opts = self._snapshot_group_options(
