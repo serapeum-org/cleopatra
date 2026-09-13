@@ -428,13 +428,11 @@ def _split_antimeridian(ring: np.ndarray) -> list[np.ndarray]:
     for shift in (-360.0, 0.0, 360.0):
         clipped = _clip_lon_strip(poly + np.array([shift, 0.0]), -180.0, 180.0)
         if len(clipped) >= 3:
-            rings.append(_wrap_seam(clipped))
+            # The clip already bounds longitudes to [-180, 180]; do NOT re-wrap,
+            # or a piece's seam vertices at -180 would flip to +180 and smear the
+            # ring across the whole map (the very thing the split prevents).
+            rings.append(clipped)
     return rings if rings else [ring]
-
-
-def _wrap_seam(poly: np.ndarray) -> np.ndarray:
-    """Return ``poly`` with longitudes wrapped to ``(-180, 180]`` in place."""
-    return np.column_stack([_wrap_longitude(poly[:, 0]), poly[:, 1]])
 
 
 def _clip_lon_strip(poly: np.ndarray, lo: float, hi: float) -> np.ndarray:
