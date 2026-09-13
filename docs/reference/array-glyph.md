@@ -62,11 +62,18 @@ to title `facet` panels by coordinate.
   `RdBu_r`), `extend` (colorbar arrows), `cbar_kwargs` (forwarded to `fig.colorbar`). Discrete
   colour bins / contour edges moved onto the `Contour` group object — pass
   `contour=Contour(levels=...)`.
+- **`plot(classify=Classify(scheme=..., k=...))`** — colour the raster by discrete data classes
+  (a choropleth for grids) with a stepped colorbar, using the same `Classify` object the
+  scatter / vector / flow / polygon glyphs take. Named schemes (`"quantiles"`,
+  `"equal_interval"`, `"percentiles"`, `"std_mean"`, `"natural_breaks"` / `"fisher_jenks"`) or
+  explicit edges (`Classify(scheme=[0, 10, 50, 100, 500])`), numpy only. `facet` / `animate`
+  take the same `classify=` and resolve the classes once over the whole stack so every panel /
+  frame shares them. `scheme="categorical"` is rejected for a raster.
 - **`ArrayGlyph(..., coords=(x, y))`** — plot curvilinear / non-uniform grids (1-D cell
   centres or 2-D meshgrids); with `kind="auto"` this routes to `pcolormesh`. Mutually
   exclusive with `extent`.
 - **`ArrayGlyph.facet(FacetLayout(col=, row=, col_wrap=, labels=, figure_size=, axes=, extents=),
-  *, kind=, colorbar=, color=, contour=, cells=, data_style=, compose=)`** — a grid of subplots
+  *, kind=, colorbar=, color=, contour=, cells=, classify=, data_style=, compose=)`** — a grid of subplots
   from a 3-D `(N, H, W)` or 4-D `(N, M, H, W)` stack with one shared colour scale and colorbar.
   The grid layout (which dimension(s) to facet, wrapping, panel labels, per-panel extents, and
   the target figure/axes) is bundled into a `FacetLayout`; per-panel render options stay as
@@ -138,6 +145,25 @@ fig, ax = ArrayGlyph(data).plot(kind="contourf", contour=Contour(levels=6), exte
 
 # centre a diverging colormap on 0 (auto RdBu_r), clip outliers (robust)
 fig, ax = ArrayGlyph(data).plot(center=0.0, robust=True)
+```
+
+### Classified raster (choropleth)
+
+```python
+import numpy as np
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+from cleopatra.styling.params import Classify
+
+field = np.arange(100.0).reshape(10, 10)
+
+# five equal-count classes with a stepped colorbar
+fig, ax = ArrayGlyph(field).plot(classify=Classify(scheme="quantiles", k=5))
+
+# native Fisher-Jenks natural breaks (numpy only, no mapclassify)
+fig, ax = ArrayGlyph(field).plot(classify=Classify(scheme="natural_breaks", k=7))
+
+# explicit class edges (e.g. hazard bands), used verbatim
+fig, ax = ArrayGlyph(field).plot(classify=Classify(scheme=[0, 10, 50, 100, 500]))
 ```
 
 ### Curvilinear coordinates (pcolormesh)

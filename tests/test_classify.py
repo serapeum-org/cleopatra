@@ -23,7 +23,7 @@ import pytest
 
 import cleopatra.styling.styles as styles_mod
 from cleopatra.glyphs.base.glyph import Glyph
-from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph, FacetLayout
 from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
 from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
 from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
@@ -711,26 +711,225 @@ class TestPolygonGlyphScheme:
         )
 
 
-class TestSchemeGlyphScope:
-    """Tests for which glyphs accept `scheme` (the M1 fix).
+class TestArrayGlyphScheme:
+    """Integration tests for `classify` through ArrayGlyph (classified raster, #351)."""
 
-    `scheme`/`k` live in `CLASSIFY_OPTIONS` and are mixed only into glyphs
-    whose colour mapping routes through `Glyph._prepare_scalar_mapping` and
-    is driven purely by the norm. Glyphs that bypass that pipeline
-    (`ArrayGlyph`, `MeshGlyph`) — and `KDEGlyph`, whose `contourf` has its
-    own `levels` discretisation — must reject `scheme` rather than silently
+    @pytest.fixture()
+    def ramp(self):
+        """A 10x10 raster carrying a 0..99 value ramp.
+
+        Returns:
+            np.ndarray: The 2-D array to classify.
+        """
+        return np.arange(100.0).reshape(10, 10)
+
+    def test_five_discrete_classes(self, ramp):
+        """A k=5 quantile raster yields five discrete classes.
+
+        Test scenario:
+            The image uses a `BoundaryNorm` whose six boundaries delimit five
+            fill classes.
+        """
+        glyph = ArrayGlyph(ramp)
+        glyph.plot(classify=Classify(scheme="quantiles", k=5))
+        assert isinstance(glyph.im.norm, mcolors.BoundaryNorm), (
+            "raster should use a BoundaryNorm"
+        )
+        assert len(glyph.im.norm.boundaries) - 1 == 5, (
+            "six boundaries delimit five classes"
+        )
+
+    def test_raw_values_preserved(self, ramp):
+        """Classification does not alter the raster's value array.
+
+        Test scenario:
+            `get_array` still returns the raw cell values (max 99), not class
+            codes.
+        """
+        glyph = ArrayGlyph(ramp)
+        glyph.plot(classify=Classify(scheme="equal_interval", k=4))
+        assert float(np.max(glyph.im.get_array())) == 99.0, (
+            "raw values must be preserved on the mappable"
+        )
+
+    def test_stepped_colorbar_ticks_are_class_edges(self, ramp):
+        """The classified colorbar steps on the class edges.
+
+        Test scenario:
+            A colorbar is drawn by default and its discrete norm's boundaries
+            match `styles.classify` on the same data.
+        """
+        glyph = ArrayGlyph(ramp)
+        glyph.plot(classify=Classify(scheme="quantiles", k=4))
+        assert glyph.cbar is not None, "a stepped colorbar should be drawn by default"
+        edges, _ = classify(ramp, "quantiles", k=4)
+        assert np.allclose(glyph.cbar.norm.boundaries, edges), (
+            "colorbar boundaries should be the class edges"
+        )
+
+    def test_explicit_edges_used_verbatim(self, ramp):
+        """An explicit edge sequence is used as the class boundaries.
+
+        Test scenario:
+            `Classify(scheme=[0, 10, 50, 100])` gives exactly those boundaries.
+        """
+        glyph = ArrayGlyph(ramp)
+        glyph.plot(classify=Classify(scheme=[0.0, 10.0, 50.0, 100.0]))
+        assert list(glyph.im.norm.boundaries) == [0.0, 10.0, 50.0, 100.0], (
+            "explicit edges should be used verbatim"
+        )
+
+    def test_natural_breaks_scheme(self, ramp):
+        """The Jenks family works on a raster with numpy alone.
+
+        Test scenario:
+            `scheme="natural_breaks"` bins the field into k classes without
+            importing mapclassify.
+        """
+        glyph = ArrayGlyph(ramp)
+        glyph.plot(classify=Classify(scheme="natural_breaks", k=6))
+        assert len(glyph.im.norm.boundaries) - 1 == 6, (
+            "natural_breaks should give six classes"
+        )
+
+    def test_add_colorbar_false_suppresses(self, ramp):
+        """`add_colorbar=False` suppresses the colorbar with a scheme set.
+
+        Test scenario:
+            The plot-time override wins and no colorbar is created.
+        """
+        glyph = ArrayGlyph(ramp)
+        glyph.plot(classify=Classify(scheme="quantiles", k=5), add_colorbar=False)
+        assert glyph.cbar is None, "add_colorbar=False should suppress the colorbar"
+
+    def test_scheme_none_regression(self, ramp):
+        """`scheme=None` keeps the continuous (non-BoundaryNorm) behaviour.
+
+        Test scenario:
+            A plain `plot()` leaves the image on a continuous norm.
+        """
+        glyph = ArrayGlyph(ramp)
+        glyph.plot()
+        assert not isinstance(glyph.im.norm, mcolors.BoundaryNorm), (
+            "No scheme -> no BoundaryNorm"
+        )
+
+    def test_contourf_classified(self, ramp):
+        """`kind="contourf"` draws filled bands at the class edges.
+
+        Test scenario:
+            A classified contourf renders and uses the discrete norm.
+        """
+        glyph = ArrayGlyph(ramp)
+        _, ax = glyph.plot(
+            kind="contourf", classify=Classify(scheme="equal_interval", k=5)
+        )
+        assert len(ax.collections) > 0, "contourf should draw filled bands"
+        assert isinstance(glyph.im.norm, mcolors.BoundaryNorm), (
+            "classified contourf should use a BoundaryNorm"
+        )
+
+    def test_categorical_rejected(self, ramp):
+        """`scheme="categorical"` is rejected for a raster.
+
+        Test scenario:
+            A raster's cells are a continuous field, not nominal labels, so a
+            categorical scheme raises.
+        """
+        glyph = ArrayGlyph(ramp)
+        with pytest.raises(ValueError, match="categorical"):
+            glyph.plot(classify=Classify(scheme="categorical"))
+
+    def test_bad_scheme_rolls_back(self, ramp):
+        """An unknown scheme leaves no half-applied option on the glyph.
+
+        Test scenario:
+            A failed classified plot restores `scheme` to `None`, so a later
+            plain `plot()` succeeds.
+        """
+        glyph = ArrayGlyph(ramp)
+        with pytest.raises(ValueError):
+            glyph.plot(classify=Classify(scheme="rainbow"))
+        assert glyph.default_options.get("scheme") is None, (
+            "a failed classified plot must not leave scheme set"
+        )
+        glyph.plot()
+
+    def test_facet_shares_classes_over_stack(self):
+        """Facet resolves one set of classes over the whole stack.
+
+        Test scenario:
+            Three slices with very different ranges share identical class edges
+            spanning the entire stack, not per-panel bins.
+        """
+        stack = np.stack(
+            [
+                np.arange(100.0).reshape(10, 10),
+                np.arange(1000.0, 1100.0).reshape(10, 10),
+                np.arange(50.0, 150.0).reshape(10, 10),
+            ]
+        )
+        grid = ArrayGlyph(stack).facet(
+            FacetLayout(col="time"), classify=Classify(scheme="quantiles", k=4)
+        )
+        norms = [
+            ax.get_images()[0].norm.boundaries.tolist()
+            for row in grid.axes
+            for ax in np.atleast_1d(row)
+            if ax.get_images()
+        ]
+        assert len(norms) == 3, "three panels should be drawn"
+        assert all(n == norms[0] for n in norms), "all panels share one set of classes"
+        assert norms[0][0] == 0.0 and norms[0][-1] == 1099.0, (
+            "class edges should span the whole stack"
+        )
+
+    def test_animate_shares_classes_over_frames(self):
+        """Animate resolves one set of classes over the whole stack.
+
+        Test scenario:
+            The animated mappable's discrete norm spans every frame's data.
+        """
+        stack = np.stack(
+            [
+                np.arange(100.0).reshape(10, 10),
+                np.arange(1000.0, 1100.0).reshape(10, 10),
+            ]
+        )
+        glyph = ArrayGlyph(stack)
+        glyph.animate(["t0", "t1"], classify=Classify(scheme="equal_interval", k=5))
+        assert isinstance(glyph.im.norm, mcolors.BoundaryNorm), (
+            "animation should classify through a BoundaryNorm"
+        )
+        assert float(glyph.im.norm.boundaries[0]) == 0.0, "edges start at the stack min"
+        assert float(glyph.im.norm.boundaries[-1]) == 1099.0, (
+            "edges end at the stack max"
+        )
+
+
+class TestSchemeGlyphScope:
+    """Tests for which glyphs accept `scheme` (the M1 fix, extended for #351).
+
+    `scheme`/`k` live in `CLASSIFY_OPTIONS` and are mixed into glyphs that
+    classify their data: those whose colour mapping routes through
+    `Glyph._prepare_scalar_mapping`, plus `ArrayGlyph`, which bypasses that
+    pipeline but wires `scheme` into its own raster norm path
+    (`_norm_cbar_and_ticks`). A glyph that neither routes through the pipeline
+    nor wires it in — `MeshGlyph`, and `KDEGlyph` (whose `contourf` has its
+    own `levels` discretisation) — must reject `scheme` rather than silently
     ignore it.
     """
 
     @pytest.mark.parametrize(
         "glyph_cls",
-        [ScatterGlyph, PolygonGlyph, VectorGlyph, FlowGlyph, HexbinGlyph],
+        [ScatterGlyph, PolygonGlyph, VectorGlyph, FlowGlyph, HexbinGlyph, ArrayGlyph],
     )
     def test_pipeline_glyphs_accept_scheme(self, glyph_cls):
-        """Pipeline glyphs expose `scheme`/`k` as accepted options.
+        """Classifying glyphs expose `scheme`/`k` as accepted options.
 
         Args:
-            glyph_cls: A glyph class that colours through the shared pipeline.
+            glyph_cls: A glyph class that colours by class (the pipeline glyphs
+                and, since #351, `ArrayGlyph`).
 
         Test scenario:
             `scheme` and `k` are in the class's option keys.
@@ -740,16 +939,24 @@ class TestSchemeGlyphScope:
             f"{glyph_cls.__name__} should accept scheme/k"
         )
 
-    def test_array_glyph_rejects_scheme(self):
-        """`ArrayGlyph` rejects `scheme` instead of silently ignoring it.
+    def test_array_glyph_accepts_scheme(self):
+        """`ArrayGlyph` classifies its raster instead of rejecting `scheme` (#351).
 
         Test scenario:
-            ArrayGlyph bypasses `_prepare_scalar_mapping`, so `scheme` is not
-            an accepted option and construction raises.
+            `ArrayGlyph(arr).plot(classify=Classify(scheme="quantiles", k=4))`
+            colours the field through a discrete `BoundaryNorm` whose class
+            edges match `styles.classify` on the same data.
         """
-        arr = np.arange(9).reshape(3, 3).astype(float)
-        with pytest.raises(ValueError, match="moved onto a grouped parameter object"):
-            ArrayGlyph(arr, scheme="quantiles")
+        arr = np.arange(100.0).reshape(10, 10)
+        glyph = ArrayGlyph(arr)
+        glyph.plot(classify=Classify(scheme="quantiles", k=4))
+        assert isinstance(glyph.im.norm, mcolors.BoundaryNorm), (
+            "ArrayGlyph should classify through a BoundaryNorm"
+        )
+        edges, _ = classify(arr, "quantiles", k=4)
+        assert np.allclose(glyph.im.norm.boundaries, edges), (
+            "raster class edges should match styles.classify"
+        )
 
     def test_mesh_glyph_rejects_scheme(self):
         """`MeshGlyph` rejects `scheme` instead of silently ignoring it.

@@ -80,14 +80,18 @@ from cleopatra.styling.colors import (
     resolve_style_norm,
     resolve_style_overrides,
 )
-from cleopatra.styling.params import CellValues, Contour, DataStyle
+from cleopatra.styling.params import CellValues, Classify, Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
-from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import (
+    CLASSIFY_OPTIONS,
     ColorScale,  # re-exported for convenience  # noqa: F401
     disjoint_legend,
     swatch_extend_prefixes,
     swatch_legend,
+)
+from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
+from cleopatra.styling.styles import (
+    classify as classify_values,
 )
 
 ARRAY_DEFAULT_OPTIONS: dict[str, Any] = {
@@ -123,7 +127,7 @@ ARRAY_DEFAULT_OPTIONS: dict[str, Any] = {
     "style": None,
     "projection": None,
 }
-ARRAY_DEFAULT_OPTIONS = STYLE_DEFAULTS | ARRAY_DEFAULT_OPTIONS
+ARRAY_DEFAULT_OPTIONS = STYLE_DEFAULTS | CLASSIFY_OPTIONS | ARRAY_DEFAULT_OPTIONS
 #: Backwards-compatible alias for the array glyph's default options
 #: (named like the other glyphs' `*_DEFAULT_OPTIONS` constants).
 DEFAULT_OPTIONS = ARRAY_DEFAULT_OPTIONS
@@ -2466,6 +2470,49 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         return float(vmin_final), float(vmax_final)
 
+    def _norm_cbar_and_ticks(
+        self, ticks: np.ndarray
+    ) -> tuple[Normalize | None, dict, np.ndarray]:
+        """Resolve the `(norm, cbar_kw, ticks)` triple for the raster render.
+
+        The single bridge `ArrayGlyph`'s render sites use instead of calling
+        `_create_norm_and_cbar_kw` directly, so classification is honoured on
+        the one glyph that draws a 2-D field. When the `scheme` option is unset
+        (the default) it is the plain continuous path and the incoming `ticks`
+        pass straight through. When `scheme` is set, the array's finite cells
+        (`_scale_values`, which flattens the whole stored stack so a facet /
+        animation shares one set of classes) are binned by
+        `Glyph._prepare_classified_mapping` into a `matplotlib.colors.BoundaryNorm`,
+        and the returned `ticks` become the class edges (so `vmin`/`vmax` derived
+        from them span the classified range and the colorbar steps on the
+        boundaries). `scheme="categorical"` is rejected here — an `ArrayGlyph`'s
+        cells are a continuous field, not nominal labels — via the shared
+        `_prepare_categorical_mapping` guard.
+
+        Args:
+            ticks: The continuous colorbar ticks from `get_ticks()`; used as-is
+                when no `scheme` is set, ignored (replaced by the class edges)
+                when one is.
+
+        Returns:
+            tuple[Normalize or None, dict, np.ndarray]: the matplotlib norm
+                (`None` for a plain linear scale, a `BoundaryNorm` when
+                classified), the colorbar keyword arguments, and the ticks the
+                render should use (the class edges when classified).
+
+        Raises:
+            ValueError: If `scheme="categorical"` (unsupported for a raster), or
+                propagated from `classify` for an unknown scheme / degenerate
+                data.
+        """
+        scheme = self.default_options.get("scheme")
+        if scheme is None:
+            norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
+            return norm, cbar_kw, ticks
+        if scheme == "categorical":
+            return self._prepare_categorical_mapping(self._scale_values())
+        return self._prepare_classified_mapping(self._scale_values(), scheme)
+
     def _plot_im_get_cbar_kw(
         self,
         ax: Axes,
@@ -2508,7 +2555,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 is set (incompatible combination), or if `kind` is not
                 one of the recognised values in `VALID_PLOT_KINDS`.
         """
-        norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
+        norm, cbar_kw, ticks = self._norm_cbar_and_ticks(ticks)
         cmap = resolve_colormap(self.default_options["cmap"])
         vmin = ticks[0]
         vmax = ticks[-1]
@@ -2561,6 +2608,10 @@ class ArrayGlyph(GeoMixin, Glyph):
             else:
                 contour_kwargs["norm"] = norm
             level_edges = self._levels_to_bounds(levels, vmin, vmax)
+            if self.default_options.get("scheme") is not None:
+                # Classification owns the discretisation: draw the isolines /
+                # filled bands at the class edges (`ticks`), not any `levels`.
+                level_edges = np.asarray(ticks)
             base_args = (
                 (coords[0], coords[1], plot_arr) if coords is not None else (plot_arr,)
             )
@@ -3283,7 +3334,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         projection = self.default_options["projection"]
         lon, lat = self._coords
-        norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
+        norm, cbar_kw, ticks = self._norm_cbar_and_ticks(ticks)
         cmap = resolve_colormap(self.default_options["cmap"])
         plot_arr = (
             ma.filled(ma.asarray(arr).astype(float), np.nan)
@@ -3322,6 +3373,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         color: ColorScaling | Normalize | None = None,
         contour: Contour | None = None,
         cells: CellValues | None = None,
+        classify: Classify | None = None,
         data_style: DataStyle | None = None,
         full_bleed: bool | str = False,
         basemap: bool | dict | Basemap | Callable[[Any], None] | None = None,
@@ -3391,6 +3443,16 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `CellValues(show=True, size=8)`. Replaces the loose
                 `display_cell_value` / `num_size` /
                 `background_color_threshold` keywords.
+            classify: Value-classification group object
+                (`cleopatra.styling.params.Classify`), by default `None`
+                (a continuous colour scale). Bins the array's finite cells into
+                discrete colour classes drawn with a stepped colorbar, e.g.
+                `Classify(scheme="quantiles", k=5)`,
+                `Classify(scheme="natural_breaks", k=7)`, or explicit edges
+                `Classify(scheme=[0, 10, 50, 100, 500])`. The scheme owns the
+                norm, so `color`'s `color_scale` / `levels` are ignored when it
+                is set (a warning says so). `scheme="categorical"` is rejected
+                for a raster (its cells are a continuous field).
             data_style: Named-preset / relief-shading group object
                 (`cleopatra.styling.params.DataStyle`), e.g.
                 `DataStyle(style="dem", hillshade=True)` or
@@ -3915,8 +3977,10 @@ class ArrayGlyph(GeoMixin, Glyph):
         # WHOLE merge -- not just `style` -- and a co-passed color=/contour=/cells=
         # cannot leak into a later plain plot() on this (sticky-options) glyph.
         self._warn_norm_shadows_scale(color, kwargs.get("norm"))
-        pre_group_opts = self._snapshot_group_options(color, contour, cells, data_style)
-        self._merge_group_params(color, contour, cells, data_style)
+        pre_group_opts = self._snapshot_group_options(
+            color, contour, cells, classify, data_style
+        )
+        self._merge_group_params(color, contour, cells, classify, data_style)
         resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
 
         self._validate_extend(self.default_options.get("extend"))
@@ -4034,7 +4098,19 @@ class ArrayGlyph(GeoMixin, Glyph):
             self.default_options["vmax"] = self.vmax
 
             ticks = self.get_ticks()
-            self._create_norm_and_cbar_kw(ticks)
+            # Eagerly resolve the norm to surface a bad `color_scale` / `scheme`
+            # before any axes mutation, rolling the whole group merge back so a
+            # failed classified plot leaves no half-applied option on this
+            # (sticky-options) glyph. The render site re-resolves and emits any
+            # scheme/scale conflict warning exactly once.
+            try:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    self._norm_cbar_and_ticks(ticks)
+            except (ValueError, TypeError):
+                for key, value in pre_group_opts.items():
+                    self.default_options[key] = value
+                raise
             projection = self.default_options.get("projection")
             if projection and (
                 self._coords is None
@@ -4324,6 +4400,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         color: ColorScaling | Normalize | None = None,
         contour: Contour | None = None,
         cells: CellValues | None = None,
+        classify: Classify | None = None,
         data_style: DataStyle | None = None,
         compose: bool = False,
         **kwargs,
@@ -4383,6 +4460,19 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `result.cbar` returned -- the first panel's -- carries the
                 spec). Prefer this typed form over the loose `cbar_*`
                 kwargs, here as on `plot` / `animate`.
+            color: Colour-scale group object forwarded to each panel's `plot`
+                (`cleopatra.styling.params.ColorScaling`).
+            contour: Contour/discretisation group object forwarded to each
+                panel's `plot` (`cleopatra.styling.params.Contour`).
+            cells: Per-cell value-text group object forwarded to each panel's
+                `plot` (`cleopatra.styling.params.CellValues`).
+            classify: Value-classification group object
+                (`cleopatra.styling.params.Classify`), by default `None`. A
+                named scheme is resolved to its class edges **once over the
+                whole stack**, so every panel shares one set of classes rather
+                than re-binning its own slice; explicit edges are shared as-is.
+            data_style: Named-preset / relief-shading group object forwarded to
+                each panel's `plot` (`cleopatra.styling.params.DataStyle`).
 
             compose: Forwarded to each panel's `plot`. Controls what a panel
                 does with a **prior cleopatra render** already on its axes:
@@ -4649,6 +4739,25 @@ class ArrayGlyph(GeoMixin, Glyph):
         per_subplot_kwargs["vmin"] = shared_vmin
         per_subplot_kwargs["vmax"] = shared_vmax
 
+        # Resolve the classification edges ONCE over the whole stack, so every
+        # panel shares one set of classes instead of re-binning its own slice.
+        # A named scheme is turned into an explicit edge sequence (used verbatim
+        # by `classify`); explicit edges and `"categorical"` (rejected per
+        # panel) pass through unchanged.
+        shared_classify = classify
+        if (
+            classify is not None
+            and isinstance(classify.scheme, str)
+            and classify.scheme != "categorical"
+        ):
+            edges, _ = classify_values(
+                self._scale_values(), classify.scheme, classify.k or 5
+            )
+            shared_classify = Classify(
+                scheme=[float(e) for e in edges],
+                category_legend_kwargs=classify.category_legend_kwargs,
+            )
+
         name_dicts: list[dict[str, Any]] = []
         cbar: Colorbar | None = None
 
@@ -4691,6 +4800,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     color=color,
                     contour=contour,
                     cells=cells,
+                    classify=shared_classify,
                     data_style=data_style,
                     compose=compose,
                 )
@@ -4771,6 +4881,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         color: ColorScaling | Normalize | None = None,
         contour: Contour | None = None,
         cells: CellValues | None = None,
+        classify: Classify | None = None,
         data_style: DataStyle | None = None,
         data_getter: Callable[[int], np.ndarray] | None = None,
         full_bleed: bool | str = False,
@@ -4837,6 +4948,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `display_cell_value` / `num_size` /
                 `background_color_threshold` keywords. (`precision` and
                 `cell_value_text_colors` remain explicit parameters.)
+            classify: Value-classification group object
+                (`cleopatra.styling.params.Classify`), by default `None`
+                (a continuous colour scale). Bins the stack's finite cells into
+                discrete colour classes with a stepped colorbar, e.g.
+                `Classify(scheme="quantiles", k=5)`. The class edges are resolved
+                **once over the whole stack**, so every frame shares one set of
+                classes. `scheme="categorical"` is rejected for a raster.
             data_style: Named-preset / relief-shading group object
                 (`cleopatra.styling.params.DataStyle`), e.g.
                 `DataStyle(style="dem", hillshade=True)` or
@@ -5135,7 +5253,10 @@ class ArrayGlyph(GeoMixin, Glyph):
         frame_label = frame_label or FrameLabel()
 
         self._warn_norm_shadows_scale(color, kwargs.get("norm"))
-        self._merge_group_params(color, contour, cells, data_style)
+        pre_group_opts = self._snapshot_group_options(
+            color, contour, cells, classify, data_style
+        )
+        self._merge_group_params(color, contour, cells, classify, data_style)
         resolved_colorbar = self._apply_kwargs_and_colorbar(colorbar, kwargs)  # type: ignore[arg-type]
 
         if "ticks_spacing" not in resolved_colorbar:
@@ -5217,7 +5338,20 @@ class ArrayGlyph(GeoMixin, Glyph):
             self.cbar = None
         else:
             ticks = self.get_ticks()
-            self._create_norm_and_cbar_kw(ticks)
+            # Eagerly resolve the norm to surface a bad `color_scale` / `scheme`
+            # before any axes mutation, rolling the group merge back so a failed
+            # classified animation leaves no half-applied option; the render site
+            # re-resolves and emits any scheme/scale conflict warning once. A
+            # named scheme bins the whole stack (`_scale_values`), so every frame
+            # shares one set of classes.
+            try:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    self._norm_cbar_and_ticks(ticks)
+            except (ValueError, TypeError):
+                for key, value in pre_group_opts.items():
+                    self.default_options[key] = value
+                raise
             _clear_prior_render_artists(ax, self, compose=compose)
             im, cbar_kw = self._plot_im_get_cbar_kw(ax, frame_0, ticks)
             self.im = im

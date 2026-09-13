@@ -127,10 +127,13 @@ DEFAULT_OPTIONS: dict[str, Any] = {
 #: ignored by `"categorical"`; `category_legend_kwargs` is forwarded to the
 #: `disjoint_legend` a `"categorical"` scheme draws, e.g. `loc`/`ncol`/
 #: `bbox_to_anchor`/`title` — see `Glyph.create_categorical_legend`).
-#: Mixed into the option dicts of glyphs whose colour mapping routes
-#: through `Glyph._prepare_scalar_mapping` — kept out of the shared
-#: `DEFAULT_OPTIONS` so glyphs that bypass that pipeline (e.g. `ArrayGlyph`
-#: / `MeshGlyph`) reject `scheme` instead of silently ignoring it.
+#: Mixed into the option dicts of glyphs that classify their data — those
+#: whose colour mapping routes through `Glyph._prepare_scalar_mapping`, plus
+#: `ArrayGlyph`, which bypasses that pipeline but wires `scheme` into its own
+#: raster norm path (`_norm_cbar_and_ticks`). Kept out of the shared
+#: `DEFAULT_OPTIONS` so a glyph that neither routes through the pipeline nor
+#: wires it in (e.g. `MeshGlyph`) rejects `scheme` instead of silently
+#: ignoring it.
 CLASSIFY_OPTIONS = {
     "scheme": None,
     "k": 5,

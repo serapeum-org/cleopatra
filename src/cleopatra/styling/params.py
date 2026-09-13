@@ -313,7 +313,10 @@ class Classify:
     Groups the `scheme` / `k` / `category_legend_kwargs` options honoured
     by the glyphs whose colour mapping routes through
     `Glyph._prepare_scalar_mapping` -- `VectorGlyph`, `FlowGlyph`,
-    `PolygonGlyph`, `ScatterGlyph`.
+    `PolygonGlyph`, `ScatterGlyph` -- and by `ArrayGlyph`, which bins its
+    2-D field into the same discrete colour classes on `plot` / `facet` /
+    `animate` (its `scheme="categorical"` is rejected, since a raster's cells
+    are a continuous field rather than nominal labels).
 
     Attributes:
         scheme: A `cleopatra.styling.styles.classify` scheme name (e.g.
