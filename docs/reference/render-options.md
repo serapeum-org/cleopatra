@@ -20,7 +20,10 @@ The colour-scale (norm) selector: `plot(color=ColorScaling.power(gamma=0.5))`,
 
 ## Contour
 
-Discrete colour levels and inline contour labels: `plot(contour=Contour(levels=6, labels=True))`.
+Discrete colour levels and inline contour labels: `plot(contour=Contour(levels=6, labels=True))`. Also a
+hatch encoding — a *pattern* per band for marking a region without spending the colour channel; `fill=False`
+draws the hatching alone, the significance/uncertainty overlay form:
+`plot(kind="contourf", contour=Contour(levels=[0.5, 1.5], hatches=["///"], fill=False, hatch_color="0.2"))`.
 
 ::: cleopatra.styling.params.Contour
     options:
