@@ -10,6 +10,7 @@ would never call the provider at all.
 from __future__ import annotations
 
 import base64
+import dataclasses
 from unittest.mock import MagicMock, patch
 from urllib.parse import parse_qs, urlsplit
 
@@ -45,6 +46,14 @@ requires_tiles = pytest.mark.skipif(
 ONE_PIXEL_PNG = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmM"
     "IQAAAABJRU5ErkJggg=="
+)
+
+#: A real, decodable 4x4 PNG, for the one test where the mosaic's cell size is
+#: the subject rather than incidental: `stitch_tiles` takes that size from the
+#: decoded image, so a 1x1 tile cannot tell a correct grid from a collapsed one.
+FOUR_PIXEL_PNG = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAFUlEQVR4nGPkEpH7z4AEmJA5xAkA"
+    "AFB4AUOwjzs/AAAAAElFTkSuQmCC"
 )
 
 
@@ -89,6 +98,28 @@ def recorded_urls():
         urls.append(request.full_url)
         response = MagicMock()
         response.read.return_value = ONE_PIXEL_PNG
+        return response
+
+    with patch.object(tiles_mod, "urlopen_http", side_effect=fake_urlopen):
+        yield urls
+
+
+@pytest.fixture
+def recorded_urls_4px():
+    """Patch the HTTP opener to record URLs and return a decodable 4x4 PNG.
+
+    Serves an image whose size matches a `tile_size=4` request, so a render can
+    be asserted on the dimensions of the mosaic it stitches.
+
+    Yields:
+        list[str]: The URLs the pipeline requested, filled in as it runs.
+    """
+    urls: list[str] = []
+
+    def fake_urlopen(request, timeout=None):
+        urls.append(request.full_url)
+        response = MagicMock()
+        response.read.return_value = FOUR_PIXEL_PNG
         return response
 
     with patch.object(tiles_mod, "urlopen_http", side_effect=fake_urlopen):
@@ -206,6 +237,83 @@ class TestWMTSProviderBuildUrl:
         assert query["map"] == ["/etc/base.map"], f"pre-existing query lost: {query}"
         assert query["REQUEST"] == ["GetTile"], f"generated query lost: {query}"
 
+    def test_a_partial_restful_template_substitutes_only_its_placeholders(self):
+        """A template carrying just the tile triple is filled in as far as it goes.
+
+        Test scenario:
+            Plenty of services bake the layer and style into the path they
+            publish, leaving a template of `{TileMatrix}/{TileRow}/{TileCol}`
+            and nothing else. Substitution must still happen, and the absent
+            placeholders must not be invented anywhere in the URL.
+        """
+        provider = WMTSProvider(
+            url="https://example.org/TrueColor/default"
+            "/{TileMatrix}/{TileRow}/{TileCol}.png",
+            layer="TrueColor",
+        )
+        url = provider.build_url(x=4, y=2, z=3)
+        assert url == "https://example.org/TrueColor/default/3/2/4.png", (
+            f"partial template not substituted: {url}"
+        )
+        assert "{" not in url, f"an unsubstituted placeholder survived: {url}"
+
+    def test_a_restful_template_appends_extra_params_as_a_query(self):
+        """`extra_params` is appended to a substituted path, not dropped.
+
+        Test scenario:
+            The RESTful branch returns from its own code path, so the
+            credential seam has to be proved twice over: a token silently lost
+            here turns every tile of a render into a 401.
+        """
+        provider = WMTSProvider(
+            url="https://example.org/wmts/{TileMatrix}/{TileRow}/{TileCol}.png",
+            layer="TrueColor",
+            extra_params={"token": "abc"},
+        )
+        url = provider.build_url(x=4, y=2, z=3)
+        assert url == "https://example.org/wmts/3/2/4.png?token=abc", (
+            f"extra_params not appended to the substituted path: {url}"
+        )
+
+    def test_a_restful_template_with_its_own_query_keeps_it(self):
+        """A template that already carries a query gets `&`, not a second `?`.
+
+        Test scenario:
+            The separator is chosen from the *substituted* URL, so a template
+            publishing a mandatory parameter of its own must survive having a
+            token added after it -- a second `?` makes the whole tail garbage.
+        """
+        provider = WMTSProvider(
+            url="https://example.org/wmts/{TileMatrix}/{TileRow}/{TileCol}.png?flat=1",
+            layer="TrueColor",
+            extra_params={"token": "abc"},
+        )
+        url = provider.build_url(x=4, y=2, z=3)
+        assert url == "https://example.org/wmts/3/2/4.png?flat=1&token=abc", (
+            f"separator or pre-existing query wrong: {url}"
+        )
+
+    def test_extra_params_are_coerced_to_strings(self):
+        """Non-string keys and values are stringified when frozen.
+
+        Test scenario:
+            A key or token read out of JSON or YAML arrives as an `int` as
+            readily as a `str`. Coercing both halves keeps the stored mapping
+            uniformly `str -> str`, so two providers configured the same way
+            compare equal whatever literal types were used to build them.
+        """
+        provider = WMTSProvider(
+            url="https://example.org/wmts",
+            layer="TrueColor",
+            extra_params={"version_id": 42},
+        )
+        assert dict(provider.extra_params) == {"version_id": "42"}, (
+            f"extra_params not coerced: {dict(provider.extra_params)}"
+        )
+        assert query_of(provider.build_url(x=0, y=0, z=0))["version_id"] == ["42"], (
+            "the coerced value did not reach the query"
+        )
+
 
 class TestWMTSProviderIsRestful:
     """`WMTSProvider.is_restful` decides which encoding `build_url` uses."""
@@ -290,6 +398,38 @@ class TestWMTSProviderValidation:
                 layer="L",
                 extra_params=[("a", "b")],
             )
+
+    @pytest.mark.parametrize(
+        "field_name, value",
+        [
+            ("url", None),
+            ("url", 123),
+            ("layer", None),
+            ("tile_matrix_set", 3857),
+            ("style", None),
+            ("image_format", 0),
+            ("version", 1.0),
+        ],
+    )
+    def test_a_non_string_field_raises(self, field_name, value):
+        """Every validated field rejects a non-string as well as an empty one.
+
+        Args:
+            field_name: The field replaced with a non-string value.
+            value: The rejected value.
+
+        Test scenario:
+            The empty-string table above never reaches the `isinstance` half of
+            the guard, so line and branch coverage read the same with it and
+            without it. Dropping it would cost the `ValueError` naming the
+            field and buy an `AttributeError` from `.strip()` -- which is why
+            these inputs are worth pinning even at 100% coverage.
+        """
+        kwargs = {"url": "https://example.org/wmts", "layer": "TrueColor"}
+        kwargs[field_name] = value
+        expected = f"{field_name} must be a non-empty string"
+        with pytest.raises(ValueError, match=expected):
+            WMTSProvider(**kwargs)
 
 
 class TestWMSProviderBuildUrl:
@@ -401,6 +541,62 @@ class TestWMSProviderBuildUrl:
             f"tile_size not applied: {query}"
         )
 
+    def test_styles_is_sent_even_when_empty(self, wms):
+        """The mandatory `STYLES` key is present, with an empty value by default.
+
+        Args:
+            wms: The GetMap provider fixture.
+
+        Test scenario:
+            WMS requires `STYLES`; empty means "the service's default", and
+            omitting it altogether is a service exception. `parse_qs` drops
+            blank values, so none of the sibling tests can see this key at all
+            -- it has to be read off the raw query string.
+        """
+        url = wms.build_url(x=0, y=0, z=0)
+        assert "STYLES=&" in url, f"STYLES is not sent when empty: {url}"
+        assert "STYLES" in parse_qs(urlsplit(url).query, keep_blank_values=True), (
+            f"STYLES missing from the query: {url}"
+        )
+
+    def test_non_default_styles_reach_the_request(self):
+        """A comma-separated `styles` value is passed through verbatim.
+
+        Test scenario:
+            `styles` pairs positionally with `layers`, so a two-layer request
+            needs two style names in the same order. The comma has to survive
+            as a separator inside one parameter rather than being split into
+            two, which would silently style the wrong layer.
+        """
+        provider = WMSProvider(
+            url="https://example.org/wms", layers="ortho,roads", styles="raw,thin"
+        )
+        query = query_of(provider.build_url(x=0, y=0, z=0))
+        assert query["STYLES"] == ["raw,thin"], f"styles not passed through: {query}"
+        assert query["LAYERS"] == ["ortho,roads"], f"layers not passed through: {query}"
+
+    @pytest.mark.parametrize(
+        "tile", [Tile(419234, 280456, 19), Tile(524287, 524287, 19)]
+    )
+    def test_bbox_survives_the_float_to_string_round_trip(self, wms, tile):
+        """At the deepest zoom the `BBOX` text still reproduces the bounds exactly.
+
+        Args:
+            wms: The GetMap provider fixture.
+            tile: A zoom-19 tile, including the grid's far south-east corner.
+
+        Test scenario:
+            A zoom-19 tile is about 0.07 m across yet sits up to 2e7 m from the
+            origin, so its bounds need every significant digit a float has.
+            Formatting them with `%f`, or rounding them for tidiness, would
+            pass every low-zoom case above and misplace the image only here.
+        """
+        query = query_of(wms.build_url(x=tile.x, y=tile.y, z=tile.z))
+        sent = tuple(float(v) for v in query["BBOX"][0].split(","))
+        assert sent == _tile_xy_bounds(tile), (
+            f"BBOX {sent} != tile bounds {_tile_xy_bounds(tile)}"
+        )
+
 
 class TestWMSProviderCrsParameter:
     """`WMSProvider.crs_parameter` names the version's CRS query key."""
@@ -487,6 +683,36 @@ class TestWMSProviderValidation:
                 url="https://example.org/wms", layers="ortho", extra_params=[("a", "b")]
             )
 
+    @pytest.mark.parametrize(
+        "field_name, value",
+        [
+            ("url", None),
+            ("url", 123),
+            ("layers", None),
+            ("image_format", 0),
+            ("version", 1.3),
+        ],
+    )
+    def test_a_non_string_field_raises(self, field_name, value):
+        """Every validated field rejects a non-string as well as an empty one.
+
+        Args:
+            field_name: The field replaced with a non-string value.
+            value: The rejected value.
+
+        Test scenario:
+            The same blind spot as the WMTS case -- the empty-string tests
+            exercise only the `.strip()` half of the guard. `version=1.3` is
+            the plausible slip here: a float literal looks like a version, and
+            without the type check it would reach the supported-versions
+            comparison as a non-string and be reported as an unknown version.
+        """
+        kwargs = {"url": "https://example.org/wms", "layers": "ortho"}
+        kwargs[field_name] = value
+        expected = f"{field_name} must be a non-empty string"
+        with pytest.raises(ValueError, match=expected):
+            WMSProvider(**kwargs)
+
 
 class TestProvidersAreImmutable:
     """Both dataclasses are frozen, including the mapping they hold."""
@@ -537,6 +763,64 @@ class TestProvidersAreImmutable:
         """
         with pytest.raises(TypeError):
             wms.extra_params["token"] = "sneaked in"
+
+    def test_two_identically_configured_providers_are_equal(self):
+        """Separately built providers with the same fields compare equal.
+
+        Test scenario:
+            `__post_init__` swaps `extra_params` for a `MappingProxyType`, so
+            `==` runs through that view rather than the dict the caller passed.
+            A view comparing by identity would make every such comparison false
+            -- including the ones a caching or de-duplicating layer relies on.
+        """
+        first = WMTSProvider(
+            url="https://example.org/wmts", layer="L", extra_params={"k": "v"}
+        )
+        second = WMTSProvider(
+            url="https://example.org/wmts", layer="L", extra_params={"k": "v"}
+        )
+        assert first == second, "identically configured providers compared unequal"
+        assert first != WMTSProvider(url="https://example.org/wmts", layer="Other"), (
+            "providers differing in a field compared equal"
+        )
+
+    @pytest.mark.parametrize("kind", ["wmts", "wms"])
+    def test_replace_revalidates_the_copy(self, kind, wmts, wms):
+        """`dataclasses.replace` re-runs the validation on the new instance.
+
+        Args:
+            kind: Which provider to check.
+            wmts: The WMTS fixture.
+            wms: The WMS fixture.
+
+        Test scenario:
+            `replace` is the only supported way to vary a frozen provider, and
+            it is where a bad value would plausibly slip past: the copy is
+            assembled field by field rather than through the caller's own
+            constructor call.
+        """
+        provider = wmts if kind == "wmts" else wms
+        with pytest.raises(ValueError, match="url must be an http"):
+            dataclasses.replace(provider, url="file:///tiles")
+
+    def test_replace_refreezes_the_copied_params(self):
+        """A replaced copy holds its own read-only `extra_params`.
+
+        Test scenario:
+            `replace` feeds the original's `MappingProxyType` straight back in.
+            That is a `Mapping`, so it passes the type check unchanged -- the
+            copy must still end up behind its own frozen view rather than an
+            alias a write could reach the original through.
+        """
+        original = WMSProvider(
+            url="https://example.org/wms", layers="ortho", extra_params={"token": "t"}
+        )
+        copy = dataclasses.replace(original, layers="roads")
+        assert dict(copy.extra_params) == {"token": "t"}, (
+            f"extra_params lost in the copy: {dict(copy.extra_params)}"
+        )
+        with pytest.raises(TypeError):
+            copy.extra_params["token"] = "sneaked in"
 
 
 @requires_tiles
@@ -653,4 +937,131 @@ class TestProvidersDriveAddTiles:
 
         drawn = [text.get_text() for text in ax.texts]
         assert drawn == [provider.attribution], f"attribution not drawn: {drawn}"
+        plt.close(fig)
+
+    def test_a_restful_template_renders_through_the_pipeline(self, recorded_urls):
+        """A path-substituted WMTS template is what the pipeline actually fetches.
+
+        Args:
+            recorded_urls: The patched opener's URL log.
+
+        Test scenario:
+            The RESTful branch is the one whose URL is mostly path rather than
+            query, so it is the shape most likely to come apart downstream --
+            `fetch_single_tile` re-checks the scheme of whatever `build_url`
+            handed back. Every request must be a fully substituted path with
+            the token still attached, and no placeholder left behind.
+        """
+        provider = WMTSProvider(
+            url="https://example.org/wmts/{Layer}/{TileMatrix}/{TileRow}/{TileCol}.png",
+            layer="TrueColor",
+            extra_params={"token": "abc"},
+        )
+        fig, ax = plt.subplots()
+        ax.set_xlim(1_000_000.0, 1_200_000.0)
+        ax.set_ylim(6_000_000.0, 6_200_000.0)
+
+        add_tiles(ax, provider, crs=3857, zoom=8)
+
+        assert recorded_urls, "no tile was requested"
+        assert all("{" not in url for url in recorded_urls), (
+            f"a placeholder survived into a request: {sorted(recorded_urls)[:2]}"
+        )
+        assert all(
+            url.startswith("https://example.org/wmts/TrueColor/8/")
+            and url.endswith(".png?token=abc")
+            for url in recorded_urls
+        ), f"not every request was a substituted template: {sorted(recorded_urls)[:2]}"
+        plt.close(fig)
+
+    def test_an_endpoint_query_survives_the_pipeline(self, recorded_urls):
+        """A `GetMap` endpoint's own query reaches every request unharmed.
+
+        Args:
+            recorded_urls: The patched opener's URL log.
+
+        Test scenario:
+            MapServer publishes its endpoint with a mandatory `map=` parameter
+            baked in. The unit test above proves `build_url` keeps it; this
+            proves nothing between `build_url` and the opener re-encodes or
+            drops it -- and it checks every tile of the mosaic, not just one.
+        """
+        provider = WMSProvider(
+            url="https://example.org/wms?map=/etc/base.map", layers="ortho"
+        )
+        fig, ax = plt.subplots()
+        ax.set_xlim(1_000_000.0, 1_200_000.0)
+        ax.set_ylim(6_000_000.0, 6_200_000.0)
+
+        add_tiles(ax, provider, crs=3857, zoom=8)
+
+        assert len(recorded_urls) > 1, f"expected a tile grid: {recorded_urls}"
+        assert all(
+            query_of(url).get("map") == ["/etc/base.map"] for url in recorded_urls
+        ), f"the endpoint's own parameter was lost: {sorted(recorded_urls)[:2]}"
+        plt.close(fig)
+
+    def test_min_tiles_across_one_lowers_the_request_count(self, wms, recorded_urls):
+        """`min_tiles_across=1` asks a WMS for fewer, coarser `GetMap` images.
+
+        Args:
+            wms: The GetMap provider fixture.
+            recorded_urls: The patched opener's URL log.
+
+        Test scenario:
+            The class docstring recommends this as the efficient shape for a
+            WMS, which only holds if the knob reaches `auto_zoom` and lowers
+            the zoom. Both renders leave `zoom` at its `"auto"` default, since
+            an explicit zoom bypasses the floor entirely. On this extent the
+            counts are 16 and 4; the assertion is on the relation rather than
+            the literals, which belong to the zoom heuristic in `tiles`.
+        """
+        fig, ax = plt.subplots()
+        ax.set_xlim(1_000_000.0, 1_200_000.0)
+        ax.set_ylim(6_000_000.0, 6_200_000.0)
+        add_tiles(ax, wms, crs=3857)
+        default_count = len(recorded_urls)
+
+        add_tiles(ax, wms, crs=3857, min_tiles_across=1)
+        floored_count = len(recorded_urls) - default_count
+
+        assert default_count > 1, f"the default floor fetched {default_count} tiles"
+        assert 0 < floored_count < default_count, (
+            f"min_tiles_across=1 requested {floored_count} images, "
+            f"not fewer than the default {default_count}"
+        )
+        plt.close(fig)
+
+    def test_the_mosaic_cell_size_follows_the_requested_tile_size(
+        self, recorded_urls_4px
+    ):
+        """A non-default `tile_size` sizes the mosaic, not just the query string.
+
+        Args:
+            recorded_urls_4px: The patched opener's URL log, serving 4x4 PNGs.
+
+        Test scenario:
+            `stitch_tiles` reads the cell size off the first decoded image, not
+            off the provider, so `tile_size` only works end to end because the
+            service honours the `WIDTH` it was asked for. This renders a 2x2
+            grid of 4-pixel tiles and requires an 8x8 mosaic: a single-tile
+            zoom would give a square image whatever the grid arithmetic did.
+        """
+        provider = WMSProvider(
+            url="https://example.org/wms", layers="ortho", tile_size=4
+        )
+        fig, ax = plt.subplots()
+        ax.set_xlim(1_000_000.0, 1_200_000.0)
+        ax.set_ylim(6_000_000.0, 6_200_000.0)
+
+        add_tiles(ax, provider, crs=3857, zoom=8)
+
+        requested = {query_of(url)["WIDTH"][0] for url in recorded_urls_4px}
+        assert requested == {"4"}, f"WIDTH was not the tile_size: {requested}"
+        assert len(recorded_urls_4px) == 4, (
+            f"expected a 2x2 grid, got {len(recorded_urls_4px)} tiles"
+        )
+        assert ax.images[0].get_array().shape[:2] == (8, 8), (
+            f"mosaic is not 2x2 cells of 4 px: {ax.images[0].get_array().shape}"
+        )
         plt.close(fig)
