@@ -4123,6 +4123,37 @@ class ArrayGlyph(GeoMixin, Glyph):
             flat = list(grid.ravel())
             return _root_figure(flat[0]), grid, flat, False, True
 
+        if isinstance(axes, (SubplotSpec, GridSpecBase)):
+            fig, grid = self._facet_gridspec_grid(axes, nrows, ncols)
+            return fig, grid, list(grid.ravel()), False, True
+
+        fig, grid = self._facet_block_grid(axes, nrows, ncols)
+        return fig, grid, list(grid.ravel()), False, False
+
+    @staticmethod
+    def _facet_gridspec_grid(
+        axes: SubplotSpec | GridSpecBase, nrows: int, ncols: int
+    ) -> tuple[Figure, np.ndarray]:
+        """Create the panel grid on a `SubplotSpec` / grid-spec host.
+
+        A `SubplotSpec` is subdivided into a fresh `nrows x ncols`
+        `GridSpecFromSubplotSpec`; a `GridSpecBase` (a `GridSpec` or a
+        `GridSpecFromSubplotSpec`) is used directly, and must be at least
+        `nrows x ncols`. Either way a subplot is added per cell on the host
+        figure.
+
+        Args:
+            axes: The `SubplotSpec` region or grid spec to lay panels into.
+            nrows: Number of grid rows.
+            ncols: Number of grid columns.
+
+        Returns:
+            tuple: `(root_figure, (nrows, ncols) axes array)`.
+
+        Raises:
+            ValueError: If the host is not attached to a figure, or a grid spec
+                is smaller than `nrows x ncols`.
+        """
         if isinstance(axes, SubplotSpec):
             host = axes.get_gridspec().figure
             if host is None:
@@ -4130,14 +4161,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                     "the supplied SubplotSpec is not attached to a figure; build "
                     "its GridSpec with `GridSpec(..., figure=fig)`."
                 )
-            inner = GridSpecFromSubplotSpec(nrows, ncols, subplot_spec=axes)
-            grid = np.empty((nrows, ncols), dtype=object)
-            for r in range(nrows):
-                for c in range(ncols):
-                    grid[r, c] = host.add_subplot(inner[r, c])
-            return _root_figure(grid[0, 0]), grid, list(grid.ravel()), False, True
-
-        if isinstance(axes, GridSpecBase):
+            cells: SubplotSpec | GridSpecBase = GridSpecFromSubplotSpec(
+                nrows, ncols, subplot_spec=axes
+            )
+        else:
             host = axes.figure
             if host is None:
                 raise ValueError(
@@ -4149,12 +4176,37 @@ class ArrayGlyph(GeoMixin, Glyph):
                     f"the supplied grid spec is {axes.nrows}x{axes.ncols}, too "
                     f"small for a {nrows}x{ncols} facet grid."
                 )
-            grid = np.empty((nrows, ncols), dtype=object)
-            for r in range(nrows):
-                for c in range(ncols):
-                    grid[r, c] = host.add_subplot(axes[r, c])
-            return _root_figure(grid[0, 0]), grid, list(grid.ravel()), False, True
+            cells = axes
+        grid = np.empty((nrows, ncols), dtype=object)
+        for r in range(nrows):
+            for c in range(ncols):
+                grid[r, c] = host.add_subplot(cells[r, c])
+        return _root_figure(grid[0, 0]), grid
 
+    @staticmethod
+    def _facet_block_grid(
+        axes: Any, nrows: int, ncols: int
+    ) -> tuple[Figure, np.ndarray]:
+        """Validate a supplied `Axes` block and shape it into the panel grid.
+
+        The block must reproduce the facet's `(nrows, ncols)` grid so
+        `FacetGrid.axes` keeps its documented shape and `col_wrap` is honoured:
+        a 2-D `ndarray` must match exactly, a flat/nested block must hold
+        `nrows*ncols` axes (the full grid, empty slots included, as the
+        self-built `plt.subplots` path produces).
+
+        Args:
+            axes: A 2-D `ndarray`, or a nested/flat sequence of `Axes`.
+            nrows: Number of grid rows.
+            ncols: Number of grid columns.
+
+        Returns:
+            tuple: `(root_figure, (nrows, ncols) axes array)`.
+
+        Raises:
+            ValueError: If the block is empty, holds non-`Axes` items, or does
+                not reproduce the `(nrows, ncols)` grid.
+        """
         flat = _flatten_axes(axes)
         if not flat:
             raise ValueError("`axes=` is empty; supply at least one Axes.")
@@ -4164,11 +4216,6 @@ class ArrayGlyph(GeoMixin, Glyph):
                 "flat sequence of Axes), a Figure / SubFigure, or a GridSpec / "
                 "SubplotSpec."
             )
-        # The supplied block must reproduce the facet's (nrows, ncols) grid so
-        # `FacetGrid.axes` keeps its documented shape and `col_wrap` is honoured
-        # -- a 2-D array must match exactly, a flat/nested block must hold
-        # nrows*ncols axes (the full grid, empty slots included, as the
-        # self-built `plt.subplots` path produces).
         if isinstance(axes, np.ndarray) and axes.ndim == 2:
             if axes.shape != (nrows, ncols):
                 raise ValueError(
@@ -4182,8 +4229,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 f"{nrows * ncols}."
             )
         grid = _axes_grid_2d(axes, flat, nrows, ncols)
-        flat_axes = list(grid.ravel())
-        return _root_figure(flat_axes[0]), grid, flat_axes, False, False
+        return _root_figure(grid.ravel()[0]), grid
 
     def facet(
         self,
