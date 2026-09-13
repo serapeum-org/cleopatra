@@ -61,9 +61,12 @@ fig.savefig("nightshade.png")
     `add_nightshade` and `add_tissot` **draw in data coordinates and reproject nothing** unless you
     ask: pass a `transform` callable, or the optional `crs=` shortcut (which needs the
     `cleopatra[tiles]` extra and raises an actionable `ImportError` without it). `transform=` and
-    `crs=` are mutually exclusive. Note that a whole-earth night region reaches the poles
-    (`lat = ±90`), which conformal projections such as Web Mercator (`crs=3857`) send to infinity —
-    that is a property of the projection, not of the geometry.
+    `crs=` are mutually exclusive. The night region always spans about half the globe, so a
+    non-global projection (orthographic, azimuthal, a regional CRS) — or a conformal projection at
+    its poles — maps the far side outside the projection's domain, to non-finite coordinates.
+    `add_nightshade` drops those vertices so the fill stays valid, but the drawn region is then only
+    the part that lies inside the projection; choose a projection whose domain covers the area you
+    are shading.
 
 ## Module Documentation
 
