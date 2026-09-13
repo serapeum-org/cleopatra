@@ -8358,6 +8358,22 @@ class TestFacetSuppliedAxes:
             ArrayGlyph(stack).facet(col="t", axes=[])
         plt.close("all")
 
+    def test_string_axes_rejected_cleanly(self):
+        """A string `axes=` raises a clear ValueError, not RecursionError."""
+        stack = self._stack(n=3)
+        with pytest.raises(ValueError, match="must be matplotlib Axes"):
+            ArrayGlyph(stack).facet(col="t", axes="foo")
+        plt.close("all")
+
+    def test_block_with_stray_string_rejected_cleanly(self):
+        """A block holding a non-Axes item raises a clear ValueError, not RecursionError."""
+        stack = self._stack(n=3)
+        fig, axs = plt.subplots(1, 3, squeeze=False)
+        block = [axs[0, 0], "x", axs[0, 2]]
+        with pytest.raises(ValueError, match="must be matplotlib Axes"):
+            ArrayGlyph(stack).facet(col="t", axes=block)
+        plt.close("all")
+
     def test_flat_block_with_extra_axes_reshaped_to_single_row(self):
         """A flat block whose length differs from nrows*ncols reshapes to one row."""
         stack = self._stack(n=3)

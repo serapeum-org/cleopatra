@@ -888,30 +888,32 @@ class RgbBands:
 def _flatten_axes(axes: Any) -> list[Axes]:
     """Flatten a supplied axes block into a row-major list of `Axes`.
 
-    Accepts a single `Axes`, an `ndarray` of `Axes`, or an arbitrarily nested
-    sequence of them, and returns every `Axes` it finds in row-major order.
-    Used by `ArrayGlyph._facet_axes` to normalise the caller's `axes=` block
-    before validating its size.
+    Accepts a single `Axes`, an `ndarray` of `Axes`, or a (possibly nested)
+    `list` / `tuple` of them, and returns every element it finds in row-major
+    order. Only `list` / `tuple` / `ndarray` are descended into; anything else
+    (a `str`, an `int`, an arbitrary object) is treated as a single leaf and
+    returned as-is, so `ArrayGlyph._facet_axes`'s downstream `isinstance(...,
+    Axes)` check can reject it with a clear error instead of, say, recursing
+    forever into a string.
 
     Args:
-        axes: An `Axes`, an `ndarray` of `Axes`, or a (possibly nested)
-            sequence of `Axes`.
+        axes: An `Axes`, an `ndarray` of `Axes`, or a (possibly nested) `list`
+            / `tuple` of `Axes`.
 
     Returns:
-        list[Axes]: The contained axes, flattened row-major.
+        list[Axes]: The contained elements, flattened row-major (non-`Axes`
+            leaves are included so the caller can reject them).
     """
     if isinstance(axes, Axes):
         return [axes]
     if isinstance(axes, np.ndarray):
-        return [a for a in axes.ravel()]
-    try:
-        items = list(axes)
-    except TypeError:
-        return [axes]  # a non-iterable leaf; the caller's validation rejects it
-    flat: list[Axes] = []
-    for item in items:
-        flat.extend(_flatten_axes(item))
-    return flat
+        return list(axes.ravel())
+    if isinstance(axes, (list, tuple)):
+        flat: list[Axes] = []
+        for item in axes:
+            flat.extend(_flatten_axes(item))
+        return flat
+    return [axes]  # a leaf (str, int, ...); the caller's validation rejects it
 
 
 def _axes_grid_2d(axes: Any, flat: list[Axes], nrows: int, ncols: int) -> np.ndarray:
