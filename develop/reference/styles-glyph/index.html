@@ -7850,9 +7850,11 @@ so the returned edges are always strictly increasing.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>If <code>values</code> has no finite entries, if <code>k &lt; 1</code>, if the
-(finite) data has no spread so fewer than two distinct edges
-result, or if <code>scheme</code> is an unrecognised name.</p>
+                <p>For a <strong>named</strong> scheme, if <code>values</code> has no finite entries
+or <code>k &lt; 1</code> (an explicit edge sequence needs neither, so it accepts
+empty / all-non-finite <code>values</code>); if fewer than two distinct edges
+result (the data or the edges have no spread); or if <code>scheme</code> is an
+unrecognised name.</p>
               </div>
             </td>
           </tr>
@@ -8013,7 +8015,12 @@ result, or if <code>scheme</code> is an unrecognised name.</p>
 <span class="normal"><a href="#__codelineno-0-1877">1877</a></span>
 <span class="normal"><a href="#__codelineno-0-1878">1878</a></span>
 <span class="normal"><a href="#__codelineno-0-1879">1879</a></span>
-<span class="normal"><a href="#__codelineno-0-1880">1880</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1764" name="__codelineno-0-1764"></a><span class="k">def</span><span class="w"> </span><span class="nf">classify</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-1880">1880</a></span>
+<span class="normal"><a href="#__codelineno-0-1881">1881</a></span>
+<span class="normal"><a href="#__codelineno-0-1882">1882</a></span>
+<span class="normal"><a href="#__codelineno-0-1883">1883</a></span>
+<span class="normal"><a href="#__codelineno-0-1884">1884</a></span>
+<span class="normal"><a href="#__codelineno-0-1885">1885</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1764" name="__codelineno-0-1764"></a><span class="k">def</span><span class="w"> </span><span class="nf">classify</span><span class="p">(</span>
 <a id="__codelineno-0-1765" name="__codelineno-0-1765"></a>    <span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
 <a id="__codelineno-0-1766" name="__codelineno-0-1766"></a>    <span class="n">scheme</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
 <a id="__codelineno-0-1767" name="__codelineno-0-1767"></a>    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
@@ -8067,69 +8074,74 @@ result, or if <code>scheme</code> is an unrecognised name.</p>
 <a id="__codelineno-0-1815" name="__codelineno-0-1815"></a><span class="sd">            so the returned edges are always strictly increasing.</span>
 <a id="__codelineno-0-1816" name="__codelineno-0-1816"></a>
 <a id="__codelineno-0-1817" name="__codelineno-0-1817"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-1818" name="__codelineno-0-1818"></a><span class="sd">        ValueError: If `values` has no finite entries, if `k &lt; 1`, if the</span>
-<a id="__codelineno-0-1819" name="__codelineno-0-1819"></a><span class="sd">            (finite) data has no spread so fewer than two distinct edges</span>
-<a id="__codelineno-0-1820" name="__codelineno-0-1820"></a><span class="sd">            result, or if `scheme` is an unrecognised name.</span>
-<a id="__codelineno-0-1821" name="__codelineno-0-1821"></a>
-<a id="__codelineno-0-1822" name="__codelineno-0-1822"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-1823" name="__codelineno-0-1823"></a><span class="sd">        - Equal-interval edges on a 0–10 ramp:</span>
-<a id="__codelineno-0-1824" name="__codelineno-0-1824"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-1825" name="__codelineno-0-1825"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-1826" name="__codelineno-0-1826"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.styles import classify</span>
-<a id="__codelineno-0-1827" name="__codelineno-0-1827"></a><span class="sd">            &gt;&gt;&gt; edges, norm = classify(np.arange(11.0), "equal_interval", k=5)</span>
-<a id="__codelineno-0-1828" name="__codelineno-0-1828"></a><span class="sd">            &gt;&gt;&gt; [float(e) for e in edges]</span>
-<a id="__codelineno-0-1829" name="__codelineno-0-1829"></a><span class="sd">            [0.0, 2.0, 4.0, 6.0, 8.0, 10.0]</span>
-<a id="__codelineno-0-1830" name="__codelineno-0-1830"></a><span class="sd">            &gt;&gt;&gt; [float(b) for b in norm.boundaries]</span>
+<a id="__codelineno-0-1818" name="__codelineno-0-1818"></a><span class="sd">        ValueError: For a **named** scheme, if `values` has no finite entries</span>
+<a id="__codelineno-0-1819" name="__codelineno-0-1819"></a><span class="sd">            or `k &lt; 1` (an explicit edge sequence needs neither, so it accepts</span>
+<a id="__codelineno-0-1820" name="__codelineno-0-1820"></a><span class="sd">            empty / all-non-finite `values`); if fewer than two distinct edges</span>
+<a id="__codelineno-0-1821" name="__codelineno-0-1821"></a><span class="sd">            result (the data or the edges have no spread); or if `scheme` is an</span>
+<a id="__codelineno-0-1822" name="__codelineno-0-1822"></a><span class="sd">            unrecognised name.</span>
+<a id="__codelineno-0-1823" name="__codelineno-0-1823"></a>
+<a id="__codelineno-0-1824" name="__codelineno-0-1824"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-1825" name="__codelineno-0-1825"></a><span class="sd">        - Equal-interval edges on a 0–10 ramp:</span>
+<a id="__codelineno-0-1826" name="__codelineno-0-1826"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-1827" name="__codelineno-0-1827"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-1828" name="__codelineno-0-1828"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.styles import classify</span>
+<a id="__codelineno-0-1829" name="__codelineno-0-1829"></a><span class="sd">            &gt;&gt;&gt; edges, norm = classify(np.arange(11.0), "equal_interval", k=5)</span>
+<a id="__codelineno-0-1830" name="__codelineno-0-1830"></a><span class="sd">            &gt;&gt;&gt; [float(e) for e in edges]</span>
 <a id="__codelineno-0-1831" name="__codelineno-0-1831"></a><span class="sd">            [0.0, 2.0, 4.0, 6.0, 8.0, 10.0]</span>
-<a id="__codelineno-0-1832" name="__codelineno-0-1832"></a>
-<a id="__codelineno-0-1833" name="__codelineno-0-1833"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-1834" name="__codelineno-0-1834"></a><span class="sd">        - Quantile edges put equal counts in each class:</span>
-<a id="__codelineno-0-1835" name="__codelineno-0-1835"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-1836" name="__codelineno-0-1836"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-1837" name="__codelineno-0-1837"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.styles import classify</span>
-<a id="__codelineno-0-1838" name="__codelineno-0-1838"></a><span class="sd">            &gt;&gt;&gt; edges, _ = classify(np.arange(100.0), "quantiles", k=4)</span>
-<a id="__codelineno-0-1839" name="__codelineno-0-1839"></a><span class="sd">            &gt;&gt;&gt; [float(e) for e in edges]</span>
-<a id="__codelineno-0-1840" name="__codelineno-0-1840"></a><span class="sd">            [0.0, 24.75, 49.5, 74.25, 99.0]</span>
-<a id="__codelineno-0-1841" name="__codelineno-0-1841"></a>
-<a id="__codelineno-0-1842" name="__codelineno-0-1842"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-1843" name="__codelineno-0-1843"></a><span class="sd">        - An explicit edge sequence is used verbatim (sorted):</span>
-<a id="__codelineno-0-1844" name="__codelineno-0-1844"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-1845" name="__codelineno-0-1845"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-1846" name="__codelineno-0-1846"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.styles import classify</span>
-<a id="__codelineno-0-1847" name="__codelineno-0-1847"></a><span class="sd">            &gt;&gt;&gt; edges, _ = classify(np.arange(11.0), [10.0, 0.0, 5.0])</span>
-<a id="__codelineno-0-1848" name="__codelineno-0-1848"></a><span class="sd">            &gt;&gt;&gt; [float(e) for e in edges]</span>
-<a id="__codelineno-0-1849" name="__codelineno-0-1849"></a><span class="sd">            [0.0, 5.0, 10.0]</span>
-<a id="__codelineno-0-1850" name="__codelineno-0-1850"></a>
-<a id="__codelineno-0-1851" name="__codelineno-0-1851"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-1852" name="__codelineno-0-1852"></a><span class="sd">        - An unknown scheme name is rejected:</span>
-<a id="__codelineno-0-1853" name="__codelineno-0-1853"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-1854" name="__codelineno-0-1854"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.styles import classify</span>
-<a id="__codelineno-0-1855" name="__codelineno-0-1855"></a><span class="sd">            &gt;&gt;&gt; classify([1.0, 2.0, 3.0], "rainbow")</span>
-<a id="__codelineno-0-1856" name="__codelineno-0-1856"></a><span class="sd">            Traceback (most recent call last):</span>
-<a id="__codelineno-0-1857" name="__codelineno-0-1857"></a><span class="sd">                ...</span>
-<a id="__codelineno-0-1858" name="__codelineno-0-1858"></a><span class="sd">            ValueError: Unknown classification scheme 'rainbow'. ...</span>
-<a id="__codelineno-0-1859" name="__codelineno-0-1859"></a>
-<a id="__codelineno-0-1860" name="__codelineno-0-1860"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-1861" name="__codelineno-0-1861"></a><span class="sd">    """</span>
-<a id="__codelineno-0-1862" name="__codelineno-0-1862"></a>    <span class="n">finite</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-<a id="__codelineno-0-1863" name="__codelineno-0-1863"></a>    <span class="n">finite</span> <span class="o">=</span> <span class="n">finite</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">finite</span><span class="p">)]</span>
-<a id="__codelineno-0-1864" name="__codelineno-0-1864"></a>    <span class="k">if</span> <span class="n">finite</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-1865" name="__codelineno-0-1865"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Cannot classify: `values` has no finite entries to bin."</span><span class="p">)</span>
+<a id="__codelineno-0-1832" name="__codelineno-0-1832"></a><span class="sd">            &gt;&gt;&gt; [float(b) for b in norm.boundaries]</span>
+<a id="__codelineno-0-1833" name="__codelineno-0-1833"></a><span class="sd">            [0.0, 2.0, 4.0, 6.0, 8.0, 10.0]</span>
+<a id="__codelineno-0-1834" name="__codelineno-0-1834"></a>
+<a id="__codelineno-0-1835" name="__codelineno-0-1835"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-1836" name="__codelineno-0-1836"></a><span class="sd">        - Quantile edges put equal counts in each class:</span>
+<a id="__codelineno-0-1837" name="__codelineno-0-1837"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-1838" name="__codelineno-0-1838"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-1839" name="__codelineno-0-1839"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.styles import classify</span>
+<a id="__codelineno-0-1840" name="__codelineno-0-1840"></a><span class="sd">            &gt;&gt;&gt; edges, _ = classify(np.arange(100.0), "quantiles", k=4)</span>
+<a id="__codelineno-0-1841" name="__codelineno-0-1841"></a><span class="sd">            &gt;&gt;&gt; [float(e) for e in edges]</span>
+<a id="__codelineno-0-1842" name="__codelineno-0-1842"></a><span class="sd">            [0.0, 24.75, 49.5, 74.25, 99.0]</span>
+<a id="__codelineno-0-1843" name="__codelineno-0-1843"></a>
+<a id="__codelineno-0-1844" name="__codelineno-0-1844"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-1845" name="__codelineno-0-1845"></a><span class="sd">        - An explicit edge sequence is used verbatim (sorted):</span>
+<a id="__codelineno-0-1846" name="__codelineno-0-1846"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-1847" name="__codelineno-0-1847"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-1848" name="__codelineno-0-1848"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.styles import classify</span>
+<a id="__codelineno-0-1849" name="__codelineno-0-1849"></a><span class="sd">            &gt;&gt;&gt; edges, _ = classify(np.arange(11.0), [10.0, 0.0, 5.0])</span>
+<a id="__codelineno-0-1850" name="__codelineno-0-1850"></a><span class="sd">            &gt;&gt;&gt; [float(e) for e in edges]</span>
+<a id="__codelineno-0-1851" name="__codelineno-0-1851"></a><span class="sd">            [0.0, 5.0, 10.0]</span>
+<a id="__codelineno-0-1852" name="__codelineno-0-1852"></a>
+<a id="__codelineno-0-1853" name="__codelineno-0-1853"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-1854" name="__codelineno-0-1854"></a><span class="sd">        - An unknown scheme name is rejected:</span>
+<a id="__codelineno-0-1855" name="__codelineno-0-1855"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-1856" name="__codelineno-0-1856"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.styles import classify</span>
+<a id="__codelineno-0-1857" name="__codelineno-0-1857"></a><span class="sd">            &gt;&gt;&gt; classify([1.0, 2.0, 3.0], "rainbow")</span>
+<a id="__codelineno-0-1858" name="__codelineno-0-1858"></a><span class="sd">            Traceback (most recent call last):</span>
+<a id="__codelineno-0-1859" name="__codelineno-0-1859"></a><span class="sd">                ...</span>
+<a id="__codelineno-0-1860" name="__codelineno-0-1860"></a><span class="sd">            ValueError: Unknown classification scheme 'rainbow'. ...</span>
+<a id="__codelineno-0-1861" name="__codelineno-0-1861"></a>
+<a id="__codelineno-0-1862" name="__codelineno-0-1862"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-1863" name="__codelineno-0-1863"></a><span class="sd">    """</span>
+<a id="__codelineno-0-1864" name="__codelineno-0-1864"></a>    <span class="n">finite</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<a id="__codelineno-0-1865" name="__codelineno-0-1865"></a>    <span class="n">finite</span> <span class="o">=</span> <span class="n">finite</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">finite</span><span class="p">)]</span>
 <a id="__codelineno-0-1866" name="__codelineno-0-1866"></a>
 <a id="__codelineno-0-1867" name="__codelineno-0-1867"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">scheme</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-<a id="__codelineno-0-1868" name="__codelineno-0-1868"></a>        <span class="n">edges</span> <span class="o">=</span> <span class="n">_scheme_edges</span><span class="p">(</span><span class="n">finite</span><span class="p">,</span> <span class="n">scheme</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
-<a id="__codelineno-0-1869" name="__codelineno-0-1869"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-1870" name="__codelineno-0-1870"></a>        <span class="c1"># An explicit sequence of bin edges supplied by the caller.</span>
-<a id="__codelineno-0-1871" name="__codelineno-0-1871"></a>        <span class="n">edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">scheme</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
-<a id="__codelineno-0-1872" name="__codelineno-0-1872"></a>
-<a id="__codelineno-0-1873" name="__codelineno-0-1873"></a>    <span class="n">edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span>
-<a id="__codelineno-0-1874" name="__codelineno-0-1874"></a>    <span class="k">if</span> <span class="n">edges</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
-<a id="__codelineno-0-1875" name="__codelineno-0-1875"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-1876" name="__codelineno-0-1876"></a>            <span class="s2">"Cannot classify: the data has no spread (fewer than two "</span>
-<a id="__codelineno-0-1877" name="__codelineno-0-1877"></a>            <span class="s2">"distinct bin edges). Pin explicit edges or widen the data."</span>
-<a id="__codelineno-0-1878" name="__codelineno-0-1878"></a>        <span class="p">)</span>
-<a id="__codelineno-0-1879" name="__codelineno-0-1879"></a>    <span class="n">norm</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">BoundaryNorm</span><span class="p">(</span><span class="n">boundaries</span><span class="o">=</span><span class="n">edges</span><span class="p">,</span> <span class="n">ncolors</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span>
-<a id="__codelineno-0-1880" name="__codelineno-0-1880"></a>    <span class="k">return</span> <span class="n">edges</span><span class="p">,</span> <span class="n">norm</span>
+<a id="__codelineno-0-1868" name="__codelineno-0-1868"></a>        <span class="c1"># A named scheme derives the edges from the data, so it needs values.</span>
+<a id="__codelineno-0-1869" name="__codelineno-0-1869"></a>        <span class="k">if</span> <span class="n">finite</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-1870" name="__codelineno-0-1870"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Cannot classify: `values` has no finite entries to bin."</span><span class="p">)</span>
+<a id="__codelineno-0-1871" name="__codelineno-0-1871"></a>        <span class="n">edges</span> <span class="o">=</span> <span class="n">_scheme_edges</span><span class="p">(</span><span class="n">finite</span><span class="p">,</span> <span class="n">scheme</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+<a id="__codelineno-0-1872" name="__codelineno-0-1872"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-1873" name="__codelineno-0-1873"></a>        <span class="c1"># An explicit sequence of bin edges supplied by the caller: the edges are</span>
+<a id="__codelineno-0-1874" name="__codelineno-0-1874"></a>        <span class="c1"># given, so `values` are irrelevant and may be empty / all-non-finite</span>
+<a id="__codelineno-0-1875" name="__codelineno-0-1875"></a>        <span class="c1"># (e.g. a fully masked facet panel that shares stack-wide edges).</span>
+<a id="__codelineno-0-1876" name="__codelineno-0-1876"></a>        <span class="n">edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">scheme</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
+<a id="__codelineno-0-1877" name="__codelineno-0-1877"></a>
+<a id="__codelineno-0-1878" name="__codelineno-0-1878"></a>    <span class="n">edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span>
+<a id="__codelineno-0-1879" name="__codelineno-0-1879"></a>    <span class="k">if</span> <span class="n">edges</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+<a id="__codelineno-0-1880" name="__codelineno-0-1880"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-1881" name="__codelineno-0-1881"></a>            <span class="s2">"Cannot classify: the data has no spread (fewer than two "</span>
+<a id="__codelineno-0-1882" name="__codelineno-0-1882"></a>            <span class="s2">"distinct bin edges). Pin explicit edges or widen the data."</span>
+<a id="__codelineno-0-1883" name="__codelineno-0-1883"></a>        <span class="p">)</span>
+<a id="__codelineno-0-1884" name="__codelineno-0-1884"></a>    <span class="n">norm</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">BoundaryNorm</span><span class="p">(</span><span class="n">boundaries</span><span class="o">=</span><span class="n">edges</span><span class="p">,</span> <span class="n">ncolors</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span>
+<a id="__codelineno-0-1885" name="__codelineno-0-1885"></a>    <span class="k">return</span> <span class="n">edges</span><span class="p">,</span> <span class="n">norm</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
