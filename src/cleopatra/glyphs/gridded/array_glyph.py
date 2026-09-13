@@ -40,7 +40,11 @@ from matplotlib.collections import PathCollection
 from matplotlib.colorbar import Colorbar
 from matplotlib.colors import BoundaryNorm, Colormap, ListedColormap, Normalize
 from matplotlib.figure import Figure, SubFigure
-from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec, SubplotSpec
+from matplotlib.gridspec import (
+    GridSpecBase,
+    GridSpecFromSubplotSpec,
+    SubplotSpec,
+)
 from matplotlib.ticker import MaxNLocator
 from PIL import Image
 
@@ -4133,16 +4137,16 @@ class ArrayGlyph(GeoMixin, Glyph):
                     grid[r, c] = host.add_subplot(inner[r, c])
             return _root_figure(grid[0, 0]), grid, list(grid.ravel()), False, True
 
-        if isinstance(axes, GridSpec):
+        if isinstance(axes, GridSpecBase):
             host = axes.figure
             if host is None:
                 raise ValueError(
-                    "the supplied GridSpec is not attached to a figure; build it "
+                    "the supplied grid spec is not attached to a figure; build it "
                     "with `GridSpec(..., figure=fig)`."
                 )
             if axes.nrows < nrows or axes.ncols < ncols:
                 raise ValueError(
-                    f"the supplied GridSpec is {axes.nrows}x{axes.ncols}, too "
+                    f"the supplied grid spec is {axes.nrows}x{axes.ncols}, too "
                     f"small for a {nrows}x{ncols} facet grid."
                 )
             grid = np.empty((nrows, ncols), dtype=object)
@@ -4196,7 +4200,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             | Sequence[Sequence[Axes]]
             | Figure
             | SubFigure
-            | GridSpec
+            | GridSpecBase
             | SubplotSpec
             | None
         ) = None,

@@ -12,7 +12,7 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.collections import PathCollection
 from matplotlib.colors import BoundaryNorm, Normalize, PowerNorm, to_rgba
 from matplotlib.figure import Figure
-from matplotlib.gridspec import GridSpec
+from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 from matplotlib.text import Text
 from matplotlib.transforms import Bbox
 from PIL import Image
@@ -8275,6 +8275,17 @@ class TestFacetSuppliedAxes:
         fig = plt.figure()
         gs = GridSpec(1, 3, figure=fig)
         result = ArrayGlyph(stack).facet(col="t", axes=gs)
+        assert result.fig is fig
+        assert result.axes.shape == (1, 3)
+        plt.close("all")
+
+    def test_gridspec_from_subplotspec_host(self):
+        """A `GridSpecFromSubplotSpec` region is accepted as a host."""
+        stack = self._stack(n=3)
+        fig = plt.figure()
+        outer = GridSpec(2, 1, figure=fig)
+        inner = GridSpecFromSubplotSpec(1, 3, subplot_spec=outer[0])
+        result = ArrayGlyph(stack).facet(col="t", axes=inner)
         assert result.fig is fig
         assert result.axes.shape == (1, 3)
         plt.close("all")
