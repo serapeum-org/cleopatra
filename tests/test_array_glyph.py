@@ -8950,7 +8950,7 @@ class TestFacetSuppliedAxes:
         fig, axs = plt.subplots(1, 3, squeeze=False)
         supplied = ArrayGlyph(stack).facet(FacetLayout(col="t", axes=axs))
         sup_norm = supplied.axes[0, 0].get_images()[0].norm
-        assert (sup_norm.vmin, sup_norm.vmax) == own_limits
+        assert own_limits == (sup_norm.vmin, sup_norm.vmax)
         plt.close("all")
 
     def test_caller_figure_not_closed_on_failure(self):
