@@ -662,6 +662,22 @@ class TestTissotCircles:
         with pytest.raises(ValueError, match="at least 4"):
             tissot_circles([0.0], [0.0], 5e5, n=3)
 
+    def test_circle_crossing_a_pole_stays_finite(self):
+        """Test a circle whose radius reaches past a pole is finite and in range.
+
+        Test scenario:
+            A ~500 km circle (angular radius ~4.5 deg) centred at 89 deg N
+            extends over the north pole; every vertex must be finite, with
+            latitude clamped to [-90, 90] and longitude wrapped to (-180, 180].
+        """
+        ring = tissot_circles([0.0], [89.0], 5e5, n=180)[0]
+        assert np.isfinite(ring).all(), (
+            "pole-crossing circle produced non-finite vertices"
+        )
+        assert np.all(np.abs(ring[:, 1]) <= 90.0 + 1e-9), "latitude out of range"
+        assert np.all(ring[:, 0] > -180.0), "longitude <= -180"
+        assert np.all(ring[:, 0] <= 180.0), "longitude > 180"
+
 
 class TestAddNightshade:
     """Tests for add_nightshade."""
@@ -749,6 +765,64 @@ class TestAddNightshade:
         with pytest.raises(TypeError):
             add_nightshade("not an axes", JUN_SOLSTICE)
 
+    def test_crs_4326_is_a_noop(self):
+        """Test crs=4326 draws the raw lon/lat rings (no reprojection).
+
+        Test scenario:
+            EPSG:4326 is the source CRS, so crs=4326 must yield the same vertices
+            as the default (no crs), staying within the lon/lat range.
+        """
+        _, ax_default = plt.subplots()
+        _, ax_4326 = plt.subplots()
+        default = add_nightshade(ax_default, JUN_SOLSTICE).get_paths()[0].vertices
+        as_4326 = (
+            add_nightshade(ax_4326, JUN_SOLSTICE, crs=4326).get_paths()[0].vertices
+        )
+        assert np.allclose(default, as_4326), "crs=4326 should not reproject"
+        assert np.abs(as_4326[:, 0]).max() <= 180.0 + 1e-9, (
+            "crs=4326 left lon/lat range"
+        )
+
+    def test_each_call_returns_its_own_artist(self):
+        """Test several calls on one axes each add a distinct artist.
+
+        Test scenario:
+            Two calls register two different PolyCollections on the same axes.
+        """
+        _, ax = plt.subplots()
+        first = add_nightshade(ax, JUN_SOLSTICE)
+        second = add_nightshade(ax, DEC_SOLSTICE)
+        assert first is not second, "calls returned the same artist"
+        assert first in ax.collections, "first artist not registered"
+        assert second in ax.collections, "second artist not registered"
+
+    def test_zorder_and_style_passthrough(self):
+        """Test style kwargs are forwarded to the artist.
+
+        Test scenario:
+            zorder and alpha passed by the caller land on the PolyCollection.
+        """
+        _, ax = plt.subplots()
+        art = add_nightshade(ax, JUN_SOLSTICE, zorder=7, alpha=0.2)
+        assert art.get_zorder() == 7, f"zorder not forwarded: {art.get_zorder()}"
+        assert art.get_alpha() == pytest.approx(0.2), (
+            f"alpha not forwarded: {art.get_alpha()}"
+        )
+
+    def test_transform_may_return_a_plain_list(self):
+        """Test a transform returning a non-ndarray (list) is accepted.
+
+        Test scenario:
+            The transform result is coerced with np.asarray, so a callable that
+            returns a nested list still draws correctly (here shifted by +500).
+        """
+        _, ax = plt.subplots()
+        art = add_nightshade(ax, JUN_SOLSTICE, transform=lambda a: (a + 500.0).tolist())
+        verts = np.vstack([p.vertices for p in art.get_paths()])
+        assert verts.min() > 300.0, (
+            f"list-returning transform not applied: {verts.min()}"
+        )
+
 
 class TestAddTissot:
     """Tests for add_tissot."""
@@ -817,6 +891,46 @@ class TestAddTissot:
         """
         with pytest.raises(TypeError):
             add_tissot("not an axes", [])
+
+    def test_empty_ellipses_draws_nothing(self):
+        """Test an empty ring list yields an artist with no polygons.
+
+        Test scenario:
+            add_tissot([]) still returns a registered PolyCollection, just with
+            zero paths, rather than raising.
+        """
+        _, ax = plt.subplots()
+        art = add_tissot(ax, [])
+        assert len(art.get_paths()) == 0, (
+            f"expected 0 paths, got {len(art.get_paths())}"
+        )
+        assert art in ax.collections, "empty artist not registered"
+
+    def test_rings_with_differing_vertex_counts(self):
+        """Test rings of different lengths are all drawn.
+
+        Test scenario:
+            A triangle and a pentagon (3 and 5 vertices) produce two paths.
+        """
+        tri = np.array([[0.0, 0.0], [1.0, 0.0], [0.5, 1.0]])
+        theta = np.linspace(0, 2 * np.pi, 5, endpoint=False)
+        pentagon = np.column_stack([np.cos(theta), np.sin(theta)]) + 5.0
+        _, ax = plt.subplots()
+        art = add_tissot(ax, [tri, pentagon])
+        assert len(art.get_paths()) == 2, (
+            f"expected 2 paths, got {len(art.get_paths())}"
+        )
+
+    def test_zorder_passthrough(self):
+        """Test style kwargs are forwarded to the artist.
+
+        Test scenario:
+            A caller-supplied zorder lands on the PolyCollection.
+        """
+        square = np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]])
+        _, ax = plt.subplots()
+        art = add_tissot(ax, [square], zorder=9)
+        assert art.get_zorder() == 9, f"zorder not forwarded: {art.get_zorder()}"
 
 
 class TestWrapLongitude:
