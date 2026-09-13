@@ -432,7 +432,7 @@ def _split_antimeridian(ring: np.ndarray) -> list[np.ndarray]:
             # or a piece's seam vertices at -180 would flip to +180 and smear the
             # ring across the whole map (the very thing the split prevents).
             rings.append(clipped)
-    return rings if rings else [ring]
+    return rings
 
 
 def _clip_lon_strip(poly: np.ndarray, lo: float, hi: float) -> np.ndarray:
