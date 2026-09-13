@@ -739,6 +739,8 @@
       
         
       
+        
+      
     
     
     
@@ -1866,6 +1868,34 @@
     
   
     Watermark (figure mark)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../furniture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Furniture (scale bar / north arrow)
   
 
     
@@ -7760,8 +7790,12 @@ sticky opposite field.</p>
     </div>
 
 </div><h2 id="classify"><a class="toclink" href="#classify">Classify</a><a class="headerlink" href="#classify" title="Permanent link">#</a></h2>
-<p>Categorical / classed colour schemes on the scatter / vector / flow / polygon glyphs:
-<code>plot(classify=Classify(scheme="categorical", k=5))</code>.</p>
+<p>Classed colour schemes on the scatter / vector / flow / polygon glyphs and on the raster
+<code>ArrayGlyph</code> (<code>plot</code> / <code>facet</code> / <code>animate</code>): <code>plot(classify=Classify(scheme="quantiles", k=5))</code>.
+<code>ArrayGlyph</code> bins its 2-D field into the same discrete classes with a stepped colorbar — a named
+scheme, or explicit edges <code>Classify(scheme=[0, 10, 50, 100, 500])</code> — resolving the classes once over
+the whole stack when faceting / animating. Its <code>scheme="categorical"</code> is rejected (a raster's cells
+are a continuous field, not nominal labels).</p>
 
 
 <div class="doc doc-object doc-class">
@@ -7787,7 +7821,10 @@ sticky opposite field.</p>
 <p>Groups the <code>scheme</code> / <code>k</code> / <code>category_legend_kwargs</code> options honoured
 by the glyphs whose colour mapping routes through
 <code>Glyph._prepare_scalar_mapping</code> -- <code>VectorGlyph</code>, <code>FlowGlyph</code>,
-<code>PolygonGlyph</code>, <code>ScatterGlyph</code>.</p>
+<code>PolygonGlyph</code>, <code>ScatterGlyph</code> -- and by <code>ArrayGlyph</code>, which bins its
+2-D field into the same discrete colour classes on <code>plot</code> / <code>facet</code> /
+<code>animate</code> (its <code>scheme="categorical"</code> is rejected, since a raster's cells
+are a continuous field rather than nominal labels).</p>
 
 
 <p><span class="doc-section-title">Attributes:</span></p>
@@ -7907,54 +7944,60 @@ legend a <code>"categorical"</code> scheme draws (e.g. <code>loc</code>, <code>n
 <span class="normal"><a href="#__codelineno-0-386">386</a></span>
 <span class="normal"><a href="#__codelineno-0-387">387</a></span>
 <span class="normal"><a href="#__codelineno-0-388">388</a></span>
-<span class="normal"><a href="#__codelineno-0-389">389</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-342" name="__codelineno-0-342"></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-389">389</a></span>
+<span class="normal"><a href="#__codelineno-0-390">390</a></span>
+<span class="normal"><a href="#__codelineno-0-391">391</a></span>
+<span class="normal"><a href="#__codelineno-0-392">392</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-342" name="__codelineno-0-342"></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <a id="__codelineno-0-343" name="__codelineno-0-343"></a><span class="k">class</span><span class="w"> </span><span class="nc">Classify</span><span class="p">:</span>
 <a id="__codelineno-0-344" name="__codelineno-0-344"></a><span class="w">    </span><span class="sd">"""Value-classification (choropleth) options.</span>
 <a id="__codelineno-0-345" name="__codelineno-0-345"></a>
 <a id="__codelineno-0-346" name="__codelineno-0-346"></a><span class="sd">    Groups the `scheme` / `k` / `category_legend_kwargs` options honoured</span>
 <a id="__codelineno-0-347" name="__codelineno-0-347"></a><span class="sd">    by the glyphs whose colour mapping routes through</span>
 <a id="__codelineno-0-348" name="__codelineno-0-348"></a><span class="sd">    `Glyph._prepare_scalar_mapping` -- `VectorGlyph`, `FlowGlyph`,</span>
-<a id="__codelineno-0-349" name="__codelineno-0-349"></a><span class="sd">    `PolygonGlyph`, `ScatterGlyph`.</span>
-<a id="__codelineno-0-350" name="__codelineno-0-350"></a>
-<a id="__codelineno-0-351" name="__codelineno-0-351"></a><span class="sd">    Attributes:</span>
-<a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="sd">        scheme: A `cleopatra.styling.styles.classify` scheme name (e.g.</span>
-<a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="sd">            `"quantiles"`, `"equal_interval"`), an explicit sequence of bin</span>
-<a id="__codelineno-0-354" name="__codelineno-0-354"></a><span class="sd">            edges, or the literal `"categorical"` for a distinct-value</span>
-<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">            mapping. `None` leaves the default (no classification).</span>
-<a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">        k: The class count for count/width schemes. `None` leaves the</span>
-<a id="__codelineno-0-357" name="__codelineno-0-357"></a><span class="sd">            default (`5`).</span>
-<a id="__codelineno-0-358" name="__codelineno-0-358"></a><span class="sd">        category_legend_kwargs: Extra keyword arguments forwarded to the</span>
-<a id="__codelineno-0-359" name="__codelineno-0-359"></a><span class="sd">            legend a `"categorical"` scheme draws (e.g. `loc`, `ncol`).</span>
-<a id="__codelineno-0-360" name="__codelineno-0-360"></a>
-<a id="__codelineno-0-361" name="__codelineno-0-361"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-362" name="__codelineno-0-362"></a><span class="sd">        - A quantile scheme with four classes:</span>
-<a id="__codelineno-0-363" name="__codelineno-0-363"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-364" name="__codelineno-0-364"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.params import Classify</span>
-<a id="__codelineno-0-365" name="__codelineno-0-365"></a><span class="sd">            &gt;&gt;&gt; Classify(scheme="quantiles", k=4).to_options()</span>
-<a id="__codelineno-0-366" name="__codelineno-0-366"></a><span class="sd">            {'scheme': 'quantiles', 'k': 4}</span>
-<a id="__codelineno-0-367" name="__codelineno-0-367"></a>
-<a id="__codelineno-0-368" name="__codelineno-0-368"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-369" name="__codelineno-0-369"></a><span class="sd">    """</span>
+<a id="__codelineno-0-349" name="__codelineno-0-349"></a><span class="sd">    `PolygonGlyph`, `ScatterGlyph` -- and by `ArrayGlyph`, which bins its</span>
+<a id="__codelineno-0-350" name="__codelineno-0-350"></a><span class="sd">    2-D field into the same discrete colour classes on `plot` / `facet` /</span>
+<a id="__codelineno-0-351" name="__codelineno-0-351"></a><span class="sd">    `animate` (its `scheme="categorical"` is rejected, since a raster's cells</span>
+<a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="sd">    are a continuous field rather than nominal labels).</span>
+<a id="__codelineno-0-353" name="__codelineno-0-353"></a>
+<a id="__codelineno-0-354" name="__codelineno-0-354"></a><span class="sd">    Attributes:</span>
+<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">        scheme: A `cleopatra.styling.styles.classify` scheme name (e.g.</span>
+<a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">            `"quantiles"`, `"equal_interval"`), an explicit sequence of bin</span>
+<a id="__codelineno-0-357" name="__codelineno-0-357"></a><span class="sd">            edges, or the literal `"categorical"` for a distinct-value</span>
+<a id="__codelineno-0-358" name="__codelineno-0-358"></a><span class="sd">            mapping. `None` leaves the default (no classification).</span>
+<a id="__codelineno-0-359" name="__codelineno-0-359"></a><span class="sd">        k: The class count for count/width schemes. `None` leaves the</span>
+<a id="__codelineno-0-360" name="__codelineno-0-360"></a><span class="sd">            default (`5`).</span>
+<a id="__codelineno-0-361" name="__codelineno-0-361"></a><span class="sd">        category_legend_kwargs: Extra keyword arguments forwarded to the</span>
+<a id="__codelineno-0-362" name="__codelineno-0-362"></a><span class="sd">            legend a `"categorical"` scheme draws (e.g. `loc`, `ncol`).</span>
+<a id="__codelineno-0-363" name="__codelineno-0-363"></a>
+<a id="__codelineno-0-364" name="__codelineno-0-364"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-365" name="__codelineno-0-365"></a><span class="sd">        - A quantile scheme with four classes:</span>
+<a id="__codelineno-0-366" name="__codelineno-0-366"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-367" name="__codelineno-0-367"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.params import Classify</span>
+<a id="__codelineno-0-368" name="__codelineno-0-368"></a><span class="sd">            &gt;&gt;&gt; Classify(scheme="quantiles", k=4).to_options()</span>
+<a id="__codelineno-0-369" name="__codelineno-0-369"></a><span class="sd">            {'scheme': 'quantiles', 'k': 4}</span>
 <a id="__codelineno-0-370" name="__codelineno-0-370"></a>
-<a id="__codelineno-0-371" name="__codelineno-0-371"></a>    <span class="n">scheme</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-372" name="__codelineno-0-372"></a>    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-373" name="__codelineno-0-373"></a>    <span class="n">category_legend_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-374" name="__codelineno-0-374"></a>
-<a id="__codelineno-0-375" name="__codelineno-0-375"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_options</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<a id="__codelineno-0-376" name="__codelineno-0-376"></a><span class="w">        </span><span class="sd">"""Flatten the explicitly-set fields into `default_options` keys.</span>
+<a id="__codelineno-0-371" name="__codelineno-0-371"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-372" name="__codelineno-0-372"></a><span class="sd">    """</span>
+<a id="__codelineno-0-373" name="__codelineno-0-373"></a>
+<a id="__codelineno-0-374" name="__codelineno-0-374"></a>    <span class="n">scheme</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-375" name="__codelineno-0-375"></a>    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-376" name="__codelineno-0-376"></a>    <span class="n">category_legend_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 <a id="__codelineno-0-377" name="__codelineno-0-377"></a>
-<a id="__codelineno-0-378" name="__codelineno-0-378"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-379" name="__codelineno-0-379"></a><span class="sd">            dict: `scheme` / `k` / `category_legend_kwargs` for the fields</span>
-<a id="__codelineno-0-380" name="__codelineno-0-380"></a><span class="sd">                that were set.</span>
-<a id="__codelineno-0-381" name="__codelineno-0-381"></a><span class="sd">        """</span>
-<a id="__codelineno-0-382" name="__codelineno-0-382"></a>        <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-<a id="__codelineno-0-383" name="__codelineno-0-383"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheme</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-384" name="__codelineno-0-384"></a>            <span class="n">options</span><span class="p">[</span><span class="s2">"scheme"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheme</span>
-<a id="__codelineno-0-385" name="__codelineno-0-385"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">k</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-386" name="__codelineno-0-386"></a>            <span class="n">options</span><span class="p">[</span><span class="s2">"k"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">k</span>
-<a id="__codelineno-0-387" name="__codelineno-0-387"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">category_legend_kwargs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-388" name="__codelineno-0-388"></a>            <span class="n">options</span><span class="p">[</span><span class="s2">"category_legend_kwargs"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">category_legend_kwargs</span>
-<a id="__codelineno-0-389" name="__codelineno-0-389"></a>        <span class="k">return</span> <span class="n">options</span>
+<a id="__codelineno-0-378" name="__codelineno-0-378"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_options</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<a id="__codelineno-0-379" name="__codelineno-0-379"></a><span class="w">        </span><span class="sd">"""Flatten the explicitly-set fields into `default_options` keys.</span>
+<a id="__codelineno-0-380" name="__codelineno-0-380"></a>
+<a id="__codelineno-0-381" name="__codelineno-0-381"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-382" name="__codelineno-0-382"></a><span class="sd">            dict: `scheme` / `k` / `category_legend_kwargs` for the fields</span>
+<a id="__codelineno-0-383" name="__codelineno-0-383"></a><span class="sd">                that were set.</span>
+<a id="__codelineno-0-384" name="__codelineno-0-384"></a><span class="sd">        """</span>
+<a id="__codelineno-0-385" name="__codelineno-0-385"></a>        <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-386" name="__codelineno-0-386"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheme</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-387" name="__codelineno-0-387"></a>            <span class="n">options</span><span class="p">[</span><span class="s2">"scheme"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheme</span>
+<a id="__codelineno-0-388" name="__codelineno-0-388"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">k</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-389" name="__codelineno-0-389"></a>            <span class="n">options</span><span class="p">[</span><span class="s2">"k"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">k</span>
+<a id="__codelineno-0-390" name="__codelineno-0-390"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">category_legend_kwargs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-391" name="__codelineno-0-391"></a>            <span class="n">options</span><span class="p">[</span><span class="s2">"category_legend_kwargs"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">category_legend_kwargs</span>
+<a id="__codelineno-0-392" name="__codelineno-0-392"></a>        <span class="k">return</span> <span class="n">options</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -8011,10 +8054,7 @@ that were set.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/cleopatra/styling/params.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-375">375</a></span>
-<span class="normal"><a href="#__codelineno-0-376">376</a></span>
-<span class="normal"><a href="#__codelineno-0-377">377</a></span>
-<span class="normal"><a href="#__codelineno-0-378">378</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-378">378</a></span>
 <span class="normal"><a href="#__codelineno-0-379">379</a></span>
 <span class="normal"><a href="#__codelineno-0-380">380</a></span>
 <span class="normal"><a href="#__codelineno-0-381">381</a></span>
@@ -8025,21 +8065,24 @@ that were set.</p>
 <span class="normal"><a href="#__codelineno-0-386">386</a></span>
 <span class="normal"><a href="#__codelineno-0-387">387</a></span>
 <span class="normal"><a href="#__codelineno-0-388">388</a></span>
-<span class="normal"><a href="#__codelineno-0-389">389</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-375" name="__codelineno-0-375"></a><span class="k">def</span><span class="w"> </span><span class="nf">to_options</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<a id="__codelineno-0-376" name="__codelineno-0-376"></a><span class="w">    </span><span class="sd">"""Flatten the explicitly-set fields into `default_options` keys.</span>
-<a id="__codelineno-0-377" name="__codelineno-0-377"></a>
-<a id="__codelineno-0-378" name="__codelineno-0-378"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-379" name="__codelineno-0-379"></a><span class="sd">        dict: `scheme` / `k` / `category_legend_kwargs` for the fields</span>
-<a id="__codelineno-0-380" name="__codelineno-0-380"></a><span class="sd">            that were set.</span>
-<a id="__codelineno-0-381" name="__codelineno-0-381"></a><span class="sd">    """</span>
-<a id="__codelineno-0-382" name="__codelineno-0-382"></a>    <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-<a id="__codelineno-0-383" name="__codelineno-0-383"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheme</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-384" name="__codelineno-0-384"></a>        <span class="n">options</span><span class="p">[</span><span class="s2">"scheme"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheme</span>
-<a id="__codelineno-0-385" name="__codelineno-0-385"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">k</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-386" name="__codelineno-0-386"></a>        <span class="n">options</span><span class="p">[</span><span class="s2">"k"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">k</span>
-<a id="__codelineno-0-387" name="__codelineno-0-387"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">category_legend_kwargs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-388" name="__codelineno-0-388"></a>        <span class="n">options</span><span class="p">[</span><span class="s2">"category_legend_kwargs"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">category_legend_kwargs</span>
-<a id="__codelineno-0-389" name="__codelineno-0-389"></a>    <span class="k">return</span> <span class="n">options</span>
+<span class="normal"><a href="#__codelineno-0-389">389</a></span>
+<span class="normal"><a href="#__codelineno-0-390">390</a></span>
+<span class="normal"><a href="#__codelineno-0-391">391</a></span>
+<span class="normal"><a href="#__codelineno-0-392">392</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-378" name="__codelineno-0-378"></a><span class="k">def</span><span class="w"> </span><span class="nf">to_options</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<a id="__codelineno-0-379" name="__codelineno-0-379"></a><span class="w">    </span><span class="sd">"""Flatten the explicitly-set fields into `default_options` keys.</span>
+<a id="__codelineno-0-380" name="__codelineno-0-380"></a>
+<a id="__codelineno-0-381" name="__codelineno-0-381"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-382" name="__codelineno-0-382"></a><span class="sd">        dict: `scheme` / `k` / `category_legend_kwargs` for the fields</span>
+<a id="__codelineno-0-383" name="__codelineno-0-383"></a><span class="sd">            that were set.</span>
+<a id="__codelineno-0-384" name="__codelineno-0-384"></a><span class="sd">    """</span>
+<a id="__codelineno-0-385" name="__codelineno-0-385"></a>    <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-386" name="__codelineno-0-386"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheme</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-387" name="__codelineno-0-387"></a>        <span class="n">options</span><span class="p">[</span><span class="s2">"scheme"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheme</span>
+<a id="__codelineno-0-388" name="__codelineno-0-388"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">k</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-389" name="__codelineno-0-389"></a>        <span class="n">options</span><span class="p">[</span><span class="s2">"k"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">k</span>
+<a id="__codelineno-0-390" name="__codelineno-0-390"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">category_legend_kwargs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-391" name="__codelineno-0-391"></a>        <span class="n">options</span><span class="p">[</span><span class="s2">"category_legend_kwargs"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">category_legend_kwargs</span>
+<a id="__codelineno-0-392" name="__codelineno-0-392"></a>    <span class="k">return</span> <span class="n">options</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
