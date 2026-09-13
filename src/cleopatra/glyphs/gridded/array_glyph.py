@@ -4724,6 +4724,26 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         col = cast(str, col)  # guaranteed non-None by the validation above
 
+        # Resolve the classification edges ONCE over the whole stack, so every
+        # panel shares one set of classes instead of re-binning its own slice.
+        # A named scheme is turned into an explicit edge sequence (used verbatim
+        # by `classify`); explicit edges and `"categorical"` (rejected per
+        # panel) pass through unchanged. Done *before* the figure is created so a
+        # raising scheme (e.g. an all-non-finite stack) never leaks a figure.
+        shared_classify = classify
+        if (
+            classify is not None
+            and isinstance(classify.scheme, str)
+            and classify.scheme != "categorical"
+        ):
+            edges, _ = classify_values(
+                self._scale_values(), classify.scheme, classify.k or 5
+            )
+            shared_classify = Classify(
+                scheme=[float(e) for e in edges],
+                category_legend_kwargs=classify.category_legend_kwargs,
+            )
+
         fig, axes_grid, flat_axes, owns_figure, created_axes = self._facet_axes(
             nrows, ncols, figure_size, axes
         )
@@ -4751,25 +4771,6 @@ class ArrayGlyph(GeoMixin, Glyph):
         per_subplot_kwargs = dict(kwargs)
         per_subplot_kwargs["vmin"] = shared_vmin
         per_subplot_kwargs["vmax"] = shared_vmax
-
-        # Resolve the classification edges ONCE over the whole stack, so every
-        # panel shares one set of classes instead of re-binning its own slice.
-        # A named scheme is turned into an explicit edge sequence (used verbatim
-        # by `classify`); explicit edges and `"categorical"` (rejected per
-        # panel) pass through unchanged.
-        shared_classify = classify
-        if (
-            classify is not None
-            and isinstance(classify.scheme, str)
-            and classify.scheme != "categorical"
-        ):
-            edges, _ = classify_values(
-                self._scale_values(), classify.scheme, classify.k or 5
-            )
-            shared_classify = Classify(
-                scheme=[float(e) for e in edges],
-                category_legend_kwargs=classify.category_legend_kwargs,
-            )
 
         name_dicts: list[dict[str, Any]] = []
         cbar: Colorbar | None = None

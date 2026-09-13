@@ -927,6 +927,23 @@ class TestArrayGlyphScheme:
         )
         glyph.animate(["t0", "t1"])
 
+    def test_facet_bad_scheme_raises_before_figure(self, monkeypatch):
+        """A raising facet scheme fails before the figure is created (no leak).
+
+        Test scenario:
+            A spreadless (constant) stack with a named scheme makes the
+            shared-edge resolution raise; because that runs before `_facet_axes`,
+            no figure is created (verified by asserting `_facet_axes` is never
+            called).
+        """
+        stack = np.full((3, 4, 4), 5.0)
+        glyph = ArrayGlyph(stack)
+        calls = []
+        monkeypatch.setattr(glyph, "_facet_axes", lambda *a, **k: calls.append(1))
+        with pytest.raises(ValueError, match="spread"):
+            glyph.facet(FacetLayout(col="time"), classify=Classify(scheme="quantiles"))
+        assert not calls, "edge resolution must fail before the figure is created"
+
     def test_animate_shares_classes_over_frames(self):
         """Animate resolves one set of classes over the whole stack.
 
