@@ -3072,8 +3072,9 @@ class TestFaceting:
         """A `FacetLayout` without `col` or `row` raises `ValueError`."""
         stack = self._stack_3d(n=3)
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout()
         with pytest.raises(ValueError, match="at least one of"):
-            glyph.facet(FacetLayout())
+            glyph.facet(layout)
 
     def test_facet_without_layout_raises(self):
         """Calling `facet()` with no `FacetLayout` raises a clear error."""
@@ -3413,8 +3414,9 @@ class TestFacetColorbar:
         """
         glyph = ArrayGlyph(self._stack_3d())
         labels = PanelLabels(col=[0, 1, 2])
+        layout = FacetLayout(col="time", labels=labels)
         with pytest.raises(TypeError, match="colorbar must be a bool"):
-            glyph.facet(FacetLayout(col="time", labels=labels), colorbar=object())
+            glyph.facet(layout, colorbar=object())
 
     def test_facet_4d_accepts_colorbar_spec(self):
         """The `ColorBar` spec also works on a 4-D (`col` + `row`) facet.
@@ -3521,33 +3523,33 @@ class TestFacetExtents:
         """An `extents` list whose length != n_panels raises `ValueError`."""
         stack = self._stack(n=3)
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", extents=[[0, 0, 1, 1]])
         with pytest.raises(ValueError, match="3 panels"):
-            glyph.facet(FacetLayout(col="t", extents=[[0, 0, 1, 1]]))
+            glyph.facet(layout)
 
     def test_extents_non_length4_element_raises(self):
         """An `extents` entry that isn't length-4 raises `ValueError`."""
         stack = self._stack(n=2)
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", extents=[[0, 0, 1, 1], [0, 0, 1]])
         with pytest.raises(ValueError, match=r"extents\[1\].*length-4"):
-            glyph.facet(FacetLayout(col="t", extents=[[0, 0, 1, 1], [0, 0, 1]]))
+            glyph.facet(layout)
 
     def test_extents_with_parent_extent_raises(self):
         """`extents` and the glyph's own `extent` are mutually exclusive."""
         stack = self._stack(n=2)
+        layout = FacetLayout(col="t", extents=[[0, 0, 1, 1], [1, 0, 2, 1]])
         with pytest.raises(ValueError, match="mutually exclusive"):
-            ArrayGlyph(stack, extent=[0, 0, 4, 4]).facet(
-                FacetLayout(col="t", extents=[[0, 0, 1, 1], [1, 0, 2, 1]])
-            )
+            ArrayGlyph(stack, extent=[0, 0, 4, 4]).facet(layout)
 
     def test_extents_with_coords_raises(self):
         """`extents` and `coords` are mutually exclusive."""
         stack = self._stack(n=2, h=3, w=4)
         x = np.linspace(0.0, 10.0, 4)
         y = np.linspace(0.0, 5.0, 3)
+        layout = FacetLayout(col="t", extents=[[0, 0, 1, 1], [1, 0, 2, 1]])
         with pytest.raises(ValueError, match="mutually exclusive"):
-            ArrayGlyph(stack, coords=(x, y)).facet(
-                FacetLayout(col="t", extents=[[0, 0, 1, 1], [1, 0, 2, 1]])
-            )
+            ArrayGlyph(stack, coords=(x, y)).facet(layout)
 
     def test_no_extents_reuses_parent_extent(self):
         """Without `extents` every panel inherits the parent's `extent`."""
@@ -3978,15 +3980,17 @@ class TestFacetingEdgeCases:
         """
         stack = self._stack(n=4)
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", col_wrap=0)
         with pytest.raises(ValueError, match="positive int"):
-            glyph.facet(FacetLayout(col="t", col_wrap=0))
+            glyph.facet(layout)
 
     def test_invalid_col_wrap_negative_raises(self) -> None:
         """A negative `col_wrap` is rejected."""
         stack = self._stack(n=4)
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", col_wrap=-2)
         with pytest.raises(ValueError, match="positive int"):
-            glyph.facet(FacetLayout(col="t", col_wrap=-2))
+            glyph.facet(layout)
 
     def test_invalid_col_wrap_type_raises(self) -> None:
         """A non-int `col_wrap` is rejected (string).
@@ -3997,8 +4001,9 @@ class TestFacetingEdgeCases:
         """
         stack = self._stack(n=4)
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", col_wrap="three")
         with pytest.raises(ValueError, match="positive int"):
-            glyph.facet(FacetLayout(col="t", col_wrap="three"))
+            glyph.facet(layout)
 
     def test_col_with_2d_array_raises(self) -> None:
         """Faceting a 2-D array on `col` alone raises `ValueError`.
@@ -4008,8 +4013,9 @@ class TestFacetingEdgeCases:
             a 2-D input must raise a shape error.
         """
         arr2d = np.zeros((5, 5))
+        layout = FacetLayout(col="t")
         with pytest.raises(ValueError, match="3-D array"):
-            ArrayGlyph(arr2d).facet(FacetLayout(col="t"))
+            ArrayGlyph(arr2d).facet(layout)
 
     def test_row_without_col_raises(self) -> None:
         """Passing `row` without `col` raises `ValueError`.
@@ -4020,8 +4026,9 @@ class TestFacetingEdgeCases:
         """
         stack = self._stack(n=4)
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(row="lev")
         with pytest.raises(ValueError, match="`col` as well"):
-            glyph.facet(FacetLayout(row="lev"))
+            glyph.facet(layout)
 
     def test_row_with_3d_arr_raises(self) -> None:
         """Faceting on row+col with a 3-D arr raises `ValueError`.
@@ -4032,16 +4039,18 @@ class TestFacetingEdgeCases:
         """
         stack = self._stack(n=4)
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", row="lev")
         with pytest.raises(ValueError, match="4-D array"):
-            glyph.facet(FacetLayout(col="t", row="lev"))
+            glyph.facet(layout)
 
     def test_labels_col_length_mismatch_raises(self) -> None:
         """`labels.col` whose length differs from N raises `ValueError`."""
         stack = self._stack(n=4)
         labels = PanelLabels(col=[0, 1, 2])
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", labels=labels)
         with pytest.raises(ValueError, match="`labels.col` length"):
-            glyph.facet(FacetLayout(col="t", labels=labels))
+            glyph.facet(layout)
 
     def test_labels_col_length_mismatch_4d_raises(self) -> None:
         """`labels.col` length wrong on a 4-D stack raises."""
@@ -4049,8 +4058,9 @@ class TestFacetingEdgeCases:
         stack = rng.uniform(0.0, 1.0, size=(2, 3, 4, 4))
         labels = PanelLabels(col=[0])
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", row="lev", labels=labels)
         with pytest.raises(ValueError, match="`labels.col` length"):
-            glyph.facet(FacetLayout(col="t", row="lev", labels=labels))
+            glyph.facet(layout)
 
     def test_labels_row_length_mismatch_raises(self) -> None:
         """`labels.row` whose length differs from Nrow raises."""
@@ -4058,8 +4068,9 @@ class TestFacetingEdgeCases:
         stack = rng.uniform(0.0, 1.0, size=(2, 3, 4, 4))
         labels = PanelLabels(col=[0, 1], row=[0])
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", row="lev", labels=labels)
         with pytest.raises(ValueError, match="`labels.row` length"):
-            glyph.facet(FacetLayout(col="t", row="lev", labels=labels))
+            glyph.facet(layout)
 
     def test_shared_vmin_vmax_global_min_max(self) -> None:
         """Stack-wide `vmin`/`vmax` reflect the *global* min/max across frames.
@@ -4268,8 +4279,9 @@ class TestFacetingEdgeCases:
             `figure_size`.
         """
         glyph = ArrayGlyph(self._stack(n=3))
+        layout = FacetLayout(col="t")
         with pytest.raises(ValueError, match="renamed to `figure_size`"):
-            glyph.facet(FacetLayout(col="t"), figsize=(12.0, 4.0))
+            glyph.facet(layout, figsize=(12.0, 4.0))
 
     @pytest.mark.parametrize("kwarg", ["col_coords", "row_coords"])
     def test_facet_stale_coords_raise_pointing_to_panel_labels(self, kwarg) -> None:
@@ -4285,8 +4297,9 @@ class TestFacetingEdgeCases:
         """
         glyph = ArrayGlyph(self._stack(n=3))
         n_before = len(plt.get_fignums())
+        layout = FacetLayout(col="t")
         with pytest.raises(ValueError, match="labels=PanelLabels"):
-            glyph.facet(FacetLayout(col="t"), **{kwarg: [0, 1, 2]})
+            glyph.facet(layout, **{kwarg: [0, 1, 2]})
         assert len(plt.get_fignums()) == n_before, (
             "no figure should be created on the error path"
         )
@@ -4301,8 +4314,9 @@ class TestFacetingEdgeCases:
         """
         glyph = ArrayGlyph(self._stack(n=3))
         n_before = len(plt.get_fignums())
+        layout = FacetLayout(col="t")
         with pytest.raises(ValueError):
-            glyph.facet(FacetLayout(col="t"), definitely_not_a_real_kwarg=1)
+            glyph.facet(layout, definitely_not_a_real_kwarg=1)
         assert len(plt.get_fignums()) == n_before, (
             "the facet figure must be closed on error"
         )
@@ -8869,8 +8883,9 @@ class TestFacetSuppliedAxes:
         gs = GridSpec(2, 1, figure=fig)
         bad = DataStyle(style="not_a_style")
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", axes=gs[0])
         with pytest.raises(ValueError):
-            glyph.facet(FacetLayout(col="t", axes=gs[0]), data_style=bad)
+            glyph.facet(layout, data_style=bad)
         assert fig.axes == []
         plt.close("all")
 
@@ -8881,8 +8896,9 @@ class TestFacetSuppliedAxes:
         gs = GridSpec(1, 3, figure=fig)
         bad = DataStyle(style="not_a_style")
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", axes=gs)
         with pytest.raises(ValueError):
-            glyph.facet(FacetLayout(col="t", axes=gs), data_style=bad)
+            glyph.facet(layout, data_style=bad)
         assert fig.axes == []
         plt.close("all")
 
@@ -8900,8 +8916,9 @@ class TestFacetSuppliedAxes:
         stack = self._stack(n=3)
         fig, axs = plt.subplots(1, 3, squeeze=False)
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", axes=axs, figure_size=(6, 3))
         with pytest.raises(ValueError, match="mutually exclusive"):
-            glyph.facet(FacetLayout(col="t", axes=axs, figure_size=(6, 3)))
+            glyph.facet(layout)
         plt.close("all")
 
     def test_too_few_axes_raises_before_drawing(self):
@@ -8909,8 +8926,9 @@ class TestFacetSuppliedAxes:
         stack = self._stack(n=3)
         fig, axs = plt.subplots(1, 2, squeeze=False)
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", axes=axs)
         with pytest.raises(ValueError, match="1x2 block but the facet grid is 1x3"):
-            glyph.facet(FacetLayout(col="t", axes=axs))
+            glyph.facet(layout)
         plt.close("all")
 
     def test_empty_slots_hidden_only_inside_block(self):
@@ -8941,8 +8959,9 @@ class TestFacetSuppliedAxes:
         fig, axs = plt.subplots(1, 3, squeeze=False)
         bad = DataStyle(style="not_a_style")
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", axes=axs)
         with pytest.raises(ValueError):
-            glyph.facet(FacetLayout(col="t", axes=axs), data_style=bad)
+            glyph.facet(layout, data_style=bad)
         assert plt.fignum_exists(fig.number)  # caller's figure left intact
         plt.close("all")
 
@@ -8961,8 +8980,9 @@ class TestFacetSuppliedAxes:
         fig = plt.figure()
         bad = DataStyle(style="not_a_style")
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", axes=fig)
         with pytest.raises(ValueError):
-            glyph.facet(FacetLayout(col="t", axes=fig), data_style=bad)
+            glyph.facet(layout, data_style=bad)
         assert fig.axes == []  # cleopatra's partial subplots cleaned up
         assert plt.fignum_exists(fig.number)  # the caller's figure is kept
         plt.close("all")
@@ -8973,8 +8993,9 @@ class TestFacetSuppliedAxes:
         fig, axs = plt.subplots(1, 3, squeeze=False)
         bad = DataStyle(style="not_a_style")
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", axes=axs)
         with pytest.raises(ValueError):
-            glyph.facet(FacetLayout(col="t", axes=axs), data_style=bad)
+            glyph.facet(layout, data_style=bad)
         assert list(fig.axes) == list(axs.ravel())  # caller's axes untouched
         plt.close("all")
 
@@ -8990,24 +9011,27 @@ class TestFacetSuppliedAxes:
         """A non-`Axes`, non-iterable `axes=` value is rejected with a clear error."""
         stack = self._stack(n=3)
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", axes=object())
         with pytest.raises(ValueError, match="must be matplotlib Axes"):
-            glyph.facet(FacetLayout(col="t", axes=object()))
+            glyph.facet(layout)
         plt.close("all")
 
     def test_empty_axes_block_rejected(self):
         """An empty `axes=` sequence is rejected before drawing."""
         stack = self._stack(n=3)
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", axes=[])
         with pytest.raises(ValueError, match="at least one Axes"):
-            glyph.facet(FacetLayout(col="t", axes=[]))
+            glyph.facet(layout)
         plt.close("all")
 
     def test_string_axes_rejected_cleanly(self):
         """A string `axes=` raises a clear ValueError, not RecursionError."""
         stack = self._stack(n=3)
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", axes="foo")
         with pytest.raises(ValueError, match="must be matplotlib Axes"):
-            glyph.facet(FacetLayout(col="t", axes="foo"))
+            glyph.facet(layout)
         plt.close("all")
 
     def test_block_with_stray_string_rejected_cleanly(self):
@@ -9016,8 +9040,9 @@ class TestFacetSuppliedAxes:
         fig, axs = plt.subplots(1, 3, squeeze=False)
         block = [axs[0, 0], "x", axs[0, 2]]
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", axes=block)
         with pytest.raises(ValueError, match="must be matplotlib Axes"):
-            glyph.facet(FacetLayout(col="t", axes=block))
+            glyph.facet(layout)
         plt.close("all")
 
     def test_flat_block_wrong_count_rejected(self):
@@ -9026,8 +9051,9 @@ class TestFacetSuppliedAxes:
         fig, axs = plt.subplots(2, 2, squeeze=False)
         glyph = ArrayGlyph(stack)
         block = list(axs.ravel())[:3]
+        layout = FacetLayout(col="t", col_wrap=2, axes=block)
         with pytest.raises(ValueError, match="supply exactly 4"):
-            glyph.facet(FacetLayout(col="t", col_wrap=2, axes=block))
+            glyph.facet(layout)
         plt.close("all")
 
     def test_2d_block_shape_must_match_grid(self):
@@ -9035,8 +9061,9 @@ class TestFacetSuppliedAxes:
         stack = self._stack(n=6)
         fig, axs = plt.subplots(3, 2, squeeze=False)  # 3x2, but col_wrap=3 wants 2x3
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", col_wrap=3, axes=axs)
         with pytest.raises(ValueError, match="3x2 block but the facet grid is 2x3"):
-            glyph.facet(FacetLayout(col="t", col_wrap=3, axes=axs))
+            glyph.facet(layout)
         plt.close("all")
 
     def test_wrapped_supplied_block_preserves_grid_shape(self):
@@ -9072,8 +9099,9 @@ class TestFacetSuppliedAxes:
         stack = self._stack(n=3)
         gs = GridSpec(2, 1)
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", axes=gs[0])
         with pytest.raises(ValueError, match="not attached to a figure"):
-            glyph.facet(FacetLayout(col="t", axes=gs[0]))
+            glyph.facet(layout)
         plt.close("all")
 
     def test_gridspec_without_figure_rejected(self):
@@ -9081,8 +9109,9 @@ class TestFacetSuppliedAxes:
         stack = self._stack(n=3)
         gs = GridSpec(1, 3)
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", axes=gs)
         with pytest.raises(ValueError, match="not attached to a figure"):
-            glyph.facet(FacetLayout(col="t", axes=gs))
+            glyph.facet(layout)
         plt.close("all")
 
     def test_gridspec_too_small_rejected(self):
@@ -9091,8 +9120,9 @@ class TestFacetSuppliedAxes:
         fig = plt.figure()
         gs = GridSpec(1, 2, figure=fig)
         glyph = ArrayGlyph(stack)
+        layout = FacetLayout(col="t", axes=gs)
         with pytest.raises(ValueError, match="too small"):
-            glyph.facet(FacetLayout(col="t", axes=gs))
+            glyph.facet(layout)
         plt.close("all")
 
     def test_compose_forwarded_to_panels(self):
