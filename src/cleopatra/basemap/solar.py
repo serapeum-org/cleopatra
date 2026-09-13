@@ -373,6 +373,21 @@ def add_nightshade(
             True
 
             ```
+        - A consumer whose axes is not lon/lat passes a ``transform`` callable
+          (here a trivial scale), so cleopatra never resolves the projection:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from datetime import UTC, datetime
+            >>> fig, ax = plt.subplots()
+            >>> art = add_nightshade(
+            ...     ax, datetime(2026, 3, 20, 12, tzinfo=UTC), transform=lambda a: a * 2.0
+            ... )
+            >>> len(art.get_paths()) >= 1
+            True
+
+            ```
     """
     if transform is not None and crs is not None:
         raise ValueError("Pass at most one of transform= or crs=, not both.")
@@ -513,6 +528,20 @@ def add_tissot(ax: Any, ellipses: Sequence[np.ndarray], **style: Any) -> PolyCol
             True
 
             ```
+        - Generate geodesic circles with `tissot_circles` and draw them on a
+          lon/lat axes:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.basemap.solar import tissot_circles
+            >>> circles = tissot_circles([-90.0, 0.0, 90.0], [0.0, 0.0, 0.0], 5e5)
+            >>> fig, ax = plt.subplots()
+            >>> art = add_tissot(ax, circles, edgecolor="navy")
+            >>> len(art.get_paths())
+            3
+
+            ```
     """
     _validate_axes(ax)
     verts = [np.asarray(ring, dtype=float) for ring in ellipses]
@@ -545,6 +574,17 @@ def _small_circle(
     ``radius_rad`` radians of great-circle distance to each. Shared by
     `terminator` (radius ``90 - refraction``) and `tissot_circles` (radius
     ``radius_m / MEAN_EARTH_RADIUS_M``).
+
+    Args:
+        center_lon: Centre longitude in degrees.
+        center_lat: Centre latitude in degrees.
+        radius_rad: Angular radius (great-circle distance) in radians.
+        n: Number of vertices; the ring is closed, so the last duplicates the
+            first.
+
+    Returns:
+        numpy.ndarray: An ``(n, 2)`` array of ``(lon, lat)`` degrees, longitude
+        wrapped to ``(-180, 180]`` and latitude clamped to ``[-90, 90]``.
     """
     lon0, lat0 = np.radians(center_lon), np.radians(center_lat)
     bearing = np.linspace(0.0, 2.0 * np.pi, n)
