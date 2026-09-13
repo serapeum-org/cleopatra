@@ -31,6 +31,7 @@ from cleopatra.basemap.ogc import (
     _format_coordinate,
     _merge_params,
     _query,
+    _restful_placeholders,
 )
 from cleopatra.basemap.tiles import (
     _TILES_AVAILABLE,
@@ -378,6 +379,31 @@ class TestCaseInsensitiveOverride:
         assert query["token"] == ["abc"], f"token missing: {query}"
         assert query["FORMAT"] == ["image/png"], f"generated key lost: {query}"
 
+    def test_an_override_does_not_reach_a_parameter_baked_into_the_endpoint(self):
+        """The case-insensitive override covers generated parameters only.
+
+        Test scenario:
+            `extra_params` is documented as winning over a generated parameter,
+            and it does -- but an endpoint publishing `FORMAT` in its own query
+            sits outside that reconciliation, because `_query` keeps the
+            endpoint's query verbatim. The request then carries the key twice
+            with different values and the service picks between them, so this
+            pins which of the two shapes a caller actually gets rather than
+            leaving it to be discovered against a live server.
+        """
+        provider = WMSProvider(
+            url="https://example.org/wms?FORMAT=image/jpeg",
+            layers="ortho",
+            extra_params={"format": "image/gif"},
+        )
+        query = query_of(provider.build_url(x=0, y=0, z=0))
+        assert query["FORMAT"] == ["image/jpeg"], (
+            f"the endpoint's own FORMAT was dropped or joined by the generated one: {query}"
+        )
+        assert query["format"] == ["image/gif"], (
+            f"extra_params did not reach the query alongside it: {query}"
+        )
+
 
 class TestMergeParams:
     """`_merge_params` is the case-insensitive merge both providers use."""
@@ -443,6 +469,25 @@ class TestQueryAssembly:
         query = parse_qs(urlsplit(built).query)
         assert query["map"] == ["/etc/base.map"], f"pre-existing lost: {built!r}"
         assert query["A"] == ["1"], f"added parameter lost: {built!r}"
+
+    def test_a_key_the_endpoint_already_carries_is_appended_beside_it(self):
+        """A parameter baked into the endpoint is kept, not replaced.
+
+        Test scenario:
+            `_query` reassembles the URL, so it sees the endpoint's query only
+            as opaque text -- `_merge_params` reconciles the generated
+            parameters against `extra_params`, never against the endpoint's
+            own. Sending the same key twice is therefore the deliberate
+            outcome, and the order (endpoint first, added second) is what
+            settles it on a service that takes the last occurrence.
+        """
+        built = _query("https://example.org/wms?SERVICE=WMS", {"SERVICE": "WMTS"})
+        assert built == "https://example.org/wms?SERVICE=WMS&SERVICE=WMTS", (
+            f"the endpoint's own parameter was not kept ahead of the added one: {built!r}"
+        )
+        assert parse_qs(urlsplit(built).query)["SERVICE"] == ["WMS", "WMTS"], (
+            f"both occurrences should reach the service, in order: {built!r}"
+        )
 
     def test_no_parameters_leaves_the_url_untouched(self):
         """An empty mapping returns the endpoint verbatim.
@@ -595,6 +640,54 @@ class TestRestfulTemplateSubstitution:
         )
         assert "{Custom}" in provider.build_url(x=4, y=2, z=3), (
             "an unknown placeholder was altered"
+        )
+
+    def test_placeholders_are_found_wherever_they_sit(self):
+        """`_restful_placeholders` scans the whole URL, not only its path.
+
+        Test scenario:
+            Nothing in the pattern is anchored to a path segment, and some
+            services publish the tile triple in the query instead. Unknown
+            names are filtered out in the same pass, so a template carrying one
+            of each yields only the known ones -- which is what stops a
+            service's own `{Time}` from satisfying the required-placeholder
+            check, or from dragging a KVP endpoint onto the RESTful branch.
+        """
+        in_query = _restful_placeholders(
+            "https://example.org/wmts?tm={TileMatrix}&r={TileRow}&c={TileCol}"
+        )
+        assert in_query == {"tilematrix", "tilerow", "tilecol"}, (
+            f"placeholders sitting in the query were not found: {in_query}"
+        )
+        mixed = _restful_placeholders(
+            "https://example.org/{Custom}/{TileMatrixSet}/{TileMatrix}"
+            "/{TileRow}/{TileCol}.png"
+        )
+        assert mixed == {"tilematrixset", "tilematrix", "tilerow", "tilecol"}, (
+            f"an unknown placeholder leaked into the known set: {mixed}"
+        )
+        assert _restful_placeholders("https://example.org/{Time}.png") == set(), (
+            "a URL carrying only unknown placeholders should read as KVP"
+        )
+
+    def test_a_template_with_its_placeholders_in_the_query_is_filled_in(self):
+        """A query-borne template substitutes and still takes `extra_params`.
+
+        Test scenario:
+            The RESTful branch substitutes across the whole URL and only then
+            hands the result to `_query`, so a template whose triple lives in
+            the query must come back filled in *and* gain the token with an
+            `&`. Substituting only the path would ship literal braces to the
+            service; appending with a second `?` would make the tail garbage.
+        """
+        provider = WMTSProvider(
+            url="https://example.org/wmts?tm={TileMatrix}&r={TileRow}&c={TileCol}",
+            layer="L",
+            extra_params={"token": "abc"},
+        )
+        built = provider.build_url(x=4, y=2, z=3)
+        assert built == "https://example.org/wmts?tm=3&r=2&c=4&token=abc", (
+            f"a query-borne template was not filled in correctly: {built}"
         )
 
     def test_each_tile_gets_its_own_url(self):
@@ -916,6 +1009,25 @@ class TestBboxNotation:
             f"BBOX {sent} drifted from the tile bounds {expected}"
         )
 
+    def test_the_tile_on_the_projection_origin_sends_a_bare_zero(self, wms):
+        """The zero bound reaches the service as `0`, not `0.0` or `-0`.
+
+        Args:
+            wms: The GetMap provider fixture.
+
+        Test scenario:
+            `_format_coordinate`'s zero handling is not hypothetical: the tile
+            whose corner sits on the projection origin is a real tile of any
+            render over Greenwich and the equator, and both of its zero bounds
+            go through the trimming that can otherwise leave `-0` or an empty
+            string in the `BBOX`.
+        """
+        bbox = query_of(wms.build_url(x=2**18, y=2**18, z=19))["BBOX"][0]
+        left, _bottom, _right, top = bbox.split(",")
+        assert (left, top) == ("0", "0"), (
+            f"the origin bounds were not sent as a bare '0': {bbox}"
+        )
+
 
 class TestFormatCoordinate:
     """`_format_coordinate` renders one bound for the `BBOX`."""
@@ -960,6 +1072,36 @@ class TestFormatCoordinate:
         assert float(rendered) == value, (
             f"{rendered!r} does not parse back to {value!r}"
         )
+
+    @pytest.mark.parametrize("z", [0, 19])
+    def test_the_bounds_the_grid_actually_produces_round_trip_exactly(self, z):
+        """Every bound reachable at the grid's zoom limits survives verbatim.
+
+        Args:
+            z: The zoom level under test.
+
+        Test scenario:
+            `auto_zoom` clamps to 0--19, so these are the two ends of what a
+            render can ask for, and the WMS adaptation rests on requesting
+            precisely the bounds the mosaic will then place the image at. The
+            assertion is exact equality rather than a tolerance on purpose: an
+            implementation rounding to six decimals is exponent-free and lands
+            within a micrometre of every bound, so it passes the round-trip
+            check made through `build_url` while quietly dropping the guarantee
+            that check exists to protect.
+        """
+        span = 2**z
+        corners = sorted({0, span - 1, span // 2})
+        for x in corners:
+            for y in corners:
+                for value in _tile_xy_bounds(Tile(x, y, z)):
+                    rendered = _format_coordinate(value)
+                    assert "e" not in rendered.lower(), (
+                        f"exponent at z={z} x={x} y={y}: {rendered!r}"
+                    )
+                    assert float(rendered) == value, (
+                        f"z={z} x={x} y={y}: {rendered!r} lost {value!r} exactly"
+                    )
 
 
 class TestWMSProviderCrsParameter:
@@ -1390,6 +1532,64 @@ class TestProvidersAreImmutable:
         with pytest.raises(TypeError, match="does not support item assignment"):
             copy.extra_params["token"] = "sneaked in"
 
+    @pytest.mark.parametrize(
+        "kwargs, message",
+        [
+            ({"url": " https://example.org/wms"}, "whitespace"),
+            ({"version": "2.0.0"}, "version must be one of"),
+            ({"transparent": 1}, "transparent must be a bool"),
+            ({"tile_size": 0}, "tile_size must be a positive int"),
+            ({"styles": None}, "styles must be a string"),
+            ({"attribution": None}, "attribution must be a string"),
+        ],
+    )
+    def test_replace_revalidates_every_wms_check(self, wms, kwargs, message):
+        """Each WMS check fires on a `replace` copy, not only on construction.
+
+        Args:
+            wms: The GetMap provider fixture.
+            kwargs: The field the copy tries to change, and its bad value.
+            message: The fragment expected in the error.
+
+        Test scenario:
+            These checks were added after the class already existed, so the
+            standing risk is one written against the constructor and never
+            reached by `replace` -- which is the supported way to vary a frozen
+            provider and assembles the copy field by field. The scheme check is
+            covered above; this is the rest, one row per validator.
+        """
+        with pytest.raises(ValueError, match=message):
+            dataclasses.replace(wms, **kwargs)
+
+    @pytest.mark.parametrize(
+        "kwargs, message",
+        [
+            (
+                {"url": "https://example.org/wmts/{TileMatrix}.png"},
+                "must address a tile",
+            ),
+            ({"version": "2.0.0"}, "version must be one of"),
+            ({"style": ""}, "style must be a non-empty string"),
+            ({"attribution": None}, "attribution must be a string"),
+        ],
+    )
+    def test_replace_revalidates_every_wmts_check(self, wmts, kwargs, message):
+        """Each WMTS check fires on a `replace` copy too.
+
+        Args:
+            wmts: The KVP provider fixture.
+            kwargs: The field the copy tries to change, and its bad value.
+            message: The fragment expected in the error.
+
+        Test scenario:
+            The template check matters most here: `replace(provider, url=...)`
+            is exactly how a caller repoints an existing provider at a RESTful
+            template, and a half-written one collapses the whole mosaic onto a
+            single repeated image without erroring at fetch time.
+        """
+        with pytest.raises(ValueError, match=message):
+            dataclasses.replace(wmts, **kwargs)
+
 
 class TestCredentialsAreNotLogged:
     """A token in `extra_params` does not reach the debug log."""
@@ -1439,6 +1639,22 @@ class TestCredentialsAreNotLogged:
                 "https://example.org/tiles/3/2/4.png",
             ),
             ("https://example.org/wms?flag", "https://example.org/wms?flag"),
+            (
+                "https://example.org/wms?token=a=b&LAYERS=ortho",
+                "https://example.org/wms?token=...&LAYERS=...",
+            ),
+            (
+                "https://example.org/wms?token=s3cret#layers",
+                "https://example.org/wms?token=...#layers",
+            ),
+            (
+                "https://example.org/wms?token=&LAYERS=ortho",
+                "https://example.org/wms?token=...&LAYERS=...",
+            ),
+            (
+                "https://example.org/wms?token=a&token=b",
+                "https://example.org/wms?token=...&token=...",
+            ),
         ],
     )
     def test_redaction_masks_values_only(self, url, expected):
@@ -1450,9 +1666,57 @@ class TestCredentialsAreNotLogged:
 
         Test scenario:
             A valueless flag and a query-free URL are both left alone, so the
-            redaction cannot be blamed for a confusing log line.
+            redaction cannot be blamed for a confusing log line. The rest are
+            the shapes a split-and-rejoin can get wrong: a value that itself
+            contains `=` must be masked whole rather than half-kept, an empty
+            value must not read as a valueless flag, a repeated key must be
+            masked at every occurrence, and a fragment must survive at the end
+            -- rebuilding the URL by concatenation would drop it, and a
+            redacted line that no longer matches the URL that failed is worse
+            than no line at all.
         """
         assert _redact_url(url) == expected, f"{url} redacted to {_redact_url(url)}"
+
+    def test_the_redaction_holds_on_every_retry(self, caplog):
+        """Every attempt's log line is redacted, not just the first.
+
+        Args:
+            caplog: pytest's log capture fixture.
+
+        Test scenario:
+            The log call sits inside the retry loop, so a flaky service is
+            precisely the case that writes the credential repeatedly -- and one
+            unredacted line leaks as much as three. `retries=2` means three
+            attempts, so three records must appear and every one of them must
+            carry the masked token rather than its value.
+        """
+        provider = WMSProvider(
+            url="https://example.org/wms",
+            layers="ortho",
+            extra_params={"token": "S3CRET-VALUE"},
+        )
+
+        with (
+            caplog.at_level("DEBUG", logger="cleopatra.basemap.tiles"),
+            patch.object(
+                tiles_mod, "urlopen_http", side_effect=OSError("connection reset")
+            ),
+            pytest.raises(ConnectionError),
+        ):
+            fetch_single_tile(Tile(0, 0, 0), provider, timeout=1, retries=2)
+
+        attempts = [
+            record
+            for record in caplog.records
+            if "Tile fetch attempt" in record.getMessage()
+        ]
+        assert len(attempts) == 3, (
+            f"expected one log line per attempt, got {len(attempts)}"
+        )
+        assert "S3CRET-VALUE" not in caplog.text, "the credential reached the log"
+        assert caplog.text.count("token=...") == 3, (
+            f"every attempt should log a redacted token: {caplog.text[:300]}"
+        )
 
 
 @requires_tiles
