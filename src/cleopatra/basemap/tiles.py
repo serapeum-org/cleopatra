@@ -620,6 +620,48 @@ def _looks_like_image(data: bytes) -> bool:
     )
 
 
+def _redact_url(url: str) -> str:
+    """Return `url` with its query values masked, for logging.
+
+    A tile URL is not always safe to write to a log. An XYZ template can embed
+    an API key, and `cleopatra.basemap.ogc` documents `extra_params` as the
+    place to put a token -- so the full URL of a failed fetch used to put the
+    credential straight into the debug log, where it outlives the session.
+    Keys are kept because they are what makes a failure diagnosable; only the
+    values go.
+
+    Args:
+        url: The request URL.
+
+    Returns:
+        str: The URL with every query value replaced by `...`.
+
+    Examples:
+        - A token survives as a name but not as a value:
+            ```python
+            >>> from cleopatra.basemap.tiles import _redact_url
+            >>> _redact_url("https://example.org/wms?LAYERS=ortho&token=s3cret")
+            'https://example.org/wms?LAYERS=...&token=...'
+
+            ```
+        - A URL with no query is unchanged:
+            ```python
+            >>> from cleopatra.basemap.tiles import _redact_url
+            >>> _redact_url("https://example.org/tiles/3/2/4.png")
+            'https://example.org/tiles/3/2/4.png'
+
+            ```
+    """
+    parts = urllib.parse.urlsplit(url)
+    if not parts.query:
+        return url
+    masked = "&".join(
+        f"{pair.split('=', 1)[0]}=..." if "=" in pair else pair
+        for pair in parts.query.split("&")
+    )
+    return urllib.parse.urlunsplit(parts._replace(query=masked))
+
+
 def fetch_single_tile(
     tile: Any,
     provider: Any,
@@ -702,11 +744,13 @@ def fetch_single_tile(
             break
         except (OSError, urllib.error.URLError, ConnectionError) as e:
             last_error = e
+            # Redacted: an XYZ template can embed an API key, and an OGC
+            # provider's `extra_params` is documented as the place for a token.
             logger.debug(
                 "Tile fetch attempt %d/%d failed for %s: %s",
                 attempt + 1,
                 retries + 1,
-                url,
+                _redact_url(url),
                 e,
             )
     if result_bytes is None:

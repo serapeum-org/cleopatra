@@ -35,6 +35,7 @@ from cleopatra.basemap.ogc import (
 from cleopatra.basemap.tiles import (
     _TILES_AVAILABLE,
     Tile,
+    _redact_url,
     _tile_xy_bounds,
     add_tiles,
     fetch_single_tile,
@@ -1388,6 +1389,70 @@ class TestProvidersAreImmutable:
         )
         with pytest.raises(TypeError):
             copy.extra_params["token"] = "sneaked in"
+
+
+class TestCredentialsAreNotLogged:
+    """A token in `extra_params` does not reach the debug log."""
+
+    def test_a_failed_fetch_logs_a_redacted_url(self, caplog):
+        """The retry log keeps the parameter names but not their values.
+
+        Args:
+            caplog: pytest's log capture fixture.
+
+        Test scenario:
+            This module documents `extra_params` as the place to put an API
+            key, and `fetch_single_tile` wrote the full URL to the debug log on
+            every failed attempt -- so a flaky service quietly persisted the
+            credential wherever the logs go.
+        """
+        provider = WMSProvider(
+            url="https://example.org/wms",
+            layers="ortho",
+            extra_params={"token": "S3CRET-VALUE"},
+        )
+
+        def explode(request, timeout=None):
+            raise OSError("connection reset")
+
+        with (
+            caplog.at_level("DEBUG", logger="cleopatra.basemap.tiles"),
+            patch.object(tiles_mod, "urlopen_http", side_effect=explode),
+            pytest.raises(ConnectionError),
+        ):
+            fetch_single_tile(Tile(0, 0, 0), provider, timeout=1, retries=0)
+
+        assert "S3CRET-VALUE" not in caplog.text, "the credential reached the log"
+        assert "token=..." in caplog.text, (
+            f"the parameter name should survive for diagnosis: {caplog.text[:200]}"
+        )
+
+    @pytest.mark.parametrize(
+        "url, expected",
+        [
+            (
+                "https://example.org/wms?LAYERS=ortho&token=s3cret",
+                "https://example.org/wms?LAYERS=...&token=...",
+            ),
+            (
+                "https://example.org/tiles/3/2/4.png",
+                "https://example.org/tiles/3/2/4.png",
+            ),
+            ("https://example.org/wms?flag", "https://example.org/wms?flag"),
+        ],
+    )
+    def test_redaction_masks_values_only(self, url, expected):
+        """`_redact_url` keeps the shape and drops the secrets.
+
+        Args:
+            url: The URL to redact.
+            expected: Its redacted form.
+
+        Test scenario:
+            A valueless flag and a query-free URL are both left alone, so the
+            redaction cannot be blamed for a confusing log line.
+        """
+        assert _redact_url(url) == expected, f"{url} redacted to {_redact_url(url)}"
 
 
 @requires_tiles
