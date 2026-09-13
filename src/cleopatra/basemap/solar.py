@@ -177,6 +177,11 @@ def terminator(
         numpy.ndarray: An ``(n, 2)`` array of ``(lon, lat)`` degrees, densified
         for a smooth curve. The ring is closed (last vertex equals the first).
 
+    Raises:
+        ValueError: If ``refraction`` is outside ``(-90, 0]`` (0 is the
+            geometric terminator; a positive value is not a terminator and a
+            value of -90 or below is degenerate), or if ``n < 3``.
+
     Examples:
         - The default terminator is a closed ring of 720 lon/lat vertices:
             ```python
@@ -202,6 +207,14 @@ def terminator(
 
             ```
     """
+    if not -90.0 < refraction <= 0.0:
+        raise ValueError(
+            "refraction must be in (-90, 0] degrees (0 is the geometric "
+            f"terminator; -6/-12/-18 are the twilight lines); got {refraction}."
+        )
+    if n < 3:
+        raise ValueError(f"n must be at least 3 to form a ring; got {n}.")
+
     lon_s, lat_s = subsolar_point(when)
     lon0, lat0 = np.radians(lon_s), np.radians(lat_s)
     # Points where the solar altitude equals ``refraction`` lie a great-circle
@@ -239,6 +252,12 @@ def night_polygon(
     Returns:
         list[numpy.ndarray]: One or more ``(m, 2)`` lon/lat rings covering the
         night side; more than one where the region crosses the antimeridian.
+        The rings are open (first vertex != last); matplotlib closes polygons
+        on fill.
+
+    Raises:
+        ValueError: If ``refraction`` is outside ``(-90, 0]`` or ``n < 3`` (via
+            `terminator`).
 
     Examples:
         - At a solstice one pole is in darkness, so the night region is a single
