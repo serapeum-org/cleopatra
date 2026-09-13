@@ -83,6 +83,10 @@ Reusable, glyph-independent legend helpers that attach a legend to any `Axes`:
 - `histogram_legend` — a colour-mapped histogram drawn as a compact legend.
 
 ::: cleopatra.styling.styles.disjoint_legend
+    options:
+      show_root_heading: true
+      show_source: true
+      heading_level: 3
 
 ::: cleopatra.styling.styles.hatch_legend
     options:
