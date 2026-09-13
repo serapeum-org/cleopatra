@@ -284,9 +284,8 @@ class TestTerminator:
             No vertex longitude may fall outside the half-open lon range.
         """
         term = terminator(DEC_SOLSTICE)
-        assert np.all(term[:, 0] > -180.0) and np.all(term[:, 0] <= 180.0), (
-            "terminator longitudes out of (-180, 180]"
-        )
+        assert np.all(term[:, 0] > -180.0), "terminator longitude <= -180"
+        assert np.all(term[:, 0] <= 180.0), "terminator longitude > 180"
         assert np.all(np.abs(term[:, 1]) <= 90.0), (
             "terminator latitudes out of [-90, 90]"
         )
@@ -404,9 +403,11 @@ class TestNightPolygon:
             Every element is a 2-column numpy array of vertices.
         """
         rings = night_polygon(JUN_SOLSTICE)
-        assert isinstance(rings, list) and len(rings) >= 1, f"bad container: {rings!r}"
+        assert isinstance(rings, list), f"not a list: {rings!r}"
+        assert len(rings) >= 1, f"no rings returned: {rings!r}"
         for ring in rings:
-            assert ring.ndim == 2 and ring.shape[1] == 2, f"bad ring shape {ring.shape}"
+            assert ring.ndim == 2, f"ring not 2-D: {ring.shape}"
+            assert ring.shape[1] == 2, f"ring not (m, 2): {ring.shape}"
 
     def test_single_ring_and_dark_pole_when_pole_enclosed(self):
         """Test a solstice yields one ring closed along the dark pole edge.
@@ -678,9 +679,12 @@ class TestSplitAntimeridian:
         rings = solar._split_antimeridian(ring)
         assert len(rings) == 2, f"expected 2 rings, got {len(rings)}"
         for piece in rings:
-            assert np.all(piece[:, 0] >= -180.0 - 1e-9) and np.all(
-                piece[:, 0] <= 180.0 + 1e-9
-            ), f"piece out of range: {piece[:, 0]}"
+            assert np.all(piece[:, 0] >= -180.0 - 1e-9), (
+                f"piece lon < -180: {piece[:, 0]}"
+            )
+            assert np.all(piece[:, 0] <= 180.0 + 1e-9), (
+                f"piece lon > 180: {piece[:, 0]}"
+            )
 
     def test_non_straddling_ring_stays_single(self):
         """Test a ring away from the antimeridian is returned as one piece.
