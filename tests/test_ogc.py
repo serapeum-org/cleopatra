@@ -508,6 +508,106 @@ class TestWMTSProviderIsRestful:
         assert provider.is_restful is expected, f"{url!r} classified wrongly"
 
 
+class TestRestfulTemplateSubstitution:
+    """The RESTful branch substitutes once, case-insensitively, and escapes."""
+
+    def test_a_template_missing_row_or_col_is_refused(self):
+        """A template that cannot address a tile is rejected at construction.
+
+        Test scenario:
+            With only `{TileMatrix}` every tile resolves to the same URL, so the
+            mosaic is one image repeated -- and silently, since each request
+            succeeds. Refusing the template is the only point at which this is
+            visible.
+        """
+        with pytest.raises(ValueError, match="must address a tile"):
+            WMTSProvider(url="https://example.org/wmts/{TileMatrix}.png", layer="L")
+
+    @pytest.mark.parametrize(
+        "template",
+        [
+            "https://example.org/w/{tilematrix}/{tilerow}/{tilecol}.png",
+            "https://example.org/w/{TILEMATRIX}/{TILEROW}/{TILECOL}.png",
+            "https://example.org/w/{TileMatrix}/{TileRow}/{TileCol}.png",
+        ],
+    )
+    def test_placeholder_casing_does_not_matter(self, template):
+        """Any casing of the three placeholders substitutes.
+
+        Args:
+            template: The template under test.
+
+        Test scenario:
+            Services are inconsistent about the spelling. A mis-cased
+            placeholder used to fail the RESTful test entirely, so the KVP
+            branch ran and shipped a URL with literal braces still in it.
+        """
+        provider = WMTSProvider(url=template, layer="L")
+        assert provider.build_url(x=4, y=2, z=3) == "https://example.org/w/3/2/4.png", (
+            f"{template} did not substitute: {provider.build_url(x=4, y=2, z=3)}"
+        )
+
+    def test_substituted_values_are_percent_encoded(self):
+        """A layer name with URL-significant characters cannot break the path.
+
+        Test scenario:
+            A raw `/` would invent a path segment and a raw `?` would start a
+            query, so an unescaped layer name silently requests something else.
+        """
+        provider = WMTSProvider(
+            url="https://example.org/w/{Layer}/{TileMatrix}/{TileRow}/{TileCol}.png",
+            layer="a b/c?d",
+        )
+        assert provider.build_url(x=4, y=2, z=3) == (
+            "https://example.org/w/a%20b%2Fc%3Fd/3/2/4.png"
+        ), f"not escaped: {provider.build_url(x=4, y=2, z=3)}"
+
+    def test_a_placeholder_shaped_value_is_not_re_substituted(self):
+        """A field whose value looks like a placeholder is left as data.
+
+        Test scenario:
+            The old chain of `str.replace` calls re-scanned what it had already
+            written, so a layer literally named `{TileRow}` was rewritten by the
+            next step into the row number.
+        """
+        provider = WMTSProvider(
+            url="https://example.org/{Layer}/{TileMatrix}/{TileRow}/{TileCol}.png",
+            layer="{TileRow}",
+        )
+        built = provider.build_url(x=4, y=2, z=3)
+        assert built == "https://example.org/%7BTileRow%7D/3/2/4.png", (
+            f"a placeholder-shaped value was re-substituted: {built}"
+        )
+
+    def test_an_unknown_placeholder_is_left_alone(self):
+        """A placeholder this package does not own is not touched.
+
+        Test scenario:
+            A service template may carry its own; silently deleting or
+            mangling it would be worse than leaving it for the caller to see.
+        """
+        provider = WMTSProvider(
+            url="https://example.org/{Custom}/{TileMatrix}/{TileRow}/{TileCol}.png",
+            layer="L",
+        )
+        assert "{Custom}" in provider.build_url(x=4, y=2, z=3), (
+            "an unknown placeholder was altered"
+        )
+
+    def test_each_tile_gets_its_own_url(self):
+        """Distinct tiles produce distinct URLs.
+
+        Test scenario:
+            The property the missing-placeholder check exists to protect: a
+            mosaic of N tiles must make N different requests.
+        """
+        provider = WMTSProvider(
+            url="https://example.org/w/{TileMatrix}/{TileRow}/{TileCol}.png", layer="L"
+        )
+        built = {provider.build_url(x=i, y=i, z=3) for i in range(4)}
+        assert len(built) == 4, f"tiles collapsed to {len(built)} URL(s): {built}"
+
+
 class TestWMTSProviderValidation:
     """`WMTSProvider` refuses an unusable service description at construction."""
 

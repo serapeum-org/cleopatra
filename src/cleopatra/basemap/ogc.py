@@ -48,6 +48,7 @@ plain arithmetic. The extra is required only once you actually render, and
 
 from __future__ import annotations
 
+import re
 import urllib.parse
 from collections.abc import Mapping
 from dataclasses import dataclass, field, fields
@@ -69,9 +70,26 @@ _WMS_SRS_VERSIONS = ("1.0.0", "1.1.0", "1.1.1")
 #: WMS versions that send the CRS as `CRS=`.
 _WMS_CRS_VERSIONS = ("1.3.0",)
 
-#: The `{}`-delimited placeholders an OGC RESTful WMTS template may carry.
-#: Presence of `{TileMatrix}` is what marks a `url` as RESTful rather than KVP.
-_RESTFUL_MARKER = "{TileMatrix}"
+#: Matches one `{}`-delimited placeholder in a RESTful WMTS template.
+_PLACEHOLDER_RE = re.compile(r"\{([A-Za-z]+)\}")
+
+#: The placeholders a RESTful WMTS template may carry, lower-cased for
+#: case-insensitive lookup. OGC spells them `{TileMatrix}` and so on, but
+#: services are inconsistent about it and a mis-cased one used to fall through
+#: to the KVP branch and ship a URL with literal braces in it.
+_RESTFUL_FIELDS = (
+    "tilematrixset",
+    "tilematrix",
+    "tilerow",
+    "tilecol",
+    "layer",
+    "style",
+)
+
+#: The placeholders a RESTful template cannot do without. Without all three the
+#: template addresses one fixed image, so every tile of the mosaic would be the
+#: same picture -- silently, since the request itself succeeds.
+_REQUIRED_RESTFUL_FIELDS = ("tilematrix", "tilerow", "tilecol")
 
 
 def _validate_endpoint(url: str, field_name: str) -> None:
@@ -217,6 +235,19 @@ def _query(base: str, params: Mapping[str, str]) -> str:
     parts = urllib.parse.urlsplit(base)
     merged = f"{parts.query}&{encoded}" if parts.query else encoded
     return urllib.parse.urlunsplit(parts._replace(query=merged))
+
+
+def _restful_placeholders(url: str) -> set[str]:
+    """The known RESTful placeholder names a template carries, lower-cased.
+
+    Args:
+        url: The endpoint or template.
+
+    Returns:
+        set[str]: The subset of `_RESTFUL_FIELDS` present, however cased.
+    """
+    found = {match.group(1).lower() for match in _PLACEHOLDER_RE.finditer(url)}
+    return found & set(_RESTFUL_FIELDS)
 
 
 def _merge_params(
@@ -497,6 +528,16 @@ class WMTSProvider:
         _validate_identifier(self.style, "style")
         _validate_identifier(self.image_format, "image_format")
         _validate_identifier(self.version, "version")
+        present = _restful_placeholders(self.url)
+        if present:
+            missing = [f for f in _REQUIRED_RESTFUL_FIELDS if f not in present]
+            if missing:
+                listed = ", ".join(f"{{{f}}}" for f in missing)
+                raise ValueError(
+                    f"a RESTful WMTS template must address a tile: url is "
+                    f"missing {listed}. Without them every tile resolves to "
+                    f"the same URL, so the mosaic would repeat one image."
+                )
         object.__setattr__(self, "extra_params", _freeze_params(self.extra_params))
 
     def __hash__(self) -> int:
@@ -556,7 +597,7 @@ class WMTSProvider:
 
                 ```
         """
-        return _RESTFUL_MARKER in self.url
+        return bool(_restful_placeholders(self.url))
 
     def build_url(self, *, x: int, y: int, z: int) -> str:
         """Return the `GetTile` URL for one tile.
@@ -624,16 +665,25 @@ class WMTSProvider:
                 ```
         """
         if self.is_restful:
-            filled = self.url
-            for placeholder, value in (
-                ("{TileMatrixSet}", self.tile_matrix_set),
-                ("{TileMatrix}", str(z)),
-                ("{TileRow}", str(y)),
-                ("{TileCol}", str(x)),
-                ("{Layer}", self.layer),
-                ("{Style}", self.style),
-            ):
-                filled = filled.replace(placeholder, value)
+            values = {
+                "tilematrixset": self.tile_matrix_set,
+                "tilematrix": str(z),
+                "tilerow": str(y),
+                "tilecol": str(x),
+                "layer": self.layer,
+                "style": self.style,
+            }
+
+            def substitute(match: re.Match[str]) -> str:
+                """Replace one placeholder, leaving an unknown one alone."""
+                name = match.group(1).lower()
+                if name not in values:
+                    return match.group(0)
+                return urllib.parse.quote(values[name], safe="")
+
+            # One pass, so a value that happens to look like a placeholder is
+            # not rewritten again by a later field.
+            filled = _PLACEHOLDER_RE.sub(substitute, self.url)
             return _query(filled, self.extra_params)
 
         params = {
