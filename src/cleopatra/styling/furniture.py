@@ -180,8 +180,9 @@ def add_scale_bar(
         ticks: `True` (default) numbers the `segments + 1` block boundaries
             `0 .. length`; a sequence places tick numbers at those data
             positions (each in `[0, length]`); `False` draws no tick numbers.
-        color: The fill of the even blocks and the colour of the ticks / text.
-        edge_color: The fill of the odd blocks (and the block outline).
+        color: The fill of the even blocks and the colour of the block outline,
+            the ticks and the text.
+        edge_color: The fill of the odd blocks (the alternating light blocks).
         label_location: `"top"` or `"bottom"` -- which side of the bar the tick
             numbers and caption sit on. `None` (default) picks the side facing
             the axes interior for the chosen corner (a lower corner labels
@@ -263,9 +264,7 @@ def add_scale_bar(
     bar_edge = (y0 + height) if at_top else y0
     text_va = "bottom" if at_top else "top"
 
-    _draw_scale_box(
-        ax, x0, y0, width, height, sign, bar_edge, bool(ticks or label), box, z
-    )
+    _draw_scale_box(ax, x0, y0, width, height, sign, bar_edge, bool(ticks), box, z)
 
     inset = ax.inset_axes(
         (x0, y0, width, height), transform=ax.transAxes, zorder=z + 0.1
@@ -373,7 +372,7 @@ def _draw_scale_box(
     height: float,
     sign: float,
     bar_edge: float,
-    has_text: bool,
+    has_ticks: bool,
     box: bool | str | dict,
     zorder: float,
 ) -> None:
@@ -387,7 +386,9 @@ def _draw_scale_box(
         height: The bar height in axes fraction.
         sign: `+1` when the caption is above the bar, `-1` when below.
         bar_edge: The bar edge (top or bottom) the text grows from.
-        has_text: Whether tick numbers / a caption are drawn (they need room).
+        has_ticks: Whether tick numbers are drawn (they add a row above the
+            caption, which the panel must clear). The caption itself is always
+            drawn, so caption room is always reserved.
         box: The `box` value (see `_resolve_box`).
         zorder: The draw order (the panel sits just below the furniture).
     """
@@ -396,7 +397,9 @@ def _draw_scale_box(
         return
     hpad = 0.02
     vpad = 0.012
-    text_room = (_TICK_LEN + 0.09) if has_text else 0.0
+    # The caption is always drawn (it defaults to the length), so always reserve
+    # room for it; tick numbers add a further row above it when present.
+    text_room = (_TICK_LEN + 0.09) if has_ticks else 0.05
     if sign > 0:
         y_lo = y0 - vpad
         y_hi = bar_edge + text_room + vpad
@@ -421,10 +424,13 @@ def _north_arrow_patches(style: str, color: str, edge_color: str) -> list[Polygo
 
     Args:
         style: One of `"arrow"` (a single filled arrow), `"needle"` (a two-tone
-            kite -- north half `color`, south half `edge_color`), or `"rose"` (a
-            four-point compass star, alternating `color` / `edge_color`).
-        color: The primary (north) fill and the outline colour.
-        edge_color: The secondary (south) fill.
+            compass diamond whose four spikes are each split down the middle into
+            a `color` flank and an `edge_color` flank), or `"rose"` (a four-point
+            compass star whose spikes likewise split into `color` / `edge_color`
+            flanks).
+        color: The primary fill (the whole arrow, or one flank per spike) and
+            the outline colour.
+        edge_color: The secondary (alternating) flank fill.
 
     Returns:
         list[matplotlib.patches.Polygon]: The polygons, centred on `(0.5, 0.5)`
@@ -561,10 +567,12 @@ def add_north_arrow(
             `(x, y)` pair, each in `[0, 1)`.
         size: The arrow height as an axes fraction. Defaults to `0.06`.
         style: `"arrow"` (a single filled arrow), `"needle"` (a two-tone
-            compass needle), or `"rose"` (a four-point compass star).
+            compass diamond), or `"rose"` (a four-point compass star). The
+            needle and rose split each spike into a `color` flank and an
+            `edge_color` flank.
         label: The label at the arrow tip. Defaults to `"N"`; `None` draws none.
         color: The primary fill and the outline / label colour.
-        edge_color: The secondary fill (the south half of a needle / rose).
+        edge_color: The secondary (alternating) flank fill of a needle / rose.
         label_size: Font size (points) for the label. `None` uses the default.
         box: A backing panel, using `ColorBar`'s `box` vocabulary (see
             `add_scale_bar`).

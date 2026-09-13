@@ -376,6 +376,24 @@ class TestAddScaleBar:
         add_scale_bar(ax, 100_000, box=True, label_location="top")
         assert len(ax.patches) == before + 1, "one backing panel for a top caption"
 
+    def test_box_covers_caption_without_ticks(self, ax):
+        """The backing box reserves room for the always-drawn caption.
+
+        Test scenario:
+            With `ticks=False` and no explicit label (the caption still defaults
+            to the length), the panel's vertical span contains the caption's
+            anchor, rather than sizing itself as if no text were drawn.
+        """
+        bar = add_scale_bar(ax, 100_000, box=True, ticks=False)
+        panel = ax.patches[-1]
+        py0 = panel.get_y()
+        py1 = py0 + panel.get_height()
+        caption_y = ax.texts[-1].get_position()[1]
+        assert py0 <= caption_y <= py1, (
+            f"caption y={caption_y} not inside box [{py0}, {py1}]"
+        )
+        assert bar is not ax
+
     def test_box_color(self, ax):
         """A string `box` sets the panel face colour.
 
