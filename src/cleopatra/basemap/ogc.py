@@ -45,7 +45,7 @@ from __future__ import annotations
 
 import urllib.parse
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from types import MappingProxyType
 
 from cleopatra.basemap.tiles import Tile, _tile_xy_bounds
@@ -142,6 +142,32 @@ def _query(base: str, params: Mapping[str, str]) -> str:
         return base
     separator = "&" if urllib.parse.urlsplit(base).query else "?"
     return f"{base}{separator}{encoded}"
+
+
+def _hash_provider(provider: object) -> int:
+    """Hash a provider by its fields, flattening the mapping one holds.
+
+    `frozen=True` generates a `__hash__`, but it hashes the field tuple -- and
+    `extra_params` is a mapping, which is unhashable. That made every provider
+    unhashable even with the default empty mapping, so one could not be used as
+    a dict key, a set member or an `lru_cache` argument, despite the class
+    advertising itself as frozen. Flattening the mapping to its sorted items
+    keeps the hash consistent with the generated `__eq__`, which compares those
+    same fields by value.
+
+    Args:
+        provider: The dataclass instance to hash.
+
+    Returns:
+        int: A hash over the type and every field.
+    """
+    values = []
+    for spec in fields(provider):
+        value = getattr(provider, spec.name)
+        values.append(
+            tuple(sorted(value.items())) if isinstance(value, Mapping) else value
+        )
+    return hash((type(provider).__name__, *values))
 
 
 @dataclass(frozen=True)
@@ -254,6 +280,14 @@ class WMTSProvider:
         _validate_identifier(self.image_format, "image_format")
         _validate_identifier(self.version, "version")
         object.__setattr__(self, "extra_params", _freeze_params(self.extra_params))
+
+    def __hash__(self) -> int:
+        """Hash the service description; see `_hash_provider`.
+
+        Returns:
+            int: A hash consistent with this dataclass's own equality.
+        """
+        return _hash_provider(self)
 
     @property
     def is_restful(self) -> bool:
@@ -430,6 +464,14 @@ class WMSProvider:
                 f"tile_size must be a positive int, got {self.tile_size!r}."
             )
         object.__setattr__(self, "extra_params", _freeze_params(self.extra_params))
+
+    def __hash__(self) -> int:
+        """Hash the service description; see `_hash_provider`.
+
+        Returns:
+            int: A hash consistent with this dataclass's own equality.
+        """
+        return _hash_provider(self)
 
     @property
     def crs_parameter(self) -> str:

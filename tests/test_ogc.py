@@ -734,6 +734,57 @@ class TestProvidersAreImmutable:
         with pytest.raises(AttributeError):
             provider.url = "https://elsewhere.invalid/"
 
+    @pytest.mark.parametrize("kind", ["wmts", "wms"])
+    def test_a_provider_is_hashable(self, kind, wmts, wms):
+        """A frozen provider can be used as a dict key or a set member.
+
+        Args:
+            kind: Which provider to check.
+            wmts: The WMTS fixture.
+            wms: The WMS fixture.
+
+        Test scenario:
+            `frozen=True` generates a `__hash__`, but it hashes the field tuple
+            -- and `extra_params` is a mapping. Without the flattening every
+            provider raised `TypeError: unhashable type: 'dict'`, even with the
+            default empty mapping, while still advertising itself as frozen.
+        """
+        provider = wmts if kind == "wmts" else wms
+        assert isinstance(hash(provider), int), "provider is not hashable"
+        assert len({provider, provider}) == 1, "provider does not de-duplicate"
+
+    def test_equal_providers_hash_equal(self):
+        """Two separately built, equal providers share a hash.
+
+        Test scenario:
+            The hash has to agree with the generated `__eq__`, which compares
+            the same fields by value -- including `extra_params`, which is a
+            `MappingProxyType` over a fresh copy in each instance.
+        """
+        first = WMSProvider(
+            url="https://example.org/wms", layers="ortho", extra_params={"t": "1"}
+        )
+        second = WMSProvider(
+            url="https://example.org/wms", layers="ortho", extra_params={"t": "1"}
+        )
+        assert first == second, "precondition: the two providers compare equal"
+        assert hash(first) == hash(second), "equal providers hashed differently"
+
+    def test_extra_params_participate_in_the_hash(self):
+        """Two providers differing only in `extra_params` do not collide.
+
+        Test scenario:
+            Skipping the mapping entirely would be the easy way to make the
+            hash work, and would silently merge a keyed provider with an
+            unkeyed one in a cache.
+        """
+        plain = WMSProvider(url="https://example.org/wms", layers="ortho")
+        keyed = WMSProvider(
+            url="https://example.org/wms", layers="ortho", extra_params={"t": "1"}
+        )
+        assert plain != keyed, "precondition: the two providers differ"
+        assert hash(plain) != hash(keyed), "extra_params was left out of the hash"
+
     def test_mutating_the_callers_dict_does_not_change_the_provider(self):
         """`extra_params` is copied, not aliased.
 
