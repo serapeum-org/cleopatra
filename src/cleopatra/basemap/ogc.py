@@ -18,6 +18,11 @@ from cleopatra.basemap.tiles import add_tiles
 add_tiles(ax, WMSProvider(url="https://example.org/wms", layers="ortho"))
 ```
 
+Both are checked at construction rather than mid-render, and both are hashable,
+so a provider can key a dict or a cache. `extra_params` is copied behind a
+read-only view, so nothing a caller edits afterwards can change the URLs an
+already-built provider produces.
+
 The two service kinds reach the same place differently:
 
 - **WMTS is a tiling scheme.** A `GetTile` request is a
@@ -50,9 +55,10 @@ from types import MappingProxyType
 
 from cleopatra.basemap.tiles import Tile, _tile_xy_bounds
 
-#: The tile-matrix set this module's geometry assumes. Web Mercator, `2**z`
-#: columns and rows, top-left origin at +/-20 037 508.34 m, 256 px square tiles
-#: -- the grid `cleopatra.basemap.tiles` implements.
+#: The tile-matrix set this module's geometry assumes, and the default of
+#: `WMTSProvider.tile_matrix_set`. Web Mercator, `2**z` columns and rows,
+#: top-left origin at +/-20 037 508.34 m, 256 px square tiles -- the grid
+#: `cleopatra.basemap.tiles` implements.
 GOOGLE_MAPS_COMPATIBLE = "GoogleMapsCompatible"
 
 #: WMS versions that send the CRS as `SRS=`. 1.3.0 renamed it to `CRS=` and made
@@ -77,8 +83,12 @@ def _validate_endpoint(url: str, field_name: str) -> None:
         url: The endpoint or template to check.
         field_name: The dataclass field the value came from, for the message.
 
+    Returns:
+        None
+
     Raises:
-        ValueError: If `url` is empty or does not use the http(s) scheme.
+        ValueError: If `url` is not a string, is empty or blank, or does not
+            use the `http` or `https` scheme. The message names `field_name`.
     """
     if not isinstance(url, str) or not url.strip():
         raise ValueError(f"{field_name} must be a non-empty string, got {url!r}.")
@@ -92,29 +102,45 @@ def _validate_endpoint(url: str, field_name: str) -> None:
 def _validate_identifier(value: str, field_name: str) -> None:
     """Reject an empty layer/format identifier.
 
+    Only the identifiers a service actually requires go through here. A WMS
+    `styles` may legitimately be empty -- that is how a caller asks for the
+    service's own default -- so it is deliberately not checked.
+
     Args:
         value: The value to check.
         field_name: The dataclass field the value came from, for the message.
 
+    Returns:
+        None
+
     Raises:
-        ValueError: If `value` is not a non-empty string.
+        ValueError: If `value` is not a string, or is empty or whitespace only.
+            The message names `field_name`.
     """
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{field_name} must be a non-empty string, got {value!r}.")
 
 
 def _freeze_params(extra_params: Mapping[str, str]) -> Mapping[str, str]:
-    """Copy `extra_params` behind a read-only view.
+    """Copy `extra_params` behind a read-only view, coercing it to `str -> str`.
 
     A `frozen=True` dataclass blocks attribute assignment but not mutation of a
     dict it holds, so a caller's later edit would otherwise change the provider's
     URLs underneath it.
 
+    Keys and values are passed through `str`, so a token or version id that
+    arrives from JSON or YAML as an `int` is stored exactly as the equivalent
+    string literal would be, and two providers configured alike compare equal
+    whatever literal types built them. An already-frozen view -- what
+    `dataclasses.replace` feeds back in -- is a `Mapping` too, so it is copied
+    again rather than aliased into the new instance.
+
     Args:
         extra_params: The mapping the caller passed.
 
     Returns:
-        Mapping[str, str]: A read-only view over a copy.
+        Mapping[str, str]: A read-only `MappingProxyType` over a fresh copy,
+        with every key and value coerced to `str`.
 
     Raises:
         TypeError: If `extra_params` is not a mapping.
@@ -130,12 +156,41 @@ def _freeze_params(extra_params: Mapping[str, str]) -> Mapping[str, str]:
 def _query(base: str, params: Mapping[str, str]) -> str:
     """Append `params` to `base`, preserving any query it already carries.
 
+    The separator is chosen from `base` itself -- `?` when it has no query yet,
+    `&` when it does -- so an endpoint that publishes a mandatory parameter of
+    its own survives having more added after it. Keys and values are
+    percent-encoded by `urllib.parse.urlencode`.
+
     Args:
         base: The endpoint, with or without an existing query string.
         params: The parameters to add, already ordered.
 
     Returns:
-        str: The full URL.
+        str: The full URL. `base` is returned unchanged when `params` is empty.
+
+    Examples:
+        - A bare endpoint gets a `?`:
+            ```python
+            >>> from cleopatra.basemap.ogc import _query
+            >>> _query("https://example.org/wms", {"REQUEST": "GetMap"})
+            'https://example.org/wms?REQUEST=GetMap'
+
+            ```
+        - An endpoint that already carries a query gets a `&`, and the added
+          value is escaped:
+            ```python
+            >>> from cleopatra.basemap.ogc import _query
+            >>> _query("https://example.org/wms?map=/etc/base.map", {"token": "a&b"})
+            'https://example.org/wms?map=/etc/base.map&token=a%26b'
+
+            ```
+        - Nothing to add leaves the endpoint alone:
+            ```python
+            >>> from cleopatra.basemap.ogc import _query
+            >>> _query("https://example.org/wms", {})
+            'https://example.org/wms'
+
+            ```
     """
     encoded = urllib.parse.urlencode(params)
     if not encoded:
@@ -153,13 +208,15 @@ def _hash_provider(provider: object) -> int:
     a dict key, a set member or an `lru_cache` argument, despite the class
     advertising itself as frozen. Flattening the mapping to its sorted items
     keeps the hash consistent with the generated `__eq__`, which compares those
-    same fields by value.
+    same fields by value. Every other field is a validated `str`, `bool` or
+    `int`, so it is hashable as it stands.
 
     Args:
         provider: The dataclass instance to hash.
 
     Returns:
-        int: A hash over the type and every field.
+        int: A hash over the class name and every field, with any mapping field
+        flattened to its sorted items.
     """
     values = []
     for spec in fields(provider):
@@ -183,16 +240,24 @@ class WMTSProvider:
     are substituted; otherwise `url` is taken as a KVP endpoint and a `GetTile`
     query is built.
 
+    The service description is checked once, at construction -- including on a
+    `dataclasses.replace` copy, which is the supported way to vary a frozen
+    provider. The instance is then immutable and hashable, so it can key a dict
+    or a cache; `extra_params` is stored as a read-only copy, so a caller's
+    later edit to the dict they passed cannot rewrite the URLs.
+
     Args:
         url: The `GetTile` KVP endpoint, or a RESTful template containing
             `{TileMatrix}`, `{TileRow}` and `{TileCol}` (and optionally
             `{TileMatrixSet}`, `{Layer}`, `{Style}`).
         layer: The `Layer` identifier to request.
-        tile_matrix_set: The tile-matrix set identifier. Only
-            `GoogleMapsCompatible` (or a service's own name for that same Web
-            Mercator grid, e.g. `GoogleMapsCompatible_Level9`) lines up with
-            this package's tile geometry -- any other grid returns tiles that
-            will be placed wrongly.
+        tile_matrix_set: The tile-matrix set identifier, defaulting to
+            `GOOGLE_MAPS_COMPATIBLE`. Only `GoogleMapsCompatible` (or a
+            service's own name for that same Web Mercator grid, e.g.
+            `GoogleMapsCompatible_Level9`) lines up with this package's tile
+            geometry -- any other grid returns tiles that will be placed
+            wrongly. Nothing validates the grid beyond it being non-empty,
+            because the identifier is the service's to name.
         style: The `Style` identifier. Most services publish `"default"`.
         image_format: The `Format` to request. `tiles._looks_like_image`
             accepts PNG, JPEG, GIF and WebP, so a TIFF or SVG format will be
@@ -202,10 +267,12 @@ class WMTSProvider:
             attribute and draws it on the axes.
         extra_params: Extra query parameters, merged last so they can also
             override a generated one. This is where an API key or token goes.
+            Keys and values are coerced to `str` and stored read-only.
 
     Raises:
-        ValueError: If `url` is not an http(s) URL, or if `layer`,
-            `tile_matrix_set`, `style`, `image_format` or `version` is empty.
+        ValueError: If `url` is not a non-empty http(s) string, or if `layer`,
+            `tile_matrix_set`, `style`, `image_format` or `version` is not a
+            non-empty string.
         TypeError: If `extra_params` is not a mapping.
 
     Examples:
@@ -235,16 +302,33 @@ class WMTSProvider:
             'https://example.org/wmts/TrueColor/3/2/4.png'
 
             ```
-        - `extra_params` carries a key, and is escaped:
+        - `extra_params` carries a credential, escaped into the query:
             ```python
+            >>> from urllib.parse import parse_qs, urlsplit
             >>> from cleopatra.basemap.ogc import WMTSProvider
             >>> provider = WMTSProvider(
             ...     url="https://example.org/wmts",
             ...     layer="TrueColor",
             ...     extra_params={"api key": "a&b"},
             ... )
-            >>> "api+key=a%26b" in provider.build_url(x=0, y=0, z=0)
+            >>> url = provider.build_url(x=0, y=0, z=0)
+            >>> url.endswith("api+key=a%26b")
             True
+            >>> parse_qs(urlsplit(url).query)["api key"]
+            ['a&b']
+
+            ```
+        - A provider is frozen and hashable, so it can key a cache:
+            ```python
+            >>> from cleopatra.basemap.ogc import WMTSProvider
+            >>> first = WMTSProvider(url="https://example.org/wmts", layer="TrueColor")
+            >>> second = WMTSProvider(url="https://example.org/wmts", layer="TrueColor")
+            >>> first == second
+            True
+            >>> len({first, second})
+            1
+            >>> {first: "imagery"}[second]
+            'imagery'
 
             ```
         - An unusable endpoint is refused at construction, not mid-render:
@@ -272,7 +356,20 @@ class WMTSProvider:
     extra_params: Mapping[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        """Validate the service description and freeze `extra_params`."""
+        """Validate the service description and freeze `extra_params`.
+
+        Runs on a `dataclasses.replace` copy as well as on a direct
+        construction, so a copy is checked as thoroughly as the original.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If `url` is not a non-empty http(s) string, or if
+                `layer`, `tile_matrix_set`, `style`, `image_format` or
+                `version` is not a non-empty string.
+            TypeError: If `extra_params` is not a mapping.
+        """
         _validate_endpoint(self.url, "url")
         _validate_identifier(self.layer, "layer")
         _validate_identifier(self.tile_matrix_set, "tile_matrix_set")
@@ -282,7 +379,12 @@ class WMTSProvider:
         object.__setattr__(self, "extra_params", _freeze_params(self.extra_params))
 
     def __hash__(self) -> int:
-        """Hash the service description; see `_hash_provider`.
+        """Hash the service description, flattening `extra_params`.
+
+        `frozen=True` would generate a `__hash__` over the field tuple, which
+        the `extra_params` mapping makes unhashable; `_hash_provider` hashes
+        that mapping's sorted items instead, staying consistent with the
+        generated `__eq__`.
 
         Returns:
             int: A hash consistent with this dataclass's own equality.
@@ -293,8 +395,45 @@ class WMTSProvider:
     def is_restful(self) -> bool:
         """Whether `url` is a RESTful template rather than a KVP endpoint.
 
+        `{TileMatrix}` is the marker: a template has to carry it to be fillable
+        at all, so its presence is what selects `build_url`'s substitution
+        branch over its `GetTile` query branch. A query string in the endpoint
+        does not make it a template.
+
         Returns:
             bool: `True` when the template carries `{TileMatrix}`.
+
+        Examples:
+            - A plain endpoint is KVP, so a `GetTile` query gets built:
+                ```python
+                >>> from cleopatra.basemap.ogc import WMTSProvider
+                >>> provider = WMTSProvider(url="https://example.org/wmts", layer="L")
+                >>> provider.is_restful
+                False
+                >>> "REQUEST=GetTile" in provider.build_url(x=1, y=1, z=1)
+                True
+
+                ```
+            - A template carrying the marker is substituted in place instead:
+                ```python
+                >>> from cleopatra.basemap.ogc import WMTSProvider
+                >>> provider = WMTSProvider(
+                ...     url="https://example.org/{TileMatrix}/{TileRow}/{TileCol}.png",
+                ...     layer="L",
+                ... )
+                >>> provider.is_restful
+                True
+                >>> provider.build_url(x=4, y=2, z=3)
+                'https://example.org/3/2/4.png'
+
+                ```
+            - An endpoint that merely carries a query is still KVP:
+                ```python
+                >>> from cleopatra.basemap.ogc import WMTSProvider
+                >>> WMTSProvider(url="https://example.org/wmts?layer=x", layer="L").is_restful
+                False
+
+                ```
         """
         return _RESTFUL_MARKER in self.url
 
@@ -304,6 +443,12 @@ class WMTSProvider:
         The WMTS tile triple is the slippy triple under another name:
         `z` is `TileMatrix`, `y` is `TileRow`, `x` is `TileCol`.
 
+        A RESTful `url` (see `is_restful`) has its `{...}` placeholders filled
+        in; placeholders the template leaves out are simply not substituted.
+        Otherwise a `GetTile` KVP query is appended to `url`, keeping any query
+        it already carries. Either way `extra_params` comes last, so it can
+        override a generated parameter as well as add one.
+
         Args:
             x: Tile column, i.e. `TileCol`.
             y: Tile row, i.e. `TileRow`.
@@ -311,6 +456,51 @@ class WMTSProvider:
 
         Returns:
             str: The full request URL.
+
+        Examples:
+            - A KVP endpoint keeps the query it already carries and gains the
+              `GetTile` parameters:
+                ```python
+                >>> from urllib.parse import parse_qs, urlsplit
+                >>> from cleopatra.basemap.ogc import WMTSProvider
+                >>> provider = WMTSProvider(
+                ...     url="https://example.org/wmts?map=/etc/base.map",
+                ...     layer="TrueColor",
+                ... )
+                >>> query = parse_qs(urlsplit(provider.build_url(x=1, y=1, z=1)).query)
+                >>> query["map"]
+                ['/etc/base.map']
+                >>> query["SERVICE"], query["TILEMATRIXSET"]
+                (['WMTS'], ['GoogleMapsCompatible'])
+
+                ```
+            - A template is filled in as far as its placeholders go, and
+              `extra_params` follows it as a query:
+                ```python
+                >>> from cleopatra.basemap.ogc import WMTSProvider
+                >>> provider = WMTSProvider(
+                ...     url="https://example.org/wmts/{TileMatrix}/{TileRow}/{TileCol}.png",
+                ...     layer="TrueColor",
+                ...     extra_params={"token": "abc"},
+                ... )
+                >>> provider.build_url(x=4, y=2, z=3)
+                'https://example.org/wmts/3/2/4.png?token=abc'
+
+                ```
+            - `extra_params` wins over a parameter the provider generates, so a
+              service demanding its own spelling needs no code change:
+                ```python
+                >>> from urllib.parse import parse_qs, urlsplit
+                >>> from cleopatra.basemap.ogc import WMTSProvider
+                >>> provider = WMTSProvider(
+                ...     url="https://example.org/wmts",
+                ...     layer="TrueColor",
+                ...     extra_params={"FORMAT": "image/jpeg"},
+                ... )
+                >>> parse_qs(urlsplit(provider.build_url(x=0, y=0, z=0)).query)["FORMAT"]
+                ['image/jpeg']
+
+                ```
         """
         if self.is_restful:
             filled = self.url
@@ -362,11 +552,18 @@ class WMSProvider:
     mosaic of many. `add_tiles(..., min_tiles_across=1)` lowers the tile count
     towards one `GetMap` without needing a second code path.
 
+    The service description is checked once, at construction -- including on a
+    `dataclasses.replace` copy, which is the supported way to vary a frozen
+    provider. The instance is then immutable and hashable, so it can key a dict
+    or a cache; `extra_params` is stored as a read-only copy, so a caller's
+    later edit to the dict they passed cannot rewrite the URLs.
+
     Args:
         url: The `GetMap` endpoint. An existing query string is preserved.
         layers: The comma-separated `Layers` value to request.
         styles: The comma-separated `Styles` value. Empty means the service's
-            default style, which is what most callers want.
+            default style, which is what most callers want -- so this is the
+            one identifier that is allowed to be empty, and it is still sent.
         version: The WMS version. `"1.3.0"` sends `CRS=`; `"1.1.1"` and older
             send `SRS=`.
         image_format: The `Format` to request. `tiles._looks_like_image`
@@ -382,42 +579,44 @@ class WMSProvider:
             attribute and draws it on the axes.
         extra_params: Extra query parameters, merged last so they can also
             override a generated one. This is where an API key or token goes.
+            Keys and values are coerced to `str` and stored read-only.
 
     Raises:
-        ValueError: If `url` is not an http(s) URL, if `layers`, `image_format`
-            or `version` is empty, if `version` is not a supported WMS version,
-            or if `tile_size` is not a positive integer.
+        ValueError: If `url` is not a non-empty http(s) string, if `layers`,
+            `image_format` or `version` is not a non-empty string, if `version`
+            is not one of `1.0.0`, `1.1.0`, `1.1.1` or `1.3.0`, or if
+            `tile_size` is not a positive `int` (`bool` is rejected too).
         TypeError: If `extra_params` is not a mapping.
 
     Examples:
-        - The `BBOX` of a request is the tile's own Web Mercator bounds:
+        - One tile becomes one `GetMap`, with the tile's Web Mercator bounds
+          as `BBOX` in `left,bottom,right,top` metres:
             ```python
             >>> from urllib.parse import parse_qs, urlsplit
             >>> from cleopatra.basemap.ogc import WMSProvider
-            >>> from cleopatra.basemap.tiles import Tile, _tile_xy_bounds
             >>> provider = WMSProvider(url="https://example.org/wms", layers="ortho")
             >>> query = parse_qs(urlsplit(provider.build_url(x=4, y=2, z=3)).query)
-            >>> tuple(float(v) for v in query["BBOX"][0].split(",")) == _tile_xy_bounds(
-            ...     Tile(4, 2, 3)
-            ... )
-            True
+            >>> [round(float(v)) for v in query["BBOX"][0].split(",")]
+            [0, 5009377, 5009377, 10018754]
             >>> query["WIDTH"], query["HEIGHT"], query["REQUEST"]
             (['256'], ['256'], ['GetMap'])
 
             ```
-        - 1.3.0 names the CRS `CRS`; 1.1.1 names it `SRS`:
+        - 1.3.0 names the CRS `CRS` and 1.1.1 names it `SRS`, but the value is
+          `EPSG:3857` either way:
             ```python
             >>> from urllib.parse import parse_qs, urlsplit
             >>> from cleopatra.basemap.ogc import WMSProvider
-            >>> def keys(version):
-            ...     provider = WMSProvider(
-            ...         url="https://example.org/wms", layers="ortho", version=version
-            ...     )
-            ...     return parse_qs(urlsplit(provider.build_url(x=0, y=0, z=0)).query)
-            >>> sorted(k for k in keys("1.3.0") if k in ("CRS", "SRS"))
-            ['CRS']
-            >>> sorted(k for k in keys("1.1.1") if k in ("CRS", "SRS"))
-            ['SRS']
+            >>> latest = WMSProvider(url="https://example.org/wms", layers="ortho")
+            >>> latest.version, latest.crs_parameter
+            ('1.3.0', 'CRS')
+            >>> parse_qs(urlsplit(latest.build_url(x=0, y=0, z=0)).query)["CRS"]
+            ['EPSG:3857']
+            >>> older = WMSProvider(
+            ...     url="https://example.org/wms", layers="ortho", version="1.1.1"
+            ... )
+            >>> parse_qs(urlsplit(older.build_url(x=0, y=0, z=0)).query)["SRS"]
+            ['EPSG:3857']
 
             ```
         - An unsupported version is refused at construction:
@@ -446,7 +645,24 @@ class WMSProvider:
     extra_params: Mapping[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        """Validate the service description and freeze `extra_params`."""
+        """Validate the service description and freeze `extra_params`.
+
+        Runs on a `dataclasses.replace` copy as well as on a direct
+        construction, so a copy is checked as thoroughly as the original. The
+        version is matched against the supported set rather than guessed at,
+        because choosing `CRS=` or `SRS=` wrongly would misplace every tile
+        silently.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If `url` is not a non-empty http(s) string, if
+                `layers`, `image_format` or `version` is not a non-empty
+                string, if `version` is not one of `1.0.0`, `1.1.0`, `1.1.1` or
+                `1.3.0`, or if `tile_size` is not a positive `int`.
+            TypeError: If `extra_params` is not a mapping.
+        """
         _validate_endpoint(self.url, "url")
         _validate_identifier(self.layers, "layers")
         _validate_identifier(self.image_format, "image_format")
@@ -466,7 +682,12 @@ class WMSProvider:
         object.__setattr__(self, "extra_params", _freeze_params(self.extra_params))
 
     def __hash__(self) -> int:
-        """Hash the service description; see `_hash_provider`.
+        """Hash the service description, flattening `extra_params`.
+
+        `frozen=True` would generate a `__hash__` over the field tuple, which
+        the `extra_params` mapping makes unhashable; `_hash_provider` hashes
+        that mapping's sorted items instead, staying consistent with the
+        generated `__eq__`.
 
         Returns:
             int: A hash consistent with this dataclass's own equality.
@@ -477,13 +698,70 @@ class WMSProvider:
     def crs_parameter(self) -> str:
         """The query key this WMS version uses for the CRS.
 
+        1.3.0 renamed 1.1.1's `SRS=` to `CRS=`. Only the key changes: the value
+        `build_url` sends is `EPSG:3857` either way, because that is the CRS of
+        the tile grid. Pinning it there is also why 1.3.0's axis-order rule
+        never bites -- it orders `BBOX` by the CRS's own declared axis order,
+        which for EPSG:3857 is easting then northing, the same order 1.1.1
+        always used. The CRS that flips to latitude-first under 1.3.0 is
+        EPSG:4326, and this module never asks for it.
+
         Returns:
             str: `"CRS"` for 1.3.0, `"SRS"` for 1.1.1 and older.
+
+        Examples:
+            - 1.3.0 is the default, and it names the key `CRS`:
+                ```python
+                >>> from urllib.parse import parse_qs, urlsplit
+                >>> from cleopatra.basemap.ogc import WMSProvider
+                >>> provider = WMSProvider(url="https://example.org/wms", layers="ortho")
+                >>> provider.crs_parameter
+                'CRS'
+                >>> parse_qs(urlsplit(provider.build_url(x=0, y=0, z=0)).query)["CRS"]
+                ['EPSG:3857']
+
+                ```
+            - An older version carries the same value under `SRS`, and sends no
+              `CRS` at all:
+                ```python
+                >>> from urllib.parse import parse_qs, urlsplit
+                >>> from cleopatra.basemap.ogc import WMSProvider
+                >>> provider = WMSProvider(
+                ...     url="https://example.org/wms", layers="ortho", version="1.1.1"
+                ... )
+                >>> provider.crs_parameter
+                'SRS'
+                >>> query = parse_qs(urlsplit(provider.build_url(x=0, y=0, z=0)).query)
+                >>> query["SRS"]
+                ['EPSG:3857']
+                >>> "CRS" in query
+                False
+
+                ```
+            - 1.3.0 is the only supported version on the `CRS` side of the
+              rename:
+                ```python
+                >>> from cleopatra.basemap.ogc import WMSProvider
+                >>> [
+                ...     WMSProvider(
+                ...         url="https://example.org/wms", layers="ortho", version=v
+                ...     ).crs_parameter
+                ...     for v in ("1.0.0", "1.1.0", "1.1.1", "1.3.0")
+                ... ]
+                ['SRS', 'SRS', 'SRS', 'CRS']
+
+                ```
         """
         return "CRS" if self.version in _WMS_CRS_VERSIONS else "SRS"
 
     def build_url(self, *, x: int, y: int, z: int) -> str:
         """Return the `GetMap` URL covering one tile.
+
+        The tile index itself is never sent. It is turned into the tile's
+        EPSG:3857 bounds with `tiles._tile_xy_bounds` and passed as `BBOX`,
+        with `WIDTH`/`HEIGHT` fixed at `tile_size`. Any query `url` already
+        carries is kept, and `extra_params` comes last, so it can override a
+        generated parameter as well as add one.
 
         Args:
             x: Tile column.
@@ -493,6 +771,47 @@ class WMSProvider:
         Returns:
             str: The full request URL, with `BBOX` set to the tile's EPSG:3857
             bounds and `WIDTH`/`HEIGHT` to `tile_size`.
+
+        Examples:
+            - The `BBOX` is exactly the bounds the tile grid gives that tile:
+                ```python
+                >>> from urllib.parse import parse_qs, urlsplit
+                >>> from cleopatra.basemap.ogc import WMSProvider
+                >>> from cleopatra.basemap.tiles import Tile, _tile_xy_bounds
+                >>> provider = WMSProvider(url="https://example.org/wms", layers="ortho")
+                >>> query = parse_qs(urlsplit(provider.build_url(x=4, y=2, z=3)).query)
+                >>> sent = tuple(float(v) for v in query["BBOX"][0].split(","))
+                >>> sent == _tile_xy_bounds(Tile(4, 2, 3))
+                True
+                >>> [round(v) for v in sent]
+                [0, 5009377, 5009377, 10018754]
+
+                ```
+            - `tile_size` is the pixel size each `GetMap` asks for:
+                ```python
+                >>> from urllib.parse import parse_qs, urlsplit
+                >>> from cleopatra.basemap.ogc import WMSProvider
+                >>> provider = WMSProvider(
+                ...     url="https://example.org/wms", layers="ortho", tile_size=512
+                ... )
+                >>> query = parse_qs(urlsplit(provider.build_url(x=0, y=0, z=0)).query)
+                >>> query["WIDTH"], query["HEIGHT"]
+                (['512'], ['512'])
+
+                ```
+            - `transparent=False` asks for an opaque image, for a base layer
+              rather than an overlay:
+                ```python
+                >>> from urllib.parse import parse_qs, urlsplit
+                >>> from cleopatra.basemap.ogc import WMSProvider
+                >>> opaque = WMSProvider(
+                ...     url="https://example.org/wms", layers="ortho", transparent=False
+                ... )
+                >>> query = parse_qs(urlsplit(opaque.build_url(x=0, y=0, z=0)).query)
+                >>> query["TRANSPARENT"], query["LAYERS"]
+                (['FALSE'], ['ortho'])
+
+                ```
         """
         left, bottom, right, top = _tile_xy_bounds(Tile(x, y, z))
         params = {
