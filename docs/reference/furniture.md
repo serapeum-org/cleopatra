@@ -49,16 +49,17 @@ four corners; `pad`, `height` and the two colours are axes-fraction / matplotlib
 ## North arrow
 
 ```python
-from cleopatra.styling.furniture import add_north_arrow
+from cleopatra.styling.furniture import add_north_arrow, NorthArrow
 
 # rotation (grid convergence) is the caller's to supply — cleopatra never derives it
-add_north_arrow(ax, rotation=0.0, location="upper right", style="arrow")
+add_north_arrow(ax, 0.0, NorthArrow(location="upper right", style="arrow"))
 ```
 
-`rotation` is degrees clockwise from up (e.g. the grid convergence at the map centre); the arrow
-and its `"N"` label rotate together. `style` is `"arrow"` (a single filled arrow), `"needle"` (a
-two-tone compass needle) or `"rose"` (a four-point compass star). `size`, `location`, `pad`,
-`label`, the colours and `box` mirror the scale bar.
+`rotation` is degrees clockwise from up (e.g. the grid convergence at the map centre) and stays a
+direct argument (like `length` on the scale bar); the arrow and its `"N"` label rotate together.
+The presentation options are grouped into a `NorthArrow` object: `style` is `"arrow"` (a single
+filled arrow), `"needle"` (a two-tone compass needle) or `"rose"` (a four-point compass star);
+`size`, `location`, `pad`, `label`, the colours and `box` mirror `ScaleBar`.
 
 ## GeoMixin sugar
 
@@ -69,7 +70,7 @@ can decorate a glyph without importing the free functions or repeating the axes:
 ```python
 glyph.plot()
 glyph.add_scale_bar(100_000, ScaleBar(label="100 km", location="lower left"))
-glyph.add_north_arrow(rotation=grid_convergence_deg)
+glyph.add_north_arrow(grid_convergence_deg, NorthArrow(style="needle"))
 ```
 
 The free functions stay the API; the methods only supply the glyph's axes.
@@ -77,5 +78,7 @@ The free functions stay the API; the methods only supply the glyph's axes.
 ::: cleopatra.styling.furniture.ScaleBar
 
 ::: cleopatra.styling.furniture.add_scale_bar
+
+::: cleopatra.styling.furniture.NorthArrow
 
 ::: cleopatra.styling.furniture.add_north_arrow

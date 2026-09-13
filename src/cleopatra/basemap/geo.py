@@ -689,9 +689,7 @@ class GeoMixin:
             self._basemap_axes(ax), *args, **self._basemap_kwargs(kwargs)
         )
 
-    def add_scale_bar(
-        self, length: float, spec: Any = None, *, ax: Any = None
-    ) -> Any:
+    def add_scale_bar(self, length: float, spec: Any = None, *, ax: Any = None) -> Any:
         """Draw a scale bar on the glyph's axes.
 
         Thin sugar over `cleopatra.styling.furniture.add_scale_bar`; the free
@@ -722,7 +720,9 @@ class GeoMixin:
         """
         return furniture.add_scale_bar(self._basemap_axes(ax), length, spec)
 
-    def add_north_arrow(self, *, ax: Any = None, **kwargs: Any) -> Any:
+    def add_north_arrow(
+        self, rotation: float = 0.0, spec: Any = None, *, ax: Any = None
+    ) -> Any:
         """Draw a north arrow on the glyph's axes.
 
         Thin sugar over `cleopatra.styling.furniture.add_north_arrow`; the free
@@ -731,10 +731,12 @@ class GeoMixin:
         CRS and never derives it.
 
         Args:
+            rotation: Degrees clockwise from up to rotate the arrow. Defaults
+                to `0`.
+            spec: The presentation options as a
+                `cleopatra.styling.furniture.NorthArrow` (location, size, style,
+                label, box, ...); `None` uses all defaults.
             ax: Axes to draw on. Defaults to the glyph's `self.ax`.
-            **kwargs: Keyword arguments for
-                `cleopatra.styling.furniture.add_north_arrow` (`rotation`,
-                `location`, `size`, `style`, `label`, `box`, ...).
 
         Returns:
             matplotlib.axes.Axes: The frameless inset axes the arrow was drawn
@@ -751,7 +753,7 @@ class GeoMixin:
             cleopatra.styling.furniture.add_north_arrow: The underlying function
                 and its full parameter list.
         """
-        return furniture.add_north_arrow(self._basemap_axes(ax), **kwargs)
+        return furniture.add_north_arrow(self._basemap_axes(ax), rotation, spec)
 
     def add_labels(
         self, points: dict[str, tuple[float, float]], *, ax: Any = None, **kwargs: Any

@@ -40,7 +40,7 @@ from cleopatra.styling.watermark import _CORNERS, _as_margins, _corner_origin
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
 
-__all__ = ["ScaleBar", "add_scale_bar", "add_north_arrow"]
+__all__ = ["ScaleBar", "NorthArrow", "add_scale_bar", "add_north_arrow"]
 
 #: Furniture sits above ordinary data artists (images ~0, collections ~1-3).
 _FURNITURE_ZORDER = 6.0
@@ -640,20 +640,46 @@ def _rose_base(i: int, cx: float, side: str) -> tuple[float, float]:
     return flanks[i][side]
 
 
+@dataclass(frozen=True)
+class NorthArrow:
+    """Presentation options for `add_north_arrow` (everything but the axes/rotation).
+
+    Grouped into one object -- mirroring `ScaleBar` / `FacetLayout` / `ColorBar` --
+    so the call stays small: `add_north_arrow(ax, rotation, NorthArrow(...))`.
+
+    Attributes:
+        location: Which corner to anchor to -- one of `"upper right"` (default),
+            `"upper left"`, `"lower right"`, `"lower left"`.
+        pad: The gap to the axes edges, as an axes fraction -- a scalar or an
+            `(x, y)` pair, each in `[0, 1)`.
+        size: The arrow height as an axes fraction.
+        style: `"arrow"` (a single filled arrow), `"needle"` (a two-tone
+            compass diamond), or `"rose"` (a four-point compass star). The
+            needle and rose split each spike into a `color` flank and an
+            `edge_color` flank.
+        label: The label at the arrow tip. Defaults to `"N"`; `None` draws none.
+        color: The primary fill and the outline / label colour.
+        edge_color: The secondary (alternating) flank fill of a needle / rose.
+        label_size: Font size (points) for the label. `None` uses the default.
+        box: A backing panel, using `ColorBar`'s `box` vocabulary (see
+            `ScaleBar`).
+        zorder: The draw order. `None` uses a high default above the data.
+    """
+
+    location: str = "upper right"
+    pad: float | tuple[float, float] = 0.025
+    size: float = 0.06
+    style: str = "arrow"
+    label: str | None = "N"
+    color: str = "black"
+    edge_color: str = "white"
+    label_size: float | None = None
+    box: bool | str | dict | None = None
+    zorder: float | None = None
+
+
 def add_north_arrow(
-    ax: Axes,
-    *,
-    rotation: float = 0.0,
-    location: str = "upper right",
-    pad: float | tuple[float, float] = 0.025,
-    size: float = 0.06,
-    style: str = "arrow",
-    label: str | None = "N",
-    color: str = "black",
-    edge_color: str = "white",
-    label_size: float | None = None,
-    box: bool | str | dict | None = None,
-    zorder: float | None = None,
+    ax: Axes, rotation: float = 0.0, spec: NorthArrow | None = None
 ) -> Axes:
     """Draw a north arrow on `ax`, rotated by a caller-supplied angle.
 
@@ -666,30 +692,16 @@ def add_north_arrow(
         ax: The axes to decorate.
         rotation: Degrees clockwise from up to rotate the arrow (e.g. the grid
             convergence at the map centre). Must be finite. Defaults to `0`.
-        location: Which corner to anchor to -- one of `"upper right"` (default),
-            `"upper left"`, `"lower right"`, `"lower left"`.
-        pad: The gap to the axes edges, as an axes fraction -- a scalar or an
-            `(x, y)` pair, each in `[0, 1)`.
-        size: The arrow height as an axes fraction. Defaults to `0.06`.
-        style: `"arrow"` (a single filled arrow), `"needle"` (a two-tone
-            compass diamond), or `"rose"` (a four-point compass star). The
-            needle and rose split each spike into a `color` flank and an
-            `edge_color` flank.
-        label: The label at the arrow tip. Defaults to `"N"`; `None` draws none.
-        color: The primary fill and the outline / label colour.
-        edge_color: The secondary (alternating) flank fill of a needle / rose.
-        label_size: Font size (points) for the label. `None` uses the default.
-        box: A backing panel, using `ColorBar`'s `box` vocabulary (see
-            `add_scale_bar`).
-        zorder: The draw order. `None` uses a high default above the data.
+        spec: The presentation options as a `NorthArrow` (location, size, style,
+            label, colours, box, ...). `None` uses all defaults.
 
     Returns:
         Axes: The frameless inset axes the arrow was drawn on.
 
     Raises:
-        ValueError: If `location` is not a corner, `style` is unknown,
-            `rotation` is not finite, `pad` is out of range, or `pad + size`
-            leaves no room on the axes.
+        ValueError: If `spec.location` is not a corner, `spec.style` is unknown,
+            `rotation` is not finite, `spec.pad` is out of range, or
+            `pad + size` leaves no room on the axes.
 
     Examples:
         - A plain north arrow in the upper-right corner:
@@ -706,6 +718,18 @@ def add_north_arrow(
 
             ```
     """
+    spec = spec or NorthArrow()
+    location = spec.location
+    pad = spec.pad
+    size = spec.size
+    style = spec.style
+    label = spec.label
+    color = spec.color
+    edge_color = spec.edge_color
+    label_size = spec.label_size
+    box = spec.box
+    zorder = spec.zorder
+
     if location not in _CORNERS:
         raise ValueError(f"location must be one of {list(_CORNERS)}, got {location!r}.")
     if style not in _NORTH_STYLES:

@@ -22,6 +22,7 @@ from matplotlib.patches import Polygon, Rectangle
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 from cleopatra.styling.furniture import (
     _NORTH_STYLES,
+    NorthArrow,
     ScaleBar,
     _north_arrow_patches,
     _resolve_box,
@@ -568,7 +569,7 @@ class TestAddNorthArrow:
         Test scenario:
             The returned inset carries the style's polygons.
         """
-        arrow = add_north_arrow(ax, style=style)
+        arrow = add_north_arrow(ax, spec=NorthArrow(style=style))
         assert isinstance(arrow, Axes), "returns the inset axes"
         assert len(arrow.patches) >= 1, f"{style} should draw polygons"
 
@@ -593,7 +594,7 @@ class TestAddNorthArrow:
         Test scenario:
             The inset origin sits `pad` from the expected edges.
         """
-        arrow = add_north_arrow(ax, location=location, pad=0.03)
+        arrow = add_north_arrow(ax, spec=NorthArrow(location=location, pad=0.03))
         x0, y0, w, h = _axfrac(ax, arrow)
         assert x0 == pytest.approx(1.0 - 0.03 - w if at_right else 0.03, abs=1e-6), (
             f"x0={x0}"
@@ -617,7 +618,7 @@ class TestAddNorthArrow:
         Test scenario:
             The inset carries no text.
         """
-        arrow = add_north_arrow(ax, label=None)
+        arrow = add_north_arrow(ax, spec=NorthArrow(label=None))
         assert len(arrow.texts) == 0, "no label when None"
 
     def test_rotation_renders(self, ax):
@@ -626,7 +627,7 @@ class TestAddNorthArrow:
         Test scenario:
             A 45-degree arrow draws its polygon(s).
         """
-        arrow = add_north_arrow(ax, rotation=45.0, style="arrow")
+        arrow = add_north_arrow(ax, rotation=45.0, spec=NorthArrow(style="arrow"))
         assert len(arrow.patches) == 1, "rotated arrow still draws"
 
     def test_box_draws_panel(self, ax):
@@ -636,7 +637,7 @@ class TestAddNorthArrow:
             The parent gains one `Rectangle`.
         """
         before = len(ax.patches)
-        add_north_arrow(ax, box=True)
+        add_north_arrow(ax, spec=NorthArrow(box=True))
         assert len(ax.patches) == before + 1, "one backing panel"
 
     def test_zorder_above_data(self, ax):
@@ -656,7 +657,7 @@ class TestAddNorthArrow:
             `location="center"` is rejected.
         """
         with pytest.raises(ValueError, match="location must be one of"):
-            add_north_arrow(ax, location="center")
+            add_north_arrow(ax, spec=NorthArrow(location="center"))
 
     def test_bad_style_raises(self, ax):
         """An unknown `style` raises.
@@ -665,7 +666,7 @@ class TestAddNorthArrow:
             `style="compass"` is rejected.
         """
         with pytest.raises(ValueError, match="style must be one of"):
-            add_north_arrow(ax, style="compass")
+            add_north_arrow(ax, spec=NorthArrow(style="compass"))
 
     def test_non_finite_rotation_raises(self, ax):
         """A non-finite `rotation` raises.
@@ -683,7 +684,7 @@ class TestAddNorthArrow:
             `size=1.5` does not fit.
         """
         with pytest.raises(ValueError, match="leaves no room"):
-            add_north_arrow(ax, size=1.5)
+            add_north_arrow(ax, spec=NorthArrow(size=1.5))
 
 
 class TestGeoMixinFurniture:
@@ -714,7 +715,7 @@ class TestGeoMixinFurniture:
             np.arange(100.0).reshape(10, 10), extent=[0, 0, 500_000, 500_000]
         )
         glyph.plot()
-        arrow = glyph.add_north_arrow(rotation=10.0, style="needle")
+        arrow = glyph.add_north_arrow(rotation=10.0, spec=NorthArrow(style="needle"))
         assert isinstance(arrow, Axes), "sugar returns an Axes"
         assert len(arrow.patches) == 4, "sugar draws the needle polygons"
         plt.close(glyph.fig)
