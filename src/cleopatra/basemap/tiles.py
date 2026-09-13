@@ -620,31 +620,76 @@ def _looks_like_image(data: bytes) -> bool:
     )
 
 
+#: Query parameters safe to write to a log: the OGC and XYZ names that say
+#: *which* tile was requested. Everything else is masked, so the rule is
+#: default-deny -- a credential under an unexpected name is still covered.
+_LOGGABLE_QUERY_KEYS = frozenset(
+    {
+        "SERVICE",
+        "REQUEST",
+        "VERSION",
+        "LAYER",
+        "LAYERS",
+        "STYLE",
+        "STYLES",
+        "FORMAT",
+        "TRANSPARENT",
+        "TILEMATRIXSET",
+        "TILEMATRIX",
+        "TILEROW",
+        "TILECOL",
+        "BBOX",
+        "WIDTH",
+        "HEIGHT",
+        "CRS",
+        "SRS",
+    }
+)
+
+
 def _redact_url(url: str) -> str:
-    """Return `url` with its query values masked, for logging.
+    """Return `url` with credential-shaped parts masked, for logging.
 
     A tile URL is not always safe to write to a log. An XYZ template can embed
     an API key, and `cleopatra.basemap.ogc` documents `extra_params` as the
-    place to put a token -- so the full URL of a failed fetch used to put the
-    credential straight into the debug log, where it outlives the session.
-    Keys are kept because they are what makes a failure diagnosable; only the
-    values go.
+    place to put a token -- so logging the full URL of a failed fetch puts the
+    credential wherever the logs go, outliving the session.
+
+    Masking *everything* is the obvious fix and the wrong one: the tile's
+    identity lives in `BBOX` / `TILEROW` / `TILECOL`, so a fully-masked line is
+    byte-identical for every tile of a mosaic and the retry log can no longer
+    say which tile failed. The OGC and XYZ parameter names that describe the
+    request are therefore kept (`_LOGGABLE_QUERY_KEYS`) and everything else is
+    masked. The list is an allow-list rather than a deny-list, so a credential
+    under an unexpected name is masked by default.
+
+    Userinfo in the netloc is masked too. A key embedded in the *path* -- the
+    usual shape for a keyed XYZ template -- cannot be told apart from an
+    ordinary path segment, so it is not masked; that is a real limit of
+    logging URLs at all, not something this function can close.
 
     Args:
         url: The request URL.
 
     Returns:
-        str: The URL with every query value replaced by `...`.
+        str: The URL with credential-shaped values replaced by `...`.
 
     Examples:
-        - A token survives as a name but not as a value:
+        - A token is masked while the tile's identity survives:
             ```python
             >>> from cleopatra.basemap.tiles import _redact_url
-            >>> _redact_url("https://example.org/wms?LAYERS=ortho&token=s3cret")
-            'https://example.org/wms?LAYERS=...&token=...'
+            >>> _redact_url("https://example.org/wms?TILEROW=2&token=s3cret")
+            'https://example.org/wms?TILEROW=2&token=...'
 
             ```
-        - A URL with no query is unchanged:
+        - Userinfo goes too:
+            ```python
+            >>> from cleopatra.basemap.tiles import _redact_url
+            >>> _redact_url("https://user:pw@example.org/tiles/3/2/4.png")
+            'https://...@example.org/tiles/3/2/4.png'
+
+            ```
+        - A URL with no query and no userinfo is unchanged:
             ```python
             >>> from cleopatra.basemap.tiles import _redact_url
             >>> _redact_url("https://example.org/tiles/3/2/4.png")
@@ -653,13 +698,24 @@ def _redact_url(url: str) -> str:
             ```
     """
     parts = urllib.parse.urlsplit(url)
-    if not parts.query:
+    netloc = parts.netloc
+    if "@" in netloc:
+        netloc = f"...@{netloc.rsplit('@', 1)[1]}"
+    query = parts.query
+    if query:
+        masked = []
+        for pair in query.split("&"):
+            name, sep, _ = pair.partition("=")
+            if not sep:
+                masked.append(pair)
+            elif name.upper() in _LOGGABLE_QUERY_KEYS:
+                masked.append(pair)
+            else:
+                masked.append(f"{name}=...")
+        query = "&".join(masked)
+    if netloc == parts.netloc and query == parts.query:
         return url
-    masked = "&".join(
-        f"{pair.split('=', 1)[0]}=..." if "=" in pair else pair
-        for pair in parts.query.split("&")
-    )
-    return urllib.parse.urlunsplit(parts._replace(query=masked))
+    return urllib.parse.urlunsplit(parts._replace(netloc=netloc, query=query))
 
 
 def fetch_single_tile(
