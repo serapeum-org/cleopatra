@@ -1370,6 +1370,19 @@ class TestPlotKindDispatch:
             f"hatch_color must not recolour the contour lines, got {edges}"
         )
 
+    def test_hatch_fields_warn_on_default_kind(self):
+        """Hatch fields on the default kind (auto->imshow) are contourf-only and warn."""
+        glyph = ArrayGlyph(self._sample_arr())
+        with pytest.warns(UserWarning, match="contourf-only"):
+            glyph.plot(contour=Contour(hatches=["///"], fill=False))
+
+    def test_animate_warns_hatch_fields_are_ignored(self):
+        """`animate` renders as imshow, so contourf-only hatch fields warn there too."""
+        stack = np.arange(3 * 6 * 6, dtype=float).reshape(3, 6, 6)
+        glyph = ArrayGlyph(stack)
+        with pytest.warns(UserWarning, match="contourf-only"):
+            glyph.animate(time=[0, 1, 2], contour=Contour(hatches=["///"]))
+
     def test_unfilled_without_hatches_warns_invisible(self):
         """`fill=False` with no hatches draws nothing visible and warns."""
         glyph = ArrayGlyph(self._sample_arr())

@@ -2552,6 +2552,21 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         coords = self._coords
 
+        # Hatch fields are contourf-only; warn once here (kind is already the
+        # resolved effective kind) so imshow/pcolormesh/contour -- and animate,
+        # which renders through this helper as imshow -- all report ignored
+        # hatch fields, not only kind="contour".
+        if kind != "contourf" and (
+            self.default_options.get("hatches") is not None
+            or self.default_options.get("hatch_color") is not None
+            or self.default_options.get("fill") is not None
+        ):
+            warnings.warn(
+                "hatches/fill/hatch_color are contourf-only and are ignored "
+                f"for kind={kind!r}.",
+                stacklevel=3,
+            )
+
         im: Any
         if kind == "imshow":
             if coords is not None:
@@ -2584,25 +2599,17 @@ class ArrayGlyph(GeoMixin, Glyph):
             hatches = self.default_options.get("hatches")
             hatch_color = self.default_options.get("hatch_color")
             fill = self.default_options.get("fill")
-            if not is_contourf and (
-                hatches is not None or hatch_color is not None or fill is not None
-            ):
-                warnings.warn(
-                    "hatches/fill/hatch_color are contourf-only and are ignored "
-                    f"for kind={kind!r}.",
-                    stacklevel=2,
-                )
             if is_contourf and hatches is None:
                 if fill is False:
                     warnings.warn(
                         "fill=False with no hatches draws an invisible contour "
                         "set; pass hatches=[...] to draw the overlay.",
-                        stacklevel=2,
+                        stacklevel=3,
                     )
                 if hatch_color is not None:
                     warnings.warn(
                         "hatch_color has no effect without hatches.",
-                        stacklevel=2,
+                        stacklevel=3,
                     )
             contour_kwargs: dict[str, Any]
             if is_contourf and fill is False:
