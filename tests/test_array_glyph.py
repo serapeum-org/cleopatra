@@ -8491,8 +8491,9 @@ class TestFacetSuppliedAxes:
         stack = self._stack(n=3)
         fig, axs = plt.subplots(2, 2, squeeze=False)
         glyph = ArrayGlyph(stack)
+        block = list(axs.ravel())[:3]
         with pytest.raises(ValueError, match="supply exactly 4"):
-            glyph.facet(col="t", col_wrap=2, axes=list(axs.ravel())[:3])
+            glyph.facet(col="t", col_wrap=2, axes=block)
         plt.close("all")
 
     def test_2d_block_shape_must_match_grid(self):
