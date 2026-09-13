@@ -3254,7 +3254,19 @@ cleopatra.glyphs.base.glyph.Glyph._prepare_scalar_mapping: Shared
 <span class="normal"><a href="#__codelineno-0-409">409</a></span>
 <span class="normal"><a href="#__codelineno-0-410">410</a></span>
 <span class="normal"><a href="#__codelineno-0-411">411</a></span>
-<span class="normal"><a href="#__codelineno-0-412">412</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-97" name="__codelineno-0-97"></a><span class="k">class</span><span class="w"> </span><span class="nc">HexbinGlyph</span><span class="p">(</span><span class="n">GeoMixin</span><span class="p">,</span> <span class="n">Glyph</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-412">412</a></span>
+<span class="normal"><a href="#__codelineno-0-413">413</a></span>
+<span class="normal"><a href="#__codelineno-0-414">414</a></span>
+<span class="normal"><a href="#__codelineno-0-415">415</a></span>
+<span class="normal"><a href="#__codelineno-0-416">416</a></span>
+<span class="normal"><a href="#__codelineno-0-417">417</a></span>
+<span class="normal"><a href="#__codelineno-0-418">418</a></span>
+<span class="normal"><a href="#__codelineno-0-419">419</a></span>
+<span class="normal"><a href="#__codelineno-0-420">420</a></span>
+<span class="normal"><a href="#__codelineno-0-421">421</a></span>
+<span class="normal"><a href="#__codelineno-0-422">422</a></span>
+<span class="normal"><a href="#__codelineno-0-423">423</a></span>
+<span class="normal"><a href="#__codelineno-0-424">424</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-97" name="__codelineno-0-97"></a><span class="k">class</span><span class="w"> </span><span class="nc">HexbinGlyph</span><span class="p">(</span><span class="n">GeoMixin</span><span class="p">,</span> <span class="n">Glyph</span><span class="p">):</span>
 <a id="__codelineno-0-98" name="__codelineno-0-98"></a><span class="w">    </span><span class="sd">"""Visualization class for hexagonally-binned point density.</span>
 <a id="__codelineno-0-99" name="__codelineno-0-99"></a>
 <a id="__codelineno-0-100" name="__codelineno-0-100"></a><span class="sd">    Wraps `matplotlib.axes.Axes.hexbin`. With no `values`, each hexagonal</span>
@@ -3451,125 +3463,137 @@ cleopatra.glyphs.base.glyph.Glyph._prepare_scalar_mapping: Shared
 <a id="__codelineno-0-291" name="__codelineno-0-291"></a>        <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
 <a id="__codelineno-0-292" name="__codelineno-0-292"></a>        <span class="n">pc</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">hexbin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_hexbin_kwargs</span><span class="p">())</span>
 <a id="__codelineno-0-293" name="__codelineno-0-293"></a>        <span class="n">offsets</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">pc</span><span class="o">.</span><span class="n">get_offsets</span><span class="p">(),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-<a id="__codelineno-0-294" name="__codelineno-0-294"></a>        <span class="n">aggregate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">pc</span><span class="o">.</span><span class="n">get_array</span><span class="p">())</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
-<a id="__codelineno-0-295" name="__codelineno-0-295"></a>        <span class="k">return</span> <span class="n">offsets</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">offsets</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">aggregate</span>
-<a id="__codelineno-0-296" name="__codelineno-0-296"></a>
-<a id="__codelineno-0-297" name="__codelineno-0-297"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span>
-<a id="__codelineno-0-298" name="__codelineno-0-298"></a>        <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-299" name="__codelineno-0-299"></a>        <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-300" name="__codelineno-0-300"></a>        <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-301" name="__codelineno-0-301"></a>        <span class="n">add_colorbar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-302" name="__codelineno-0-302"></a>        <span class="n">colorbar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="n">ColorBar</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-303" name="__codelineno-0-303"></a>        <span class="n">color</span><span class="p">:</span> <span class="n">ColorScaling</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-304" name="__codelineno-0-304"></a>        <span class="n">contour</span><span class="p">:</span> <span class="n">Contour</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-305" name="__codelineno-0-305"></a>        <span class="n">classify</span><span class="p">:</span> <span class="n">Classify</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-306" name="__codelineno-0-306"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Figure</span><span class="p">,</span> <span class="n">Axes</span><span class="p">,</span> <span class="n">PolyCollection</span><span class="p">]:</span>
-<a id="__codelineno-0-307" name="__codelineno-0-307"></a><span class="w">        </span><span class="sd">"""Draw the hexagonally-binned density and colour-map the aggregate.</span>
-<a id="__codelineno-0-308" name="__codelineno-0-308"></a>
-<a id="__codelineno-0-309" name="__codelineno-0-309"></a><span class="sd">        The per-bin aggregate is resolved through `_prepare_scalar_mapping`,</span>
-<a id="__codelineno-0-310" name="__codelineno-0-310"></a><span class="sd">        so `vmin` / `vmax` / `levels` / `color_scale` and the `ColorBar`</span>
-<a id="__codelineno-0-311" name="__codelineno-0-311"></a><span class="sd">        spec behave as for the other glyphs, and `classify=Classify(...)`</span>
-<a id="__codelineno-0-312" name="__codelineno-0-312"></a><span class="sd">        bins the aggregate into discrete colour classes. A categorical</span>
-<a id="__codelineno-0-313" name="__codelineno-0-313"></a><span class="sd">        scheme is rejected (`_SUPPORTS_CATEGORICAL_SCHEME` is `False`): a</span>
-<a id="__codelineno-0-314" name="__codelineno-0-314"></a><span class="sd">        per-bin aggregate is a continuous magnitude, not a nominal class.</span>
-<a id="__codelineno-0-315" name="__codelineno-0-315"></a>
-<a id="__codelineno-0-316" name="__codelineno-0-316"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-317" name="__codelineno-0-317"></a><span class="sd">            ax: Axes to draw on. Falls back to the axes supplied at</span>
-<a id="__codelineno-0-318" name="__codelineno-0-318"></a><span class="sd">                construction, otherwise a new figure/axes is created.</span>
-<a id="__codelineno-0-319" name="__codelineno-0-319"></a><span class="sd">            title: Plot title. Overrides `default_options["title"]` when</span>
-<a id="__codelineno-0-320" name="__codelineno-0-320"></a><span class="sd">                given.</span>
-<a id="__codelineno-0-321" name="__codelineno-0-321"></a><span class="sd">            add_colorbar: Override the `add_colorbar` option for this call</span>
-<a id="__codelineno-0-322" name="__codelineno-0-322"></a><span class="sd">                -- `True` draws the colorbar, `False` suppresses it (for</span>
-<a id="__codelineno-0-323" name="__codelineno-0-323"></a><span class="sd">                shared-axes composition). `None` (default) keeps the value</span>
-<a id="__codelineno-0-324" name="__codelineno-0-324"></a><span class="sd">                set at construction.</span>
-<a id="__codelineno-0-325" name="__codelineno-0-325"></a><span class="sd">            colorbar: Typed `ColorBar` spec (or `True` / `False` / `None`)</span>
-<a id="__codelineno-0-326" name="__codelineno-0-326"></a><span class="sd">                for the colorbar's placement, caption, and sizing; resolved</span>
-<a id="__codelineno-0-327" name="__codelineno-0-327"></a><span class="sd">                into the `cbar_*` options.</span>
-<a id="__codelineno-0-328" name="__codelineno-0-328"></a><span class="sd">            color: A `ColorScaling` selecting the colour scale</span>
-<a id="__codelineno-0-329" name="__codelineno-0-329"></a><span class="sd">                (`vmin`/`vmax`, `color_scale`, ...) for the aggregate.</span>
-<a id="__codelineno-0-330" name="__codelineno-0-330"></a><span class="sd">            contour: A `Contour`; only its `levels` applies here (it</span>
-<a id="__codelineno-0-331" name="__codelineno-0-331"></a><span class="sd">                discretises the colour scale), as the hexbin draws no</span>
-<a id="__codelineno-0-332" name="__codelineno-0-332"></a><span class="sd">                isolines.</span>
-<a id="__codelineno-0-333" name="__codelineno-0-333"></a><span class="sd">            classify: A `Classify` binning the aggregate into discrete</span>
-<a id="__codelineno-0-334" name="__codelineno-0-334"></a><span class="sd">                colour classes (e.g. `scheme="quantiles", k=5`).</span>
-<a id="__codelineno-0-335" name="__codelineno-0-335"></a>
-<a id="__codelineno-0-336" name="__codelineno-0-336"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-337" name="__codelineno-0-337"></a><span class="sd">            tuple[Figure, Axes, PolyCollection]: the figure, the axes, and</span>
-<a id="__codelineno-0-338" name="__codelineno-0-338"></a><span class="sd">                the `PolyCollection` returned by `hexbin` (the mappable).</span>
-<a id="__codelineno-0-339" name="__codelineno-0-339"></a>
-<a id="__codelineno-0-340" name="__codelineno-0-340"></a><span class="sd">        Examples:</span>
-<a id="__codelineno-0-341" name="__codelineno-0-341"></a><span class="sd">            - A classified hexbin steps the colorbar and still returns the</span>
-<a id="__codelineno-0-342" name="__codelineno-0-342"></a><span class="sd">                collection:</span>
-<a id="__codelineno-0-343" name="__codelineno-0-343"></a><span class="sd">                ```python</span>
-<a id="__codelineno-0-344" name="__codelineno-0-344"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-345" name="__codelineno-0-345"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyphs.stats.hexbin_glyph import HexbinGlyph</span>
-<a id="__codelineno-0-346" name="__codelineno-0-346"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.styling.params import Classify</span>
-<a id="__codelineno-0-347" name="__codelineno-0-347"></a><span class="sd">                &gt;&gt;&gt; rng = np.random.default_rng(3)</span>
-<a id="__codelineno-0-348" name="__codelineno-0-348"></a><span class="sd">                &gt;&gt;&gt; x, y = rng.normal(size=600), rng.normal(size=600)</span>
-<a id="__codelineno-0-349" name="__codelineno-0-349"></a><span class="sd">                &gt;&gt;&gt; glyph = HexbinGlyph(x, y, gridsize=10)</span>
-<a id="__codelineno-0-350" name="__codelineno-0-350"></a><span class="sd">                &gt;&gt;&gt; fig, ax, pc = glyph.plot(</span>
-<a id="__codelineno-0-351" name="__codelineno-0-351"></a><span class="sd">                ...     classify=Classify(scheme="quantiles", k=4)</span>
-<a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="sd">                ... )</span>
-<a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="sd">                &gt;&gt;&gt; glyph.cbar is not None</span>
-<a id="__codelineno-0-354" name="__codelineno-0-354"></a><span class="sd">                True</span>
-<a id="__codelineno-0-355" name="__codelineno-0-355"></a>
-<a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">                ```</span>
-<a id="__codelineno-0-357" name="__codelineno-0-357"></a><span class="sd">            - Suppress the colorbar for shared-axes composition:</span>
-<a id="__codelineno-0-358" name="__codelineno-0-358"></a><span class="sd">                ```python</span>
-<a id="__codelineno-0-359" name="__codelineno-0-359"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-360" name="__codelineno-0-360"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyphs.stats.hexbin_glyph import HexbinGlyph</span>
-<a id="__codelineno-0-361" name="__codelineno-0-361"></a><span class="sd">                &gt;&gt;&gt; rng = np.random.default_rng(4)</span>
-<a id="__codelineno-0-362" name="__codelineno-0-362"></a><span class="sd">                &gt;&gt;&gt; x, y = rng.normal(size=200), rng.normal(size=200)</span>
-<a id="__codelineno-0-363" name="__codelineno-0-363"></a><span class="sd">                &gt;&gt;&gt; fig, ax, pc = HexbinGlyph(x, y).plot(add_colorbar=False)</span>
-<a id="__codelineno-0-364" name="__codelineno-0-364"></a><span class="sd">                &gt;&gt;&gt; glyph_cbar_absent = HexbinGlyph(x, y)</span>
-<a id="__codelineno-0-365" name="__codelineno-0-365"></a><span class="sd">                &gt;&gt;&gt; _ = glyph_cbar_absent.plot(add_colorbar=False)</span>
-<a id="__codelineno-0-366" name="__codelineno-0-366"></a><span class="sd">                &gt;&gt;&gt; glyph_cbar_absent.cbar is None</span>
-<a id="__codelineno-0-367" name="__codelineno-0-367"></a><span class="sd">                True</span>
-<a id="__codelineno-0-368" name="__codelineno-0-368"></a>
-<a id="__codelineno-0-369" name="__codelineno-0-369"></a><span class="sd">                ```</span>
-<a id="__codelineno-0-370" name="__codelineno-0-370"></a><span class="sd">        """</span>
-<a id="__codelineno-0-371" name="__codelineno-0-371"></a>        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rollback_options_on_error</span><span class="p">():</span>
-<a id="__codelineno-0-372" name="__codelineno-0-372"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_merge_group_params</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="n">contour</span><span class="p">,</span> <span class="n">classify</span><span class="p">)</span>
-<a id="__codelineno-0-373" name="__codelineno-0-373"></a>
-<a id="__codelineno-0-374" name="__codelineno-0-374"></a>            <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-375" name="__codelineno-0-375"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span>
-<a id="__codelineno-0-376" name="__codelineno-0-376"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="o">=</span> <span class="n">_root_figure</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
-<a id="__codelineno-0-377" name="__codelineno-0-377"></a>            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-378" name="__codelineno-0-378"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_figure_axes</span><span class="p">()</span>
-<a id="__codelineno-0-379" name="__codelineno-0-379"></a>            <span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span>
-<a id="__codelineno-0-380" name="__codelineno-0-380"></a>            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-<a id="__codelineno-0-381" name="__codelineno-0-381"></a>            <span class="n">opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span>
-<a id="__codelineno-0-382" name="__codelineno-0-382"></a>
-<a id="__codelineno-0-383" name="__codelineno-0-383"></a>            <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-384" name="__codelineno-0-384"></a>                <span class="n">opts</span><span class="p">[</span><span class="s2">"title"</span><span class="p">]</span> <span class="o">=</span> <span class="n">title</span>
-<a id="__codelineno-0-385" name="__codelineno-0-385"></a>            <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_resolve_colorbar</span><span class="p">(</span><span class="n">colorbar</span><span class="p">))</span>
-<a id="__codelineno-0-386" name="__codelineno-0-386"></a>            <span class="n">draw_colorbar</span> <span class="o">=</span> <span class="p">(</span>
-<a id="__codelineno-0-387" name="__codelineno-0-387"></a>                <span class="n">opts</span><span class="p">[</span><span class="s2">"add_colorbar"</span><span class="p">]</span> <span class="k">if</span> <span class="n">add_colorbar</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">add_colorbar</span>
-<a id="__codelineno-0-388" name="__codelineno-0-388"></a>            <span class="p">)</span>
-<a id="__codelineno-0-389" name="__codelineno-0-389"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-390" name="__codelineno-0-390"></a>
-<a id="__codelineno-0-391" name="__codelineno-0-391"></a>            <span class="n">pc</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">hexbin</span><span class="p">(</span>
-<a id="__codelineno-0-392" name="__codelineno-0-392"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
-<a id="__codelineno-0-393" name="__codelineno-0-393"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
-<a id="__codelineno-0-394" name="__codelineno-0-394"></a>                <span class="n">cmap</span><span class="o">=</span><span class="n">resolve_colormap</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">"cmap"</span><span class="p">]),</span>
-<a id="__codelineno-0-395" name="__codelineno-0-395"></a>                <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_hexbin_kwargs</span><span class="p">(),</span>
-<a id="__codelineno-0-396" name="__codelineno-0-396"></a>            <span class="p">)</span>
-<a id="__codelineno-0-397" name="__codelineno-0-397"></a>            <span class="n">aggregate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">pc</span><span class="o">.</span><span class="n">get_array</span><span class="p">())</span><span class="o">.</span><span class="n">compressed</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
-<a id="__codelineno-0-398" name="__codelineno-0-398"></a>            <span class="n">norm</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">,</span> <span class="n">ticks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_scalar_mapping</span><span class="p">(</span><span class="n">aggregate</span><span class="p">)</span>
-<a id="__codelineno-0-399" name="__codelineno-0-399"></a>            <span class="k">if</span> <span class="n">norm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-400" name="__codelineno-0-400"></a>                <span class="n">pc</span><span class="o">.</span><span class="n">set_norm</span><span class="p">(</span><span class="n">norm</span><span class="p">)</span>
-<a id="__codelineno-0-401" name="__codelineno-0-401"></a>            <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-402" name="__codelineno-0-402"></a>                <span class="n">pc</span><span class="o">.</span><span class="n">set_clim</span><span class="p">(</span><span class="n">ticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ticks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-<a id="__codelineno-0-403" name="__codelineno-0-403"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="n">pc</span>
-<a id="__codelineno-0-404" name="__codelineno-0-404"></a>
-<a id="__codelineno-0-405" name="__codelineno-0-405"></a>            <span class="k">if</span> <span class="n">draw_colorbar</span><span class="p">:</span>
-<a id="__codelineno-0-406" name="__codelineno-0-406"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_color_bar</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">pc</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">)</span>
-<a id="__codelineno-0-407" name="__codelineno-0-407"></a>
-<a id="__codelineno-0-408" name="__codelineno-0-408"></a>            <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s2">"title"</span><span class="p">]:</span>
-<a id="__codelineno-0-409" name="__codelineno-0-409"></a>                <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">"title"</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">"title_size"</span><span class="p">])</span>
-<a id="__codelineno-0-410" name="__codelineno-0-410"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_apply_axis_style</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
-<a id="__codelineno-0-411" name="__codelineno-0-411"></a>
-<a id="__codelineno-0-412" name="__codelineno-0-412"></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">pc</span>
+<a id="__codelineno-0-294" name="__codelineno-0-294"></a>        <span class="c1"># `.filled(np.nan)` guards older matplotlib that masked empty /</span>
+<a id="__codelineno-0-295" name="__codelineno-0-295"></a>        <span class="c1"># `mincnt`-dropped cells; current matplotlib returns an unmasked array</span>
+<a id="__codelineno-0-296" name="__codelineno-0-296"></a>        <span class="c1"># (dropped cells are absent), so this is a no-op there.</span>
+<a id="__codelineno-0-297" name="__codelineno-0-297"></a>        <span class="n">aggregate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">pc</span><span class="o">.</span><span class="n">get_array</span><span class="p">())</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+<a id="__codelineno-0-298" name="__codelineno-0-298"></a>        <span class="k">return</span> <span class="n">offsets</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">offsets</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">aggregate</span>
+<a id="__codelineno-0-299" name="__codelineno-0-299"></a>
+<a id="__codelineno-0-300" name="__codelineno-0-300"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span>
+<a id="__codelineno-0-301" name="__codelineno-0-301"></a>        <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-302" name="__codelineno-0-302"></a>        <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-303" name="__codelineno-0-303"></a>        <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-304" name="__codelineno-0-304"></a>        <span class="n">add_colorbar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-305" name="__codelineno-0-305"></a>        <span class="n">colorbar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="n">ColorBar</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-306" name="__codelineno-0-306"></a>        <span class="n">color</span><span class="p">:</span> <span class="n">ColorScaling</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-307" name="__codelineno-0-307"></a>        <span class="n">contour</span><span class="p">:</span> <span class="n">Contour</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-308" name="__codelineno-0-308"></a>        <span class="n">classify</span><span class="p">:</span> <span class="n">Classify</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-309" name="__codelineno-0-309"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Figure</span><span class="p">,</span> <span class="n">Axes</span><span class="p">,</span> <span class="n">PolyCollection</span><span class="p">]:</span>
+<a id="__codelineno-0-310" name="__codelineno-0-310"></a><span class="w">        </span><span class="sd">"""Draw the hexagonally-binned density and colour-map the aggregate.</span>
+<a id="__codelineno-0-311" name="__codelineno-0-311"></a>
+<a id="__codelineno-0-312" name="__codelineno-0-312"></a><span class="sd">        The per-bin aggregate is resolved through `_prepare_scalar_mapping`,</span>
+<a id="__codelineno-0-313" name="__codelineno-0-313"></a><span class="sd">        so `vmin` / `vmax` / `levels` / `color_scale` and the `ColorBar`</span>
+<a id="__codelineno-0-314" name="__codelineno-0-314"></a><span class="sd">        spec behave as for the other glyphs, and `classify=Classify(...)`</span>
+<a id="__codelineno-0-315" name="__codelineno-0-315"></a><span class="sd">        bins the aggregate into discrete colour classes. A categorical</span>
+<a id="__codelineno-0-316" name="__codelineno-0-316"></a><span class="sd">        scheme is rejected (`_SUPPORTS_CATEGORICAL_SCHEME` is `False`): a</span>
+<a id="__codelineno-0-317" name="__codelineno-0-317"></a><span class="sd">        per-bin aggregate is a continuous magnitude, not a nominal class.</span>
+<a id="__codelineno-0-318" name="__codelineno-0-318"></a>
+<a id="__codelineno-0-319" name="__codelineno-0-319"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-320" name="__codelineno-0-320"></a><span class="sd">            ax: Axes to draw on. Falls back to the axes supplied at</span>
+<a id="__codelineno-0-321" name="__codelineno-0-321"></a><span class="sd">                construction, otherwise a new figure/axes is created.</span>
+<a id="__codelineno-0-322" name="__codelineno-0-322"></a><span class="sd">            title: Plot title. Overrides `default_options["title"]` when</span>
+<a id="__codelineno-0-323" name="__codelineno-0-323"></a><span class="sd">                given.</span>
+<a id="__codelineno-0-324" name="__codelineno-0-324"></a><span class="sd">            add_colorbar: Override the `add_colorbar` option for this call</span>
+<a id="__codelineno-0-325" name="__codelineno-0-325"></a><span class="sd">                -- `True` draws the colorbar, `False` suppresses it (for</span>
+<a id="__codelineno-0-326" name="__codelineno-0-326"></a><span class="sd">                shared-axes composition). `None` (default) keeps the value</span>
+<a id="__codelineno-0-327" name="__codelineno-0-327"></a><span class="sd">                set at construction.</span>
+<a id="__codelineno-0-328" name="__codelineno-0-328"></a><span class="sd">            colorbar: Typed `ColorBar` spec (or `True` / `False` / `None`)</span>
+<a id="__codelineno-0-329" name="__codelineno-0-329"></a><span class="sd">                for the colorbar's placement, caption, and sizing; resolved</span>
+<a id="__codelineno-0-330" name="__codelineno-0-330"></a><span class="sd">                into the `cbar_*` options.</span>
+<a id="__codelineno-0-331" name="__codelineno-0-331"></a><span class="sd">            color: A `ColorScaling` selecting the colour scale</span>
+<a id="__codelineno-0-332" name="__codelineno-0-332"></a><span class="sd">                (`vmin`/`vmax`, `color_scale`, ...) for the aggregate.</span>
+<a id="__codelineno-0-333" name="__codelineno-0-333"></a><span class="sd">            contour: A `Contour`; only its `levels` applies here (it</span>
+<a id="__codelineno-0-334" name="__codelineno-0-334"></a><span class="sd">                discretises the colour scale), as the hexbin draws no</span>
+<a id="__codelineno-0-335" name="__codelineno-0-335"></a><span class="sd">                isolines.</span>
+<a id="__codelineno-0-336" name="__codelineno-0-336"></a><span class="sd">            classify: A `Classify` binning the aggregate into discrete</span>
+<a id="__codelineno-0-337" name="__codelineno-0-337"></a><span class="sd">                colour classes (e.g. `scheme="quantiles", k=5`).</span>
+<a id="__codelineno-0-338" name="__codelineno-0-338"></a>
+<a id="__codelineno-0-339" name="__codelineno-0-339"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-340" name="__codelineno-0-340"></a><span class="sd">            tuple[Figure, Axes, PolyCollection]: the figure, the axes, and</span>
+<a id="__codelineno-0-341" name="__codelineno-0-341"></a><span class="sd">                the `PolyCollection` returned by `hexbin` (the mappable).</span>
+<a id="__codelineno-0-342" name="__codelineno-0-342"></a>
+<a id="__codelineno-0-343" name="__codelineno-0-343"></a><span class="sd">        Examples:</span>
+<a id="__codelineno-0-344" name="__codelineno-0-344"></a><span class="sd">            - A classified hexbin steps the colorbar and still returns the</span>
+<a id="__codelineno-0-345" name="__codelineno-0-345"></a><span class="sd">                collection:</span>
+<a id="__codelineno-0-346" name="__codelineno-0-346"></a><span class="sd">                ```python</span>
+<a id="__codelineno-0-347" name="__codelineno-0-347"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-348" name="__codelineno-0-348"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyphs.stats.hexbin_glyph import HexbinGlyph</span>
+<a id="__codelineno-0-349" name="__codelineno-0-349"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.styling.params import Classify</span>
+<a id="__codelineno-0-350" name="__codelineno-0-350"></a><span class="sd">                &gt;&gt;&gt; rng = np.random.default_rng(3)</span>
+<a id="__codelineno-0-351" name="__codelineno-0-351"></a><span class="sd">                &gt;&gt;&gt; x, y = rng.normal(size=600), rng.normal(size=600)</span>
+<a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="sd">                &gt;&gt;&gt; glyph = HexbinGlyph(x, y, gridsize=10)</span>
+<a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="sd">                &gt;&gt;&gt; fig, ax, pc = glyph.plot(</span>
+<a id="__codelineno-0-354" name="__codelineno-0-354"></a><span class="sd">                ...     classify=Classify(scheme="quantiles", k=4)</span>
+<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">                ... )</span>
+<a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">                &gt;&gt;&gt; glyph.cbar is not None</span>
+<a id="__codelineno-0-357" name="__codelineno-0-357"></a><span class="sd">                True</span>
+<a id="__codelineno-0-358" name="__codelineno-0-358"></a>
+<a id="__codelineno-0-359" name="__codelineno-0-359"></a><span class="sd">                ```</span>
+<a id="__codelineno-0-360" name="__codelineno-0-360"></a><span class="sd">            - Suppress the colorbar for shared-axes composition:</span>
+<a id="__codelineno-0-361" name="__codelineno-0-361"></a><span class="sd">                ```python</span>
+<a id="__codelineno-0-362" name="__codelineno-0-362"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-363" name="__codelineno-0-363"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyphs.stats.hexbin_glyph import HexbinGlyph</span>
+<a id="__codelineno-0-364" name="__codelineno-0-364"></a><span class="sd">                &gt;&gt;&gt; rng = np.random.default_rng(4)</span>
+<a id="__codelineno-0-365" name="__codelineno-0-365"></a><span class="sd">                &gt;&gt;&gt; x, y = rng.normal(size=200), rng.normal(size=200)</span>
+<a id="__codelineno-0-366" name="__codelineno-0-366"></a><span class="sd">                &gt;&gt;&gt; fig, ax, pc = HexbinGlyph(x, y).plot(add_colorbar=False)</span>
+<a id="__codelineno-0-367" name="__codelineno-0-367"></a><span class="sd">                &gt;&gt;&gt; glyph_cbar_absent = HexbinGlyph(x, y)</span>
+<a id="__codelineno-0-368" name="__codelineno-0-368"></a><span class="sd">                &gt;&gt;&gt; _ = glyph_cbar_absent.plot(add_colorbar=False)</span>
+<a id="__codelineno-0-369" name="__codelineno-0-369"></a><span class="sd">                &gt;&gt;&gt; glyph_cbar_absent.cbar is None</span>
+<a id="__codelineno-0-370" name="__codelineno-0-370"></a><span class="sd">                True</span>
+<a id="__codelineno-0-371" name="__codelineno-0-371"></a>
+<a id="__codelineno-0-372" name="__codelineno-0-372"></a><span class="sd">                ```</span>
+<a id="__codelineno-0-373" name="__codelineno-0-373"></a><span class="sd">        """</span>
+<a id="__codelineno-0-374" name="__codelineno-0-374"></a>        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rollback_options_on_error</span><span class="p">():</span>
+<a id="__codelineno-0-375" name="__codelineno-0-375"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_merge_group_params</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="n">contour</span><span class="p">,</span> <span class="n">classify</span><span class="p">)</span>
+<a id="__codelineno-0-376" name="__codelineno-0-376"></a>
+<a id="__codelineno-0-377" name="__codelineno-0-377"></a>            <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-378" name="__codelineno-0-378"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span>
+<a id="__codelineno-0-379" name="__codelineno-0-379"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="o">=</span> <span class="n">_root_figure</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+<a id="__codelineno-0-380" name="__codelineno-0-380"></a>            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-381" name="__codelineno-0-381"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_figure_axes</span><span class="p">()</span>
+<a id="__codelineno-0-382" name="__codelineno-0-382"></a>            <span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span>
+<a id="__codelineno-0-383" name="__codelineno-0-383"></a>            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-384" name="__codelineno-0-384"></a>            <span class="n">opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span>
+<a id="__codelineno-0-385" name="__codelineno-0-385"></a>
+<a id="__codelineno-0-386" name="__codelineno-0-386"></a>            <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-387" name="__codelineno-0-387"></a>                <span class="n">opts</span><span class="p">[</span><span class="s2">"title"</span><span class="p">]</span> <span class="o">=</span> <span class="n">title</span>
+<a id="__codelineno-0-388" name="__codelineno-0-388"></a>            <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_resolve_colorbar</span><span class="p">(</span><span class="n">colorbar</span><span class="p">))</span>
+<a id="__codelineno-0-389" name="__codelineno-0-389"></a>            <span class="n">draw_colorbar</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-0-390" name="__codelineno-0-390"></a>                <span class="n">opts</span><span class="p">[</span><span class="s2">"add_colorbar"</span><span class="p">]</span> <span class="k">if</span> <span class="n">add_colorbar</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">add_colorbar</span>
+<a id="__codelineno-0-391" name="__codelineno-0-391"></a>            <span class="p">)</span>
+<a id="__codelineno-0-392" name="__codelineno-0-392"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-393" name="__codelineno-0-393"></a>
+<a id="__codelineno-0-394" name="__codelineno-0-394"></a>            <span class="n">pc</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">hexbin</span><span class="p">(</span>
+<a id="__codelineno-0-395" name="__codelineno-0-395"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
+<a id="__codelineno-0-396" name="__codelineno-0-396"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+<a id="__codelineno-0-397" name="__codelineno-0-397"></a>                <span class="n">cmap</span><span class="o">=</span><span class="n">resolve_colormap</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">"cmap"</span><span class="p">]),</span>
+<a id="__codelineno-0-398" name="__codelineno-0-398"></a>                <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_hexbin_kwargs</span><span class="p">(),</span>
+<a id="__codelineno-0-399" name="__codelineno-0-399"></a>            <span class="p">)</span>
+<a id="__codelineno-0-400" name="__codelineno-0-400"></a>            <span class="c1"># `.compressed()` guards older matplotlib, which masked empty /</span>
+<a id="__codelineno-0-401" name="__codelineno-0-401"></a>            <span class="c1"># `mincnt`-dropped cells; current matplotlib drops them as polygons</span>
+<a id="__codelineno-0-402" name="__codelineno-0-402"></a>            <span class="c1"># instead, so the two agree.</span>
+<a id="__codelineno-0-403" name="__codelineno-0-403"></a>            <span class="n">aggregate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">pc</span><span class="o">.</span><span class="n">get_array</span><span class="p">())</span><span class="o">.</span><span class="n">compressed</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+<a id="__codelineno-0-404" name="__codelineno-0-404"></a>            <span class="k">if</span> <span class="n">aggregate</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-405" name="__codelineno-0-405"></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-406" name="__codelineno-0-406"></a>                    <span class="s2">"no hexagonal bins to draw: every cell was empty or dropped "</span>
+<a id="__codelineno-0-407" name="__codelineno-0-407"></a>                    <span class="s2">"by `min_count` / `extent`. Widen `extent` or lower "</span>
+<a id="__codelineno-0-408" name="__codelineno-0-408"></a>                    <span class="s2">"`min_count`."</span>
+<a id="__codelineno-0-409" name="__codelineno-0-409"></a>                <span class="p">)</span>
+<a id="__codelineno-0-410" name="__codelineno-0-410"></a>            <span class="n">norm</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">,</span> <span class="n">ticks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_scalar_mapping</span><span class="p">(</span><span class="n">aggregate</span><span class="p">)</span>
+<a id="__codelineno-0-411" name="__codelineno-0-411"></a>            <span class="k">if</span> <span class="n">norm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-412" name="__codelineno-0-412"></a>                <span class="n">pc</span><span class="o">.</span><span class="n">set_norm</span><span class="p">(</span><span class="n">norm</span><span class="p">)</span>
+<a id="__codelineno-0-413" name="__codelineno-0-413"></a>            <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-414" name="__codelineno-0-414"></a>                <span class="n">pc</span><span class="o">.</span><span class="n">set_clim</span><span class="p">(</span><span class="n">ticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ticks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+<a id="__codelineno-0-415" name="__codelineno-0-415"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="n">pc</span>
+<a id="__codelineno-0-416" name="__codelineno-0-416"></a>
+<a id="__codelineno-0-417" name="__codelineno-0-417"></a>            <span class="k">if</span> <span class="n">draw_colorbar</span><span class="p">:</span>
+<a id="__codelineno-0-418" name="__codelineno-0-418"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_color_bar</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">pc</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">)</span>
+<a id="__codelineno-0-419" name="__codelineno-0-419"></a>
+<a id="__codelineno-0-420" name="__codelineno-0-420"></a>            <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s2">"title"</span><span class="p">]:</span>
+<a id="__codelineno-0-421" name="__codelineno-0-421"></a>                <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">"title"</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">"title_size"</span><span class="p">])</span>
+<a id="__codelineno-0-422" name="__codelineno-0-422"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_apply_axis_style</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+<a id="__codelineno-0-423" name="__codelineno-0-423"></a>
+<a id="__codelineno-0-424" name="__codelineno-0-424"></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">pc</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -3698,7 +3722,10 @@ drawn bin (row-aligned).</p>
 <span class="normal"><a href="#__codelineno-0-292">292</a></span>
 <span class="normal"><a href="#__codelineno-0-293">293</a></span>
 <span class="normal"><a href="#__codelineno-0-294">294</a></span>
-<span class="normal"><a href="#__codelineno-0-295">295</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-252" name="__codelineno-0-252"></a><span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="normal"><a href="#__codelineno-0-295">295</a></span>
+<span class="normal"><a href="#__codelineno-0-296">296</a></span>
+<span class="normal"><a href="#__codelineno-0-297">297</a></span>
+<span class="normal"><a href="#__codelineno-0-298">298</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-252" name="__codelineno-0-252"></a><span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
 <a id="__codelineno-0-253" name="__codelineno-0-253"></a><span class="w">    </span><span class="sd">"""Bin the points and return the result without rendering on `self.ax`.</span>
 <a id="__codelineno-0-254" name="__codelineno-0-254"></a>
 <a id="__codelineno-0-255" name="__codelineno-0-255"></a><span class="sd">    Draws the hexbin onto a throwaway figure (so no global state or the</span>
@@ -3740,8 +3767,11 @@ drawn bin (row-aligned).</p>
 <a id="__codelineno-0-291" name="__codelineno-0-291"></a>    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
 <a id="__codelineno-0-292" name="__codelineno-0-292"></a>    <span class="n">pc</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">hexbin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_hexbin_kwargs</span><span class="p">())</span>
 <a id="__codelineno-0-293" name="__codelineno-0-293"></a>    <span class="n">offsets</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">pc</span><span class="o">.</span><span class="n">get_offsets</span><span class="p">(),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-<a id="__codelineno-0-294" name="__codelineno-0-294"></a>    <span class="n">aggregate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">pc</span><span class="o">.</span><span class="n">get_array</span><span class="p">())</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
-<a id="__codelineno-0-295" name="__codelineno-0-295"></a>    <span class="k">return</span> <span class="n">offsets</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">offsets</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">aggregate</span>
+<a id="__codelineno-0-294" name="__codelineno-0-294"></a>    <span class="c1"># `.filled(np.nan)` guards older matplotlib that masked empty /</span>
+<a id="__codelineno-0-295" name="__codelineno-0-295"></a>    <span class="c1"># `mincnt`-dropped cells; current matplotlib returns an unmasked array</span>
+<a id="__codelineno-0-296" name="__codelineno-0-296"></a>    <span class="c1"># (dropped cells are absent), so this is a no-op there.</span>
+<a id="__codelineno-0-297" name="__codelineno-0-297"></a>    <span class="n">aggregate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">pc</span><span class="o">.</span><span class="n">get_array</span><span class="p">())</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+<a id="__codelineno-0-298" name="__codelineno-0-298"></a>    <span class="k">return</span> <span class="n">offsets</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">offsets</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">aggregate</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3977,10 +4007,7 @@ the <code>PolyCollection</code> returned by <code>hexbin</code> (the mappable).<
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/cleopatra/glyphs/stats/hexbin_glyph.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-297">297</a></span>
-<span class="normal"><a href="#__codelineno-0-298">298</a></span>
-<span class="normal"><a href="#__codelineno-0-299">299</a></span>
-<span class="normal"><a href="#__codelineno-0-300">300</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-300">300</a></span>
 <span class="normal"><a href="#__codelineno-0-301">301</a></span>
 <span class="normal"><a href="#__codelineno-0-302">302</a></span>
 <span class="normal"><a href="#__codelineno-0-303">303</a></span>
@@ -4092,122 +4119,143 @@ the <code>PolyCollection</code> returned by <code>hexbin</code> (the mappable).<
 <span class="normal"><a href="#__codelineno-0-409">409</a></span>
 <span class="normal"><a href="#__codelineno-0-410">410</a></span>
 <span class="normal"><a href="#__codelineno-0-411">411</a></span>
-<span class="normal"><a href="#__codelineno-0-412">412</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-297" name="__codelineno-0-297"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span>
-<a id="__codelineno-0-298" name="__codelineno-0-298"></a>    <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-299" name="__codelineno-0-299"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-300" name="__codelineno-0-300"></a>    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-301" name="__codelineno-0-301"></a>    <span class="n">add_colorbar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-302" name="__codelineno-0-302"></a>    <span class="n">colorbar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="n">ColorBar</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-303" name="__codelineno-0-303"></a>    <span class="n">color</span><span class="p">:</span> <span class="n">ColorScaling</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-304" name="__codelineno-0-304"></a>    <span class="n">contour</span><span class="p">:</span> <span class="n">Contour</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-305" name="__codelineno-0-305"></a>    <span class="n">classify</span><span class="p">:</span> <span class="n">Classify</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-306" name="__codelineno-0-306"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Figure</span><span class="p">,</span> <span class="n">Axes</span><span class="p">,</span> <span class="n">PolyCollection</span><span class="p">]:</span>
-<a id="__codelineno-0-307" name="__codelineno-0-307"></a><span class="w">    </span><span class="sd">"""Draw the hexagonally-binned density and colour-map the aggregate.</span>
-<a id="__codelineno-0-308" name="__codelineno-0-308"></a>
-<a id="__codelineno-0-309" name="__codelineno-0-309"></a><span class="sd">    The per-bin aggregate is resolved through `_prepare_scalar_mapping`,</span>
-<a id="__codelineno-0-310" name="__codelineno-0-310"></a><span class="sd">    so `vmin` / `vmax` / `levels` / `color_scale` and the `ColorBar`</span>
-<a id="__codelineno-0-311" name="__codelineno-0-311"></a><span class="sd">    spec behave as for the other glyphs, and `classify=Classify(...)`</span>
-<a id="__codelineno-0-312" name="__codelineno-0-312"></a><span class="sd">    bins the aggregate into discrete colour classes. A categorical</span>
-<a id="__codelineno-0-313" name="__codelineno-0-313"></a><span class="sd">    scheme is rejected (`_SUPPORTS_CATEGORICAL_SCHEME` is `False`): a</span>
-<a id="__codelineno-0-314" name="__codelineno-0-314"></a><span class="sd">    per-bin aggregate is a continuous magnitude, not a nominal class.</span>
-<a id="__codelineno-0-315" name="__codelineno-0-315"></a>
-<a id="__codelineno-0-316" name="__codelineno-0-316"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-317" name="__codelineno-0-317"></a><span class="sd">        ax: Axes to draw on. Falls back to the axes supplied at</span>
-<a id="__codelineno-0-318" name="__codelineno-0-318"></a><span class="sd">            construction, otherwise a new figure/axes is created.</span>
-<a id="__codelineno-0-319" name="__codelineno-0-319"></a><span class="sd">        title: Plot title. Overrides `default_options["title"]` when</span>
-<a id="__codelineno-0-320" name="__codelineno-0-320"></a><span class="sd">            given.</span>
-<a id="__codelineno-0-321" name="__codelineno-0-321"></a><span class="sd">        add_colorbar: Override the `add_colorbar` option for this call</span>
-<a id="__codelineno-0-322" name="__codelineno-0-322"></a><span class="sd">            -- `True` draws the colorbar, `False` suppresses it (for</span>
-<a id="__codelineno-0-323" name="__codelineno-0-323"></a><span class="sd">            shared-axes composition). `None` (default) keeps the value</span>
-<a id="__codelineno-0-324" name="__codelineno-0-324"></a><span class="sd">            set at construction.</span>
-<a id="__codelineno-0-325" name="__codelineno-0-325"></a><span class="sd">        colorbar: Typed `ColorBar` spec (or `True` / `False` / `None`)</span>
-<a id="__codelineno-0-326" name="__codelineno-0-326"></a><span class="sd">            for the colorbar's placement, caption, and sizing; resolved</span>
-<a id="__codelineno-0-327" name="__codelineno-0-327"></a><span class="sd">            into the `cbar_*` options.</span>
-<a id="__codelineno-0-328" name="__codelineno-0-328"></a><span class="sd">        color: A `ColorScaling` selecting the colour scale</span>
-<a id="__codelineno-0-329" name="__codelineno-0-329"></a><span class="sd">            (`vmin`/`vmax`, `color_scale`, ...) for the aggregate.</span>
-<a id="__codelineno-0-330" name="__codelineno-0-330"></a><span class="sd">        contour: A `Contour`; only its `levels` applies here (it</span>
-<a id="__codelineno-0-331" name="__codelineno-0-331"></a><span class="sd">            discretises the colour scale), as the hexbin draws no</span>
-<a id="__codelineno-0-332" name="__codelineno-0-332"></a><span class="sd">            isolines.</span>
-<a id="__codelineno-0-333" name="__codelineno-0-333"></a><span class="sd">        classify: A `Classify` binning the aggregate into discrete</span>
-<a id="__codelineno-0-334" name="__codelineno-0-334"></a><span class="sd">            colour classes (e.g. `scheme="quantiles", k=5`).</span>
-<a id="__codelineno-0-335" name="__codelineno-0-335"></a>
-<a id="__codelineno-0-336" name="__codelineno-0-336"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-337" name="__codelineno-0-337"></a><span class="sd">        tuple[Figure, Axes, PolyCollection]: the figure, the axes, and</span>
-<a id="__codelineno-0-338" name="__codelineno-0-338"></a><span class="sd">            the `PolyCollection` returned by `hexbin` (the mappable).</span>
-<a id="__codelineno-0-339" name="__codelineno-0-339"></a>
-<a id="__codelineno-0-340" name="__codelineno-0-340"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-341" name="__codelineno-0-341"></a><span class="sd">        - A classified hexbin steps the colorbar and still returns the</span>
-<a id="__codelineno-0-342" name="__codelineno-0-342"></a><span class="sd">            collection:</span>
-<a id="__codelineno-0-343" name="__codelineno-0-343"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-344" name="__codelineno-0-344"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-345" name="__codelineno-0-345"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyphs.stats.hexbin_glyph import HexbinGlyph</span>
-<a id="__codelineno-0-346" name="__codelineno-0-346"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.params import Classify</span>
-<a id="__codelineno-0-347" name="__codelineno-0-347"></a><span class="sd">            &gt;&gt;&gt; rng = np.random.default_rng(3)</span>
-<a id="__codelineno-0-348" name="__codelineno-0-348"></a><span class="sd">            &gt;&gt;&gt; x, y = rng.normal(size=600), rng.normal(size=600)</span>
-<a id="__codelineno-0-349" name="__codelineno-0-349"></a><span class="sd">            &gt;&gt;&gt; glyph = HexbinGlyph(x, y, gridsize=10)</span>
-<a id="__codelineno-0-350" name="__codelineno-0-350"></a><span class="sd">            &gt;&gt;&gt; fig, ax, pc = glyph.plot(</span>
-<a id="__codelineno-0-351" name="__codelineno-0-351"></a><span class="sd">            ...     classify=Classify(scheme="quantiles", k=4)</span>
-<a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="sd">            ... )</span>
-<a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="sd">            &gt;&gt;&gt; glyph.cbar is not None</span>
-<a id="__codelineno-0-354" name="__codelineno-0-354"></a><span class="sd">            True</span>
-<a id="__codelineno-0-355" name="__codelineno-0-355"></a>
-<a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-357" name="__codelineno-0-357"></a><span class="sd">        - Suppress the colorbar for shared-axes composition:</span>
-<a id="__codelineno-0-358" name="__codelineno-0-358"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-359" name="__codelineno-0-359"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-360" name="__codelineno-0-360"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyphs.stats.hexbin_glyph import HexbinGlyph</span>
-<a id="__codelineno-0-361" name="__codelineno-0-361"></a><span class="sd">            &gt;&gt;&gt; rng = np.random.default_rng(4)</span>
-<a id="__codelineno-0-362" name="__codelineno-0-362"></a><span class="sd">            &gt;&gt;&gt; x, y = rng.normal(size=200), rng.normal(size=200)</span>
-<a id="__codelineno-0-363" name="__codelineno-0-363"></a><span class="sd">            &gt;&gt;&gt; fig, ax, pc = HexbinGlyph(x, y).plot(add_colorbar=False)</span>
-<a id="__codelineno-0-364" name="__codelineno-0-364"></a><span class="sd">            &gt;&gt;&gt; glyph_cbar_absent = HexbinGlyph(x, y)</span>
-<a id="__codelineno-0-365" name="__codelineno-0-365"></a><span class="sd">            &gt;&gt;&gt; _ = glyph_cbar_absent.plot(add_colorbar=False)</span>
-<a id="__codelineno-0-366" name="__codelineno-0-366"></a><span class="sd">            &gt;&gt;&gt; glyph_cbar_absent.cbar is None</span>
-<a id="__codelineno-0-367" name="__codelineno-0-367"></a><span class="sd">            True</span>
-<a id="__codelineno-0-368" name="__codelineno-0-368"></a>
-<a id="__codelineno-0-369" name="__codelineno-0-369"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-370" name="__codelineno-0-370"></a><span class="sd">    """</span>
-<a id="__codelineno-0-371" name="__codelineno-0-371"></a>    <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rollback_options_on_error</span><span class="p">():</span>
-<a id="__codelineno-0-372" name="__codelineno-0-372"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_merge_group_params</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="n">contour</span><span class="p">,</span> <span class="n">classify</span><span class="p">)</span>
-<a id="__codelineno-0-373" name="__codelineno-0-373"></a>
-<a id="__codelineno-0-374" name="__codelineno-0-374"></a>        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-375" name="__codelineno-0-375"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span>
-<a id="__codelineno-0-376" name="__codelineno-0-376"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="o">=</span> <span class="n">_root_figure</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
-<a id="__codelineno-0-377" name="__codelineno-0-377"></a>        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-378" name="__codelineno-0-378"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_figure_axes</span><span class="p">()</span>
-<a id="__codelineno-0-379" name="__codelineno-0-379"></a>        <span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span>
-<a id="__codelineno-0-380" name="__codelineno-0-380"></a>        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-<a id="__codelineno-0-381" name="__codelineno-0-381"></a>        <span class="n">opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span>
-<a id="__codelineno-0-382" name="__codelineno-0-382"></a>
-<a id="__codelineno-0-383" name="__codelineno-0-383"></a>        <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-384" name="__codelineno-0-384"></a>            <span class="n">opts</span><span class="p">[</span><span class="s2">"title"</span><span class="p">]</span> <span class="o">=</span> <span class="n">title</span>
-<a id="__codelineno-0-385" name="__codelineno-0-385"></a>        <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_resolve_colorbar</span><span class="p">(</span><span class="n">colorbar</span><span class="p">))</span>
-<a id="__codelineno-0-386" name="__codelineno-0-386"></a>        <span class="n">draw_colorbar</span> <span class="o">=</span> <span class="p">(</span>
-<a id="__codelineno-0-387" name="__codelineno-0-387"></a>            <span class="n">opts</span><span class="p">[</span><span class="s2">"add_colorbar"</span><span class="p">]</span> <span class="k">if</span> <span class="n">add_colorbar</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">add_colorbar</span>
-<a id="__codelineno-0-388" name="__codelineno-0-388"></a>        <span class="p">)</span>
-<a id="__codelineno-0-389" name="__codelineno-0-389"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-390" name="__codelineno-0-390"></a>
-<a id="__codelineno-0-391" name="__codelineno-0-391"></a>        <span class="n">pc</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">hexbin</span><span class="p">(</span>
-<a id="__codelineno-0-392" name="__codelineno-0-392"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
-<a id="__codelineno-0-393" name="__codelineno-0-393"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
-<a id="__codelineno-0-394" name="__codelineno-0-394"></a>            <span class="n">cmap</span><span class="o">=</span><span class="n">resolve_colormap</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">"cmap"</span><span class="p">]),</span>
-<a id="__codelineno-0-395" name="__codelineno-0-395"></a>            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_hexbin_kwargs</span><span class="p">(),</span>
-<a id="__codelineno-0-396" name="__codelineno-0-396"></a>        <span class="p">)</span>
-<a id="__codelineno-0-397" name="__codelineno-0-397"></a>        <span class="n">aggregate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">pc</span><span class="o">.</span><span class="n">get_array</span><span class="p">())</span><span class="o">.</span><span class="n">compressed</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
-<a id="__codelineno-0-398" name="__codelineno-0-398"></a>        <span class="n">norm</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">,</span> <span class="n">ticks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_scalar_mapping</span><span class="p">(</span><span class="n">aggregate</span><span class="p">)</span>
-<a id="__codelineno-0-399" name="__codelineno-0-399"></a>        <span class="k">if</span> <span class="n">norm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-400" name="__codelineno-0-400"></a>            <span class="n">pc</span><span class="o">.</span><span class="n">set_norm</span><span class="p">(</span><span class="n">norm</span><span class="p">)</span>
-<a id="__codelineno-0-401" name="__codelineno-0-401"></a>        <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-402" name="__codelineno-0-402"></a>            <span class="n">pc</span><span class="o">.</span><span class="n">set_clim</span><span class="p">(</span><span class="n">ticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ticks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-<a id="__codelineno-0-403" name="__codelineno-0-403"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="n">pc</span>
-<a id="__codelineno-0-404" name="__codelineno-0-404"></a>
-<a id="__codelineno-0-405" name="__codelineno-0-405"></a>        <span class="k">if</span> <span class="n">draw_colorbar</span><span class="p">:</span>
-<a id="__codelineno-0-406" name="__codelineno-0-406"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_color_bar</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">pc</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">)</span>
-<a id="__codelineno-0-407" name="__codelineno-0-407"></a>
-<a id="__codelineno-0-408" name="__codelineno-0-408"></a>        <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s2">"title"</span><span class="p">]:</span>
-<a id="__codelineno-0-409" name="__codelineno-0-409"></a>            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">"title"</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">"title_size"</span><span class="p">])</span>
-<a id="__codelineno-0-410" name="__codelineno-0-410"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_apply_axis_style</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
-<a id="__codelineno-0-411" name="__codelineno-0-411"></a>
-<a id="__codelineno-0-412" name="__codelineno-0-412"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">pc</span>
+<span class="normal"><a href="#__codelineno-0-412">412</a></span>
+<span class="normal"><a href="#__codelineno-0-413">413</a></span>
+<span class="normal"><a href="#__codelineno-0-414">414</a></span>
+<span class="normal"><a href="#__codelineno-0-415">415</a></span>
+<span class="normal"><a href="#__codelineno-0-416">416</a></span>
+<span class="normal"><a href="#__codelineno-0-417">417</a></span>
+<span class="normal"><a href="#__codelineno-0-418">418</a></span>
+<span class="normal"><a href="#__codelineno-0-419">419</a></span>
+<span class="normal"><a href="#__codelineno-0-420">420</a></span>
+<span class="normal"><a href="#__codelineno-0-421">421</a></span>
+<span class="normal"><a href="#__codelineno-0-422">422</a></span>
+<span class="normal"><a href="#__codelineno-0-423">423</a></span>
+<span class="normal"><a href="#__codelineno-0-424">424</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-300" name="__codelineno-0-300"></a><span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span>
+<a id="__codelineno-0-301" name="__codelineno-0-301"></a>    <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-302" name="__codelineno-0-302"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-303" name="__codelineno-0-303"></a>    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-304" name="__codelineno-0-304"></a>    <span class="n">add_colorbar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-305" name="__codelineno-0-305"></a>    <span class="n">colorbar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="n">ColorBar</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-306" name="__codelineno-0-306"></a>    <span class="n">color</span><span class="p">:</span> <span class="n">ColorScaling</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-307" name="__codelineno-0-307"></a>    <span class="n">contour</span><span class="p">:</span> <span class="n">Contour</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-308" name="__codelineno-0-308"></a>    <span class="n">classify</span><span class="p">:</span> <span class="n">Classify</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-309" name="__codelineno-0-309"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Figure</span><span class="p">,</span> <span class="n">Axes</span><span class="p">,</span> <span class="n">PolyCollection</span><span class="p">]:</span>
+<a id="__codelineno-0-310" name="__codelineno-0-310"></a><span class="w">    </span><span class="sd">"""Draw the hexagonally-binned density and colour-map the aggregate.</span>
+<a id="__codelineno-0-311" name="__codelineno-0-311"></a>
+<a id="__codelineno-0-312" name="__codelineno-0-312"></a><span class="sd">    The per-bin aggregate is resolved through `_prepare_scalar_mapping`,</span>
+<a id="__codelineno-0-313" name="__codelineno-0-313"></a><span class="sd">    so `vmin` / `vmax` / `levels` / `color_scale` and the `ColorBar`</span>
+<a id="__codelineno-0-314" name="__codelineno-0-314"></a><span class="sd">    spec behave as for the other glyphs, and `classify=Classify(...)`</span>
+<a id="__codelineno-0-315" name="__codelineno-0-315"></a><span class="sd">    bins the aggregate into discrete colour classes. A categorical</span>
+<a id="__codelineno-0-316" name="__codelineno-0-316"></a><span class="sd">    scheme is rejected (`_SUPPORTS_CATEGORICAL_SCHEME` is `False`): a</span>
+<a id="__codelineno-0-317" name="__codelineno-0-317"></a><span class="sd">    per-bin aggregate is a continuous magnitude, not a nominal class.</span>
+<a id="__codelineno-0-318" name="__codelineno-0-318"></a>
+<a id="__codelineno-0-319" name="__codelineno-0-319"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-320" name="__codelineno-0-320"></a><span class="sd">        ax: Axes to draw on. Falls back to the axes supplied at</span>
+<a id="__codelineno-0-321" name="__codelineno-0-321"></a><span class="sd">            construction, otherwise a new figure/axes is created.</span>
+<a id="__codelineno-0-322" name="__codelineno-0-322"></a><span class="sd">        title: Plot title. Overrides `default_options["title"]` when</span>
+<a id="__codelineno-0-323" name="__codelineno-0-323"></a><span class="sd">            given.</span>
+<a id="__codelineno-0-324" name="__codelineno-0-324"></a><span class="sd">        add_colorbar: Override the `add_colorbar` option for this call</span>
+<a id="__codelineno-0-325" name="__codelineno-0-325"></a><span class="sd">            -- `True` draws the colorbar, `False` suppresses it (for</span>
+<a id="__codelineno-0-326" name="__codelineno-0-326"></a><span class="sd">            shared-axes composition). `None` (default) keeps the value</span>
+<a id="__codelineno-0-327" name="__codelineno-0-327"></a><span class="sd">            set at construction.</span>
+<a id="__codelineno-0-328" name="__codelineno-0-328"></a><span class="sd">        colorbar: Typed `ColorBar` spec (or `True` / `False` / `None`)</span>
+<a id="__codelineno-0-329" name="__codelineno-0-329"></a><span class="sd">            for the colorbar's placement, caption, and sizing; resolved</span>
+<a id="__codelineno-0-330" name="__codelineno-0-330"></a><span class="sd">            into the `cbar_*` options.</span>
+<a id="__codelineno-0-331" name="__codelineno-0-331"></a><span class="sd">        color: A `ColorScaling` selecting the colour scale</span>
+<a id="__codelineno-0-332" name="__codelineno-0-332"></a><span class="sd">            (`vmin`/`vmax`, `color_scale`, ...) for the aggregate.</span>
+<a id="__codelineno-0-333" name="__codelineno-0-333"></a><span class="sd">        contour: A `Contour`; only its `levels` applies here (it</span>
+<a id="__codelineno-0-334" name="__codelineno-0-334"></a><span class="sd">            discretises the colour scale), as the hexbin draws no</span>
+<a id="__codelineno-0-335" name="__codelineno-0-335"></a><span class="sd">            isolines.</span>
+<a id="__codelineno-0-336" name="__codelineno-0-336"></a><span class="sd">        classify: A `Classify` binning the aggregate into discrete</span>
+<a id="__codelineno-0-337" name="__codelineno-0-337"></a><span class="sd">            colour classes (e.g. `scheme="quantiles", k=5`).</span>
+<a id="__codelineno-0-338" name="__codelineno-0-338"></a>
+<a id="__codelineno-0-339" name="__codelineno-0-339"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-340" name="__codelineno-0-340"></a><span class="sd">        tuple[Figure, Axes, PolyCollection]: the figure, the axes, and</span>
+<a id="__codelineno-0-341" name="__codelineno-0-341"></a><span class="sd">            the `PolyCollection` returned by `hexbin` (the mappable).</span>
+<a id="__codelineno-0-342" name="__codelineno-0-342"></a>
+<a id="__codelineno-0-343" name="__codelineno-0-343"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-344" name="__codelineno-0-344"></a><span class="sd">        - A classified hexbin steps the colorbar and still returns the</span>
+<a id="__codelineno-0-345" name="__codelineno-0-345"></a><span class="sd">            collection:</span>
+<a id="__codelineno-0-346" name="__codelineno-0-346"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-347" name="__codelineno-0-347"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-348" name="__codelineno-0-348"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyphs.stats.hexbin_glyph import HexbinGlyph</span>
+<a id="__codelineno-0-349" name="__codelineno-0-349"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.params import Classify</span>
+<a id="__codelineno-0-350" name="__codelineno-0-350"></a><span class="sd">            &gt;&gt;&gt; rng = np.random.default_rng(3)</span>
+<a id="__codelineno-0-351" name="__codelineno-0-351"></a><span class="sd">            &gt;&gt;&gt; x, y = rng.normal(size=600), rng.normal(size=600)</span>
+<a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="sd">            &gt;&gt;&gt; glyph = HexbinGlyph(x, y, gridsize=10)</span>
+<a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="sd">            &gt;&gt;&gt; fig, ax, pc = glyph.plot(</span>
+<a id="__codelineno-0-354" name="__codelineno-0-354"></a><span class="sd">            ...     classify=Classify(scheme="quantiles", k=4)</span>
+<a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">            ... )</span>
+<a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">            &gt;&gt;&gt; glyph.cbar is not None</span>
+<a id="__codelineno-0-357" name="__codelineno-0-357"></a><span class="sd">            True</span>
+<a id="__codelineno-0-358" name="__codelineno-0-358"></a>
+<a id="__codelineno-0-359" name="__codelineno-0-359"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-360" name="__codelineno-0-360"></a><span class="sd">        - Suppress the colorbar for shared-axes composition:</span>
+<a id="__codelineno-0-361" name="__codelineno-0-361"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-362" name="__codelineno-0-362"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-363" name="__codelineno-0-363"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyphs.stats.hexbin_glyph import HexbinGlyph</span>
+<a id="__codelineno-0-364" name="__codelineno-0-364"></a><span class="sd">            &gt;&gt;&gt; rng = np.random.default_rng(4)</span>
+<a id="__codelineno-0-365" name="__codelineno-0-365"></a><span class="sd">            &gt;&gt;&gt; x, y = rng.normal(size=200), rng.normal(size=200)</span>
+<a id="__codelineno-0-366" name="__codelineno-0-366"></a><span class="sd">            &gt;&gt;&gt; fig, ax, pc = HexbinGlyph(x, y).plot(add_colorbar=False)</span>
+<a id="__codelineno-0-367" name="__codelineno-0-367"></a><span class="sd">            &gt;&gt;&gt; glyph_cbar_absent = HexbinGlyph(x, y)</span>
+<a id="__codelineno-0-368" name="__codelineno-0-368"></a><span class="sd">            &gt;&gt;&gt; _ = glyph_cbar_absent.plot(add_colorbar=False)</span>
+<a id="__codelineno-0-369" name="__codelineno-0-369"></a><span class="sd">            &gt;&gt;&gt; glyph_cbar_absent.cbar is None</span>
+<a id="__codelineno-0-370" name="__codelineno-0-370"></a><span class="sd">            True</span>
+<a id="__codelineno-0-371" name="__codelineno-0-371"></a>
+<a id="__codelineno-0-372" name="__codelineno-0-372"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-373" name="__codelineno-0-373"></a><span class="sd">    """</span>
+<a id="__codelineno-0-374" name="__codelineno-0-374"></a>    <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rollback_options_on_error</span><span class="p">():</span>
+<a id="__codelineno-0-375" name="__codelineno-0-375"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_merge_group_params</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="n">contour</span><span class="p">,</span> <span class="n">classify</span><span class="p">)</span>
+<a id="__codelineno-0-376" name="__codelineno-0-376"></a>
+<a id="__codelineno-0-377" name="__codelineno-0-377"></a>        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-378" name="__codelineno-0-378"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span>
+<a id="__codelineno-0-379" name="__codelineno-0-379"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="o">=</span> <span class="n">_root_figure</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+<a id="__codelineno-0-380" name="__codelineno-0-380"></a>        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-381" name="__codelineno-0-381"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_figure_axes</span><span class="p">()</span>
+<a id="__codelineno-0-382" name="__codelineno-0-382"></a>        <span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span>
+<a id="__codelineno-0-383" name="__codelineno-0-383"></a>        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-384" name="__codelineno-0-384"></a>        <span class="n">opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span>
+<a id="__codelineno-0-385" name="__codelineno-0-385"></a>
+<a id="__codelineno-0-386" name="__codelineno-0-386"></a>        <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-387" name="__codelineno-0-387"></a>            <span class="n">opts</span><span class="p">[</span><span class="s2">"title"</span><span class="p">]</span> <span class="o">=</span> <span class="n">title</span>
+<a id="__codelineno-0-388" name="__codelineno-0-388"></a>        <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_resolve_colorbar</span><span class="p">(</span><span class="n">colorbar</span><span class="p">))</span>
+<a id="__codelineno-0-389" name="__codelineno-0-389"></a>        <span class="n">draw_colorbar</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-0-390" name="__codelineno-0-390"></a>            <span class="n">opts</span><span class="p">[</span><span class="s2">"add_colorbar"</span><span class="p">]</span> <span class="k">if</span> <span class="n">add_colorbar</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">add_colorbar</span>
+<a id="__codelineno-0-391" name="__codelineno-0-391"></a>        <span class="p">)</span>
+<a id="__codelineno-0-392" name="__codelineno-0-392"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-393" name="__codelineno-0-393"></a>
+<a id="__codelineno-0-394" name="__codelineno-0-394"></a>        <span class="n">pc</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">hexbin</span><span class="p">(</span>
+<a id="__codelineno-0-395" name="__codelineno-0-395"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
+<a id="__codelineno-0-396" name="__codelineno-0-396"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+<a id="__codelineno-0-397" name="__codelineno-0-397"></a>            <span class="n">cmap</span><span class="o">=</span><span class="n">resolve_colormap</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">"cmap"</span><span class="p">]),</span>
+<a id="__codelineno-0-398" name="__codelineno-0-398"></a>            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_hexbin_kwargs</span><span class="p">(),</span>
+<a id="__codelineno-0-399" name="__codelineno-0-399"></a>        <span class="p">)</span>
+<a id="__codelineno-0-400" name="__codelineno-0-400"></a>        <span class="c1"># `.compressed()` guards older matplotlib, which masked empty /</span>
+<a id="__codelineno-0-401" name="__codelineno-0-401"></a>        <span class="c1"># `mincnt`-dropped cells; current matplotlib drops them as polygons</span>
+<a id="__codelineno-0-402" name="__codelineno-0-402"></a>        <span class="c1"># instead, so the two agree.</span>
+<a id="__codelineno-0-403" name="__codelineno-0-403"></a>        <span class="n">aggregate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">pc</span><span class="o">.</span><span class="n">get_array</span><span class="p">())</span><span class="o">.</span><span class="n">compressed</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+<a id="__codelineno-0-404" name="__codelineno-0-404"></a>        <span class="k">if</span> <span class="n">aggregate</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-405" name="__codelineno-0-405"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-406" name="__codelineno-0-406"></a>                <span class="s2">"no hexagonal bins to draw: every cell was empty or dropped "</span>
+<a id="__codelineno-0-407" name="__codelineno-0-407"></a>                <span class="s2">"by `min_count` / `extent`. Widen `extent` or lower "</span>
+<a id="__codelineno-0-408" name="__codelineno-0-408"></a>                <span class="s2">"`min_count`."</span>
+<a id="__codelineno-0-409" name="__codelineno-0-409"></a>            <span class="p">)</span>
+<a id="__codelineno-0-410" name="__codelineno-0-410"></a>        <span class="n">norm</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">,</span> <span class="n">ticks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_scalar_mapping</span><span class="p">(</span><span class="n">aggregate</span><span class="p">)</span>
+<a id="__codelineno-0-411" name="__codelineno-0-411"></a>        <span class="k">if</span> <span class="n">norm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-412" name="__codelineno-0-412"></a>            <span class="n">pc</span><span class="o">.</span><span class="n">set_norm</span><span class="p">(</span><span class="n">norm</span><span class="p">)</span>
+<a id="__codelineno-0-413" name="__codelineno-0-413"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-414" name="__codelineno-0-414"></a>            <span class="n">pc</span><span class="o">.</span><span class="n">set_clim</span><span class="p">(</span><span class="n">ticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ticks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+<a id="__codelineno-0-415" name="__codelineno-0-415"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">im</span> <span class="o">=</span> <span class="n">pc</span>
+<a id="__codelineno-0-416" name="__codelineno-0-416"></a>
+<a id="__codelineno-0-417" name="__codelineno-0-417"></a>        <span class="k">if</span> <span class="n">draw_colorbar</span><span class="p">:</span>
+<a id="__codelineno-0-418" name="__codelineno-0-418"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">cbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_color_bar</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">pc</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">)</span>
+<a id="__codelineno-0-419" name="__codelineno-0-419"></a>
+<a id="__codelineno-0-420" name="__codelineno-0-420"></a>        <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="s2">"title"</span><span class="p">]:</span>
+<a id="__codelineno-0-421" name="__codelineno-0-421"></a>            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">opts</span><span class="p">[</span><span class="s2">"title"</span><span class="p">],</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">opts</span><span class="p">[</span><span class="s2">"title_size"</span><span class="p">])</span>
+<a id="__codelineno-0-422" name="__codelineno-0-422"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_apply_axis_style</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+<a id="__codelineno-0-423" name="__codelineno-0-423"></a>
+<a id="__codelineno-0-424" name="__codelineno-0-424"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">pc</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
