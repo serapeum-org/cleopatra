@@ -454,9 +454,9 @@ def tissot_circles(
         order.
 
     Raises:
-        ValueError: If ``lons`` and ``lats`` differ in shape, if ``radius_m`` is
-            not a positive sub-antipodal radius (``0 < radius_m < pi * R``), or
-            if ``n < 4``.
+        ValueError: If ``lons`` or ``lats`` is not 1-D or they differ in shape,
+            if ``radius_m`` is not a positive sub-antipodal radius
+            (``0 < radius_m < pi * R``), or if ``n < 4``.
 
     Examples:
         - One ~500 km circle around the origin, sampled coarsely:
@@ -481,6 +481,11 @@ def tissot_circles(
     """
     lon_arr = np.atleast_1d(np.asarray(lons, dtype=float))
     lat_arr = np.atleast_1d(np.asarray(lats, dtype=float))
+    if lon_arr.ndim != 1 or lat_arr.ndim != 1:
+        raise ValueError(
+            f"lons and lats must be 1-D sequences of centres; got {lon_arr.ndim}-D "
+            f"and {lat_arr.ndim}-D."
+        )
     if lon_arr.shape != lat_arr.shape:
         raise ValueError(
             f"lons and lats must have the same shape; got {lon_arr.shape} and {lat_arr.shape}."
