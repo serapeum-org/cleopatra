@@ -8290,6 +8290,67 @@ class TestFacetSuppliedAxes:
         assert result.axes.shape == (1, 3)
         plt.close("all")
 
+    def test_compose_true_drops_shared_colorbar(self):
+        """compose=True suppresses the per-panel colorbar (result.cbar is None)."""
+        stack = self._stack(n=3)
+        fig, axs = plt.subplots(1, 3, squeeze=False)
+        result = ArrayGlyph(stack).facet(col="t", axes=axs, compose=True)
+        assert result.cbar is None
+        plt.close("all")
+
+    def test_compose_true_with_colorbar_true_keeps_colorbar(self):
+        """Passing colorbar=True restores the shared colorbar under compose=True."""
+        stack = self._stack(n=3)
+        fig, axs = plt.subplots(1, 3, squeeze=False)
+        result = ArrayGlyph(stack).facet(
+            col="t", axes=axs, compose=True, colorbar=True
+        )
+        assert result.cbar is not None
+        plt.close("all")
+
+    def test_plain_caller_content_preserved_without_compose(self):
+        """Plain matplotlib content on supplied axes survives with compose=False."""
+        stack = self._stack(n=3)
+        fig, axs = plt.subplots(1, 3, squeeze=False)
+        for ax in axs.ravel():
+            ax.plot([0, 1], [0, 1])
+        ArrayGlyph(stack).facet(col="t", axes=axs)  # compose defaults False
+        for ax in axs.ravel():
+            assert len(ax.get_lines()) == 1  # caller's line kept
+            assert len(ax.get_images()) >= 1  # panel drawn
+        plt.close("all")
+
+    def test_subplotspec_host_failure_removes_created_axes(self):
+        """A failed render on a SubplotSpec host removes cleopatra's added axes."""
+        stack = self._stack(n=3)
+        fig = plt.figure()
+        gs = GridSpec(2, 1, figure=fig)
+        bad = DataStyle(style="not_a_style")
+        with pytest.raises(ValueError):
+            ArrayGlyph(stack).facet(col="t", axes=gs[0], data_style=bad)
+        assert fig.axes == []
+        plt.close("all")
+
+    def test_gridspec_host_failure_removes_created_axes(self):
+        """A failed render on a GridSpec host removes cleopatra's added axes."""
+        stack = self._stack(n=3)
+        fig = plt.figure()
+        gs = GridSpec(1, 3, figure=fig)
+        bad = DataStyle(style="not_a_style")
+        with pytest.raises(ValueError):
+            ArrayGlyph(stack).facet(col="t", axes=gs, data_style=bad)
+        assert fig.axes == []
+        plt.close("all")
+
+    def test_col_wrap_with_figure_host_hides_empty_slots(self):
+        """col_wrap on a Figure host builds the wrapped grid and hides empty slots."""
+        stack = self._stack(n=3)
+        fig = plt.figure()
+        result = ArrayGlyph(stack).facet(col="t", col_wrap=2, axes=fig)
+        assert result.axes.shape == (2, 2)
+        assert result.axes[1, 1].get_visible() is False
+        plt.close("all")
+
     def test_axes_and_figure_size_are_mutually_exclusive(self):
         """Supplying both `axes=` and `figure_size=` raises `ValueError`."""
         stack = self._stack(n=3)
