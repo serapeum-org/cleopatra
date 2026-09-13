@@ -4,9 +4,9 @@ cleopatra can already shade a day/night terminator, but only as *lighting on a
 3-D sphere* (`cleopatra.glyphs.globe.textured_globe_glyph.TexturedGlobeGlyph`):
 the input is a world-space light *direction*, the output is per-face shaded
 *facecolors* on an `Axes3D`, and no lon/lat *geometry* is ever produced. This
-module is the flat-map counterpart: it computes the terminator as a great circle
-in lon/lat and draws it (and the filled night region, and Tissot distortion
-circles) on an ordinary `matplotlib.axes.Axes`.
+module is the flat-map counterpart: it computes the terminator as a small circle
+about the subsolar point in lon/lat and draws it (and the filled night region,
+and Tissot distortion circles) on an ordinary `matplotlib.axes.Axes`.
 
 Scope boundary -- the same split the rest of ``basemap`` keeps:
 
@@ -31,13 +31,17 @@ Accuracy is deliberately low-precision: the NOAA/Meeus solar-position formulae
 are sub-degree over the relevant centuries, which is far finer than a shaded
 overlay needs. No ephemeris dependency.
 
-Example (lon/lat axes)::
+Example (CRS-free geometry)::
 
     from datetime import UTC, datetime
-    from cleopatra.basemap.solar import add_nightshade
+    from cleopatra.basemap.solar import night_polygon, subsolar_point
 
     when = datetime(2026, 6, 21, 12, tzinfo=UTC)
-    add_nightshade(ax, when, alpha=0.35, color="black", zorder=5)
+    lon, lat = subsolar_point(when)   # where the sun is overhead
+    rings = night_polygon(when)       # filled night region as lon/lat rings
+
+The `add_nightshade` / `add_tissot` artists that draw this geometry on an axes
+are forthcoming (see #356); today the module provides the CRS-free maths above.
 
 See also `cleopatra.glyphs.globe.textured_globe_glyph` for the 3-D globe's
 directional lighting, which answers a different question (shading on a sphere,
@@ -161,17 +165,19 @@ def terminator(
     refraction: float = DEFAULT_REFRACTION,
     n: int = DEFAULT_TERMINATOR_SAMPLES,
 ) -> np.ndarray:
-    """Return the day/night terminator great circle as lon/lat vertices.
+    """Return the day/night terminator as lon/lat vertices.
 
-    The terminator is the great circle 90 degrees (offset by ``refraction``)
-    from the subsolar point.
+    The terminator is the small circle at angular distance ``90 - refraction``
+    from the subsolar point -- a great circle only when ``refraction == 0``.
 
     Args:
         when: An aware `datetime.datetime` (naive is treated as UTC).
         refraction: Solar altitude in degrees defining the terminator; see
             `DEFAULT_REFRACTION`. Use ``-6`` / ``-12`` / ``-18`` for civil /
             nautical / astronomical twilight.
-        n: Number of samples along the circle.
+        n: Number of samples along the circle. The ring is closed, so ``n``
+            includes the duplicated endpoint and the effective resolution is
+            ``n - 1``.
 
     Returns:
         numpy.ndarray: An ``(n, 2)`` array of ``(lon, lat)`` degrees, densified
