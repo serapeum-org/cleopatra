@@ -3469,7 +3469,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                 (pass explicit edges to pin the class boundaries instead).
                 `scheme="categorical"` is rejected for a raster (its cells are a
                 continuous field), so a `Classify.category_legend_kwargs` is
-                accepted but has no effect here.
+                accepted but has no effect here. A `data_style` preset owns the
+                colour mapping outright, so `classify` is ignored when `style` is
+                set (a warning says so).
             data_style: Named-preset / relief-shading group object
                 (`cleopatra.styling.params.DataStyle`), e.g.
                 `DataStyle(style="dem", hillshade=True)` or
@@ -4051,6 +4053,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                     warnings.warn(
                         "data-style presets bypass point and cell-value overlays; "
                         "'points' and 'display_cell_value' are ignored with 'style'.",
+                        stacklevel=2,
+                    )
+                if self.default_options.get("scheme") is not None:
+                    warnings.warn(
+                        "a data-style preset owns the colour mapping, so 'classify' "
+                        "is ignored with 'style'; drop 'data_style' to draw the "
+                        "classified field.",
                         stacklevel=2,
                     )
                 self._plot_with_style(style, compose=compose)
@@ -5391,6 +5400,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                     )
                     points = None
                     show_cell_value = False
+                if self.default_options.get("scheme") is not None:
+                    warnings.warn(
+                        "a data-style preset owns the colour mapping, so 'classify' "
+                        "is ignored with 'style'; drop 'data_style' to draw the "
+                        "classified field.",
+                        stacklevel=2,
+                    )
                 layer = self._resolve_style_layer(style)
                 cfg = {
                     **DATA_STYLES[style][layer],
