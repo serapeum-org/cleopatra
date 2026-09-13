@@ -357,7 +357,11 @@ def add_nightshade(
         matplotlib.collections.PolyCollection: The night-shade artist.
 
     Raises:
-        ValueError: If both ``transform`` and ``crs`` are given.
+        TypeError: If ``ax`` is not a matplotlib Axes.
+        ValueError: If both ``transform`` and ``crs`` are given; if
+            ``refraction``/``n`` are out of range (propagated from
+            `night_polygon`); or if ``crs`` cannot be parsed (propagated from
+            `cleopatra.basemap.reference._make_transformer`).
         ImportError: If ``crs`` requires reprojection but ``pyproj`` (the
             ``[tiles]`` extra) is not installed.
 
@@ -530,6 +534,8 @@ def add_tissot(ax: Any, ellipses: Sequence[np.ndarray], **style: Any) -> PolyCol
 
     Raises:
         TypeError: If ``ax`` is not a matplotlib Axes.
+        ValueError: If an ``ellipses`` element cannot be coerced to a float
+            ``(m, 2)`` array (e.g. a ragged ring), propagated from `numpy.asarray`.
 
     Examples:
         - Draw two supplied rings (already in axes coordinates) and keep them:
