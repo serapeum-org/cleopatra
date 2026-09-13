@@ -671,6 +671,14 @@ def fetch_single_tile(
 ) -> tuple[Any, bytes]:
     """Fetch a single tile, retrying on transient failures.
 
+    Every failed attempt is logged at debug level with a *redacted* URL: the
+    query parameter names survive, because they are what makes a failure
+    diagnosable, and every value is replaced with `...` (see `_redact_url`). A
+    tile URL is not always safe to write to a log -- an XYZ template can embed
+    an API key, and `cleopatra.basemap.ogc` documents `extra_params` as the
+    place to put a token -- and a debug log outlives the session. The request
+    that goes on the wire is the unredacted URL; only the log line is masked.
+
     Args:
         tile: Tile to fetch (has `x`, `y`, `z` attributes).
         provider: `xyzservices.TileProvider` with a URL template.

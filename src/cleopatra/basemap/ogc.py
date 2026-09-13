@@ -8,8 +8,8 @@ drawn with `ax.imshow`. So a service that is *not* an XYZ template needs no new
 pipeline -- only a different way to turn a tile into a URL.
 
 That is all this module is. `WMTSProvider` and `WMSProvider` are frozen
-dataclasses satisfying that one-method contract, so they work through the
-unchanged public entry point:
+dataclasses satisfying that one-method contract, so they reach the renderer
+through the same public entry point an XYZ provider does:
 
 ```python
 from cleopatra.basemap.ogc import WMSProvider
@@ -47,6 +47,13 @@ or an XYZ provider for a world texture. And on the RESTful WMTS branch the
 service fixes the format and version in its own template, so `image_format` and
 `version` are validated but never sent; they apply to the KVP branch only.
 
+Adding these providers did change one thing next door. Because `extra_params`
+is documented here as the place to put an API key, `tiles.fetch_single_tile`
+now logs a *redacted* URL when an attempt fails: `tiles._redact_url` keeps the
+query parameter names -- which is what makes a failure diagnosable -- and drops
+every value, so a credential no longer outlives the session in a debug log. The
+request that goes on the wire is untouched.
+
 Importing this module pulls in nothing from the `[tiles]` extra -- neither
 `xyzservices` nor `pyproj` is touched, and the tile-grid helpers it does use are
 plain arithmetic. The extra is required only once you actually render, and
@@ -82,7 +89,10 @@ _WMS_CRS_VERSIONS = ("1.3.0",)
 #: version and the other accepting any non-empty string.
 _WMTS_VERSIONS = ("1.0.0",)
 
-#: Matches one `{}`-delimited placeholder in a RESTful WMTS template.
+#: Matches one `{}`-delimited placeholder in a RESTful WMTS template. The name
+#: is ASCII letters only, so `{Tile_Row}` or `{Time2}` is not read as a
+#: placeholder at all and survives substitution untouched, exactly like a
+#: well-formed name this module does not own.
 _PLACEHOLDER_RE = re.compile(r"\{([A-Za-z]+)\}")
 
 #: The placeholders a RESTful WMTS template may carry, lower-cased for
@@ -118,8 +128,11 @@ def _validate_endpoint(url: str, field_name: str) -> None:
         None
 
     Raises:
-        ValueError: If `url` is not a string, is empty or blank, or does not
-            use the `http` or `https` scheme. The message names `field_name`.
+        ValueError: If `url` is not a string, is empty or blank, carries
+            leading or trailing whitespace, or does not use the `http` or
+            `https` scheme. The message names `field_name`. Padding is refused
+            rather than trimmed: the value is stored and sent verbatim, so
+            trimming it silently would hide a copy-paste error.
     """
     if not isinstance(url, str) or not url.strip():
         raise ValueError(f"{field_name} must be a non-empty string, got {url!r}.")
@@ -148,8 +161,13 @@ def _validate_text(value: str, field_name: str) -> None:
         value: The value to check.
         field_name: The dataclass field the value came from, for the message.
 
+    Returns:
+        None
+
     Raises:
-        ValueError: If `value` is not a string.
+        ValueError: If `value` is not a string. The empty string passes -- that
+            is the point of the check being separate from
+            `_validate_identifier`. The message names `field_name`.
     """
     if not isinstance(value, str):
         raise ValueError(
@@ -279,11 +297,44 @@ def _query(base: str, params: Mapping[str, str]) -> str:
 def _restful_placeholders(url: str) -> set[str]:
     """The known RESTful placeholder names a template carries, lower-cased.
 
+    The whole URL is scanned, not only its path, because some services publish
+    the tile triple in the query. Names this module does not own are dropped in
+    the same pass, which is what stops a service's own `{Time}` from satisfying
+    the required-placeholder check or dragging a KVP endpoint onto the RESTful
+    branch.
+
     Args:
         url: The endpoint or template.
 
     Returns:
         set[str]: The subset of `_RESTFUL_FIELDS` present, however cased.
+
+    Examples:
+        - Casing does not matter, and the names come back lower-cased:
+            ```python
+            >>> from cleopatra.basemap.ogc import _restful_placeholders
+            >>> found = _restful_placeholders("https://e.org/{TILEMATRIX}/{tilerow}/{TileCol}")
+            >>> sorted(found)
+            ['tilecol', 'tilematrix', 'tilerow']
+
+            ```
+        - A name this module does not own is filtered out, so a URL carrying
+          only unknown ones reads as KVP:
+            ```python
+            >>> from cleopatra.basemap.ogc import _restful_placeholders
+            >>> _restful_placeholders("https://e.org/{Time}.png")
+            set()
+            >>> sorted(_restful_placeholders("https://e.org/{Custom}/{TileMatrix}"))
+            ['tilematrix']
+
+            ```
+        - The scan reaches the query, not just the path:
+            ```python
+            >>> from cleopatra.basemap.ogc import _restful_placeholders
+            >>> sorted(_restful_placeholders("https://e.org/wmts?tm={TileMatrix}&r={TileRow}"))
+            ['tilematrix', 'tilerow']
+
+            ```
     """
     found = {match.group(1).lower() for match in _PLACEHOLDER_RE.finditer(url)}
     return found & set(_RESTFUL_FIELDS)
@@ -436,8 +487,8 @@ def _hash_provider(provider: object) -> int:
         provider: The dataclass instance to hash.
 
     Returns:
-        int: A hash over the class name and every field, with any mapping field
-        flattened to its sorted items.
+        int: A hash over the provider's type and every field, with any mapping
+        field flattened to its sorted items.
     """
     values = []
     for spec in fields(provider):
@@ -456,10 +507,15 @@ class WMTSProvider:
     `cleopatra.basemap.tiles.fetch_single_tile` calls, so it can be handed
     straight to `add_tiles` as the `source`.
 
-    Both request encodings are supported. If `url` contains the RESTful
-    placeholder `{TileMatrix}` it is treated as a template and the placeholders
-    are substituted; otherwise `url` is taken as a KVP endpoint and a `GetTile`
-    query is built.
+    Both request encodings are supported. If `url` carries any placeholder
+    this module owns -- `{TileMatrix}`, `{TileRow}`, `{TileCol}`,
+    `{TileMatrixSet}`, `{Layer}` or `{Style}`, in whatever casing the service
+    publishes them -- it is treated as a RESTful template and those
+    placeholders are substituted; otherwise `url` is taken as a KVP endpoint
+    and a `GetTile` query is built. A template has to address a tile, so one
+    carrying placeholders but missing `{TileMatrix}`, `{TileRow}` or
+    `{TileCol}` is refused at construction rather than shipped as a mosaic of
+    one repeated image.
 
     The service description is checked once, at construction -- including on a
     `dataclasses.replace` copy, which is the supported way to vary a frozen
@@ -469,8 +525,10 @@ class WMTSProvider:
 
     Args:
         url: The `GetTile` KVP endpoint, or a RESTful template containing
-            `{TileMatrix}`, `{TileRow}` and `{TileCol}` (and optionally
-            `{TileMatrixSet}`, `{Layer}`, `{Style}`).
+            `{TileMatrix}`, `{TileRow}` and `{TileCol}` -- all three, in any
+            casing -- and optionally `{TileMatrixSet}`, `{Layer}` or
+            `{Style}`. Leading or trailing whitespace is refused rather than
+            trimmed, because the value is sent verbatim.
         layer: The `Layer` identifier to request.
         tile_matrix_set: The tile-matrix set identifier, defaulting to
             `GOOGLE_MAPS_COMPATIBLE`. Only `GoogleMapsCompatible` (or a
@@ -479,28 +537,42 @@ class WMTSProvider:
             geometry -- any other grid returns tiles that will be placed
             wrongly. Nothing validates the grid beyond it being non-empty,
             because the identifier is the service's to name.
-        style: The `Style` identifier. Most services publish `"default"`.
+        style: The `Style` identifier. Most services publish `"default"`. It
+            is percent-encoded where it fills a `{Style}` placeholder, so a
+            name carrying `/`, `?` or a space cannot invent a path segment or
+            start a query.
         image_format: The `Format` to request. `tiles._looks_like_image`
             accepts PNG, JPEG, GIF and WebP, so a TIFF or SVG format will be
             rejected as an unreadable tile. Sent on the KVP branch only -- a
             RESTful template fixes the format in its own path.
-        version: The WMTS version. Sent as `VERSION` on the KVP branch only;
-            a RESTful template encodes it in the endpoint. OGC has published
-            only 1.0.0.
-        attribution: Credit line. `add_tiles(attribution=True)` reads this
-            attribute and draws it on the axes.
+        version: The WMTS version. OGC has only ever published 1.0.0, so that
+            is the only accepted value -- checked here as well, rather than
+            `WMSProvider` refusing an unknown version while this one takes any
+            non-empty string. Sent as `VERSION` on the KVP branch only; a
+            RESTful template encodes it in the endpoint, but it is validated
+            either way.
+        attribution: Credit line, which may be empty but must be a string.
+            `add_tiles(attribution=True)` reads this attribute and draws it on
+            the axes.
         extra_params: Extra query parameters, merged last so they can also
             override a generated one -- matched case-insensitively, as OGC
             parameter names are, so `{"format": ...}` replaces the
             generated `FORMAT` rather than joining it. A parameter already
             in the `url`'s own query is kept verbatim and is *not*
-            overridden this way. This is where an API key or token goes.
-            Keys and values are coerced to `str` and stored read-only.
+            overridden this way. On the RESTful branch there are no generated
+            parameters to override, so these are simply appended as the query.
+            This is where an API key or token goes; a failed fetch logs the
+            URL with every query value redacted, so the key does not reach the
+            debug log. Keys and values are coerced to `str` and stored
+            read-only.
 
     Raises:
-        ValueError: If `url` is not a non-empty http(s) string, or if `layer`,
-            `tile_matrix_set`, `style`, `image_format` or `version` is not a
-            non-empty string.
+        ValueError: If `url` is not a non-empty http(s) string or carries
+            leading or trailing whitespace; if `layer`, `tile_matrix_set`,
+            `style`, `image_format` or `version` is not a non-empty string; if
+            `version` is anything but `1.0.0`; if `attribution` is not a string
+            (empty is allowed); or if `url` carries RESTful placeholders
+            without all of `{TileMatrix}`, `{TileRow}` and `{TileCol}`.
         TypeError: If `extra_params` is not a mapping.
 
     Examples:
@@ -568,6 +640,17 @@ class WMTSProvider:
             ValueError: url must be an http(s) URL, got 'file:///tiles/wmts' (scheme 'file').
 
             ```
+        - So is a template that cannot address a tile -- every tile would
+          otherwise resolve to the same picture, silently:
+            ```python
+            >>> from cleopatra.basemap.ogc import WMTSProvider
+            >>> try:
+            ...     WMTSProvider(url="https://example.org/w/{TileMatrix}.png", layer="L")
+            ... except ValueError as error:
+            ...     print(str(error).split(".")[0])
+            a RESTful WMTS template must address a tile: url is missing {tilerow}, {tilecol}
+
+            ```
 
     See Also:
         WMSProvider: The same idea for a WMS `GetMap` service.
@@ -587,15 +670,25 @@ class WMTSProvider:
         """Validate the service description and freeze `extra_params`.
 
         Runs on a `dataclasses.replace` copy as well as on a direct
-        construction, so a copy is checked as thoroughly as the original.
+        construction, so a copy is checked as thoroughly as the original. The
+        version is matched against the one published WMTS version rather than
+        merely required to be non-empty, so the two providers refuse the same
+        class of mistake; `attribution` may be empty but is still required to
+        be a string, since a non-string one would reach the axes as its `repr`;
+        and a template carrying placeholders is required to carry the three
+        that identify a tile.
 
         Returns:
             None
 
         Raises:
-            ValueError: If `url` is not a non-empty http(s) string, or if
-                `layer`, `tile_matrix_set`, `style`, `image_format` or
-                `version` is not a non-empty string.
+            ValueError: If `url` is not a non-empty http(s) string or carries
+                leading or trailing whitespace; if `layer`, `tile_matrix_set`,
+                `style`, `image_format` or `version` is not a non-empty string;
+                if `version` is anything but `1.0.0`; if `attribution` is not a
+                string (empty is allowed); or if `url` carries RESTful
+                placeholders without all of `{TileMatrix}`, `{TileRow}` and
+                `{TileCol}`.
             TypeError: If `extra_params` is not a mapping.
         """
         _validate_endpoint(self.url, "url")
@@ -646,13 +739,23 @@ class WMTSProvider:
     def is_restful(self) -> bool:
         """Whether `url` is a RESTful template rather than a KVP endpoint.
 
-        `{TileMatrix}` is the marker: a template has to carry it to be fillable
-        at all, so its presence is what selects `build_url`'s substitution
-        branch over its `GetTile` query branch. A query string in the endpoint
-        does not make it a template.
+        Any placeholder this module owns is the marker -- `{TileMatrix}`,
+        `{TileRow}`, `{TileCol}`, `{TileMatrixSet}`, `{Layer}` or `{Style}` --
+        matched case-insensitively, because services are inconsistent about
+        the spelling and a mis-cased one used to fail this test, fall through
+        to the KVP branch and ship a URL with literal braces still in it. Its
+        presence is what selects `build_url`'s substitution branch over the
+        `GetTile` query branch.
+
+        A name this module does not own -- a service's own `{Time}`, say --
+        does not count, and neither does a query string in the endpoint.
+        Because `__post_init__` refuses a template missing `{TileMatrix}`,
+        `{TileRow}` or `{TileCol}`, a constructed provider that answers `True`
+        always carries all three.
 
         Returns:
-            bool: `True` when the template carries `{TileMatrix}`.
+            bool: `True` when `url` carries at least one recognised
+            placeholder.
 
         Examples:
             - A plain endpoint is KVP, so a `GetTile` query gets built:
@@ -678,10 +781,27 @@ class WMTSProvider:
                 'https://example.org/3/2/4.png'
 
                 ```
-            - An endpoint that merely carries a query is still KVP:
+            - The marker is matched case-insensitively, so a lower-cased
+              template is filled in rather than shipped with literal braces:
+                ```python
+                >>> from cleopatra.basemap.ogc import WMTSProvider
+                >>> provider = WMTSProvider(
+                ...     url="https://example.org/{tilematrix}/{tilerow}/{tilecol}.png",
+                ...     layer="L",
+                ... )
+                >>> provider.is_restful
+                True
+                >>> provider.build_url(x=4, y=2, z=3)
+                'https://example.org/3/2/4.png'
+
+                ```
+            - An endpoint that merely carries a query is still KVP, and so is
+              one whose only placeholder this module does not own:
                 ```python
                 >>> from cleopatra.basemap.ogc import WMTSProvider
                 >>> WMTSProvider(url="https://example.org/wmts?layer=x", layer="L").is_restful
+                False
+                >>> WMTSProvider(url="https://example.org/wmts/{Time}.png", layer="L").is_restful
                 False
 
                 ```
@@ -694,11 +814,23 @@ class WMTSProvider:
         The WMTS tile triple is the slippy triple under another name:
         `z` is `TileMatrix`, `y` is `TileRow`, `x` is `TileCol`.
 
-        A RESTful `url` (see `is_restful`) has its `{...}` placeholders filled
-        in; placeholders the template leaves out are simply not substituted.
+        A RESTful `url` (see `is_restful`) has its placeholders filled in, in
+        one left-to-right pass over the whole URL -- query included, not just
+        the path. Four things follow from that. Names are matched
+        case-insensitively, so whatever spelling the service publishes works.
+        Each value is percent-encoded, so a layer or style name carrying `/`,
+        `?` or a space cannot invent a path segment or start a query. The pass
+        never re-scans what it has already written, so a field whose value
+        itself looks like a placeholder stays data instead of being rewritten
+        by a later field. And a placeholder this module does not own -- a
+        service's own `{Time}` -- is left exactly as it stands, for the caller
+        to see rather than silently mangled. `extra_params` is then appended as
+        a query, with an `&` if the filled-in template already carries one.
+
         Otherwise a `GetTile` KVP query is appended to `url`, keeping any query
-        it already carries. Either way `extra_params` comes last, so it can
-        override a generated parameter as well as add one.
+        it already carries, and `extra_params` comes last so it can override a
+        generated parameter -- matched case-insensitively -- as well as add
+        one.
 
         Args:
             x: Tile column, i.e. `TileCol`.
@@ -750,6 +882,31 @@ class WMTSProvider:
                 ... )
                 >>> parse_qs(urlsplit(provider.build_url(x=0, y=0, z=0)).query)["FORMAT"]
                 ['image/jpeg']
+
+                ```
+            - Casing does not matter and every substituted value is
+              percent-encoded, so a layer name cannot break out of its segment:
+                ```python
+                >>> from cleopatra.basemap.ogc import WMTSProvider
+                >>> provider = WMTSProvider(
+                ...     url="https://example.org/w/{layer}/{tilematrix}/{tilerow}/{tilecol}.png",
+                ...     layer="a b/c",
+                ... )
+                >>> provider.build_url(x=4, y=2, z=3)
+                'https://example.org/w/a%20b%2Fc/3/2/4.png'
+
+                ```
+            - A placeholder this module does not own survives untouched, and a
+              value that merely looks like one is not substituted a second
+              time:
+                ```python
+                >>> from cleopatra.basemap.ogc import WMTSProvider
+                >>> provider = WMTSProvider(
+                ...     url="https://example.org/{Custom}/{Layer}/{TileMatrix}/{TileRow}/{TileCol}.png",
+                ...     layer="{TileRow}",
+                ... )
+                >>> provider.build_url(x=4, y=2, z=3)
+                'https://example.org/{Custom}/%7BTileRow%7D/3/2/4.png'
 
                 ```
         """
@@ -819,36 +976,49 @@ class WMSProvider:
 
     Args:
         url: The `GetMap` endpoint. An existing query string is preserved.
+            Leading or trailing whitespace is refused rather than trimmed,
+            because the value is sent verbatim.
         layers: The comma-separated `Layers` value to request.
         styles: The comma-separated `Styles` value. Empty means the service's
             default style, which is what most callers want -- so this is the
             one identifier that is allowed to be empty, and it is still sent.
+            It must still be a string: `None` used to reach the service as the
+            four characters `None`, and came back as a service exception
+            disguised as an unreadable tile.
         version: The WMS version. `"1.3.0"` sends `CRS=`; `"1.1.1"` and older
             send `SRS=`.
         image_format: The `Format` to request. `tiles._looks_like_image`
             accepts PNG, JPEG, GIF and WebP, so a TIFF or SVG format will be
             rejected as an unreadable tile.
         transparent: Whether to request `TRANSPARENT=TRUE`, so an overlay layer
-            composites over what is already on the axes.
+            composites over what is already on the axes. It must be an actual
+            `bool`: any truthy value would otherwise send `TRANSPARENT=TRUE`,
+            so a string like `"no"` would mean its own opposite.
         tile_size: The `WIDTH`/`HEIGHT` in pixels for each `GetMap`. Keep this
             at 256 unless the service refuses it -- `tiles.stitch_tiles` infers
             the mosaic's cell size from the first decoded image, so mixing
             sizes within one render would mis-stitch.
-        attribution: Credit line. `add_tiles(attribution=True)` reads this
-            attribute and draws it on the axes.
+        attribution: Credit line, which may be empty but must be a string.
+            `add_tiles(attribution=True)` reads this attribute and draws it on
+            the axes.
         extra_params: Extra query parameters, merged last so they can also
             override a generated one -- matched case-insensitively, as OGC
             parameter names are, so `{"format": ...}` replaces the
             generated `FORMAT` rather than joining it. A parameter already
             in the `url`'s own query is kept verbatim and is *not*
-            overridden this way. This is where an API key or token goes.
-            Keys and values are coerced to `str` and stored read-only.
+            overridden this way. This is where an API key or token goes; a
+            failed fetch logs the URL with every query value redacted, so the
+            key does not reach the debug log. Keys and values are coerced to
+            `str` and stored read-only.
 
     Raises:
-        ValueError: If `url` is not a non-empty http(s) string, if `layers`,
-            `image_format` or `version` is not a non-empty string, if `version`
-            is not one of `1.0.0`, `1.1.0`, `1.1.1` or `1.3.0`, or if
-            `tile_size` is not a positive `int` (`bool` is rejected too).
+        ValueError: If `url` is not a non-empty http(s) string or carries
+            leading or trailing whitespace; if `layers`, `image_format` or
+            `version` is not a non-empty string; if `version` is not one of
+            `1.0.0`, `1.1.0`, `1.1.1` or `1.3.0`; if `styles` or `attribution`
+            is not a string (empty is allowed); if `transparent` is not a
+            `bool`; or if `tile_size` is not a positive `int` (`bool` is
+            rejected too).
         TypeError: If `extra_params` is not a mapping.
 
     Examples:
@@ -891,6 +1061,33 @@ class WMSProvider:
             ValueError: version must be one of '1.0.0', '1.1.0', '1.1.1', '1.3.0', got '2.0.0'.
 
             ```
+        - A near-miss on a flag is refused rather than read as truthy:
+            ```python
+            >>> from cleopatra.basemap.ogc import WMSProvider
+            >>> try:
+            ...     WMSProvider(
+            ...         url="https://example.org/wms", layers="ortho", transparent="no"
+            ...     )
+            ... except ValueError as error:
+            ...     print(str(error).split(".")[0])
+            transparent must be a bool, got 'no'
+
+            ```
+        - `styles` and `attribution` may be empty, but not `None`:
+            ```python
+            >>> from cleopatra.basemap.ogc import WMSProvider
+            >>> blank = WMSProvider(
+            ...     url="https://example.org/wms", layers="ortho", styles="", attribution=""
+            ... )
+            >>> blank.styles, blank.attribution
+            ('', '')
+            >>> try:
+            ...     WMSProvider(url="https://example.org/wms", layers="ortho", styles=None)
+            ... except ValueError as error:
+            ...     print(error)
+            styles must be a string (empty is allowed), got None.
+
+            ```
 
     See Also:
         WMTSProvider: The same idea for a WMTS `GetTile` service.
@@ -914,16 +1111,22 @@ class WMSProvider:
         construction, so a copy is checked as thoroughly as the original. The
         version is matched against the supported set rather than guessed at,
         because choosing `CRS=` or `SRS=` wrongly would misplace every tile
-        silently.
+        silently. `styles` and `attribution` may be empty but must still be
+        strings -- being allowed to be empty is how they escaped the non-empty
+        check and, with it, any type check at all -- and `transparent` must be
+        a real `bool` rather than merely truthy.
 
         Returns:
             None
 
         Raises:
-            ValueError: If `url` is not a non-empty http(s) string, if
-                `layers`, `image_format` or `version` is not a non-empty
-                string, if `version` is not one of `1.0.0`, `1.1.0`, `1.1.1` or
-                `1.3.0`, or if `tile_size` is not a positive `int`.
+            ValueError: If `url` is not a non-empty http(s) string or carries
+                leading or trailing whitespace; if `layers`, `image_format` or
+                `version` is not a non-empty string; if `version` is not one of
+                `1.0.0`, `1.1.0`, `1.1.1` or `1.3.0`; if `styles` or
+                `attribution` is not a string (empty is allowed); if
+                `transparent` is not a `bool`; or if `tile_size` is not a
+                positive `int` (`bool` is rejected too).
             TypeError: If `extra_params` is not a mapping.
         """
         _validate_endpoint(self.url, "url")
