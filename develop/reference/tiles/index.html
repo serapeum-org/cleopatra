@@ -16,7 +16,7 @@
         <link rel="prev" href="../textured-globe-glyph/">
       
       
-        <link rel="next" href="../reference-data/">
+        <link rel="next" href="../ogc/">
       
       
         
@@ -733,6 +733,8 @@
       
         
       
+        
+      
     
     
     
@@ -1331,6 +1333,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ogc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OGC services (WMS/WMTS)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2706,6 +2736,9 @@
 <p>The <code>cleopatra.basemap.tiles</code> module adds an optional, pure-Python web-tile basemap helper:
 <code>add_tiles</code> fetches XYZ map tiles covering an axes' current extent, stitches them with
 Pillow, and renders the composite underneath your data. No GDAL is required.</p>
+<p>For a service published as OGC <strong>WMS</strong> or <strong>WMTS</strong> rather than an XYZ template, pass one of
+the provider objects from <a href="../ogc/"><code>cleopatra.basemap.ogc</code></a> as the <code>source</code> — the fetch,
+stitch and compose path below is the same one they use.</p>
 <p>It is gated behind the <code>cleopatra[tiles]</code> optional extra (<code>pillow</code>, <code>pyproj</code>,
 <code>xyzservices</code>):</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">pip</label><label for="__tabbed_1_2">conda</label></div>
@@ -6756,13 +6789,13 @@ positive.</p>
         
         
           
-          <a href="../reference-data/" class="md-footer__link md-footer__link--next" aria-label="Next: Reference data (coastlines/relief)">
+          <a href="../ogc/" class="md-footer__link md-footer__link--next" aria-label="Next: OGC services (WMS/WMTS)">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Reference data (coastlines/relief)
+                OGC services (WMS/WMTS)
               </div>
             </div>
             <div class="md-footer__button md-icon">
