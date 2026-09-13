@@ -33,7 +33,7 @@ from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
 from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
 from cleopatra.glyphs.stats.hexbin_glyph import HexbinGlyph
 from cleopatra.glyphs.stats.kde_glyph import KDEGlyph
-from cleopatra.styling.params import Classify, Contour
+from cleopatra.styling.params import Classify, Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import (
     CLASSIFY_OPTIONS,
@@ -262,6 +262,20 @@ class TestClassify:
         """
         with pytest.raises(ValueError, match="no finite entries"):
             classify(np.array([np.nan, np.inf]), "quantiles", k=5)
+
+    def test_explicit_edges_accept_non_finite_values(self):
+        """Explicit edges bin even all-non-finite values (edges are given).
+
+        Test scenario:
+            A named scheme needs data, but an explicit edge sequence does not --
+            an all-NaN input (e.g. a fully masked facet panel sharing stack-wide
+            edges) still yields those edges rather than raising.
+        """
+        edges, norm = classify(np.array([np.nan, np.inf]), [0.0, 5.0, 10.0])
+        assert list(edges) == [0.0, 5.0, 10.0], (
+            f"edges should be used verbatim: {edges}"
+        )
+        assert isinstance(norm, mcolors.BoundaryNorm), "should build a BoundaryNorm"
 
     def test_degenerate_no_spread_raises(self):
         """Constant data (no spread) raises a clear ``ValueError``.
@@ -842,6 +856,21 @@ class TestArrayGlyphScheme:
         with pytest.raises(ValueError, match="categorical"):
             glyph.plot(classify=Classify(scheme="categorical"))
 
+    def test_data_style_over_classify_warns(self, ramp):
+        """A `data_style` preset alongside `classify` warns that classify is dropped.
+
+        Test scenario:
+            A preset owns the colour mapping, so `classify` is ignored -- and,
+            like the points / cell-value overlays on that path, a warning says
+            so rather than silently discarding the classification.
+        """
+        glyph = ArrayGlyph(ramp.reshape(10, 10))
+        with pytest.warns(UserWarning, match="classify.*ignored with 'style'"):
+            glyph.plot(
+                classify=Classify(scheme="quantiles", k=4),
+                data_style=DataStyle(style="elevation"),
+            )
+
     def test_conflict_warning_attributed_to_caller(self, ramp):
         """The scheme/scale conflict warning points at the caller, not internals.
 
@@ -943,6 +972,71 @@ class TestArrayGlyphScheme:
             "a failed classified animation must not leave scheme set"
         )
         glyph.animate(["t0", "t1"])
+
+    def test_facet_masked_panel(self):
+        """A fully-masked facet panel does not abort the classified facet.
+
+        Test scenario:
+            A stack whose middle slice is all-NaN still facets: every panel
+            shares the stack-wide class edges (the empty panel included), rather
+            than raising "no finite entries".
+        """
+        stack = np.stack(
+            [
+                np.arange(16.0).reshape(4, 4),
+                np.full((4, 4), np.nan),
+                np.arange(16.0, 32.0).reshape(4, 4),
+            ]
+        )
+        grid = ArrayGlyph(stack).facet(
+            FacetLayout(col="time"), classify=Classify(scheme="quantiles", k=4)
+        )
+        norms = [
+            ax.get_images()[0].norm.boundaries.tolist()
+            for row in grid.axes
+            for ax in np.atleast_1d(row)
+            if ax.get_images()
+        ]
+        assert len(norms) == 3, "all three panels (incl. the masked one) drawn"
+        assert all(n == norms[0] for n in norms), "every panel shares stack-wide edges"
+
+    def test_projection_classify(self):
+        """Classification works through the projection render path.
+
+        Test scenario:
+            A classified `plot(projection="flat")` colours through a
+            `BoundaryNorm` (exercising `_plot_projected`, not `_plot_im...`).
+        """
+        lon = np.linspace(-10.0, 10.0, 8)
+        lat = np.linspace(-5.0, 5.0, 6)
+        arr = np.arange(48.0).reshape(6, 8)
+        glyph = ArrayGlyph(arr, coords=(lon, lat))
+        glyph.plot(classify=Classify(scheme="quantiles", k=4), projection="flat")
+        assert isinstance(glyph.im.norm, mcolors.BoundaryNorm), (
+            "projection path should classify through a BoundaryNorm"
+        )
+
+    def test_animate_later_frame_keeps_discrete_norm(self):
+        """A later animation frame still maps through the discrete norm.
+
+        Test scenario:
+            Driving the frame-update callable for frame 1 swaps the data but
+            keeps the stack-wide `BoundaryNorm`, so every frame is classified.
+        """
+        stack = np.stack(
+            [np.arange(100.0).reshape(10, 10), np.arange(100.0, 200.0).reshape(10, 10)]
+        )
+        glyph = ArrayGlyph(stack)
+        anim = glyph.animate(
+            ["t0", "t1"], classify=Classify(scheme="equal_interval", k=5)
+        )
+        anim._func(1)
+        assert isinstance(glyph.im.norm, mcolors.BoundaryNorm), (
+            "frame 1 must still use the discrete norm"
+        )
+        assert float(np.nanmax(glyph.im.get_array())) == 199.0, (
+            "frame 1 data should be shown"
+        )
 
     def test_facet_bad_scheme_raises_before_figure(self, monkeypatch):
         """A raising facet scheme fails before the figure is created (no leak).
