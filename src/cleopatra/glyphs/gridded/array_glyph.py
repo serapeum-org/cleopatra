@@ -2580,10 +2580,20 @@ class ArrayGlyph(GeoMixin, Glyph):
             if isinstance(plot_arr, ma.MaskedArray):
                 plot_arr = plot_arr.filled(np.nan)
             plot_fn = ax.contour if kind == "contour" else ax.contourf
+            is_contourf = kind == "contourf"
             hatches = self.default_options.get("hatches")
             hatch_color = self.default_options.get("hatch_color")
+            fill = self.default_options.get("fill")
+            if not is_contourf and (
+                hatches is not None or hatch_color is not None or fill is not None
+            ):
+                warnings.warn(
+                    "hatches/fill/hatch_color are contourf-only and are ignored "
+                    f"for kind={kind!r}.",
+                    stacklevel=2,
+                )
             contour_kwargs: dict[str, Any]
-            if kind == "contourf" and self.default_options.get("fill") is False:
+            if is_contourf and fill is False:
                 # Unfilled overlay: only the hatch marks draw. matplotlib rejects
                 # cmap and colors together, and an unfilled set is not
                 # colour-mapped, so vmin/vmax/norm are dropped with the cmap.
@@ -2595,7 +2605,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     contour_kwargs["vmax"] = vmax
                 else:
                     contour_kwargs["norm"] = norm
-            if hatches is not None:
+            if is_contourf and hatches is not None:
                 contour_kwargs["hatches"] = hatches
             level_edges = self._levels_to_bounds(levels, vmin, vmax)
             base_args = (
@@ -2605,7 +2615,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 im = plot_fn(*base_args, level_edges, **contour_kwargs)
             else:
                 im = plot_fn(*base_args, **contour_kwargs)
-            if hatch_color is not None:
+            if is_contourf and hatch_color is not None:
                 # Per-set hatch-stroke colour, independent of the global
                 # hatch.color rcParam and without recolouring the band edges
                 # (matplotlib >= 3.11).

@@ -1345,6 +1345,19 @@ class TestPlotKindDispatch:
         )
         assert glyph.cbar is not None, "a filled hatched set still gets a colorbar"
 
+    def test_hatch_fields_warn_and_are_ignored_on_kind_contour(self):
+        """Hatch fields are contourf-only; `kind="contour"` warns and ignores them."""
+        glyph = ArrayGlyph(self._sample_arr())
+        with pytest.warns(UserWarning, match="contourf-only"):
+            glyph.plot(
+                kind="contour",
+                contour=Contour(levels=4, hatches=["///"], hatch_color="red"),
+            )
+        edges = glyph.im.get_edgecolor()
+        assert not len(edges) or not np.allclose(edges[0], to_rgba("red")), (
+            f"hatch_color must not recolour the contour lines, got {edges}"
+        )
+
     def test_invalid_kind_raises(self):
         """`kind="bogus"` raises `ValueError` listing the valid kinds."""
         glyph = ArrayGlyph(self._sample_arr())
