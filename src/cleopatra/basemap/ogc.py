@@ -277,15 +277,31 @@ def _freeze_params(extra_params: Mapping[str, str]) -> Mapping[str, str]:
         Mapping[str, str]: A read-only `MappingProxyType` over a fresh copy,
         with every key and value coerced to `str`.
 
+    Keys and values are coerced with `str`, so a non-string key is usable --
+    but two keys that coerce to the *same* name are refused rather than left to
+    overwrite one another. Dropping half of what the caller passed, silently, is
+    the failure this whole module was written to stop doing.
+
     Raises:
         TypeError: If `extra_params` is not a mapping.
+        ValueError: If two keys coerce to the same parameter name.
     """
     if not isinstance(extra_params, Mapping):
         raise TypeError(
             f"extra_params must be a mapping of query parameters, "
             f"got {type(extra_params).__name__}."
         )
-    return MappingProxyType({str(k): str(v) for k, v in extra_params.items()})
+    coerced: dict[str, str] = {}
+    for key, value in extra_params.items():
+        text = str(key)
+        if text in coerced:
+            raise ValueError(
+                f"extra_params has two keys that become {text!r} once coerced to a "
+                f"query parameter name. One would silently replace the other; "
+                f"supply a single key."
+            )
+        coerced[text] = str(value)
+    return MappingProxyType(coerced)
 
 
 def _query(base: str, params: Mapping[str, str]) -> str:

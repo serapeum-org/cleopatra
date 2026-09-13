@@ -1585,33 +1585,39 @@ class TestRoundTwoHardening:
             "the coerced key did not reach the query"
         )
 
-    def test_keys_that_coerce_to_one_string_collapse_rather_than_conflict(self):
-        """`{5: ..., "5": ...}` is one parameter, so the duplicate guard is silent.
+    def test_keys_that_coerce_to_one_name_are_refused(self):
+        """Two keys that become the same parameter name raise.
 
         Test scenario:
-            The case-duplicate guard exists to stop two spellings of one OGC
-            parameter both going on the wire. Coercion happens first and a dict
-            cannot hold `5` and `"5"` at once, so the pair is already one entry
-            by the time the guard looks -- last one wins, exactly as a repeated
-            literal key would. Nothing ambiguous reaches the service, which is
-            why this is a collapse and not a refusal.
+            `_freeze_params` coerces keys with `str`, so `{5: "x", "5": "y"}`
+            collapsed to one entry and half of what the caller passed vanished
+            without a word. Only one value reaches the wire, so there is no
+            service-chooses ambiguity -- but silently dropping an option the
+            caller supplied is the exact failure this module was written to
+            stop doing, so it is refused instead.
+        """
+        with pytest.raises(ValueError, match="two keys that become"):
+            WMSProvider(
+                url="https://example.org/wms",
+                layers="ortho",
+                extra_params={5: "x", "5": "y"},
+            )
+
+    def test_a_single_non_string_key_is_still_usable(self):
+        """Coercion itself is not the problem and still happens.
+
+        Test scenario:
+            Refusing the collision must not refuse an ordinary numeric key,
+            which is a reasonable thing to pass and has one unambiguous
+            spelling on the wire.
         """
         provider = WMSProvider(
-            url="https://example.org/wms",
-            layers="ortho",
-            extra_params={5: "x", "5": "y"},
+            url="https://example.org/wms", layers="ortho", extra_params={5: "x"}
         )
-        assert dict(provider.extra_params) == {"5": "y"}, (
-            f"expected the later value to win: {dict(provider.extra_params)}"
+        assert dict(provider.extra_params) == {"5": "x"}, (
+            f"a single non-string key should coerce: {dict(provider.extra_params)}"
         )
 
-    @pytest.mark.parametrize(
-        "template",
-        [
-            "https://example.org/wmts/{Layer}.png",
-            "https://example.org/wmts/{Style}/{TileMatrixSet}.png",
-        ],
-    )
     def test_a_template_of_only_optional_placeholders_is_refused(self, template):
         """Owning a placeholder is not the same as addressing a tile.
 
