@@ -98,7 +98,7 @@ class Contour:
         if self.label_kw is not None:
             options["label_kw"] = self.label_kw
         if self.hatches is not None:
-            options["hatches"] = self.hatches
+            options["hatches"] = list(self.hatches)
         if self.fill is not None:
             options["fill"] = self.fill
         if self.hatch_color is not None:
