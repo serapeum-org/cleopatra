@@ -8,11 +8,11 @@ norm plus colorbar keyword arguments.
 
 The flat options are mutually exclusive by scale kind -- `gamma` only
 applies to `power`, `line_threshold`/`line_scale` only to `sym-lognorm`,
-`bounds` only to `boundary-norm`, `midpoint` only to `midpoint`. The
-variant constructors (`ColorScaling.power`, `.sym_log`, `.log`,
-`.boundary`, `.midpoint`, `.linear`) expose only the knobs each scale
-actually uses,
-so an invalid combination cannot be expressed.
+`bounds` only to `boundary-norm`, `midpoint` only to `midpoint`, `samples`
+only to `equalize` (the continuous rank-equalising scale). The variant
+constructors (`ColorScaling.power`, `.sym_log`, `.log`, `.boundary`,
+`.midpoint`, `.equalize`, `.linear`) expose only the knobs each scale
+actually uses, so an invalid combination cannot be expressed.
 
 Examples:
     - A power scale exposes only `gamma`:
@@ -210,6 +210,7 @@ _SCALE_DEFAULTS: dict[str, Any] = {
     "line_scale": None,
     "bounds": None,
     "midpoint": 0,
+    "samples": 512,
 }
 
 
@@ -278,8 +279,8 @@ class ColorScaling:
     """The colour-scale group: a scale kind plus its scale-specific knobs.
 
     Prefer the variant constructors (`linear`, `power`, `sym_log`, `log`,
-    `boundary`, `midpoint`) over the raw dataclass -- each exposes only
-    the fields its scale uses, so nonsensical combinations (e.g. a
+    `boundary`, `midpoint`, `equalize`) over the raw dataclass -- each exposes
+    only the fields its scale uses, so nonsensical combinations (e.g. a
     `midpoint` on a `linear` scale) cannot be built.
 
     Attributes:
@@ -296,6 +297,8 @@ class ColorScaling:
         center: Centre value for the `midpoint` scale (the value pinned to
             the colormap centre). Named `center` rather than `midpoint` so
             the field does not shadow the `midpoint()` variant constructor.
+        samples: Number of quantile samples for the `equalize` scale -- the
+            resolution of the empirical-CDF table. Ignored by other kinds.
     """
 
     kind: ColorScale = ColorScale.LINEAR
@@ -304,6 +307,7 @@ class ColorScaling:
     line_scale: float | None = None
     bounds: list[float] | None = None
     center: float = 0
+    samples: int = 512
 
     @classmethod
     def linear(cls) -> ColorScaling:
@@ -444,6 +448,48 @@ class ColorScaling:
         return cls(kind=ColorScale.MIDPOINT, center=at)
 
     @classmethod
+    def equalize(cls, samples: int = 512) -> ColorScaling:
+        """A continuous rank-equalising colour scale (histogram equalisation).
+
+        Spreads the colour ramp by rank rather than by value, so every quantile
+        of the data receives an equal share of the ramp. On a skewed field
+        (bathymetry, population, discharge) this reveals the bulk that a linear
+        norm flattens into one tone -- and, unlike `boundary`, it stays
+        continuous, so it does not posterise a shaded-relief surface. It is
+        backed by a `matplotlib.colors.FuncNorm` built from the data's own
+        empirical CDF at render time.
+
+        It ranks within the resolved display window, so `vmin`/`vmax` and
+        `robust=True` clip the field before ranking (handy for taming outliers
+        on a skewed surface); with no limits it ranks the whole field.
+
+        The scale is data-driven, so it is wired for `ArrayGlyph` (which can
+        supply its cell values); using it where the values are unavailable
+        raises a clear error rather than guessing.
+
+        Args:
+            samples: Number of quantile samples in the empirical-CDF table --
+                its resolution. Must be at least 2. Defaults to `512`.
+
+        Raises:
+            ValueError: If `samples` is less than 2.
+
+        Examples:
+            - The equalize scale carries its sample count:
+                ```python
+                >>> from cleopatra.styling.scaling import ColorScaling
+                >>> ColorScaling.equalize().kind.value
+                'equalize'
+                >>> ColorScaling.equalize(samples=256).samples
+                256
+
+                ```
+        """
+        if samples < 2:
+            raise ValueError(f"equalize needs samples >= 2, got {samples}.")
+        return cls(kind=ColorScale.EQUALIZE, samples=samples)
+
+    @classmethod
     def from_options(cls, options: dict[str, Any]) -> ColorScaling:
         """Build a `ColorScaling` from a flat `default_options` dict.
 
@@ -488,14 +534,16 @@ class ColorScaling:
             line_scale=options.get("line_scale", _SCALE_DEFAULTS["line_scale"]),
             bounds=options.get("bounds", _SCALE_DEFAULTS["bounds"]),
             center=options.get("midpoint", _SCALE_DEFAULTS["midpoint"]),
+            samples=options.get("samples", _SCALE_DEFAULTS["samples"]),
         )
 
     def to_options(self) -> dict[str, Any]:
         """Flatten back to the `default_options` keys the engine reads.
 
         Returns:
-            dict: The six colour-scale keys, with `color_scale` as the
-                plain string value.
+            dict: The colour-scale keys, with `color_scale` as the plain
+                string value and `norm` reset to `None` (a scale clears any
+                raw-norm escape hatch).
 
         Examples:
             - Emits the flat keys a glyph merges into `default_options`:
@@ -513,6 +561,11 @@ class ColorScaling:
             "line_scale": self.line_scale,
             "bounds": self.bounds,
             "midpoint": self.center,
+            "samples": self.samples,
+            # A scale is a full reset: choosing one clears any raw-norm escape
+            # hatch (`plot(norm=...)`) so a later `color=ColorScaling.*` is not
+            # silently shadowed by a sticky caller norm.
+            "norm": None,
         }
 
     def build_norm(
@@ -520,6 +573,7 @@ class ColorScaling:
         ticks: np.ndarray,
         levels: int | list[float] | np.ndarray | None = None,
         extend: str | None = None,
+        values: np.ndarray | None = None,
     ) -> tuple[colors.Normalize | None, dict[str, Any]]:
         """Build the matplotlib norm and colorbar keyword arguments.
 
@@ -536,6 +590,9 @@ class ColorScaling:
                 kinds (int count or explicit edges).
             extend: Colorbar arrow extension. When `None`, auto-resolves to
                 `"both"` if `levels` is set, else `"neither"`.
+            values: The data's own values, used only by the `equalize` scale
+                to build its empirical-CDF table. `None` (the default) is fine
+                for every other kind; `equalize` raises when it is `None`.
 
         Returns:
             tuple[Normalize or None, dict]: The norm (`None` for a plain
@@ -591,6 +648,8 @@ class ColorScaling:
         elif self.kind == ColorScale.MIDPOINT:
             norm = MidpointNormalize(midpoint=self.center, vmin=vmin, vmax=vmax)
             cbar_kw = {"ticks": ticks}
+        elif self.kind == ColorScale.EQUALIZE:
+            norm, cbar_kw = self._equalize_norm(ticks, values)
         else:  # pragma: no cover - a ColorScale member without a branch
             raise ValueError(
                 f"No norm branch implemented for color_scale={self.kind!r}."
@@ -672,3 +731,64 @@ class ColorScaling:
         else:
             bounds = ticks
         return colors.BoundaryNorm(boundaries=bounds, ncolors=256), {"ticks": bounds}
+
+    def _equalize_norm(
+        self, ticks: np.ndarray, values: np.ndarray | None
+    ) -> tuple[colors.Normalize, dict[str, Any]]:
+        """Rank-equalising norm: a `FuncNorm` over the data's own empirical CDF.
+
+        Maps each value to its quantile rank in `[0, 1]`, so every quantile of
+        the data gets an equal share of the ramp. Needs the data itself (not
+        just the tick range), so `values` is required; the colour bar's ticks
+        are placed at the data's quantiles rather than linearly, so they sit
+        evenly on the equalised axis instead of implying a linear one.
+
+        Ranks within the resolved display window `[ticks[0], ticks[-1]]`, so an
+        explicit `vmin`/`vmax` or `robust=True` clips the field before ranking
+        (out-of-window outliers then take the end colours rather than flattening
+        the in-window distribution). The default window is the data range, so it
+        keeps every cell.
+        """
+        if values is None:
+            raise ValueError(
+                "ColorScaling.equalize() needs the data values to build its "
+                "quantile table. It is wired for ArrayGlyph (which supplies its "
+                "cell values); pass values= to build_norm() to use it directly."
+            )
+        data = np.asarray(values, dtype=float)
+        data = data[np.isfinite(data)]
+        if data.size == 0:
+            raise ValueError("ColorScaling.equalize() got no finite values to rank.")
+        if ticks is not None and len(ticks) >= 2:
+            lo_lim, hi_lim = float(ticks[0]), float(ticks[-1])
+            if hi_lim > lo_lim:
+                in_window = data[(data >= lo_lim) & (data <= hi_lim)]
+                if in_window.size:
+                    data = in_window
+        q = np.linspace(0.0, 1.0, self.samples)
+        qv = np.quantile(data, q)
+        # A flat plateau repeats a data value across several quantiles, giving
+        # np.interp a zero-width interval; keep a strictly increasing support by
+        # dropping the repeats (np.unique returns sorted-unique + first index).
+        qv_unique, first = np.unique(qv, return_index=True)
+        q_unique = q[first]
+        if qv_unique.size < 2:
+            # A constant / fully-tied field has no rank spread to apply: fall
+            # back to a degenerate linear norm rather than dividing by zero.
+            lo = float(qv_unique[0])
+            return colors.Normalize(vmin=lo, vmax=lo), {"ticks": np.array([lo])}
+        lo, hi = float(qv_unique[0]), float(qv_unique[-1])
+        norm = colors.FuncNorm(
+            (
+                lambda x, xp=qv_unique, fp=q_unique: np.interp(x, xp, fp),
+                lambda y, xp=q_unique, fp=qv_unique: np.interp(y, xp, fp),
+            ),
+            vmin=lo,
+            vmax=hi,
+        )
+        n_ticks = len(ticks) if ticks is not None and len(ticks) >= 2 else 8
+        # Reuse the CDF table (qv) rather than a second np.quantile sort of the
+        # full field; interpolating it at the tick quantiles gives the same
+        # quantile-spaced positions.
+        tick_vals = np.unique(np.interp(np.linspace(0.0, 1.0, n_ticks), q, qv))
+        return norm, {"ticks": tick_vals, "format": _plain_tick_formatter()}
