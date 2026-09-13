@@ -909,6 +909,23 @@ class TestArrayGlyphScheme:
             "class edges should span the whole stack"
         )
 
+    def test_classified_raster_ignores_nan(self):
+        """A classified raster bins only its finite cells, ignoring NaN.
+
+        Test scenario:
+            A ramp with a NaN cell classifies over the finite values (the class
+            edges match `styles.classify` on the finite cells) and still renders.
+        """
+        arr = np.arange(100.0).reshape(10, 10)
+        arr[0, 0] = np.nan
+        glyph = ArrayGlyph(arr)
+        glyph.plot(classify=Classify(scheme="quantiles", k=4))
+        edges, _ = classify(arr[np.isfinite(arr)], "quantiles", k=4)
+        assert isinstance(glyph.im.norm, mcolors.BoundaryNorm), "should classify"
+        assert np.allclose(glyph.im.norm.boundaries, edges), (
+            "NaN cells must be dropped before binning"
+        )
+
     def test_animate_bad_scheme_rolls_back(self):
         """A bad scheme on `animate` leaves no half-applied option.
 
@@ -1017,6 +1034,19 @@ class TestSchemeGlyphScope:
         assert np.allclose(glyph.im.norm.boundaries, edges), (
             "raster class edges should match styles.classify"
         )
+
+    def test_array_glyph_rejects_loose_scheme_kwarg(self):
+        """A loose `scheme=` on the `ArrayGlyph` constructor still raises (#351).
+
+        Test scenario:
+            Even though `ArrayGlyph` now classifies via `classify=Classify(...)`,
+            a loose `scheme=` keyword is still rejected with the pointer to the
+            grouped parameter object (`scheme`/`k` remain in the grouped-kwarg
+            hints), so the migration message is preserved.
+        """
+        arr = np.arange(9).reshape(3, 3).astype(float)
+        with pytest.raises(ValueError, match="moved onto a grouped parameter object"):
+            ArrayGlyph(arr, scheme="quantiles")
 
     def test_mesh_glyph_rejects_scheme(self):
         """`MeshGlyph` rejects `scheme` instead of silently ignoring it.

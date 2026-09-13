@@ -3464,8 +3464,12 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `Classify(scheme="natural_breaks", k=7)`, or explicit edges
                 `Classify(scheme=[0, 10, 50, 100, 500])`. The scheme owns the
                 norm, so `color`'s `color_scale` / `levels` are ignored when it
-                is set (a warning says so). `scheme="categorical"` is rejected
-                for a raster (its cells are a continuous field).
+                is set (a warning says so), and the classes are derived from the
+                data itself -- a caller `vmin` / `vmax` does not constrain them
+                (pass explicit edges to pin the class boundaries instead).
+                `scheme="categorical"` is rejected for a raster (its cells are a
+                continuous field), so a `Classify.category_legend_kwargs` is
+                accepted but has no effect here.
             data_style: Named-preset / relief-shading group object
                 (`cleopatra.styling.params.DataStyle`), e.g.
                 `DataStyle(style="dem", hillshade=True)` or
