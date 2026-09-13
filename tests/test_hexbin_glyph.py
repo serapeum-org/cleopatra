@@ -29,7 +29,7 @@ def _close_figures():
     plt.close("all")
 
 
-@pytest.fixture()
+@pytest.fixture
 def cloud():
     """A reproducible 2-D point cloud with a per-point value array.
 
@@ -50,9 +50,8 @@ class TestHexbinConstruction:
         """x and y are stored as float ndarrays."""
         x, y, _ = cloud
         glyph = HexbinGlyph(x, y)
-        assert glyph.x.dtype == float and glyph.y.dtype == float, (
-            "coords should be float"
-        )
+        assert glyph.x.dtype == float, "x should be stored as float"
+        assert glyph.y.dtype == float, "y should be stored as float"
         assert glyph.values is None, "values should default to None (counts)"
 
     def test_mismatched_xy_lengths_raise(self):
@@ -86,7 +85,8 @@ class TestHexbinEvaluate:
         x, y, _ = cloud
         cx, cy, agg = HexbinGlyph(x, y, gridsize=8).evaluate()
         assert cx.shape == cy.shape == agg.shape, "centres and aggregate must align"
-        assert cx.ndim == 1 and cx.size > 0, "there should be at least one bin"
+        assert cx.ndim == 1, "centres should be 1-D"
+        assert cx.size > 0, "there should be at least one bin"
 
     def test_counts_sum_to_point_total(self, cloud):
         """With no values, the per-bin counts sum to the number of points."""
@@ -150,8 +150,9 @@ class TestHexbinReduce:
     def test_unknown_reduce_raises(self, cloud):
         """An unknown `reduce` name raises a clear ValueError."""
         x, y, v = cloud
+        glyph = HexbinGlyph(x, y, v, reduce="nope")
         with pytest.raises(ValueError, match="reduce must be"):
-            HexbinGlyph(x, y, v, reduce="nope").plot()
+            glyph.plot()
 
 
 class TestHexbinGrid:
@@ -200,10 +201,10 @@ class TestHexbinPlot:
         x, y, _ = cloud
         glyph = HexbinGlyph(x, y)
         fig, ax, pc = glyph.plot()
-        assert fig is glyph.fig and ax is glyph.ax, "returned fig/ax are the glyph's"
-        assert isinstance(pc, PolyCollection) and glyph.im is pc, (
-            "im holds the collection"
-        )
+        assert fig is glyph.fig, "returned fig is the glyph's"
+        assert ax is glyph.ax, "returned ax is the glyph's"
+        assert isinstance(pc, PolyCollection), "plot returns a PolyCollection"
+        assert glyph.im is pc, "im holds the drawn collection"
 
     def test_colorbar_drawn_by_default(self, cloud):
         """A colorbar is attached by default."""
@@ -229,9 +230,8 @@ class TestHexbinPlot:
         """Explicit vmin/vmax reach the collection's norm."""
         x, y, v = cloud
         _, _, pc = HexbinGlyph(x, y, v, vmin=-1.0, vmax=1.0, gridsize=8).plot()
-        assert pc.norm.vmin == pytest.approx(-1.0) and pc.norm.vmax == pytest.approx(
-            1.0
-        )
+        assert pc.norm.vmin == pytest.approx(-1.0), "vmin should reach the norm"
+        assert pc.norm.vmax == pytest.approx(1.0), "vmax should reach the norm"
 
     def test_draws_on_supplied_axes(self, cloud):
         """plot(ax=...) draws on the caller's axes."""
@@ -262,8 +262,10 @@ class TestHexbinPlot:
         cx, cy, _ = HexbinGlyph(
             x, y, gridsize=8, extent=(2.0, 6.0, 3.0, 7.0)
         ).evaluate()
-        assert 1.5 <= cx.min() and cx.max() <= 6.5, "extent did not bound x centres"
-        assert 2.5 <= cy.min() and cy.max() <= 7.5, "extent did not bound y centres"
+        assert cx.min() >= 1.5, "extent did not bound the x centres (min)"
+        assert cx.max() <= 6.5, "extent did not bound the x centres (max)"
+        assert cy.min() >= 2.5, "extent did not bound the y centres (min)"
+        assert cy.max() <= 7.5, "extent did not bound the y centres (max)"
 
 
 class TestHexbinClassify:
@@ -283,8 +285,9 @@ class TestHexbinClassify:
         """A categorical scheme is rejected: a per-bin aggregate is continuous."""
         x, y, _ = cloud
         bad = Classify(scheme="categorical")
+        glyph = HexbinGlyph(x, y)
         with pytest.raises(ValueError):
-            HexbinGlyph(x, y).plot(classify=bad)
+            glyph.plot(classify=bad)
 
     def test_contour_levels_discretise(self, cloud):
         """contour=Contour(levels=n) discretises the colour scale."""
@@ -305,4 +308,5 @@ class TestHexbinClassify:
     def test_scheme_and_k_are_option_keys(self):
         """HexbinGlyph exposes scheme/k as accepted options (pipeline integration)."""
         keys = HexbinGlyph.option_keys()
-        assert "scheme" in keys and "k" in keys, "hexbin should accept scheme/k"
+        assert "scheme" in keys, "hexbin should accept scheme"
+        assert "k" in keys, "hexbin should accept k"
