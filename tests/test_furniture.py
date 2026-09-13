@@ -376,6 +376,17 @@ class TestAddScaleBar:
         add_scale_bar(ax, 100_000, box=True, label_location="top")
         assert len(ax.patches) == before + 1, "one backing panel for a top caption"
 
+    def test_box_bottom_label(self, ax):
+        """A backing box also works with a bottom caption.
+
+        Test scenario:
+            `label_location="bottom"` with `box=True` draws one panel that grows
+            below the bar (the `sign < 0` branch).
+        """
+        before = len(ax.patches)
+        add_scale_bar(ax, 100_000, box=True, label_location="bottom")
+        assert len(ax.patches) == before + 1, "one backing panel for a bottom caption"
+
     def test_box_covers_caption_without_ticks(self, ax):
         """The backing box reserves room for the always-drawn caption.
 
