@@ -693,3 +693,84 @@ class TestSplitAntimeridian:
         )
         rings = solar._split_antimeridian(ring)
         assert len(rings) == 1, f"expected 1 ring, got {len(rings)}"
+
+
+class TestClipAndCapHelpers:
+    """Direct unit tests for the private clip and pole-cap helpers."""
+
+    @pytest.mark.parametrize(
+        "p, q, x, expected",
+        [
+            ([0.0, 0.0], [10.0, 10.0], 5.0, [5.0, 5.0]),
+            ([0.0, 0.0], [4.0, 8.0], 2.0, [2.0, 4.0]),
+            ([-2.0, 3.0], [2.0, -1.0], 0.0, [0.0, 1.0]),
+        ],
+    )
+    def test_intersect_x(self, p, q, x, expected):
+        """Test the segment/vertical-line intersection point.
+
+        Args:
+            p: Segment start ``[x, y]``.
+            q: Segment end ``[x, y]``.
+            x: Vertical line to cross.
+            expected: Expected ``[x, y]`` crossing point.
+
+        Test scenario:
+            The crossing latitude is linearly interpolated at the given x.
+        """
+        out = solar._intersect_x(np.array(p), np.array(q), x)
+        assert np.allclose(out, expected), f"_intersect_x -> {out}, expected {expected}"
+
+    def test_clip_halfplane_keeps_inside_part(self):
+        """Test half-plane clipping keeps the inside and adds the boundary crossing.
+
+        Test scenario:
+            Clipping a unit square spanning x in [0, 10] to x <= 5 leaves a
+            polygon bounded by x = 5.
+        """
+        square = np.array([[0.0, 0.0], [10.0, 0.0], [10.0, 4.0], [0.0, 4.0]])
+        clipped = solar._clip_halfplane(square, 5.0, keep_below=True)
+        assert len(clipped) >= 3, f"expected a polygon, got {clipped}"
+        assert clipped[:, 0].max() == pytest.approx(5.0), "not clipped at x=5"
+        assert clipped[:, 0].min() == pytest.approx(0.0), "left edge lost"
+
+    def test_clip_halfplane_empty_when_all_outside(self):
+        """Test half-plane clipping returns empty when nothing is inside.
+
+        Test scenario:
+            A square entirely at x > 5 clipped to x <= 5 yields no vertices.
+        """
+        square = np.array([[6.0, 0.0], [10.0, 0.0], [10.0, 4.0], [6.0, 4.0]])
+        clipped = solar._clip_halfplane(square, 5.0, keep_below=True)
+        assert len(clipped) == 0, f"expected empty, got {clipped}"
+
+    def test_clip_lon_strip_bounds_longitudes(self):
+        """Test strip clipping bounds a wide polygon to [-180, 180].
+
+        Test scenario:
+            A polygon spanning lon -250..250 is clipped to the map strip.
+        """
+        poly = np.array(
+            [[-250.0, 10.0], [250.0, 10.0], [250.0, -10.0], [-250.0, -10.0]]
+        )
+        clipped = solar._clip_lon_strip(poly, -180.0, 180.0)
+        assert clipped[:, 0].min() == pytest.approx(-180.0), "left not clipped"
+        assert clipped[:, 0].max() == pytest.approx(180.0), "right not clipped"
+
+    @pytest.mark.parametrize("dark_lat", [90.0, -90.0])
+    def test_pole_cap_ring_closes_on_pole_edge(self, dark_lat):
+        """Test the pole-cap closure runs the ring to the dark pole across the map.
+
+        Args:
+            dark_lat: The dark pole's latitude (+90 or -90).
+
+        Test scenario:
+            Closing a terminator ring adds the dark pole's map edge, so the ring
+            reaches ``dark_lat`` and spans the full [-180, 180] longitude range.
+        """
+        ring = terminator(JUN_SOLSTICE, n=180)
+        cap = solar._pole_cap_ring(ring, dark_lat)
+        edge = cap[:, 1].max() if dark_lat > 0 else cap[:, 1].min()
+        assert edge == pytest.approx(dark_lat), f"cap did not reach {dark_lat}"
+        assert cap[:, 0].min() == pytest.approx(-180.0), "cap missing left edge"
+        assert cap[:, 0].max() == pytest.approx(180.0), "cap missing right edge"
