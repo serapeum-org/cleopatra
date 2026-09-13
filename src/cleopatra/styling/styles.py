@@ -1740,9 +1740,11 @@ def classify(
             so the returned edges are always strictly increasing.
 
     Raises:
-        ValueError: If `values` has no finite entries, if `k < 1`, if the
-            (finite) data has no spread so fewer than two distinct edges
-            result, or if `scheme` is an unrecognised name.
+        ValueError: For a **named** scheme, if `values` has no finite entries
+            or `k < 1` (an explicit edge sequence needs neither, so it accepts
+            empty / all-non-finite `values`); if fewer than two distinct edges
+            result (the data or the edges have no spread); or if `scheme` is an
+            unrecognised name.
 
     Examples:
         - Equal-interval edges on a 0–10 ramp:
@@ -1786,13 +1788,16 @@ def classify(
     """
     finite = np.asarray(values, dtype=float)
     finite = finite[np.isfinite(finite)]
-    if finite.size == 0:
-        raise ValueError("Cannot classify: `values` has no finite entries to bin.")
 
     if isinstance(scheme, str):
+        # A named scheme derives the edges from the data, so it needs values.
+        if finite.size == 0:
+            raise ValueError("Cannot classify: `values` has no finite entries to bin.")
         edges = _scheme_edges(finite, scheme, k)
     else:
-        # An explicit sequence of bin edges supplied by the caller.
+        # An explicit sequence of bin edges supplied by the caller: the edges are
+        # given, so `values` are irrelevant and may be empty / all-non-finite
+        # (e.g. a fully masked facet panel that shares stack-wide edges).
         edges = np.sort(np.asarray(scheme, dtype=float))
 
     edges = np.unique(edges)
