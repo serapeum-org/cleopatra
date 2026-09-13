@@ -25,7 +25,10 @@ classifiers = [
 
 dependencies = [
     "numpy>=2.0.0",
-    "matplotlib>=3.9",
+    # 3.11 introduced per-artist hatch colour (QuadContourSet.set_hatchcolor),
+    # which Contour(hatch_color=...) relies on to recolour hatch strokes
+    # independently of the global hatch.color rcParam.
+    "matplotlib>=3.11",
     "pillow>=12.1.1",
     # 0.6.0 is the floor the suite actually exercises. gif_from_video reads
     # frames back through read_frames with output_params and relies on the

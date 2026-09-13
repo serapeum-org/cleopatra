@@ -69,6 +69,8 @@ _GROUPED_KWARG_HINTS: dict[str, str] = {
     "levels": "contour=Contour(levels=...)",
     "labels": "contour=Contour(labels=True, label_kw=...)",
     "label_kw": "contour=Contour(labels=True, label_kw=...)",
+    "hatches": "contour=Contour(hatches=[...], fill=False)",
+    "hatch_color": "contour=Contour(hatch_color=...)",
     "display_cell_value": "cells=CellValues(show=True, ...)",
     "num_size": "cells=CellValues(size=...)",
     "background_color_threshold": "cells=CellValues(background_threshold=...)",
@@ -83,7 +85,10 @@ _GROUPED_KWARG_HINTS: dict[str, str] = {
     # `ArrayGlyph` -- it stays a legitimate loose opacity option on other
     # glyphs (`LineGlyph`, `HistogramGlyph`), so it cannot be rejected here
     # (this hint map gates every glyph's construction). `ArrayGlyph` rejects a
-    # loose `alpha=` locally instead (see its `_reject_loose_alpha`).
+    # loose `alpha=` locally instead (see its `_reject_loose_alpha`). `fill` is
+    # kept out for the same reason -- it is a generic name a caller of another
+    # glyph (e.g. filled polygons) might pass -- and `ArrayGlyph` rejects a
+    # loose `fill=` locally (see its `_reject_loose_fill`).
 }
 
 

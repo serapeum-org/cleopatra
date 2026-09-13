@@ -1282,6 +1282,129 @@ class TestPlotKindDispatch:
         assert isinstance(fig, Figure)
         assert len(ax.collections) >= 1
 
+    def test_contourf_hatches_are_carried(self):
+        """`Contour(hatches=...)` reaches the filled contour set, keeping its bar."""
+        glyph = ArrayGlyph(self._sample_arr())
+        glyph.plot(
+            kind="contourf", contour=Contour(levels=4, hatches=["", "///", "...", "xx"])
+        )
+        assert list(glyph.im.hatches) == ["", "///", "...", "xx"], (
+            f"hatches not forwarded: {getattr(glyph.im, 'hatches', None)}"
+        )
+        assert glyph.cbar is not None, "a filled hatched set still gets a colorbar"
+
+    def test_contourf_unfilled_overlay_hatches_only_and_skips_colorbar(self):
+        """`fill=False` renders an unfilled hatch overlay with no colorbar."""
+        sample = self._sample_arr()
+        mask = (sample > float(sample.mean())).astype(float)
+        glyph = ArrayGlyph(mask)
+        glyph.plot(
+            kind="contourf",
+            contour=Contour(
+                levels=[0.5, 1.5], hatches=["///"], fill=False, hatch_color="0.2"
+            ),
+        )
+        assert list(glyph.im.hatches) == ["///"], (
+            f"hatches not forwarded: {getattr(glyph.im, 'hatches', None)}"
+        )
+        assert glyph.cbar is None, (
+            "an unfilled (colors='none') set is not colour-mapped, so no colorbar"
+        )
+
+    def test_loose_hatches_kwarg_rejected_with_contour_hint(self):
+        """A loose `hatches=` is rejected, pointing at `contour=Contour(...)`."""
+        glyph = ArrayGlyph(self._sample_arr())
+        with pytest.raises(ValueError, match="contour=Contour"):
+            glyph.plot(kind="contourf", hatches=["///"])
+
+    def test_loose_fill_kwarg_rejected_with_contour_hint(self):
+        """A loose `fill=` is rejected locally, pointing at `contour=Contour(fill=False)`."""
+        glyph = ArrayGlyph(self._sample_arr())
+        with pytest.raises(ValueError, match=r"contour=Contour\(fill=False\)"):
+            glyph.plot(kind="contourf", fill=False)
+
+    def test_loose_hatch_color_kwarg_rejected_with_contour_hint(self):
+        """A loose `hatch_color=` is rejected, pointing at `contour=Contour(...)`."""
+        glyph = ArrayGlyph(self._sample_arr())
+        with pytest.raises(ValueError, match="contour=Contour"):
+            glyph.plot(kind="contourf", hatch_color="red")
+
+    def test_contourf_filled_hatch_color_recolours_hatch_strokes_keeping_colorbar(self):
+        """`hatch_color` recolours the hatch strokes (not the band edges), keeping the bar.
+
+        Pins `hatch.color="black"` so the assertion fails if the recolour ever
+        regresses to `set_edgecolor`, which tracks the hatch only under the
+        matplotlib>=3.11 default `hatch.color="edge"`.
+        """
+        glyph = ArrayGlyph(self._sample_arr())
+        with matplotlib.rc_context({"hatch.color": "black"}):
+            glyph.plot(
+                kind="contourf",
+                contour=Contour(
+                    levels=4,
+                    hatches=["", "///", "...", "xx"],
+                    hatch_color="red",
+                ),
+            )
+        hatch_colors = glyph.im.get_hatchcolor()
+        assert len(hatch_colors) >= 1, "a hatched set should expose hatch colours"
+        assert np.allclose(hatch_colors[0], to_rgba("red")), (
+            f"hatch_color should recolour the hatch strokes, got {hatch_colors[0]}"
+        )
+        edges = glyph.im.get_edgecolor()
+        assert not len(edges) or not np.allclose(edges[0], to_rgba("red")), (
+            f"hatch_color must not recolour the band edges, got {edges}"
+        )
+        assert glyph.cbar is not None, "a filled hatched set still gets a colorbar"
+
+    def test_hatch_fields_warn_and_are_ignored_on_kind_contour(self):
+        """Hatch fields are contourf-only; `kind="contour"` warns and ignores them."""
+        glyph = ArrayGlyph(self._sample_arr())
+        spec = Contour(levels=4, hatches=["///"], hatch_color="red")
+        with pytest.warns(UserWarning, match="contourf-only"):
+            glyph.plot(kind="contour", contour=spec)
+        edges = glyph.im.get_edgecolor()
+        assert not len(edges) or not np.allclose(edges[0], to_rgba("red")), (
+            f"hatch_color must not recolour the contour lines, got {edges}"
+        )
+
+    def test_hatch_fields_warn_on_default_kind(self):
+        """Hatch fields on the default kind (auto->imshow) are contourf-only and warn."""
+        glyph = ArrayGlyph(self._sample_arr())
+        spec = Contour(hatches=["///"], fill=False)
+        with pytest.warns(UserWarning, match="contourf-only"):
+            glyph.plot(contour=spec)
+
+    def test_animate_warns_hatch_fields_are_ignored(self):
+        """`animate` renders as imshow, so contourf-only hatch fields warn there too."""
+        stack = np.arange(3 * 6 * 6, dtype=float).reshape(3, 6, 6)
+        glyph = ArrayGlyph(stack)
+        spec = Contour(hatches=["///"])
+        with pytest.warns(UserWarning, match="contourf-only"):
+            glyph.animate(time=[0, 1, 2], contour=spec)
+
+    def test_unfilled_without_hatches_warns_invisible(self):
+        """`fill=False` with no hatches draws nothing visible and warns."""
+        glyph = ArrayGlyph(self._sample_arr())
+        spec = Contour(levels=4, fill=False)
+        with pytest.warns(UserWarning, match="invisible contour"):
+            glyph.plot(kind="contourf", contour=spec)
+
+    def test_hatch_color_without_hatches_warns_no_effect(self):
+        """`hatch_color` with no hatches has no effect and warns."""
+        glyph = ArrayGlyph(self._sample_arr())
+        spec = Contour(levels=4, hatch_color="red")
+        with pytest.warns(UserWarning, match="no effect without hatches"):
+            glyph.plot(kind="contourf", contour=spec)
+
+    def test_unfilled_overlay_warns_when_colorbar_explicitly_requested(self):
+        """An explicit colorbar on an unfilled overlay is dropped, with a warning."""
+        glyph = ArrayGlyph(self._sample_arr())
+        spec = Contour(levels=[0.5, 1.5], hatches=["///"], fill=False)
+        with pytest.warns(UserWarning, match="requested colorbar is not"):
+            glyph.plot(kind="contourf", contour=spec, colorbar=True)
+        assert glyph.cbar is None, "the unfilled overlay draws no colorbar"
+
     def test_invalid_kind_raises(self):
         """`kind="bogus"` raises `ValueError` listing the valid kinds."""
         glyph = ArrayGlyph(self._sample_arr())

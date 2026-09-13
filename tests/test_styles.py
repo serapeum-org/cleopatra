@@ -21,6 +21,7 @@ from cleopatra.styling.styles import (
     apply_blank_canvas,
     colorbar_legend,
     disjoint_legend,
+    hatch_legend,
     histogram_legend,
     swatch_legend,
 )
@@ -191,6 +192,99 @@ class TestDisjointLegend:
         with pytest.raises(ValueError, match="same length") as exc:
             disjoint_legend(ax, colors, labels)
         assert "same length" in str(exc.value), f"Unexpected message: {exc.value}"
+
+
+class TestHatchLegend:
+    """Tests for cleopatra.styling.styles.hatch_legend."""
+
+    @pytest.fixture
+    def ax(self):
+        """A fresh axes, closed after the test to bound figure count."""
+        fig, ax = plt.subplots()
+        yield ax
+        plt.close(fig)
+
+    def test_returns_legend_with_labels(self, ax):
+        """The helper returns a Legend attached to the axes, carrying the labels."""
+        legend = hatch_legend(ax, ["///", "..."], ["significant", "uncertain"])
+        assert isinstance(legend, Legend), f"expected a Legend, got {type(legend)}"
+        assert ax.get_legend() is legend, "legend should be attached to the axes"
+        assert [t.get_text() for t in legend.get_texts()] == [
+            "significant",
+            "uncertain",
+        ], "labels should be preserved in order"
+
+    def test_patches_carry_the_hatch(self, ax):
+        """Each proxy Patch carries its requested hatch pattern."""
+        legend = hatch_legend(ax, ["///", "xx"], ["a", "b"])
+        hatches = [h.get_hatch() for h in legend.legend_handles]
+        assert hatches == ["///", "xx"], f"hatches not applied to patches: {hatches}"
+
+    def test_length_mismatch_raises(self, ax):
+        """Mismatched hatches/labels lengths raise a descriptive ValueError."""
+        with pytest.raises(ValueError, match="same length") as exc:
+            hatch_legend(ax, ["///", "..."], ["only-one"])
+        assert "same length" in str(exc.value), f"Unexpected message: {exc.value}"
+
+    def test_default_colors_transparent_fill_black_edge(self, ax):
+        """Default swatches are transparent-filled with a black hatch edge.
+
+        Test scenario:
+            No colour kwargs -> the facecolor is fully transparent (so only
+            the pattern reads) and the edge (hatch strokes) resolves to black.
+        """
+        patch = hatch_legend(ax, ["///"], ["sig"]).legend_handles[0]
+        face_alpha = matplotlib.colors.to_rgba(patch.get_facecolor())[3]
+        edge = matplotlib.colors.to_rgba(patch.get_edgecolor())
+        assert face_alpha == 0.0, (
+            f"default facecolor should be transparent, got {patch.get_facecolor()}"
+        )
+        assert edge == matplotlib.colors.to_rgba("black"), (
+            f"default edgecolor should be black, got {edge}"
+        )
+
+    def test_custom_facecolor_and_edgecolor_applied(self, ax):
+        """Explicit facecolor/edgecolor reach every proxy Patch.
+
+        Test scenario:
+            facecolor='lightgray', edgecolor='navy' -> the handle's face and
+            edge colours resolve to exactly those colours.
+        """
+        patch = hatch_legend(
+            ax, ["xx"], ["u"], facecolor="lightgray", edgecolor="navy"
+        ).legend_handles[0]
+        face = matplotlib.colors.to_rgba(patch.get_facecolor())
+        edge = matplotlib.colors.to_rgba(patch.get_edgecolor())
+        assert face == matplotlib.colors.to_rgba("lightgray"), (
+            f"facecolor not applied, got {patch.get_facecolor()}"
+        )
+        assert edge == matplotlib.colors.to_rgba("navy"), (
+            f"edgecolor not applied, got {patch.get_edgecolor()}"
+        )
+
+    def test_legend_kwargs_forwarded(self, ax):
+        """Extra kwargs are forwarded to Axes.legend (e.g. title).
+
+        Test scenario:
+            title='Significance' surfaces on the legend's title text.
+        """
+        legend = hatch_legend(ax, ["///"], ["p < 0.05"], title="Significance")
+        assert legend.get_title().get_text() == "Significance", (
+            "title kwarg should be forwarded to Axes.legend"
+        )
+
+    def test_empty_sequences_build_an_empty_legend(self, ax):
+        """Equal-length empty inputs pass the guard and build an empty legend.
+
+        Test scenario:
+            hatches=[] and labels=[] have equal length, so the guard passes
+            (no ValueError) and the returned Legend carries no handles.
+        """
+        legend = hatch_legend(ax, [], [])
+        assert isinstance(legend, Legend), f"expected a Legend, got {type(legend)}"
+        assert list(legend.legend_handles) == [], (
+            f"empty inputs should yield no handles, got {legend.legend_handles}"
+        )
 
 
 class TestDiscreteContourfAcceptance:

@@ -123,6 +123,9 @@ ARRAY_DEFAULT_OPTIONS: dict[str, Any] = {
     "cbar_tick_color": None,
     "labels": False,
     "label_kw": None,
+    "hatches": None,
+    "fill": None,
+    "hatch_color": None,
     "hillshade": False,
     "style": None,
     "projection": None,
@@ -165,6 +168,28 @@ def _reject_loose_alpha(kwargs: dict) -> None:
         raise ValueError(
             "The 'alpha' option moved onto a grouped parameter object; pass "
             "data_style=DataStyle(alpha=...) instead of a loose alpha= keyword."
+        )
+
+
+def _reject_loose_fill(kwargs: dict) -> None:
+    """Raise if a loose `fill=` keyword was passed to `ArrayGlyph`.
+
+    The contourf fill toggle moved onto `contour=Contour(fill=...)`. Like
+    `alpha`, `fill` is a generic name a caller of another glyph (e.g. filled
+    polygons) might pass legitimately, so it is rejected here -- locally to
+    `ArrayGlyph` -- rather than in the shared `_GROUPED_KWARG_HINTS` map that
+    gates every glyph's construction.
+
+    Args:
+        kwargs: The keyword-argument mapping to check.
+
+    Raises:
+        ValueError: If `kwargs` contains a `fill` key.
+    """
+    if "fill" in kwargs:
+        raise ValueError(
+            "The 'fill' option moved onto a grouped parameter object; pass "
+            "contour=Contour(fill=False) instead of a loose fill= keyword."
         )
 
 
@@ -1445,6 +1470,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         ```
         """
         _reject_loose_alpha(kwargs)
+        _reject_loose_fill(kwargs)
         super().__init__(
             default_options=ARRAY_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs
         )
@@ -2579,6 +2605,21 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         coords = self._coords
 
+        # Hatch fields are contourf-only; warn once here (kind is already the
+        # resolved effective kind) so imshow/pcolormesh/contour -- and animate,
+        # which renders through this helper as imshow -- all report ignored
+        # hatch fields, not only kind="contour".
+        if kind != "contourf" and (
+            self.default_options.get("hatches") is not None
+            or self.default_options.get("hatch_color") is not None
+            or self.default_options.get("fill") is not None
+        ):
+            warnings.warn(
+                "hatches/fill/hatch_color are contourf-only and are ignored "
+                f"for kind={kind!r}.",
+                stacklevel=3,
+            )
+
         im: Any
         if kind == "imshow":
             if coords is not None:
@@ -2607,12 +2648,37 @@ class ArrayGlyph(GeoMixin, Glyph):
             if isinstance(plot_arr, ma.MaskedArray):
                 plot_arr = plot_arr.filled(np.nan)
             plot_fn = ax.contour if kind == "contour" else ax.contourf
-            contour_kwargs = {"cmap": cmap}
-            if norm is None:
-                contour_kwargs["vmin"] = vmin
-                contour_kwargs["vmax"] = vmax
+            is_contourf = kind == "contourf"
+            hatches = self.default_options.get("hatches")
+            hatch_color = self.default_options.get("hatch_color")
+            fill = self.default_options.get("fill")
+            if is_contourf and hatches is None:
+                if fill is False:
+                    warnings.warn(
+                        "fill=False with no hatches draws an invisible contour "
+                        "set; pass hatches=[...] to draw the overlay.",
+                        stacklevel=3,
+                    )
+                if hatch_color is not None:
+                    warnings.warn(
+                        "hatch_color has no effect without hatches.",
+                        stacklevel=3,
+                    )
+            contour_kwargs: dict[str, Any]
+            if is_contourf and fill is False:
+                # Unfilled overlay: only the hatch marks draw. matplotlib rejects
+                # cmap and colors together, and an unfilled set is not
+                # colour-mapped, so vmin/vmax/norm are dropped with the cmap.
+                contour_kwargs = {"colors": "none"}
             else:
-                contour_kwargs["norm"] = norm
+                contour_kwargs = {"cmap": cmap}
+                if norm is None:
+                    contour_kwargs["vmin"] = vmin
+                    contour_kwargs["vmax"] = vmax
+                else:
+                    contour_kwargs["norm"] = norm
+            if is_contourf and hatches is not None:
+                contour_kwargs["hatches"] = hatches
             level_edges = self._levels_to_bounds(levels, vmin, vmax)
             if self.default_options.get("scheme") is not None:
                 # Classification owns the discretisation: draw the isolines /
@@ -2625,6 +2691,11 @@ class ArrayGlyph(GeoMixin, Glyph):
                 im = plot_fn(*base_args, level_edges, **contour_kwargs)
             else:
                 im = plot_fn(*base_args, **contour_kwargs)
+            if is_contourf and hatch_color is not None:
+                # Per-set hatch-stroke colour, independent of the global
+                # hatch.color rcParam and without recolouring the band edges
+                # (matplotlib >= 3.11).
+                im.set_hatchcolor(hatch_color)
             if kind == "contour" and self.default_options.get("labels"):
                 label_kw = {
                     "inline": True,
@@ -3267,6 +3338,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         _reject_grouped_kwargs(kwargs)
         _reject_loose_alpha(kwargs)
+        _reject_loose_fill(kwargs)
         for key, val in kwargs.items():
             if key not in self.default_options.keys():
                 raise ValueError(
@@ -4178,6 +4250,10 @@ class ArrayGlyph(GeoMixin, Glyph):
             degenerate_contour = (
                 effective_kind == "contour" and self._vmax == self._vmin
             )
+            unfilled_contourf = (
+                effective_kind == "contourf"
+                and self.default_options.get("fill") is False
+            )
             if self._draws_own_colorbar(compose, colorbar):
                 if degenerate_contour:
                     warnings.warn(
@@ -4185,6 +4261,22 @@ class ArrayGlyph(GeoMixin, Glyph):
                         "the colorbar for kind='contour'.",
                         stacklevel=2,
                     )
+                elif unfilled_contourf:
+                    # An unfilled (colors="none") set is not colour-mapped, so
+                    # there is nothing to colorbar -- the hatch-overlay form.
+                    # Warn only if the caller explicitly asked for one, so the
+                    # dropped request is not silent.
+                    if colorbar is not None or "add_colorbar" in getattr(
+                        self,
+                        "_render_explicit_options",
+                        getattr(self, "_explicit_options", set()),
+                    ):
+                        warnings.warn(
+                            "An unfilled contourf overlay (fill=False) is not "
+                            "colour-mapped, so the requested colorbar is not "
+                            "drawn.",
+                            stacklevel=2,
+                        )
                 else:
                     self.cbar = self.create_color_bar(ax, im, cbar_kw)
 

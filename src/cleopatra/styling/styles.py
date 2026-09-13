@@ -1031,6 +1031,81 @@ def disjoint_legend(
     return ax.legend(handles=handles, **kwargs)
 
 
+def hatch_legend(
+    ax: Axes,
+    hatches: Sequence[str],
+    labels: Sequence[str],
+    *,
+    facecolor: str = "none",
+    edgecolor: str = "black",
+    **kwargs,
+) -> Legend:
+    """Attach a legend whose swatch *pattern* encodes a mask or a class.
+
+    The pattern counterpart to `disjoint_legend`: it draws a hatch per entry
+    rather than a colour, so a hatched overlay (a significance or uncertainty
+    mask drawn with `Contour(hatches=..., fill=False)`) gets a legend
+    explaining the pattern -- without spending the colour channel the data
+    already uses. Builds one `matplotlib.patches.Patch` proxy per entry.
+
+    Args:
+        ax: The axes the legend is attached to.
+        hatches: One matplotlib hatch string per entry (e.g. `"///"`,
+            `"..."`, `"xx"`). Must be the same length as `labels`.
+        labels: The label drawn next to each hatched swatch. Must be the same
+            length as `hatches`.
+        facecolor: Swatch fill behind the hatching. Defaults to `"none"`
+            (transparent), so only the pattern reads.
+        edgecolor: Colour of the hatch strokes (and swatch border). Defaults
+            to `"black"`.
+        **kwargs: Forwarded verbatim to `Axes.legend` (e.g. `title`, `loc`,
+            `ncol`, `bbox_to_anchor`, `fontsize`).
+
+    Returns:
+        Legend: The created legend artist, already added to `ax`.
+
+    Raises:
+        ValueError: If `hatches` and `labels` have different lengths.
+
+    Examples:
+        - A one-entry significance legend carries its label and its hatch:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styling.styles import hatch_legend
+            >>> fig, ax = plt.subplots()
+            >>> legend = hatch_legend(ax, ["///"], ["p < 0.05"])
+            >>> [t.get_text() for t in legend.get_texts()]
+            ['p < 0.05']
+            >>> legend.legend_handles[0].get_hatch()
+            '///'
+
+            ```
+        - Mismatched lengths raise `ValueError`:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styling.styles import hatch_legend
+            >>> fig, ax = plt.subplots()
+            >>> hatch_legend(ax, ["///", "..."], ["only-one"])
+            Traceback (most recent call last):
+                ...
+            ValueError: hatches and labels must have the same length, got 2 and 1.
+
+            ```
+    """
+    hatches = list(hatches)
+    labels = list(labels)
+    if len(hatches) != len(labels):
+        raise ValueError(
+            "hatches and labels must have the same length, got "
+            f"{len(hatches)} and {len(labels)}."
+        )
+    handles = [
+        Patch(facecolor=facecolor, edgecolor=edgecolor, hatch=hatch, label=label)
+        for hatch, label in zip(hatches, labels)
+    ]
+    return ax.legend(handles=handles, **kwargs)
+
+
 def size_legend(
     ax: Axes,
     marker_sizes: Sequence[float],
