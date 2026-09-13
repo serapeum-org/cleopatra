@@ -231,7 +231,11 @@ class HexbinGlyph(GeoMixin, Glyph):
         Raises:
             ValueError: If `reduce` is neither a known name nor a callable.
         """
-        reduce = self.default_options["reduce"]
+        # `default_options` (the base `Glyph` property) and `DEFAULT_OPTIONS`
+        # (the class-attribute option template that `Glyph.option_keys` reads)
+        # are the shared glyph naming contract, present on every glyph; neither
+        # can be renamed, so suppress SonarCloud's case-clash rule (S1845) here.
+        reduce = self.default_options["reduce"]  # NOSONAR
         if callable(reduce):
             return reduce
         try:
