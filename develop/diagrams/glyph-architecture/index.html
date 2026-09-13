@@ -862,6 +862,8 @@
       
         
       
+        
+      
     
     
     
@@ -1204,6 +1206,34 @@
     
   
     KDEGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/hexbin-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HexbinGlyph
   
 
     
@@ -2664,10 +2694,11 @@ colour / scale pipeline, including the geoplot-upstream additions
 <hr />
 <h2 id="1-class-hierarchy"><a class="toclink" href="#1-class-hierarchy">1. Class hierarchy</a><a class="headerlink" href="#1-class-hierarchy" title="Permanent link">#</a></h2>
 <p><code>ArrayGlyph</code>, <code>MeshGlyph</code>, <code>ScatterGlyph</code>, <code>PolygonGlyph</code>, <code>VectorGlyph</code>,
-<code>FlowGlyph</code>, <code>LineGlyph</code>, and <code>KDEGlyph</code> subclass <code>Glyph</code>. <code>HistogramGlyph</code> is
-independent. The six geographic glyphs (<code>ArrayGlyph</code>, <code>MeshGlyph</code>, <code>ScatterGlyph</code>,
-<code>VectorGlyph</code>, <code>FlowGlyph</code>, <code>PolygonGlyph</code>) also mix in <code>GeoMixin</code> for basemap
-methods — omitted here to keep the colour-pipeline focus.</p>
+<code>FlowGlyph</code>, <code>LineGlyph</code>, <code>KDEGlyph</code>, and <code>HexbinGlyph</code> subclass <code>Glyph</code>.
+<code>HistogramGlyph</code> is independent. The seven geographic glyphs (<code>ArrayGlyph</code>,
+<code>MeshGlyph</code>, <code>ScatterGlyph</code>, <code>VectorGlyph</code>, <code>FlowGlyph</code>, <code>PolygonGlyph</code>,
+<code>HexbinGlyph</code>) also mix in <code>GeoMixin</code> for basemap methods — omitted here to keep
+the colour-pipeline focus.</p>
 <pre class="mermaid"><code>classDiagram
     class Glyph {
         +dict default_options
@@ -2744,6 +2775,15 @@ methods — omitted here to keep the colour-pipeline focus.</p>
         +bar()
         +fill_between()
     }
+    class HexbinGlyph {
+        +x
+        +y
+        +values
+        +evaluate()
+        +plot()
+        #_reduce_function()
+        #_hexbin_kwargs()
+    }
     class HistogramGlyph {
         +plot()
     }
@@ -2755,6 +2795,7 @@ methods — omitted here to keep the colour-pipeline focus.</p>
     Glyph &lt;|-- VectorGlyph
     Glyph &lt;|-- FlowGlyph
     Glyph &lt;|-- KDEGlyph
+    Glyph &lt;|-- HexbinGlyph
     Glyph &lt;|-- LineGlyph
 
     note for HistogramGlyph "Stands alone — 1-D/2-D histograms,\ndoes not subclass Glyph"
@@ -2768,12 +2809,14 @@ methods — omitted here to keep the colour-pipeline focus.</p>
     style VectorGlyph fill:#d1e7dd,stroke:#0f5132,color:#000
     style FlowGlyph fill:#d1e7dd,stroke:#0f5132,color:#000
     style KDEGlyph fill:#d1e7dd,stroke:#0f5132,color:#000
+    style HexbinGlyph fill:#d1e7dd,stroke:#0f5132,color:#000
     style LineGlyph fill:#d1e7dd,stroke:#0f5132,color:#000
     style HistogramGlyph fill:#e2e3e5,stroke:#41464b,color:#000</code></pre>
 <hr />
 <h2 id="2-shared-colour-scale-pipeline"><a class="toclink" href="#2-shared-colour-scale-pipeline">2. Shared colour / scale pipeline</a><a class="headerlink" href="#2-shared-colour-scale-pipeline" title="Permanent link">#</a></h2>
 <p>Every colour-by-value glyph that routes through <code>_prepare_scalar_mapping</code>
-(<code>ScatterGlyph</code>, <code>PolygonGlyph</code>, <code>VectorGlyph</code>, <code>FlowGlyph</code>, <code>KDEGlyph</code>) shares
+(<code>ScatterGlyph</code>, <code>PolygonGlyph</code>, <code>VectorGlyph</code>, <code>FlowGlyph</code>, <code>KDEGlyph</code>,
+<code>HexbinGlyph</code>) shares
 one contract. Since the geoplot-upstream work, a <code>scheme</code> option short-circuits
 to classified (discrete) colouring; otherwise the continuous <code>color_scale</code> /
 <code>levels</code> path runs. <code>ArrayGlyph</code> / <code>MeshGlyph</code> build their norm directly via
