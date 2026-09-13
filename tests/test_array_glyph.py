@@ -1317,6 +1317,18 @@ class TestPlotKindDispatch:
         with pytest.raises(ValueError, match="contour=Contour"):
             glyph.plot(kind="contourf", hatches=["///"])
 
+    def test_loose_fill_kwarg_rejected_with_contour_hint(self):
+        """A loose `fill=` is rejected locally, pointing at `contour=Contour(fill=False)`."""
+        glyph = ArrayGlyph(self._sample_arr())
+        with pytest.raises(ValueError, match=r"contour=Contour\(fill=False\)"):
+            glyph.plot(kind="contourf", fill=False)
+
+    def test_loose_hatch_color_kwarg_rejected_with_contour_hint(self):
+        """A loose `hatch_color=` is rejected, pointing at `contour=Contour(...)`."""
+        glyph = ArrayGlyph(self._sample_arr())
+        with pytest.raises(ValueError, match="contour=Contour"):
+            glyph.plot(kind="contourf", hatch_color="red")
+
     def test_contourf_filled_hatch_color_recolours_hatch_strokes_keeping_colorbar(self):
         """`hatch_color` recolours the hatch strokes (not the band edges), keeping the bar.
 
