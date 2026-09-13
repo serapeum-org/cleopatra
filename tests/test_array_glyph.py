@@ -1317,6 +1317,24 @@ class TestPlotKindDispatch:
         with pytest.raises(ValueError, match="contour=Contour"):
             glyph.plot(kind="contourf", hatches=["///"])
 
+    def test_contourf_filled_hatch_color_recolours_strokes_keeping_colorbar(self):
+        """`hatch_color` on a *filled* hatched set recolours its edges, keeping the bar."""
+        glyph = ArrayGlyph(self._sample_arr())
+        glyph.plot(
+            kind="contourf",
+            contour=Contour(
+                levels=4,
+                hatches=["", "///", "...", "xx"],
+                hatch_color="red",
+            ),
+        )
+        edges = glyph.im.get_edgecolor()
+        assert len(edges) >= 1, "a filled contour set should expose edge colours"
+        assert np.allclose(edges[0], to_rgba("red")), (
+            f"hatch_color should recolour the strokes, got {edges[0]}"
+        )
+        assert glyph.cbar is not None, "a filled hatched set still gets a colorbar"
+
     def test_invalid_kind_raises(self):
         """`kind="bogus"` raises `ValueError` listing the valid kinds."""
         glyph = ArrayGlyph(self._sample_arr())

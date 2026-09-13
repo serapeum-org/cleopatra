@@ -226,6 +226,66 @@ class TestHatchLegend:
             hatch_legend(ax, ["///", "..."], ["only-one"])
         assert "same length" in str(exc.value), f"Unexpected message: {exc.value}"
 
+    def test_default_colors_transparent_fill_black_edge(self, ax):
+        """Default swatches are transparent-filled with a black hatch edge.
+
+        Test scenario:
+            No colour kwargs -> the facecolor is fully transparent (so only
+            the pattern reads) and the edge (hatch strokes) resolves to black.
+        """
+        patch = hatch_legend(ax, ["///"], ["sig"]).legend_handles[0]
+        face_alpha = matplotlib.colors.to_rgba(patch.get_facecolor())[3]
+        edge = matplotlib.colors.to_rgba(patch.get_edgecolor())
+        assert face_alpha == 0.0, (
+            f"default facecolor should be transparent, got {patch.get_facecolor()}"
+        )
+        assert edge == matplotlib.colors.to_rgba("black"), (
+            f"default edgecolor should be black, got {edge}"
+        )
+
+    def test_custom_facecolor_and_edgecolor_applied(self, ax):
+        """Explicit facecolor/edgecolor reach every proxy Patch.
+
+        Test scenario:
+            facecolor='lightgray', edgecolor='navy' -> the handle's face and
+            edge colours resolve to exactly those colours.
+        """
+        patch = hatch_legend(
+            ax, ["xx"], ["u"], facecolor="lightgray", edgecolor="navy"
+        ).legend_handles[0]
+        face = matplotlib.colors.to_rgba(patch.get_facecolor())
+        edge = matplotlib.colors.to_rgba(patch.get_edgecolor())
+        assert face == matplotlib.colors.to_rgba("lightgray"), (
+            f"facecolor not applied, got {patch.get_facecolor()}"
+        )
+        assert edge == matplotlib.colors.to_rgba("navy"), (
+            f"edgecolor not applied, got {patch.get_edgecolor()}"
+        )
+
+    def test_legend_kwargs_forwarded(self, ax):
+        """Extra kwargs are forwarded to Axes.legend (e.g. title).
+
+        Test scenario:
+            title='Significance' surfaces on the legend's title text.
+        """
+        legend = hatch_legend(ax, ["///"], ["p < 0.05"], title="Significance")
+        assert legend.get_title().get_text() == "Significance", (
+            "title kwarg should be forwarded to Axes.legend"
+        )
+
+    def test_empty_sequences_build_an_empty_legend(self, ax):
+        """Equal-length empty inputs pass the guard and build an empty legend.
+
+        Test scenario:
+            hatches=[] and labels=[] have equal length, so the guard passes
+            (no ValueError) and the returned Legend carries no handles.
+        """
+        legend = hatch_legend(ax, [], [])
+        assert isinstance(legend, Legend), f"expected a Legend, got {type(legend)}"
+        assert list(legend.legend_handles) == [], (
+            f"empty inputs should yield no handles, got {legend.legend_handles}"
+        )
+
 
 class TestDiscreteContourfAcceptance:
     """T0.4 acceptance: explicit `levels` yields a discrete contourf + cbar."""
