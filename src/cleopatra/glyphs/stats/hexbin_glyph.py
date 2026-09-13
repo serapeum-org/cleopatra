@@ -291,6 +291,9 @@ class HexbinGlyph(GeoMixin, Glyph):
         ax = fig.add_subplot(111)
         pc = ax.hexbin(self.x, self.y, **self._hexbin_kwargs())
         offsets = np.asarray(pc.get_offsets(), dtype=float)
+        # `.filled(np.nan)` guards older matplotlib that masked empty /
+        # `mincnt`-dropped cells; current matplotlib returns an unmasked array
+        # (dropped cells are absent), so this is a no-op there.
         aggregate = np.ma.asarray(pc.get_array()).astype(float).filled(np.nan)
         return offsets[:, 0], offsets[:, 1], aggregate
 
@@ -394,7 +397,16 @@ class HexbinGlyph(GeoMixin, Glyph):
                 cmap=resolve_colormap(opts["cmap"]),
                 **self._hexbin_kwargs(),
             )
+            # `.compressed()` guards older matplotlib, which masked empty /
+            # `mincnt`-dropped cells; current matplotlib drops them as polygons
+            # instead, so the two agree.
             aggregate = np.ma.asarray(pc.get_array()).compressed().astype(float)
+            if aggregate.size == 0:
+                raise ValueError(
+                    "no hexagonal bins to draw: every cell was empty or dropped "
+                    "by `min_count` / `extent`. Widen `extent` or lower "
+                    "`min_count`."
+                )
             norm, cbar_kw, ticks = self._prepare_scalar_mapping(aggregate)
             if norm is not None:
                 pc.set_norm(norm)

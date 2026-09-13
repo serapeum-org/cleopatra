@@ -159,6 +159,20 @@ class TestHexbinGrid:
         _, _, pc = HexbinGlyph(x, y, gridsize=(8, 5)).plot()
         assert isinstance(pc, PolyCollection)
 
+    def test_extent_excluding_data_raises_clear_error(self, cloud):
+        """An extent that excludes every point raises a clear, actionable error."""
+        x, y, v = cloud
+        glyph = HexbinGlyph(x, y, v, extent=(100.0, 200.0, 100.0, 200.0))
+        with pytest.raises(ValueError, match="no hexagonal bins to draw"):
+            glyph.plot()
+
+    def test_min_count_above_densest_bin_raises_clear_error(self, cloud):
+        """A min_count above the densest bin drops every cell with a clear error."""
+        x, y, _ = cloud
+        glyph = HexbinGlyph(x, y, min_count=10_000)
+        with pytest.raises(ValueError, match="no hexagonal bins to draw"):
+            glyph.plot()
+
     def test_min_count_drops_sparse_bins(self, cloud):
         """A higher min_count leaves no fewer... i.e. drops sparsely-populated bins."""
         x, y, _ = cloud
