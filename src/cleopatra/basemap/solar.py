@@ -12,7 +12,7 @@ Scope boundary -- the same split the rest of ``basemap`` keeps:
 
 - **Solar geometry is CRS-free maths, so it lives here.** The subsolar point for
   a datetime (solar declination plus the Greenwich hour angle via the equation
-  of time) and the terminator great circle depend on nothing but the clock; they
+  of time) and the terminator small circle depend on nothing but the clock; they
   are not CRS-dependent. Likewise the geodesic circles behind a Tissot
   indicatrix are generic spherical geometry.
 - **Any CRS/projection transform is the consumer's.** These helpers compute
@@ -69,7 +69,7 @@ from cleopatra.basemap.reference import (
 #: astronomical twilight lines instead.
 DEFAULT_REFRACTION: float = -0.83
 
-#: Number of samples along the terminator great circle / night-region rings.
+#: Number of samples along the terminator small circle / night-region rings.
 DEFAULT_TERMINATOR_SAMPLES: int = 720
 
 #: Number of vertices per Tissot circle.
@@ -451,7 +451,7 @@ def tissot_circles(
 
     Returns:
         list[numpy.ndarray]: One ``(n, 2)`` lon/lat ring per centre, in input
-        order.
+        order. Each ring is closed (the last vertex duplicates the first).
 
     Raises:
         ValueError: If ``lons`` or ``lats`` is not 1-D or they differ in shape,
