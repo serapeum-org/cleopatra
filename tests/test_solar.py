@@ -498,6 +498,28 @@ class TestNightPolygon:
             span = float(ring[:, 0].max() - ring[:, 0].min())
             assert span < 200.0, f"ring spans {span} deg -- smeared across the map"
 
+    @pytest.mark.parametrize("day", [20, 21, 22, 23, 25])
+    def test_transition_regime_near_equinox_fills_half(self, day):
+        """Test dates straddling the pole-enclosure boundary still fill ~half.
+
+        Args:
+            day: Day in March 2026, sweeping the subsolar latitude from ~0 deg
+                (equinox, no pole enclosed) past the ``|lat_s| > |refraction|``
+                boundary into the pole-enclosed regime a few days later.
+
+        Test scenario:
+            The switch between the antimeridian-split and pole-cap branches
+            happens near ``|lat_s| == |refraction|`` (~0.83 deg). A real fill must
+            stay ~0.49 across that transition, not just at the far-from-boundary
+            solstices the other area tests cover.
+        """
+        frac = _fill_night_fraction(
+            night_polygon(datetime(2026, 3, day, 12, 0, tzinfo=UTC))
+        )
+        assert 0.46 < frac < 0.52, (
+            f"filled night fraction {frac} not ~0.49 on 2026-03-{day}"
+        )
+
     def test_invalid_refraction_propagates(self):
         """Test night_polygon rejects out-of-domain refraction via terminator.
 
