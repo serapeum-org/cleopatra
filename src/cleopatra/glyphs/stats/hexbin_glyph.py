@@ -141,6 +141,20 @@ class HexbinGlyph(GeoMixin, Glyph):
             4
 
             ```
+        - Colour bins by the mean of a per-point value (three coincident
+            points share one bin, so its value is their mean):
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.glyphs.stats.hexbin_glyph import HexbinGlyph
+            >>> x = np.array([0.0, 0.0, 0.0])
+            >>> y = np.array([0.0, 0.0, 0.0])
+            >>> values = np.array([2.0, 4.0, 6.0])
+            >>> glyph = HexbinGlyph(x, y, values, gridsize=2, reduce="mean")
+            >>> fig, ax, pc = glyph.plot()
+            >>> float(pc.get_array().max())
+            4.0
+
+            ```
 
     See Also:
         cleopatra.glyphs.stats.kde_glyph.KDEGlyph: The continuous
@@ -259,6 +273,17 @@ class HexbinGlyph(GeoMixin, Glyph):
                 >>> cx, cy, agg = HexbinGlyph(x, y, gridsize=8).evaluate()
                 >>> cx.shape == cy.shape == agg.shape
                 True
+
+                ```
+            - The per-bin counts total the number of points:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.stats.hexbin_glyph import HexbinGlyph
+                >>> x = np.array([0.0, 0.0, 1.0, 5.0])
+                >>> y = np.array([0.0, 0.0, 1.0, 5.0])
+                >>> _, _, agg = HexbinGlyph(x, y, gridsize=4).evaluate()
+                >>> int(np.nansum(agg))
+                4
 
                 ```
         """
