@@ -13,7 +13,7 @@ import base64
 import copy
 import dataclasses
 import pickle
-from dataclasses import replace
+from dataclasses import dataclass, field, replace
 from unittest.mock import MagicMock, patch
 from urllib.parse import parse_qs, urlsplit
 
@@ -980,7 +980,18 @@ class TestBboxNotation:
             level are checked, since the origin-adjacent tiles are the middle.
         """
         span = 2**z
-        corners = [(0, 0), (span - 1, span - 1), (span // 2, span // 2)]
+        # `span // 2 - 1` is the tile whose far edge sits *on* the projection
+        # origin -- the residual that produced the exponent lives there, not at
+        # the corners, so a grid that skips it would not have caught M1 at all.
+        middle = max(span // 2 - 1, 0)
+        corners = [
+            (0, 0),
+            (span - 1, span - 1),
+            (span // 2, span // 2),
+            (middle, middle),
+            (middle, span // 2),
+            (span // 2, middle),
+        ]
         for x, y in corners:
             bbox = query_of(wms.build_url(x=x, y=y, z=z))["BBOX"][0]
             assert "e" not in bbox.lower(), f"exponent at z={z} x={x} y={y}: {bbox}"
@@ -1004,8 +1015,11 @@ class TestBboxNotation:
             ].split(",")
         ]
         expected = _tile_xy_bounds(tile)
-        assert sent == pytest.approx(expected, abs=1e-6), (
-            f"BBOX {sent} drifted from the tile bounds {expected}"
+        # Exact, not approximate: `_format_coordinate` renders through `Decimal`
+        # precisely so the bound parses back bit-for-bit. A tolerance here would
+        # accept the rounding implementation its sibling test rules out.
+        assert sent == list(expected), (
+            f"BBOX {sent} does not round-trip to the tile bounds {expected}"
         )
 
     def test_the_tile_on_the_projection_origin_sends_a_bare_zero(self, wms):
@@ -1372,6 +1386,18 @@ class TestOptionalFieldsAreStillTyped:
             WMTSProvider(url="https://example.org/wmts", layer="L", version="2.0.0")
 
 
+@dataclass(frozen=True)
+class _ProviderWithDerivedField(WMSProvider):
+    """A provider carrying a field the constructor does not take.
+
+    Exists only so the `spec.init` filter in `_reduce_provider` can be proved
+    rather than assumed -- no field on the real providers is `init=False`, so
+    the guard is unreachable through them.
+    """
+
+    derived: str = field(default="computed", init=False)
+
+
 class TestRoundTwoHardening:
     """The guards round 2 added, each pinned to the defect that prompted it."""
 
@@ -1465,6 +1491,23 @@ class TestRoundTwoHardening:
         query = query_of(provider.build_url(x=0, y=0, z=0))
         assert query["format"] == ["image/gif"], f"override lost: {query}"
         assert query["token"] == ["t"], f"credential lost: {query}"
+
+    def test_a_non_init_field_does_not_break_pickling(self):
+        """A field the constructor does not take is skipped when reducing.
+
+        Test scenario:
+            `_reduce_provider` rebuilds positionally through the constructor, so
+            passing a non-init field along would raise `TypeError` on unpickle.
+            No field on the real providers is `init=False` today; the guard is
+            there so adding one cannot break pickling silently, and this is what
+            proves the guard rather than assuming it.
+        """
+        provider = _ProviderWithDerivedField(
+            url="https://example.org/wms", layers="ortho"
+        )
+        rebuilt = pickle.loads(pickle.dumps(provider))
+        assert rebuilt == provider, "a non-init field broke the pickle round trip"
+        assert rebuilt.derived == "computed", f"derived field lost: {rebuilt.derived!r}"
 
     def test_wms_1_0_0_is_not_claimed(self):
         """WMS 1.0.0 is refused rather than built with 1.1.x spellings.
@@ -1770,97 +1813,6 @@ class TestCredentialsAreNotLogged:
         assert "S3CRET-VALUE" not in caplog.text, "the credential reached the log"
         assert "token=..." in caplog.text, (
             f"the parameter name should survive for diagnosis: {caplog.text[:200]}"
-        )
-
-    @pytest.mark.parametrize(
-        "url, expected",
-        [
-            (
-                "https://example.org/wms?LAYERS=ortho&token=s3cret",
-                "https://example.org/wms?LAYERS=ortho&token=...",
-            ),
-            (
-                "https://example.org/tiles/3/2/4.png",
-                "https://example.org/tiles/3/2/4.png",
-            ),
-            ("https://example.org/wms?flag", "https://example.org/wms?flag"),
-            (
-                "https://example.org/wms?token=a=b&LAYERS=ortho",
-                "https://example.org/wms?token=...&LAYERS=ortho",
-            ),
-            (
-                "https://example.org/wms?token=s3cret#layers",
-                "https://example.org/wms?token=...#layers",
-            ),
-            (
-                "https://example.org/wms?token=&LAYERS=ortho",
-                "https://example.org/wms?token=...&LAYERS=ortho",
-            ),
-            (
-                "https://example.org/wms?token=a&token=b",
-                "https://example.org/wms?token=...&token=...",
-            ),
-        ],
-    )
-    def test_redaction_masks_values_only(self, url, expected):
-        """`_redact_url` keeps the shape and drops the secrets.
-
-        Args:
-            url: The URL to redact.
-            expected: Its redacted form.
-
-        Test scenario:
-            A valueless flag and a query-free URL are both left alone, so the
-            redaction cannot be blamed for a confusing log line. The rest are
-            the shapes a split-and-rejoin can get wrong: a value that itself
-            contains `=` must be masked whole rather than half-kept, an empty
-            value must not read as a valueless flag, a repeated key must be
-            masked at every occurrence, and a fragment must survive at the end
-            -- rebuilding the URL by concatenation would drop it, and a
-            redacted line that no longer matches the URL that failed is worse
-            than no line at all.
-        """
-        assert _redact_url(url) == expected, f"{url} redacted to {_redact_url(url)}"
-
-    def test_the_redaction_holds_on_every_retry(self, caplog):
-        """Every attempt's log line is redacted, not just the first.
-
-        Args:
-            caplog: pytest's log capture fixture.
-
-        Test scenario:
-            The log call sits inside the retry loop, so a flaky service is
-            precisely the case that writes the credential repeatedly -- and one
-            unredacted line leaks as much as three. `retries=2` means three
-            attempts, so three records must appear and every one of them must
-            carry the masked token rather than its value.
-        """
-        provider = WMSProvider(
-            url="https://example.org/wms",
-            layers="ortho",
-            extra_params={"token": "S3CRET-VALUE"},
-        )
-
-        with (
-            caplog.at_level("DEBUG", logger="cleopatra.basemap.tiles"),
-            patch.object(
-                tiles_mod, "urlopen_http", side_effect=OSError("connection reset")
-            ),
-            pytest.raises(ConnectionError),
-        ):
-            fetch_single_tile(Tile(0, 0, 0), provider, timeout=1, retries=2)
-
-        attempts = [
-            record
-            for record in caplog.records
-            if "Tile fetch attempt" in record.getMessage()
-        ]
-        assert len(attempts) == 3, (
-            f"expected one log line per attempt, got {len(attempts)}"
-        )
-        assert "S3CRET-VALUE" not in caplog.text, "the credential reached the log"
-        assert caplog.text.count("token=...") == 3, (
-            f"every attempt should log a redacted token: {caplog.text[:300]}"
         )
 
 

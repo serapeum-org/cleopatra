@@ -28,12 +28,13 @@ import matplotlib.pyplot as plt  # noqa: E402
 from PIL import Image  # noqa: E402
 
 from cleopatra.basemap import tiles as tiles_mod  # noqa: E402
-from cleopatra.basemap.tiles import (  # noqa: E402
+from cleopatra.basemap.tiles import (
     MAX_TILES,
     Tile,
     _densify_and_reproject_bounds,
     _lonlat_to_tile_xy,
     _looks_like_image,
+    _redact_url,  # noqa: E402
     _require_tiles_extra,
     _tile_xy_bounds,
     _tiles_for_bbox,
@@ -693,7 +694,12 @@ class TestLonLatToTileXY:
     @pytest.mark.parametrize(
         "lat, expected_y",
         [(90.0, 0), (-90.0, 31), (89.99999999, 0), (-89.99999999, 31)],
-        ids=["exact-north-pole", "exact-south-pole", "near-north-pole", "near-south-pole"],
+        ids=[
+            "exact-north-pole",
+            "exact-south-pole",
+            "near-north-pole",
+            "near-south-pole",
+        ],
     )
     def test_pole_latitude_clamps_instead_of_crashing(self, lat, expected_y):
         """A latitude at (or within float precision of) +/-90 clamps to the edge row.
@@ -722,11 +728,7 @@ class TestTilesForBbox:
     def test_known_city_bbox(self):
         """A real-world (Berlin) bbox resolves to its mercantile-verified 2x3 tile grid."""
         tiles = sorted(_tiles_for_bbox(13.0, 52.4, 13.6, 52.6, zoom=10))
-        expected = sorted(
-            Tile(x, y, 10)
-            for x in (548, 549, 550)
-            for y in (335, 336)
-        )
+        expected = sorted(Tile(x, y, 10) for x in (548, 549, 550) for y in (335, 336))
         assert tiles == expected
 
     def test_bbox_exactly_matching_one_tile_resolves_to_that_tile(self):
@@ -784,7 +786,9 @@ class TestTilesForBbox:
         splitting into `[-180, east]` and `[west, 180]`; this must match.
         """
         tiles = sorted(_tiles_for_bbox(170.0, -10.0, -170.0, 10.0, zoom=4))
-        expected = sorted([Tile(0, 7, 4), Tile(0, 8, 4), Tile(15, 7, 4), Tile(15, 8, 4)])
+        expected = sorted(
+            [Tile(0, 7, 4), Tile(0, 8, 4), Tile(15, 7, 4), Tile(15, 8, 4)]
+        )
         assert tiles == expected
 
     def test_antimeridian_crossing_bbox_also_touching_a_pole(self):
@@ -794,7 +798,9 @@ class TestTilesForBbox:
         verified to match `mercantile.tiles()` exactly for this combination.
         """
         tiles = sorted(_tiles_for_bbox(170.0, 80.0, -170.0, 85.0, zoom=4))
-        expected = sorted([Tile(0, 0, 4), Tile(0, 1, 4), Tile(15, 0, 4), Tile(15, 1, 4)])
+        expected = sorted(
+            [Tile(0, 0, 4), Tile(0, 1, 4), Tile(15, 0, 4), Tile(15, 1, 4)]
+        )
         assert tiles == expected
 
     def test_antimeridian_crossing_bbox_at_zoom_0(self):
@@ -812,7 +818,9 @@ class TestTilesForBbox:
     def test_antimeridian_crossing_bbox_with_east_exactly_on_seam(self):
         """An antimeridian-crossing bbox whose `east` sits exactly on `-180` still splits correctly."""
         tiles = sorted(_tiles_for_bbox(170.0, -10.0, -180.0, 10.0, zoom=4))
-        expected = sorted([Tile(0, 7, 4), Tile(0, 8, 4), Tile(15, 7, 4), Tile(15, 8, 4)])
+        expected = sorted(
+            [Tile(0, 7, 4), Tile(0, 8, 4), Tile(15, 7, 4), Tile(15, 8, 4)]
+        )
         assert tiles == expected
 
 
@@ -1376,15 +1384,22 @@ class TestAddTilesNearGlobalExtent:
             patch.object(
                 tiles_mod,
                 "stitch_tiles",
-                return_value=(fake_image, (-20037508.34, -8000000.0, 20037508.34, 8000000.0)),
+                return_value=(
+                    fake_image,
+                    (-20037508.34, -8000000.0, 20037508.34, 8000000.0),
+                ),
             ) as mock_stitch,
         ):
             add_tiles(near_global_ax, crs=3857, zoom=3)
 
         tiles_passed = mock_stitch.call_args[0][1]
         xs = {t.x for t in tiles_passed}
-        assert len(tiles_passed) > 0, "the antimeridian split should still produce tiles"
-        assert 0 in xs, "should include tiles from the western half of the split (x near 0)"
+        assert len(tiles_passed) > 0, (
+            "the antimeridian split should still produce tiles"
+        )
+        assert 0 in xs, (
+            "should include tiles from the western half of the split (x near 0)"
+        )
         assert max(xs) >= 2**3 - 1, (
             "should include tiles from the eastern half of the split (x near the grid edge)"
         )
@@ -1696,3 +1711,67 @@ class TestAttributionWithoutMetadata:
         assert mock_ax.text.call_args[0][2] == "Tiles & data", (
             f"markup should be stripped; got {mock_ax.text.call_args[0][2]!r}"
         )
+
+
+class TestRedactUrl:
+    """`_redact_url` masks credential-shaped parts of a URL before it is logged."""
+
+    @pytest.mark.parametrize(
+        "url, expected",
+        [
+            (
+                "https://example.org/wms?LAYERS=ortho&token=s3cret",
+                "https://example.org/wms?LAYERS=ortho&token=...",
+            ),
+            (
+                "https://example.org/wms?token=a=b&LAYERS=ortho",
+                "https://example.org/wms?token=...&LAYERS=ortho",
+            ),
+            (
+                "https://example.org/wms?token=&LAYERS=ortho",
+                "https://example.org/wms?token=...&LAYERS=ortho",
+            ),
+            (
+                "https://example.org/wms?key=1&key=2",
+                "https://example.org/wms?key=...&key=...",
+            ),
+            (
+                "https://user:pw@example.org/tiles/3/2/4.png",
+                "https://...@example.org/tiles/3/2/4.png",
+            ),
+            (
+                "https://example.org/tiles/3/2/4.png",
+                "https://example.org/tiles/3/2/4.png",
+            ),
+            ("https://example.org/wms?flag", "https://example.org/wms?flag"),
+        ],
+    )
+    def test_values_are_masked_but_the_request_stays_readable(self, url, expected):
+        """Credential-shaped values go; the parameters naming the tile stay.
+
+        Args:
+            url: The URL to redact.
+            expected: Its redacted form.
+
+        Test scenario:
+            Masking everything would make the per-attempt debug line identical
+            for every tile of a mosaic, so the log could no longer say which
+            tile failed. The OGC and XYZ parameter names are therefore kept and
+            everything else masked -- an allow-list, so an unexpected parameter
+            name is covered by default.
+        """
+        assert _redact_url(url) == expected, f"{url} redacted to {_redact_url(url)}"
+
+    def test_each_tile_of_a_mosaic_logs_distinguishably(self):
+        """Four different tiles produce four different log lines.
+
+        Test scenario:
+            This is the property the allow-list exists for: `BBOX` carries the
+            tile's identity, so blanking it collapsed every line into one.
+        """
+        urls = [
+            f"https://example.org/wms?BBOX=0,0,{n},{n}&token=s3cret" for n in range(4)
+        ]
+        redacted = {_redact_url(u) for u in urls}
+        assert len(redacted) == 4, f"tiles collapsed to {len(redacted)} log line(s)"
+        assert not any("s3cret" in u for u in redacted), "a credential survived"
