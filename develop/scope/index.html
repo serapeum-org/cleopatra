@@ -1303,34 +1303,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/ogc/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    OGC services (WMS/WMTS)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../reference/reference-data/" class="md-nav__link">
         
   
@@ -1395,6 +1367,34 @@
     
   
     Projection (globe frames)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/solar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Solar (terminator/Tissot)
   
 
     
@@ -2743,10 +2743,8 @@ colorbars, ticks, classification, and animation.</p>
   quantiles, equal-interval, percentiles, std-mean, Fisher-Jenks/natural-breaks
   — all NumPy-native), and reusable legend builders (disjoint/size/width/
   histogram/colorbar).</li>
-<li><code>tiles</code> (optional <code>cleopatra[tiles]</code> extra): fetch + stitch web-tile
-  basemaps — XYZ templates, and OGC WMS / WMTS services via the provider
-  objects in <code>basemap.ogc</code>; reprojection helpers. What belongs here is the
-  fetch-stitch-compose path, not a catalogue of <em>which</em> services exist.</li>
+<li><code>tiles</code> (optional <code>cleopatra[tiles]</code> extra): fetch + stitch XYZ web-tile
+  basemaps; reprojection helpers.</li>
 <li><code>reference</code> (uses the <code>cleopatra[tiles]</code> extra for relief decoding /
   reprojection): fetch + draw fixed public reference-basemap data <em>under</em> your
   plot — Natural Earth vector layers (<code>add_features</code>) and a global hypsometric
