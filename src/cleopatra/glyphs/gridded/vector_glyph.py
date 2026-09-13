@@ -28,6 +28,7 @@ Examples:
 
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 import numpy as np
@@ -60,6 +61,10 @@ VECTOR_KINDS = ("quiver", "barbs", "streamplot")
 #: `_prepare_scalar_mapping` helper auto-derives it from the magnitude.
 VECTOR_DEFAULT_OPTIONS = {
     "density": 1.0,
+    # thin: draw every nth grid point for quiver/barbs -- see
+    # VectorGlyph._thinned for why a real grid needs it. density is a
+    # streamplot concept and does not apply to them.
+    "thin": 1,
     "scale": None,
     "vmin": None,
     "vmax": None,
@@ -68,6 +73,33 @@ VECTOR_DEFAULT_OPTIONS = {
     "add_colorbar": True,
 }
 VECTOR_DEFAULT_OPTIONS = STYLE_DEFAULTS | CLASSIFY_OPTIONS | VECTOR_DEFAULT_OPTIONS
+
+
+def _validate_thin(thin: Any, kind: str) -> None:
+    """Check `thin` before a render starts.
+
+    Args:
+        thin: The subsampling step from the options.
+        kind: The vector kind being drawn.
+
+    Raises:
+        ValueError: If `thin` is not a positive integer.
+
+    Warns:
+        UserWarning: If a thinning step is set for `"streamplot"`, which places
+            its own seed points and has no per-grid-point arrow to drop -- use
+            `density` there instead. Silently ignoring it would leave a caller
+            believing a 45,000-arrow figure had been thinned.
+    """
+    if not isinstance(thin, (int, np.integer)) or isinstance(thin, bool) or thin < 1:
+        raise ValueError(f"thin must be a positive integer, got {thin!r}.")
+    if thin > 1 and kind == "streamplot":
+        warnings.warn(
+            "thin has no effect on kind='streamplot', which seeds its own "
+            "streamlines; use density= to control how many are drawn.",
+            UserWarning,
+            stacklevel=3,
+        )
 
 
 class VectorGlyph(GeoMixin, Glyph):
@@ -88,8 +120,13 @@ class VectorGlyph(GeoMixin, Glyph):
             (e.g. `density`, `scale`, `cmap`, `vmin`, `vmax`, `levels`,
             `color_scale`, `ticks_spacing`, `cbar_label`, `figsize`,
             `title`). Set `add_colorbar=False` to suppress the per-glyph
-            colorbar (default True) for shared-axes composition where the
-            host owns a single aggregated colorbar.
+            colorbar (default True) where the host owns a single aggregated
+            colorbar; `plot(compose=True)`, which keeps the host's own
+            layers, already suppresses it by default, and
+            `add_colorbar=True` here is how a composed overlay asks for one
+            back. Set `thin=n` to draw every nth grid point for
+            `quiver`/`barbs`, which a real grid needs (see
+            `VectorGlyph._thinned`).
 
     Examples:
         - Build a field and inspect the stored magnitude:
@@ -143,6 +180,54 @@ class VectorGlyph(GeoMixin, Glyph):
         """Per-vector magnitude `hypot(u, v)` used for colour mapping."""
         return np.asarray(np.hypot(self.u, self.v))
 
+    def _thinned(
+        self, thin: int, mag: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Return the field subsampled to every `thin`th grid point.
+
+        `quiver` and `barbs` draw one arrow per point, which on a real grid is
+        both unreadable and slow -- a 141x321 window is 45,261 arrows. Thinning
+        here means a caller does not have to subsample the data and rebuild a
+        coarser grid themselves.
+
+        Args:
+            thin: Keep every `thin`th point along each axis. `1` keeps all.
+            mag: The magnitude array, thinned alongside so the colours still
+                line up with the arrows.
+
+        Returns:
+            tuple: `(x, y, u, v, magnitude)`, each subsampled.
+
+        `thin` is validated by `_validate_thin` before the render begins, so
+        that an invalid value never reaches the point where artists have already
+        been cleared.
+        """
+
+        def take(array: np.ndarray) -> np.ndarray:
+            """Subsample one array along however many axes it has.
+
+            1-D coordinate vectors index on their only axis; a meshgrid indexes
+            on both, so the slice is built from the array's own dimensionality
+            rather than assumed.
+
+            Args:
+                array: The array to subsample.
+
+            Returns:
+                np.ndarray: Every `thin`th element along each axis.
+            """
+            values = np.asarray(array)
+            step = (slice(None, None, thin),) * values.ndim
+            return values[step]
+
+        return (
+            take(self.x),
+            take(self.y),
+            take(self.u),
+            take(self.v),
+            take(mag),
+        )
+
     def plot(
         self,
         kind: str = "quiver",
@@ -153,6 +238,7 @@ class VectorGlyph(GeoMixin, Glyph):
         color: ColorScaling | None = None,
         contour: Contour | None = None,
         classify: Classify | None = None,
+        compose: bool = False,
     ):
         """Render the vector field, coloured by magnitude.
 
@@ -168,15 +254,30 @@ class VectorGlyph(GeoMixin, Glyph):
             title: Plot title. Overrides `default_options["title"]`
                 when given.
             add_colorbar: Override the `add_colorbar` option for this call
-                — True draws the colorbar, False suppresses it (for
-                shared-axes composition). Defaults to None, which keeps the
-                value set at construction.
+                — True draws the colorbar, False suppresses it. Defaults to
+                None, which leaves the decision to the `add_colorbar` option
+                (set at construction, `True` by default) -- except under
+                `compose=True`, where that default flips off unless the caller
+                asked for a bar through `colorbar=` or a construction-time
+                `add_colorbar=`.
             colorbar: Typed `ColorBar` spec (or `True`/`False`/`None`) for the
                 colorbar's placement, caption, and sizing; resolved into the
                 `cbar_*` options. A `ColorBar`/`True` also enables the bar and is
                 **sticky** -- it persists into later plots, overriding a
                 construction-time `add_colorbar=False`; an explicit
-                `add_colorbar=` argument still wins the on/off decision.
+                `add_colorbar=` argument still wins the on/off decision. Under
+                `compose=True`, anything but `None` here counts as asking for
+                the overlay's own colorbar, which is otherwise off.
+            compose: Draw *over* whatever is already on `ax` instead of
+                replacing it, leaving another glyph's layers and colorbar
+                intact. Off by default, where a render replaces every glyph's
+                artists on the axes (see issue #210). Turn it on to lay one
+                field over another -- arrows on a scalar background. The arrows
+                then bring **no colorbar of their own** by default: the bar
+                would take its space from the host axes, shrinking the raster it
+                is drawn over. Ask for one with `add_colorbar=True`, `colorbar=`
+                or a construction-time `add_colorbar=True` if the overlay's
+                magnitude needs its own scale.
 
         Returns:
             tuple[Figure, Axes, Any]: The figure, the axes, and the
@@ -202,6 +303,49 @@ class VectorGlyph(GeoMixin, Glyph):
                 >>> fig, ax, im = glyph.plot(kind="barbs")
                 >>> float(im.get_array().max())
                 2.0
+
+                ```
+            - Arrows composed over a host raster draw on the host's own axes and
+                add no colorbar, so the figure keeps the one axes it had:
+                ```python
+                >>> import matplotlib
+                >>> matplotlib.use("Agg")
+                >>> import matplotlib.pyplot as plt
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
+                >>> host_fig, host_ax = plt.subplots()
+                >>> _ = host_ax.imshow(np.arange(9.0).reshape(3, 3), extent=[0, 2, 0, 2])
+                >>> x, y = np.meshgrid(np.arange(3), np.arange(3))
+                >>> u = np.full_like(x, 1.0, dtype=float)
+                >>> v = np.full_like(y, 1.0, dtype=float)
+                >>> fig, ax, im = VectorGlyph(x, y, u, v).plot(
+                ...     kind="quiver", ax=host_ax, compose=True
+                ... )
+                >>> len(fig.axes)
+                1
+                >>> ax is host_ax
+                True
+                >>> plt.close(host_fig)
+
+                ```
+            - Asking for the overlay's colorbar brings it back:
+                ```python
+                >>> import matplotlib
+                >>> matplotlib.use("Agg")
+                >>> import matplotlib.pyplot as plt
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
+                >>> host_fig, host_ax = plt.subplots()
+                >>> _ = host_ax.imshow(np.arange(9.0).reshape(3, 3), extent=[0, 2, 0, 2])
+                >>> x, y = np.meshgrid(np.arange(3), np.arange(3))
+                >>> u = np.full_like(x, 1.0, dtype=float)
+                >>> v = np.full_like(y, 1.0, dtype=float)
+                >>> fig, ax, im = VectorGlyph(x, y, u, v).plot(
+                ...     kind="quiver", ax=host_ax, compose=True, add_colorbar=True
+                ... )
+                >>> len(fig.axes)
+                2
+                >>> plt.close(host_fig)
 
                 ```
             - An unknown kind raises ValueError:
@@ -237,60 +381,25 @@ class VectorGlyph(GeoMixin, Glyph):
             if title is not None:
                 opts["title"] = title
             opts.update(_resolve_colorbar(colorbar))
-            draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
+            draw_colorbar = (
+                self._draws_own_colorbar(compose, colorbar)
+                if add_colorbar is None
+                else add_colorbar
+            )
 
             mag = self.magnitude
             norm, cbar_kw, ticks = self._prepare_scalar_mapping(mag)
             cmap = resolve_colormap(opts["cmap"])
             clim = {} if norm else {"clim": (ticks[0], ticks[-1])}
 
-            _clear_prior_render_artists(ax)
+            # Validate before clearing: a bad `thin` used to raise only once the
+            # host's artists were already gone, leaving a wiped axes behind.
+            _validate_thin(opts["thin"], kind)
+            _clear_prior_render_artists(ax, self, compose=compose)
             self.im = None
             self.cbar = None
 
-            arrow_patches: tuple = ()
-            im: Any
-            if kind == "quiver":
-                im = ax.quiver(
-                    self.x,
-                    self.y,
-                    self.u,
-                    self.v,
-                    mag,
-                    cmap=cmap,
-                    norm=norm,
-                    scale=opts["scale"],
-                    **clim,
-                )
-            elif kind == "barbs":
-                im = ax.barbs(
-                    self.x,
-                    self.y,
-                    self.u,
-                    self.v,
-                    mag,
-                    cmap=cmap,
-                    norm=norm,
-                    **clim,
-                )
-            else:  # streamplot
-                patches_before = set(ax.patches)
-                stream = ax.streamplot(
-                    self.x,
-                    self.y,
-                    self.u,
-                    self.v,
-                    color=mag,
-                    cmap=cmap,
-                    norm=norm,
-                    density=opts["density"],
-                )
-                arrow_patches = tuple(set(ax.patches) - patches_before)
-                im = stream.lines
-                if im.get_array() is None:
-                    im.set_array(np.asarray(mag).ravel())
-                if norm is None:
-                    im.set_clim(ticks[0], ticks[-1])
+            im, arrow_patches = self._draw_field(ax, kind, mag, cmap, norm, ticks, clim)
 
             self.im = im
             if draw_colorbar:
@@ -298,9 +407,85 @@ class VectorGlyph(GeoMixin, Glyph):
 
             if opts["title"]:
                 ax.set_title(opts["title"], fontsize=opts["title_size"])
+            self._apply_axis_style(ax)
 
-            _mark_render_artists(ax, self.cbar, self.im, *arrow_patches)
+            _mark_render_artists(ax, self, self.cbar, self.im, *arrow_patches)
             return self.fig, ax, im
+
+    def _draw_field(
+        self,
+        ax: Axes,
+        kind: str,
+        mag: np.ndarray,
+        cmap: Any,
+        norm: Any,
+        ticks: np.ndarray,
+        clim: dict,
+    ) -> tuple[Any, tuple]:
+        """Create the artists for one `kind` and return them.
+
+        Split out of `plot` so that method reads as the option-resolution and
+        bookkeeping it mostly is, with the three matplotlib calls -- and the two
+        `streamplot`-only fix-ups -- in one place.
+
+        Args:
+            ax: The axes to draw on.
+            kind: One of `"quiver"`, `"barbs"` or `"streamplot"`; already
+                validated by the caller.
+            mag: The per-vector magnitude the artist is coloured by.
+            cmap: The resolved colormap.
+            norm: The resolved norm, or `None` when the caller passes an
+                explicit `clim` instead.
+            ticks: The colorbar tick positions, used for that explicit `clim`.
+            clim: `{"clim": (low, high)}` when there is no norm, else `{}`.
+
+        Returns:
+            tuple[Any, tuple]: The mappable to hand the colorbar, and the arrow
+            patches `streamplot` adds directly to the axes (empty for the other
+            two kinds, which return a single artist).
+        """
+        opts = self.default_options
+        if kind == "streamplot":
+            patches_before = set(ax.patches)
+            stream = ax.streamplot(
+                self.x,
+                self.y,
+                self.u,
+                self.v,
+                color=mag,
+                cmap=cmap,
+                norm=norm,
+                density=opts["density"],
+            )
+            im = stream.lines
+            # `streamplot` colours its own segments and does not always leave an
+            # array behind for the colorbar to read.
+            if im.get_array() is None:
+                im.set_array(np.asarray(mag).ravel())
+            if norm is None:
+                im.set_clim(ticks[0], ticks[-1])
+            return im, tuple(set(ax.patches) - patches_before)
+
+        x, y, u, v, arrow_mag = self._thinned(opts["thin"], mag)
+        if kind == "quiver":
+            return (
+                ax.quiver(
+                    x,
+                    y,
+                    u,
+                    v,
+                    arrow_mag,
+                    cmap=cmap,
+                    norm=norm,
+                    scale=opts["scale"],
+                    **clim,
+                ),
+                (),
+            )
+        return (
+            ax.barbs(x, y, u, v, arrow_mag, cmap=cmap, norm=norm, **clim),
+            (),
+        )
 
     def add_key(
         self,
