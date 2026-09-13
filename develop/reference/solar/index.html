@@ -3045,6 +3045,19 @@ shortcut. Mutually exclusive with <code>transform</code>.</p>
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="o">&gt;&gt;&gt;</span> <span class="nb">bool</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span> <span class="o">==</span> <span class="p">(</span><span class="o">-</span><span class="mf">180.0</span><span class="p">,</span> <span class="mf">180.0</span><span class="p">))</span>
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="kc">True</span>
 </code></pre></div></li>
+<li>A consumer whose axes is not lon/lat passes a <code>transform</code> callable
+  (here a trivial scale), so cleopatra never resolves the projection:
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">"Agg"</span><span class="p">)</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">UTC</span><span class="p">,</span> <span class="n">datetime</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">art</span> <span class="o">=</span> <span class="n">add_nightshade</span><span class="p">(</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="o">...</span>     <span class="n">ax</span><span class="p">,</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2026</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">UTC</span><span class="p">),</span> <span class="n">transform</span><span class="o">=</span><span class="k">lambda</span> <span class="n">a</span><span class="p">:</span> <span class="n">a</span> <span class="o">*</span> <span class="mf">2.0</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="o">...</span> <span class="p">)</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="o">&gt;&gt;&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">art</span><span class="o">.</span><span class="n">get_paths</span><span class="p">())</span> <span class="o">&gt;=</span> <span class="mi">1</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="kc">True</span>
+</code></pre></div></li>
 </ul>
 
 
@@ -3141,7 +3154,22 @@ shortcut. Mutually exclusive with <code>transform</code>.</p>
 <span class="normal"><a href="#__codelineno-0-398">398</a></span>
 <span class="normal"><a href="#__codelineno-0-399">399</a></span>
 <span class="normal"><a href="#__codelineno-0-400">400</a></span>
-<span class="normal"><a href="#__codelineno-0-401">401</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-310" name="__codelineno-0-310"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_nightshade</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-401">401</a></span>
+<span class="normal"><a href="#__codelineno-0-402">402</a></span>
+<span class="normal"><a href="#__codelineno-0-403">403</a></span>
+<span class="normal"><a href="#__codelineno-0-404">404</a></span>
+<span class="normal"><a href="#__codelineno-0-405">405</a></span>
+<span class="normal"><a href="#__codelineno-0-406">406</a></span>
+<span class="normal"><a href="#__codelineno-0-407">407</a></span>
+<span class="normal"><a href="#__codelineno-0-408">408</a></span>
+<span class="normal"><a href="#__codelineno-0-409">409</a></span>
+<span class="normal"><a href="#__codelineno-0-410">410</a></span>
+<span class="normal"><a href="#__codelineno-0-411">411</a></span>
+<span class="normal"><a href="#__codelineno-0-412">412</a></span>
+<span class="normal"><a href="#__codelineno-0-413">413</a></span>
+<span class="normal"><a href="#__codelineno-0-414">414</a></span>
+<span class="normal"><a href="#__codelineno-0-415">415</a></span>
+<span class="normal"><a href="#__codelineno-0-416">416</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-310" name="__codelineno-0-310"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_nightshade</span><span class="p">(</span>
 <a id="__codelineno-0-311" name="__codelineno-0-311"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <a id="__codelineno-0-312" name="__codelineno-0-312"></a>    <span class="n">when</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
 <a id="__codelineno-0-313" name="__codelineno-0-313"></a>    <span class="o">*</span><span class="p">,</span>
@@ -3207,32 +3235,47 @@ shortcut. Mutually exclusive with <code>transform</code>.</p>
 <a id="__codelineno-0-373" name="__codelineno-0-373"></a><span class="sd">            True</span>
 <a id="__codelineno-0-374" name="__codelineno-0-374"></a>
 <a id="__codelineno-0-375" name="__codelineno-0-375"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-376" name="__codelineno-0-376"></a><span class="sd">    """</span>
-<a id="__codelineno-0-377" name="__codelineno-0-377"></a>    <span class="k">if</span> <span class="n">transform</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">crs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-378" name="__codelineno-0-378"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Pass at most one of transform= or crs=, not both."</span><span class="p">)</span>
-<a id="__codelineno-0-379" name="__codelineno-0-379"></a>    <span class="n">_validate_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
-<a id="__codelineno-0-380" name="__codelineno-0-380"></a>
-<a id="__codelineno-0-381" name="__codelineno-0-381"></a>    <span class="n">rings</span> <span class="o">=</span> <span class="n">night_polygon</span><span class="p">(</span><span class="n">when</span><span class="p">,</span> <span class="n">refraction</span><span class="o">=</span><span class="n">refraction</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">)</span>
-<a id="__codelineno-0-382" name="__codelineno-0-382"></a>    <span class="k">if</span> <span class="n">transform</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-383" name="__codelineno-0-383"></a>        <span class="n">rings</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">transform</span><span class="p">(</span><span class="n">ring</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">for</span> <span class="n">ring</span> <span class="ow">in</span> <span class="n">rings</span><span class="p">]</span>
-<a id="__codelineno-0-384" name="__codelineno-0-384"></a>    <span class="k">elif</span> <span class="n">crs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">_is_4326</span><span class="p">(</span><span class="n">crs</span><span class="p">):</span>
-<a id="__codelineno-0-385" name="__codelineno-0-385"></a>        <span class="n">transformer</span> <span class="o">=</span> <span class="n">_make_transformer</span><span class="p">(</span><span class="n">crs</span><span class="p">)</span>
-<a id="__codelineno-0-386" name="__codelineno-0-386"></a>        <span class="n">rings</span> <span class="o">=</span> <span class="p">[</span><span class="n">_reproject_arr</span><span class="p">(</span><span class="n">ring</span><span class="p">,</span> <span class="n">transformer</span><span class="p">)</span> <span class="k">for</span> <span class="n">ring</span> <span class="ow">in</span> <span class="n">rings</span><span class="p">]</span>
-<a id="__codelineno-0-387" name="__codelineno-0-387"></a>
-<a id="__codelineno-0-388" name="__codelineno-0-388"></a>    <span class="n">opts</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"facecolor"</span><span class="p">:</span> <span class="s2">"black"</span><span class="p">,</span> <span class="s2">"edgecolor"</span><span class="p">:</span> <span class="s2">"none"</span><span class="p">,</span> <span class="s2">"alpha"</span><span class="p">:</span> <span class="mf">0.35</span><span class="p">}</span>
-<a id="__codelineno-0-389" name="__codelineno-0-389"></a>    <span class="k">if</span> <span class="s2">"color"</span> <span class="ow">in</span> <span class="n">style</span><span class="p">:</span>
-<a id="__codelineno-0-390" name="__codelineno-0-390"></a>        <span class="c1"># `color` sets both face and edge; drop the split defaults to avoid a clash.</span>
-<a id="__codelineno-0-391" name="__codelineno-0-391"></a>        <span class="n">opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"facecolor"</span><span class="p">)</span>
-<a id="__codelineno-0-392" name="__codelineno-0-392"></a>        <span class="n">opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"edgecolor"</span><span class="p">)</span>
-<a id="__codelineno-0-393" name="__codelineno-0-393"></a>    <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">style</span><span class="p">)</span>
-<a id="__codelineno-0-394" name="__codelineno-0-394"></a>
-<a id="__codelineno-0-395" name="__codelineno-0-395"></a>    <span class="n">xlim</span><span class="p">,</span> <span class="n">ylim</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">(),</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
-<a id="__codelineno-0-396" name="__codelineno-0-396"></a>    <span class="n">artist</span> <span class="o">=</span> <span class="n">PolyCollection</span><span class="p">(</span><span class="n">rings</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">)</span>
-<a id="__codelineno-0-397" name="__codelineno-0-397"></a>    <span class="n">artist</span><span class="o">.</span><span class="n">set_transform</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">transData</span><span class="p">)</span>
-<a id="__codelineno-0-398" name="__codelineno-0-398"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">artist</span><span class="p">)</span>
-<a id="__codelineno-0-399" name="__codelineno-0-399"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">xlim</span><span class="p">)</span>
-<a id="__codelineno-0-400" name="__codelineno-0-400"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">ylim</span><span class="p">)</span>
-<a id="__codelineno-0-401" name="__codelineno-0-401"></a>    <span class="k">return</span> <span class="n">artist</span>
+<a id="__codelineno-0-376" name="__codelineno-0-376"></a><span class="sd">        - A consumer whose axes is not lon/lat passes a ``transform`` callable</span>
+<a id="__codelineno-0-377" name="__codelineno-0-377"></a><span class="sd">          (here a trivial scale), so cleopatra never resolves the projection:</span>
+<a id="__codelineno-0-378" name="__codelineno-0-378"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-379" name="__codelineno-0-379"></a><span class="sd">            &gt;&gt;&gt; import matplotlib</span>
+<a id="__codelineno-0-380" name="__codelineno-0-380"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use("Agg")</span>
+<a id="__codelineno-0-381" name="__codelineno-0-381"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-382" name="__codelineno-0-382"></a><span class="sd">            &gt;&gt;&gt; from datetime import UTC, datetime</span>
+<a id="__codelineno-0-383" name="__codelineno-0-383"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-384" name="__codelineno-0-384"></a><span class="sd">            &gt;&gt;&gt; art = add_nightshade(</span>
+<a id="__codelineno-0-385" name="__codelineno-0-385"></a><span class="sd">            ...     ax, datetime(2026, 3, 20, 12, tzinfo=UTC), transform=lambda a: a * 2.0</span>
+<a id="__codelineno-0-386" name="__codelineno-0-386"></a><span class="sd">            ... )</span>
+<a id="__codelineno-0-387" name="__codelineno-0-387"></a><span class="sd">            &gt;&gt;&gt; len(art.get_paths()) &gt;= 1</span>
+<a id="__codelineno-0-388" name="__codelineno-0-388"></a><span class="sd">            True</span>
+<a id="__codelineno-0-389" name="__codelineno-0-389"></a>
+<a id="__codelineno-0-390" name="__codelineno-0-390"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-391" name="__codelineno-0-391"></a><span class="sd">    """</span>
+<a id="__codelineno-0-392" name="__codelineno-0-392"></a>    <span class="k">if</span> <span class="n">transform</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">crs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-393" name="__codelineno-0-393"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Pass at most one of transform= or crs=, not both."</span><span class="p">)</span>
+<a id="__codelineno-0-394" name="__codelineno-0-394"></a>    <span class="n">_validate_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+<a id="__codelineno-0-395" name="__codelineno-0-395"></a>
+<a id="__codelineno-0-396" name="__codelineno-0-396"></a>    <span class="n">rings</span> <span class="o">=</span> <span class="n">night_polygon</span><span class="p">(</span><span class="n">when</span><span class="p">,</span> <span class="n">refraction</span><span class="o">=</span><span class="n">refraction</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">)</span>
+<a id="__codelineno-0-397" name="__codelineno-0-397"></a>    <span class="k">if</span> <span class="n">transform</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-398" name="__codelineno-0-398"></a>        <span class="n">rings</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">transform</span><span class="p">(</span><span class="n">ring</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">for</span> <span class="n">ring</span> <span class="ow">in</span> <span class="n">rings</span><span class="p">]</span>
+<a id="__codelineno-0-399" name="__codelineno-0-399"></a>    <span class="k">elif</span> <span class="n">crs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">_is_4326</span><span class="p">(</span><span class="n">crs</span><span class="p">):</span>
+<a id="__codelineno-0-400" name="__codelineno-0-400"></a>        <span class="n">transformer</span> <span class="o">=</span> <span class="n">_make_transformer</span><span class="p">(</span><span class="n">crs</span><span class="p">)</span>
+<a id="__codelineno-0-401" name="__codelineno-0-401"></a>        <span class="n">rings</span> <span class="o">=</span> <span class="p">[</span><span class="n">_reproject_arr</span><span class="p">(</span><span class="n">ring</span><span class="p">,</span> <span class="n">transformer</span><span class="p">)</span> <span class="k">for</span> <span class="n">ring</span> <span class="ow">in</span> <span class="n">rings</span><span class="p">]</span>
+<a id="__codelineno-0-402" name="__codelineno-0-402"></a>
+<a id="__codelineno-0-403" name="__codelineno-0-403"></a>    <span class="n">opts</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"facecolor"</span><span class="p">:</span> <span class="s2">"black"</span><span class="p">,</span> <span class="s2">"edgecolor"</span><span class="p">:</span> <span class="s2">"none"</span><span class="p">,</span> <span class="s2">"alpha"</span><span class="p">:</span> <span class="mf">0.35</span><span class="p">}</span>
+<a id="__codelineno-0-404" name="__codelineno-0-404"></a>    <span class="k">if</span> <span class="s2">"color"</span> <span class="ow">in</span> <span class="n">style</span><span class="p">:</span>
+<a id="__codelineno-0-405" name="__codelineno-0-405"></a>        <span class="c1"># `color` sets both face and edge; drop the split defaults to avoid a clash.</span>
+<a id="__codelineno-0-406" name="__codelineno-0-406"></a>        <span class="n">opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"facecolor"</span><span class="p">)</span>
+<a id="__codelineno-0-407" name="__codelineno-0-407"></a>        <span class="n">opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"edgecolor"</span><span class="p">)</span>
+<a id="__codelineno-0-408" name="__codelineno-0-408"></a>    <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">style</span><span class="p">)</span>
+<a id="__codelineno-0-409" name="__codelineno-0-409"></a>
+<a id="__codelineno-0-410" name="__codelineno-0-410"></a>    <span class="n">xlim</span><span class="p">,</span> <span class="n">ylim</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">(),</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
+<a id="__codelineno-0-411" name="__codelineno-0-411"></a>    <span class="n">artist</span> <span class="o">=</span> <span class="n">PolyCollection</span><span class="p">(</span><span class="n">rings</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">)</span>
+<a id="__codelineno-0-412" name="__codelineno-0-412"></a>    <span class="n">artist</span><span class="o">.</span><span class="n">set_transform</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">transData</span><span class="p">)</span>
+<a id="__codelineno-0-413" name="__codelineno-0-413"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">artist</span><span class="p">)</span>
+<a id="__codelineno-0-414" name="__codelineno-0-414"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">xlim</span><span class="p">)</span>
+<a id="__codelineno-0-415" name="__codelineno-0-415"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">ylim</span><span class="p">)</span>
+<a id="__codelineno-0-416" name="__codelineno-0-416"></a>    <span class="k">return</span> <span class="n">artist</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3387,27 +3430,24 @@ coordinates (already projected by the consumer).</p>
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">art</span> <span class="ow">in</span> <span class="n">ax</span><span class="o">.</span><span class="n">collections</span>
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="kc">True</span>
 </code></pre></div></li>
+<li>Generate geodesic circles with <code>tissot_circles</code> and draw them on a
+  lon/lat axes:
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">"Agg"</span><span class="p">)</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.basemap.solar</span><span class="w"> </span><span class="kn">import</span> <span class="n">tissot_circles</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">circles</span> <span class="o">=</span> <span class="n">tissot_circles</span><span class="p">([</span><span class="o">-</span><span class="mf">90.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">90.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="mf">5e5</span><span class="p">)</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">art</span> <span class="o">=</span> <span class="n">add_tissot</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">circles</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s2">"navy"</span><span class="p">)</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="o">&gt;&gt;&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">art</span><span class="o">.</span><span class="n">get_paths</span><span class="p">())</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="mi">3</span>
+</code></pre></div></li>
 </ul>
 
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/cleopatra/basemap/solar.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-475">475</a></span>
-<span class="normal"><a href="#__codelineno-0-476">476</a></span>
-<span class="normal"><a href="#__codelineno-0-477">477</a></span>
-<span class="normal"><a href="#__codelineno-0-478">478</a></span>
-<span class="normal"><a href="#__codelineno-0-479">479</a></span>
-<span class="normal"><a href="#__codelineno-0-480">480</a></span>
-<span class="normal"><a href="#__codelineno-0-481">481</a></span>
-<span class="normal"><a href="#__codelineno-0-482">482</a></span>
-<span class="normal"><a href="#__codelineno-0-483">483</a></span>
-<span class="normal"><a href="#__codelineno-0-484">484</a></span>
-<span class="normal"><a href="#__codelineno-0-485">485</a></span>
-<span class="normal"><a href="#__codelineno-0-486">486</a></span>
-<span class="normal"><a href="#__codelineno-0-487">487</a></span>
-<span class="normal"><a href="#__codelineno-0-488">488</a></span>
-<span class="normal"><a href="#__codelineno-0-489">489</a></span>
-<span class="normal"><a href="#__codelineno-0-490">490</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-490">490</a></span>
 <span class="normal"><a href="#__codelineno-0-491">491</a></span>
 <span class="normal"><a href="#__codelineno-0-492">492</a></span>
 <span class="normal"><a href="#__codelineno-0-493">493</a></span>
@@ -3450,65 +3490,108 @@ coordinates (already projected by the consumer).</p>
 <span class="normal"><a href="#__codelineno-0-530">530</a></span>
 <span class="normal"><a href="#__codelineno-0-531">531</a></span>
 <span class="normal"><a href="#__codelineno-0-532">532</a></span>
-<span class="normal"><a href="#__codelineno-0-533">533</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-475" name="__codelineno-0-475"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_tissot</span><span class="p">(</span><span class="n">ax</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">ellipses</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="o">**</span><span class="n">style</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PolyCollection</span><span class="p">:</span>
-<a id="__codelineno-0-476" name="__codelineno-0-476"></a><span class="w">    </span><span class="sd">"""Draw pre-projected Tissot rings on ``ax`` and return the artist.</span>
-<a id="__codelineno-0-477" name="__codelineno-0-477"></a>
-<a id="__codelineno-0-478" name="__codelineno-0-478"></a><span class="sd">    **cleopatra draws what it is given and computes no distortion**: the shape a</span>
-<a id="__codelineno-0-479" name="__codelineno-0-479"></a><span class="sd">    circle takes is a property of the consumer's projection, so the consumer</span>
-<a id="__codelineno-0-480" name="__codelineno-0-480"></a><span class="sd">    projects `tissot_circles` output through its own transform and passes the</span>
-<a id="__codelineno-0-481" name="__codelineno-0-481"></a><span class="sd">    result here. It draws the rings as an unfilled `PolyCollection` (outline only</span>
-<a id="__codelineno-0-482" name="__codelineno-0-482"></a><span class="sd">    by default) -- the same "sequence of polygons with differing vertex counts"</span>
-<a id="__codelineno-0-483" name="__codelineno-0-483"></a><span class="sd">    shape `cleopatra.glyphs.primitives.polygon_glyph.PolygonGlyph` handles -- and</span>
-<a id="__codelineno-0-484" name="__codelineno-0-484"></a><span class="sd">    preserves the current axis limits.</span>
-<a id="__codelineno-0-485" name="__codelineno-0-485"></a>
-<a id="__codelineno-0-486" name="__codelineno-0-486"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-487" name="__codelineno-0-487"></a><span class="sd">        ax: A matplotlib `~matplotlib.axes.Axes`.</span>
-<a id="__codelineno-0-488" name="__codelineno-0-488"></a><span class="sd">        ellipses: A sequence of ``(m, 2)`` vertex arrays in the axes' own</span>
-<a id="__codelineno-0-489" name="__codelineno-0-489"></a><span class="sd">            coordinates (already projected by the consumer).</span>
-<a id="__codelineno-0-490" name="__codelineno-0-490"></a><span class="sd">        **style: Style overrides forwarded to the underlying collection</span>
-<a id="__codelineno-0-491" name="__codelineno-0-491"></a><span class="sd">            (``facecolor``, ``edgecolor``, ``linewidth``, ...).</span>
+<span class="normal"><a href="#__codelineno-0-533">533</a></span>
+<span class="normal"><a href="#__codelineno-0-534">534</a></span>
+<span class="normal"><a href="#__codelineno-0-535">535</a></span>
+<span class="normal"><a href="#__codelineno-0-536">536</a></span>
+<span class="normal"><a href="#__codelineno-0-537">537</a></span>
+<span class="normal"><a href="#__codelineno-0-538">538</a></span>
+<span class="normal"><a href="#__codelineno-0-539">539</a></span>
+<span class="normal"><a href="#__codelineno-0-540">540</a></span>
+<span class="normal"><a href="#__codelineno-0-541">541</a></span>
+<span class="normal"><a href="#__codelineno-0-542">542</a></span>
+<span class="normal"><a href="#__codelineno-0-543">543</a></span>
+<span class="normal"><a href="#__codelineno-0-544">544</a></span>
+<span class="normal"><a href="#__codelineno-0-545">545</a></span>
+<span class="normal"><a href="#__codelineno-0-546">546</a></span>
+<span class="normal"><a href="#__codelineno-0-547">547</a></span>
+<span class="normal"><a href="#__codelineno-0-548">548</a></span>
+<span class="normal"><a href="#__codelineno-0-549">549</a></span>
+<span class="normal"><a href="#__codelineno-0-550">550</a></span>
+<span class="normal"><a href="#__codelineno-0-551">551</a></span>
+<span class="normal"><a href="#__codelineno-0-552">552</a></span>
+<span class="normal"><a href="#__codelineno-0-553">553</a></span>
+<span class="normal"><a href="#__codelineno-0-554">554</a></span>
+<span class="normal"><a href="#__codelineno-0-555">555</a></span>
+<span class="normal"><a href="#__codelineno-0-556">556</a></span>
+<span class="normal"><a href="#__codelineno-0-557">557</a></span>
+<span class="normal"><a href="#__codelineno-0-558">558</a></span>
+<span class="normal"><a href="#__codelineno-0-559">559</a></span>
+<span class="normal"><a href="#__codelineno-0-560">560</a></span>
+<span class="normal"><a href="#__codelineno-0-561">561</a></span>
+<span class="normal"><a href="#__codelineno-0-562">562</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-490" name="__codelineno-0-490"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_tissot</span><span class="p">(</span><span class="n">ax</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">ellipses</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="o">**</span><span class="n">style</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PolyCollection</span><span class="p">:</span>
+<a id="__codelineno-0-491" name="__codelineno-0-491"></a><span class="w">    </span><span class="sd">"""Draw pre-projected Tissot rings on ``ax`` and return the artist.</span>
 <a id="__codelineno-0-492" name="__codelineno-0-492"></a>
-<a id="__codelineno-0-493" name="__codelineno-0-493"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-494" name="__codelineno-0-494"></a><span class="sd">        matplotlib.collections.PolyCollection: The Tissot artist.</span>
-<a id="__codelineno-0-495" name="__codelineno-0-495"></a>
-<a id="__codelineno-0-496" name="__codelineno-0-496"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-497" name="__codelineno-0-497"></a><span class="sd">        TypeError: If ``ax`` is not a matplotlib Axes.</span>
-<a id="__codelineno-0-498" name="__codelineno-0-498"></a>
-<a id="__codelineno-0-499" name="__codelineno-0-499"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-500" name="__codelineno-0-500"></a><span class="sd">        - Draw two supplied rings (already in axes coordinates) and keep them:</span>
-<a id="__codelineno-0-501" name="__codelineno-0-501"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-502" name="__codelineno-0-502"></a><span class="sd">            &gt;&gt;&gt; import matplotlib</span>
-<a id="__codelineno-0-503" name="__codelineno-0-503"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use("Agg")</span>
-<a id="__codelineno-0-504" name="__codelineno-0-504"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-505" name="__codelineno-0-505"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-506" name="__codelineno-0-506"></a><span class="sd">            &gt;&gt;&gt; theta = np.linspace(0, 2 * np.pi, 16)</span>
-<a id="__codelineno-0-507" name="__codelineno-0-507"></a><span class="sd">            &gt;&gt;&gt; circle = np.column_stack([np.cos(theta), np.sin(theta)])</span>
-<a id="__codelineno-0-508" name="__codelineno-0-508"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-509" name="__codelineno-0-509"></a><span class="sd">            &gt;&gt;&gt; art = add_tissot(ax, [circle, circle + 3.0], edgecolor="crimson")</span>
-<a id="__codelineno-0-510" name="__codelineno-0-510"></a><span class="sd">            &gt;&gt;&gt; len(art.get_paths())</span>
-<a id="__codelineno-0-511" name="__codelineno-0-511"></a><span class="sd">            2</span>
-<a id="__codelineno-0-512" name="__codelineno-0-512"></a><span class="sd">            &gt;&gt;&gt; art in ax.collections</span>
-<a id="__codelineno-0-513" name="__codelineno-0-513"></a><span class="sd">            True</span>
-<a id="__codelineno-0-514" name="__codelineno-0-514"></a>
-<a id="__codelineno-0-515" name="__codelineno-0-515"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-516" name="__codelineno-0-516"></a><span class="sd">    """</span>
-<a id="__codelineno-0-517" name="__codelineno-0-517"></a>    <span class="n">_validate_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
-<a id="__codelineno-0-518" name="__codelineno-0-518"></a>    <span class="n">verts</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ring</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">for</span> <span class="n">ring</span> <span class="ow">in</span> <span class="n">ellipses</span><span class="p">]</span>
-<a id="__codelineno-0-519" name="__codelineno-0-519"></a>
-<a id="__codelineno-0-520" name="__codelineno-0-520"></a>    <span class="n">opts</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"facecolor"</span><span class="p">:</span> <span class="s2">"none"</span><span class="p">,</span> <span class="s2">"edgecolor"</span><span class="p">:</span> <span class="s2">"black"</span><span class="p">,</span> <span class="s2">"linewidth"</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">}</span>
-<a id="__codelineno-0-521" name="__codelineno-0-521"></a>    <span class="k">if</span> <span class="s2">"color"</span> <span class="ow">in</span> <span class="n">style</span><span class="p">:</span>
-<a id="__codelineno-0-522" name="__codelineno-0-522"></a>        <span class="c1"># `color` sets both face and edge; drop the split defaults to avoid a clash.</span>
-<a id="__codelineno-0-523" name="__codelineno-0-523"></a>        <span class="n">opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"facecolor"</span><span class="p">)</span>
-<a id="__codelineno-0-524" name="__codelineno-0-524"></a>        <span class="n">opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"edgecolor"</span><span class="p">)</span>
-<a id="__codelineno-0-525" name="__codelineno-0-525"></a>    <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">style</span><span class="p">)</span>
-<a id="__codelineno-0-526" name="__codelineno-0-526"></a>
-<a id="__codelineno-0-527" name="__codelineno-0-527"></a>    <span class="n">xlim</span><span class="p">,</span> <span class="n">ylim</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">(),</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
-<a id="__codelineno-0-528" name="__codelineno-0-528"></a>    <span class="n">artist</span> <span class="o">=</span> <span class="n">PolyCollection</span><span class="p">(</span><span class="n">verts</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">)</span>
-<a id="__codelineno-0-529" name="__codelineno-0-529"></a>    <span class="n">artist</span><span class="o">.</span><span class="n">set_transform</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">transData</span><span class="p">)</span>
-<a id="__codelineno-0-530" name="__codelineno-0-530"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">artist</span><span class="p">)</span>
-<a id="__codelineno-0-531" name="__codelineno-0-531"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">xlim</span><span class="p">)</span>
-<a id="__codelineno-0-532" name="__codelineno-0-532"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">ylim</span><span class="p">)</span>
-<a id="__codelineno-0-533" name="__codelineno-0-533"></a>    <span class="k">return</span> <span class="n">artist</span>
+<a id="__codelineno-0-493" name="__codelineno-0-493"></a><span class="sd">    **cleopatra draws what it is given and computes no distortion**: the shape a</span>
+<a id="__codelineno-0-494" name="__codelineno-0-494"></a><span class="sd">    circle takes is a property of the consumer's projection, so the consumer</span>
+<a id="__codelineno-0-495" name="__codelineno-0-495"></a><span class="sd">    projects `tissot_circles` output through its own transform and passes the</span>
+<a id="__codelineno-0-496" name="__codelineno-0-496"></a><span class="sd">    result here. It draws the rings as an unfilled `PolyCollection` (outline only</span>
+<a id="__codelineno-0-497" name="__codelineno-0-497"></a><span class="sd">    by default) -- the same "sequence of polygons with differing vertex counts"</span>
+<a id="__codelineno-0-498" name="__codelineno-0-498"></a><span class="sd">    shape `cleopatra.glyphs.primitives.polygon_glyph.PolygonGlyph` handles -- and</span>
+<a id="__codelineno-0-499" name="__codelineno-0-499"></a><span class="sd">    preserves the current axis limits.</span>
+<a id="__codelineno-0-500" name="__codelineno-0-500"></a>
+<a id="__codelineno-0-501" name="__codelineno-0-501"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-502" name="__codelineno-0-502"></a><span class="sd">        ax: A matplotlib `~matplotlib.axes.Axes`.</span>
+<a id="__codelineno-0-503" name="__codelineno-0-503"></a><span class="sd">        ellipses: A sequence of ``(m, 2)`` vertex arrays in the axes' own</span>
+<a id="__codelineno-0-504" name="__codelineno-0-504"></a><span class="sd">            coordinates (already projected by the consumer).</span>
+<a id="__codelineno-0-505" name="__codelineno-0-505"></a><span class="sd">        **style: Style overrides forwarded to the underlying collection</span>
+<a id="__codelineno-0-506" name="__codelineno-0-506"></a><span class="sd">            (``facecolor``, ``edgecolor``, ``linewidth``, ...).</span>
+<a id="__codelineno-0-507" name="__codelineno-0-507"></a>
+<a id="__codelineno-0-508" name="__codelineno-0-508"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-509" name="__codelineno-0-509"></a><span class="sd">        matplotlib.collections.PolyCollection: The Tissot artist.</span>
+<a id="__codelineno-0-510" name="__codelineno-0-510"></a>
+<a id="__codelineno-0-511" name="__codelineno-0-511"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-0-512" name="__codelineno-0-512"></a><span class="sd">        TypeError: If ``ax`` is not a matplotlib Axes.</span>
+<a id="__codelineno-0-513" name="__codelineno-0-513"></a>
+<a id="__codelineno-0-514" name="__codelineno-0-514"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-515" name="__codelineno-0-515"></a><span class="sd">        - Draw two supplied rings (already in axes coordinates) and keep them:</span>
+<a id="__codelineno-0-516" name="__codelineno-0-516"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-517" name="__codelineno-0-517"></a><span class="sd">            &gt;&gt;&gt; import matplotlib</span>
+<a id="__codelineno-0-518" name="__codelineno-0-518"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use("Agg")</span>
+<a id="__codelineno-0-519" name="__codelineno-0-519"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-520" name="__codelineno-0-520"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-521" name="__codelineno-0-521"></a><span class="sd">            &gt;&gt;&gt; theta = np.linspace(0, 2 * np.pi, 16)</span>
+<a id="__codelineno-0-522" name="__codelineno-0-522"></a><span class="sd">            &gt;&gt;&gt; circle = np.column_stack([np.cos(theta), np.sin(theta)])</span>
+<a id="__codelineno-0-523" name="__codelineno-0-523"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-524" name="__codelineno-0-524"></a><span class="sd">            &gt;&gt;&gt; art = add_tissot(ax, [circle, circle + 3.0], edgecolor="crimson")</span>
+<a id="__codelineno-0-525" name="__codelineno-0-525"></a><span class="sd">            &gt;&gt;&gt; len(art.get_paths())</span>
+<a id="__codelineno-0-526" name="__codelineno-0-526"></a><span class="sd">            2</span>
+<a id="__codelineno-0-527" name="__codelineno-0-527"></a><span class="sd">            &gt;&gt;&gt; art in ax.collections</span>
+<a id="__codelineno-0-528" name="__codelineno-0-528"></a><span class="sd">            True</span>
+<a id="__codelineno-0-529" name="__codelineno-0-529"></a>
+<a id="__codelineno-0-530" name="__codelineno-0-530"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-531" name="__codelineno-0-531"></a><span class="sd">        - Generate geodesic circles with `tissot_circles` and draw them on a</span>
+<a id="__codelineno-0-532" name="__codelineno-0-532"></a><span class="sd">          lon/lat axes:</span>
+<a id="__codelineno-0-533" name="__codelineno-0-533"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="sd">            &gt;&gt;&gt; import matplotlib</span>
+<a id="__codelineno-0-535" name="__codelineno-0-535"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use("Agg")</span>
+<a id="__codelineno-0-536" name="__codelineno-0-536"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-537" name="__codelineno-0-537"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.basemap.solar import tissot_circles</span>
+<a id="__codelineno-0-538" name="__codelineno-0-538"></a><span class="sd">            &gt;&gt;&gt; circles = tissot_circles([-90.0, 0.0, 90.0], [0.0, 0.0, 0.0], 5e5)</span>
+<a id="__codelineno-0-539" name="__codelineno-0-539"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-540" name="__codelineno-0-540"></a><span class="sd">            &gt;&gt;&gt; art = add_tissot(ax, circles, edgecolor="navy")</span>
+<a id="__codelineno-0-541" name="__codelineno-0-541"></a><span class="sd">            &gt;&gt;&gt; len(art.get_paths())</span>
+<a id="__codelineno-0-542" name="__codelineno-0-542"></a><span class="sd">            3</span>
+<a id="__codelineno-0-543" name="__codelineno-0-543"></a>
+<a id="__codelineno-0-544" name="__codelineno-0-544"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-545" name="__codelineno-0-545"></a><span class="sd">    """</span>
+<a id="__codelineno-0-546" name="__codelineno-0-546"></a>    <span class="n">_validate_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+<a id="__codelineno-0-547" name="__codelineno-0-547"></a>    <span class="n">verts</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ring</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">for</span> <span class="n">ring</span> <span class="ow">in</span> <span class="n">ellipses</span><span class="p">]</span>
+<a id="__codelineno-0-548" name="__codelineno-0-548"></a>
+<a id="__codelineno-0-549" name="__codelineno-0-549"></a>    <span class="n">opts</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"facecolor"</span><span class="p">:</span> <span class="s2">"none"</span><span class="p">,</span> <span class="s2">"edgecolor"</span><span class="p">:</span> <span class="s2">"black"</span><span class="p">,</span> <span class="s2">"linewidth"</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">}</span>
+<a id="__codelineno-0-550" name="__codelineno-0-550"></a>    <span class="k">if</span> <span class="s2">"color"</span> <span class="ow">in</span> <span class="n">style</span><span class="p">:</span>
+<a id="__codelineno-0-551" name="__codelineno-0-551"></a>        <span class="c1"># `color` sets both face and edge; drop the split defaults to avoid a clash.</span>
+<a id="__codelineno-0-552" name="__codelineno-0-552"></a>        <span class="n">opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"facecolor"</span><span class="p">)</span>
+<a id="__codelineno-0-553" name="__codelineno-0-553"></a>        <span class="n">opts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"edgecolor"</span><span class="p">)</span>
+<a id="__codelineno-0-554" name="__codelineno-0-554"></a>    <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">style</span><span class="p">)</span>
+<a id="__codelineno-0-555" name="__codelineno-0-555"></a>
+<a id="__codelineno-0-556" name="__codelineno-0-556"></a>    <span class="n">xlim</span><span class="p">,</span> <span class="n">ylim</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">(),</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
+<a id="__codelineno-0-557" name="__codelineno-0-557"></a>    <span class="n">artist</span> <span class="o">=</span> <span class="n">PolyCollection</span><span class="p">(</span><span class="n">verts</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">)</span>
+<a id="__codelineno-0-558" name="__codelineno-0-558"></a>    <span class="n">artist</span><span class="o">.</span><span class="n">set_transform</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">transData</span><span class="p">)</span>
+<a id="__codelineno-0-559" name="__codelineno-0-559"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">artist</span><span class="p">)</span>
+<a id="__codelineno-0-560" name="__codelineno-0-560"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">xlim</span><span class="p">)</span>
+<a id="__codelineno-0-561" name="__codelineno-0-561"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">ylim</span><span class="p">)</span>
+<a id="__codelineno-0-562" name="__codelineno-0-562"></a>    <span class="k">return</span> <span class="n">artist</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4592,22 +4675,7 @@ if <code>n &lt; 4</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/cleopatra/basemap/solar.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-404">404</a></span>
-<span class="normal"><a href="#__codelineno-0-405">405</a></span>
-<span class="normal"><a href="#__codelineno-0-406">406</a></span>
-<span class="normal"><a href="#__codelineno-0-407">407</a></span>
-<span class="normal"><a href="#__codelineno-0-408">408</a></span>
-<span class="normal"><a href="#__codelineno-0-409">409</a></span>
-<span class="normal"><a href="#__codelineno-0-410">410</a></span>
-<span class="normal"><a href="#__codelineno-0-411">411</a></span>
-<span class="normal"><a href="#__codelineno-0-412">412</a></span>
-<span class="normal"><a href="#__codelineno-0-413">413</a></span>
-<span class="normal"><a href="#__codelineno-0-414">414</a></span>
-<span class="normal"><a href="#__codelineno-0-415">415</a></span>
-<span class="normal"><a href="#__codelineno-0-416">416</a></span>
-<span class="normal"><a href="#__codelineno-0-417">417</a></span>
-<span class="normal"><a href="#__codelineno-0-418">418</a></span>
-<span class="normal"><a href="#__codelineno-0-419">419</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-419">419</a></span>
 <span class="normal"><a href="#__codelineno-0-420">420</a></span>
 <span class="normal"><a href="#__codelineno-0-421">421</a></span>
 <span class="normal"><a href="#__codelineno-0-422">422</a></span>
@@ -4660,75 +4728,90 @@ if <code>n &lt; 4</code>.</p>
 <span class="normal"><a href="#__codelineno-0-469">469</a></span>
 <span class="normal"><a href="#__codelineno-0-470">470</a></span>
 <span class="normal"><a href="#__codelineno-0-471">471</a></span>
-<span class="normal"><a href="#__codelineno-0-472">472</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-404" name="__codelineno-0-404"></a><span class="k">def</span><span class="w"> </span><span class="nf">tissot_circles</span><span class="p">(</span>
-<a id="__codelineno-0-405" name="__codelineno-0-405"></a>    <span class="n">lons</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-<a id="__codelineno-0-406" name="__codelineno-0-406"></a>    <span class="n">lats</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-<a id="__codelineno-0-407" name="__codelineno-0-407"></a>    <span class="n">radius_m</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-<a id="__codelineno-0-408" name="__codelineno-0-408"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-409" name="__codelineno-0-409"></a>    <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_TISSOT_SAMPLES</span><span class="p">,</span>
-<a id="__codelineno-0-410" name="__codelineno-0-410"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
-<a id="__codelineno-0-411" name="__codelineno-0-411"></a><span class="w">    </span><span class="sd">"""Return geodesic circles of a fixed ground radius as lon/lat rings.</span>
-<a id="__codelineno-0-412" name="__codelineno-0-412"></a>
-<a id="__codelineno-0-413" name="__codelineno-0-413"></a><span class="sd">    Generic spherical geometry: each circle is the locus of points a fixed</span>
-<a id="__codelineno-0-414" name="__codelineno-0-414"></a><span class="sd">    great-circle distance (``radius_m`` on a sphere of `MEAN_EARTH_RADIUS_M`)</span>
-<a id="__codelineno-0-415" name="__codelineno-0-415"></a><span class="sd">    from its centre. No CRS is involved; the consumer projects these rings to</span>
-<a id="__codelineno-0-416" name="__codelineno-0-416"></a><span class="sd">    show how a projection distorts them (that is the Tissot indicatrix).</span>
-<a id="__codelineno-0-417" name="__codelineno-0-417"></a>
-<a id="__codelineno-0-418" name="__codelineno-0-418"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-419" name="__codelineno-0-419"></a><span class="sd">        lons: Circle-centre longitudes in degrees.</span>
-<a id="__codelineno-0-420" name="__codelineno-0-420"></a><span class="sd">        lats: Circle-centre latitudes in degrees. Same length as ``lons``.</span>
-<a id="__codelineno-0-421" name="__codelineno-0-421"></a><span class="sd">        radius_m: Ground radius of each circle in metres.</span>
-<a id="__codelineno-0-422" name="__codelineno-0-422"></a><span class="sd">        n: Number of vertices per circle.</span>
-<a id="__codelineno-0-423" name="__codelineno-0-423"></a>
-<a id="__codelineno-0-424" name="__codelineno-0-424"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-425" name="__codelineno-0-425"></a><span class="sd">        list[numpy.ndarray]: One ``(n, 2)`` lon/lat ring per centre, in input</span>
-<a id="__codelineno-0-426" name="__codelineno-0-426"></a><span class="sd">        order.</span>
+<span class="normal"><a href="#__codelineno-0-472">472</a></span>
+<span class="normal"><a href="#__codelineno-0-473">473</a></span>
+<span class="normal"><a href="#__codelineno-0-474">474</a></span>
+<span class="normal"><a href="#__codelineno-0-475">475</a></span>
+<span class="normal"><a href="#__codelineno-0-476">476</a></span>
+<span class="normal"><a href="#__codelineno-0-477">477</a></span>
+<span class="normal"><a href="#__codelineno-0-478">478</a></span>
+<span class="normal"><a href="#__codelineno-0-479">479</a></span>
+<span class="normal"><a href="#__codelineno-0-480">480</a></span>
+<span class="normal"><a href="#__codelineno-0-481">481</a></span>
+<span class="normal"><a href="#__codelineno-0-482">482</a></span>
+<span class="normal"><a href="#__codelineno-0-483">483</a></span>
+<span class="normal"><a href="#__codelineno-0-484">484</a></span>
+<span class="normal"><a href="#__codelineno-0-485">485</a></span>
+<span class="normal"><a href="#__codelineno-0-486">486</a></span>
+<span class="normal"><a href="#__codelineno-0-487">487</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-419" name="__codelineno-0-419"></a><span class="k">def</span><span class="w"> </span><span class="nf">tissot_circles</span><span class="p">(</span>
+<a id="__codelineno-0-420" name="__codelineno-0-420"></a>    <span class="n">lons</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<a id="__codelineno-0-421" name="__codelineno-0-421"></a>    <span class="n">lats</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+<a id="__codelineno-0-422" name="__codelineno-0-422"></a>    <span class="n">radius_m</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<a id="__codelineno-0-423" name="__codelineno-0-423"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-424" name="__codelineno-0-424"></a>    <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_TISSOT_SAMPLES</span><span class="p">,</span>
+<a id="__codelineno-0-425" name="__codelineno-0-425"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<a id="__codelineno-0-426" name="__codelineno-0-426"></a><span class="w">    </span><span class="sd">"""Return geodesic circles of a fixed ground radius as lon/lat rings.</span>
 <a id="__codelineno-0-427" name="__codelineno-0-427"></a>
-<a id="__codelineno-0-428" name="__codelineno-0-428"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-429" name="__codelineno-0-429"></a><span class="sd">        ValueError: If ``lons`` and ``lats`` differ in shape, if ``radius_m`` is</span>
-<a id="__codelineno-0-430" name="__codelineno-0-430"></a><span class="sd">            not a positive sub-antipodal radius (``0 &lt; radius_m &lt; pi * R``), or</span>
-<a id="__codelineno-0-431" name="__codelineno-0-431"></a><span class="sd">            if ``n &lt; 4``.</span>
+<a id="__codelineno-0-428" name="__codelineno-0-428"></a><span class="sd">    Generic spherical geometry: each circle is the locus of points a fixed</span>
+<a id="__codelineno-0-429" name="__codelineno-0-429"></a><span class="sd">    great-circle distance (``radius_m`` on a sphere of `MEAN_EARTH_RADIUS_M`)</span>
+<a id="__codelineno-0-430" name="__codelineno-0-430"></a><span class="sd">    from its centre. No CRS is involved; the consumer projects these rings to</span>
+<a id="__codelineno-0-431" name="__codelineno-0-431"></a><span class="sd">    show how a projection distorts them (that is the Tissot indicatrix).</span>
 <a id="__codelineno-0-432" name="__codelineno-0-432"></a>
-<a id="__codelineno-0-433" name="__codelineno-0-433"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-434" name="__codelineno-0-434"></a><span class="sd">        - One ~500 km circle around the origin, sampled coarsely:</span>
-<a id="__codelineno-0-435" name="__codelineno-0-435"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-436" name="__codelineno-0-436"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-437" name="__codelineno-0-437"></a><span class="sd">            &gt;&gt;&gt; rings = tissot_circles([0.0], [0.0], 5e5, n=8)</span>
-<a id="__codelineno-0-438" name="__codelineno-0-438"></a><span class="sd">            &gt;&gt;&gt; len(rings)</span>
-<a id="__codelineno-0-439" name="__codelineno-0-439"></a><span class="sd">            1</span>
-<a id="__codelineno-0-440" name="__codelineno-0-440"></a><span class="sd">            &gt;&gt;&gt; rings[0].shape</span>
-<a id="__codelineno-0-441" name="__codelineno-0-441"></a><span class="sd">            (8, 2)</span>
-<a id="__codelineno-0-442" name="__codelineno-0-442"></a><span class="sd">            &gt;&gt;&gt; bool(np.isfinite(rings[0]).all())</span>
-<a id="__codelineno-0-443" name="__codelineno-0-443"></a><span class="sd">            True</span>
-<a id="__codelineno-0-444" name="__codelineno-0-444"></a>
-<a id="__codelineno-0-445" name="__codelineno-0-445"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-446" name="__codelineno-0-446"></a><span class="sd">        - The ground radius maps to a fixed angular radius (~4.5 deg at 500 km):</span>
-<a id="__codelineno-0-447" name="__codelineno-0-447"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-448" name="__codelineno-0-448"></a><span class="sd">            &gt;&gt;&gt; rings = tissot_circles([0.0], [0.0], 5e5, n=4)</span>
-<a id="__codelineno-0-449" name="__codelineno-0-449"></a><span class="sd">            &gt;&gt;&gt; round(float(rings[0][:, 1].max()), 1)</span>
-<a id="__codelineno-0-450" name="__codelineno-0-450"></a><span class="sd">            4.5</span>
-<a id="__codelineno-0-451" name="__codelineno-0-451"></a>
-<a id="__codelineno-0-452" name="__codelineno-0-452"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-453" name="__codelineno-0-453"></a><span class="sd">    """</span>
-<a id="__codelineno-0-454" name="__codelineno-0-454"></a>    <span class="n">lon_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
-<a id="__codelineno-0-455" name="__codelineno-0-455"></a>    <span class="n">lat_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">lats</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
-<a id="__codelineno-0-456" name="__codelineno-0-456"></a>    <span class="k">if</span> <span class="n">lon_arr</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">lat_arr</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
-<a id="__codelineno-0-457" name="__codelineno-0-457"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-458" name="__codelineno-0-458"></a>            <span class="sa">f</span><span class="s2">"lons and lats must have the same shape; got </span><span class="si">{</span><span class="n">lon_arr</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">lat_arr</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">."</span>
-<a id="__codelineno-0-459" name="__codelineno-0-459"></a>        <span class="p">)</span>
-<a id="__codelineno-0-460" name="__codelineno-0-460"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="mf">0.0</span> <span class="o">&lt;</span> <span class="n">radius_m</span> <span class="o">&lt;</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">MEAN_EARTH_RADIUS_M</span><span class="p">:</span>
-<a id="__codelineno-0-461" name="__codelineno-0-461"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-462" name="__codelineno-0-462"></a>            <span class="s2">"radius_m must be a positive, sub-antipodal ground radius in metres "</span>
-<a id="__codelineno-0-463" name="__codelineno-0-463"></a>            <span class="sa">f</span><span class="s2">"(0, </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">MEAN_EARTH_RADIUS_M</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">); got </span><span class="si">{</span><span class="n">radius_m</span><span class="si">}</span><span class="s2">."</span>
-<a id="__codelineno-0-464" name="__codelineno-0-464"></a>        <span class="p">)</span>
-<a id="__codelineno-0-465" name="__codelineno-0-465"></a>    <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
-<a id="__codelineno-0-466" name="__codelineno-0-466"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"n must be at least 4 to form a ring; got </span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
-<a id="__codelineno-0-467" name="__codelineno-0-467"></a>
-<a id="__codelineno-0-468" name="__codelineno-0-468"></a>    <span class="n">radius_rad</span> <span class="o">=</span> <span class="n">radius_m</span> <span class="o">/</span> <span class="n">MEAN_EARTH_RADIUS_M</span>
-<a id="__codelineno-0-469" name="__codelineno-0-469"></a>    <span class="k">return</span> <span class="p">[</span>
-<a id="__codelineno-0-470" name="__codelineno-0-470"></a>        <span class="n">_small_circle</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">lon</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">lat</span><span class="p">),</span> <span class="n">radius_rad</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
-<a id="__codelineno-0-471" name="__codelineno-0-471"></a>        <span class="k">for</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">lon_arr</span><span class="p">,</span> <span class="n">lat_arr</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-0-472" name="__codelineno-0-472"></a>    <span class="p">]</span>
+<a id="__codelineno-0-433" name="__codelineno-0-433"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-434" name="__codelineno-0-434"></a><span class="sd">        lons: Circle-centre longitudes in degrees.</span>
+<a id="__codelineno-0-435" name="__codelineno-0-435"></a><span class="sd">        lats: Circle-centre latitudes in degrees. Same length as ``lons``.</span>
+<a id="__codelineno-0-436" name="__codelineno-0-436"></a><span class="sd">        radius_m: Ground radius of each circle in metres.</span>
+<a id="__codelineno-0-437" name="__codelineno-0-437"></a><span class="sd">        n: Number of vertices per circle.</span>
+<a id="__codelineno-0-438" name="__codelineno-0-438"></a>
+<a id="__codelineno-0-439" name="__codelineno-0-439"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-440" name="__codelineno-0-440"></a><span class="sd">        list[numpy.ndarray]: One ``(n, 2)`` lon/lat ring per centre, in input</span>
+<a id="__codelineno-0-441" name="__codelineno-0-441"></a><span class="sd">        order.</span>
+<a id="__codelineno-0-442" name="__codelineno-0-442"></a>
+<a id="__codelineno-0-443" name="__codelineno-0-443"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-0-444" name="__codelineno-0-444"></a><span class="sd">        ValueError: If ``lons`` and ``lats`` differ in shape, if ``radius_m`` is</span>
+<a id="__codelineno-0-445" name="__codelineno-0-445"></a><span class="sd">            not a positive sub-antipodal radius (``0 &lt; radius_m &lt; pi * R``), or</span>
+<a id="__codelineno-0-446" name="__codelineno-0-446"></a><span class="sd">            if ``n &lt; 4``.</span>
+<a id="__codelineno-0-447" name="__codelineno-0-447"></a>
+<a id="__codelineno-0-448" name="__codelineno-0-448"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-449" name="__codelineno-0-449"></a><span class="sd">        - One ~500 km circle around the origin, sampled coarsely:</span>
+<a id="__codelineno-0-450" name="__codelineno-0-450"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-451" name="__codelineno-0-451"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-452" name="__codelineno-0-452"></a><span class="sd">            &gt;&gt;&gt; rings = tissot_circles([0.0], [0.0], 5e5, n=8)</span>
+<a id="__codelineno-0-453" name="__codelineno-0-453"></a><span class="sd">            &gt;&gt;&gt; len(rings)</span>
+<a id="__codelineno-0-454" name="__codelineno-0-454"></a><span class="sd">            1</span>
+<a id="__codelineno-0-455" name="__codelineno-0-455"></a><span class="sd">            &gt;&gt;&gt; rings[0].shape</span>
+<a id="__codelineno-0-456" name="__codelineno-0-456"></a><span class="sd">            (8, 2)</span>
+<a id="__codelineno-0-457" name="__codelineno-0-457"></a><span class="sd">            &gt;&gt;&gt; bool(np.isfinite(rings[0]).all())</span>
+<a id="__codelineno-0-458" name="__codelineno-0-458"></a><span class="sd">            True</span>
+<a id="__codelineno-0-459" name="__codelineno-0-459"></a>
+<a id="__codelineno-0-460" name="__codelineno-0-460"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-461" name="__codelineno-0-461"></a><span class="sd">        - The ground radius maps to a fixed angular radius (~4.5 deg at 500 km):</span>
+<a id="__codelineno-0-462" name="__codelineno-0-462"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-463" name="__codelineno-0-463"></a><span class="sd">            &gt;&gt;&gt; rings = tissot_circles([0.0], [0.0], 5e5, n=4)</span>
+<a id="__codelineno-0-464" name="__codelineno-0-464"></a><span class="sd">            &gt;&gt;&gt; round(float(rings[0][:, 1].max()), 1)</span>
+<a id="__codelineno-0-465" name="__codelineno-0-465"></a><span class="sd">            4.5</span>
+<a id="__codelineno-0-466" name="__codelineno-0-466"></a>
+<a id="__codelineno-0-467" name="__codelineno-0-467"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-468" name="__codelineno-0-468"></a><span class="sd">    """</span>
+<a id="__codelineno-0-469" name="__codelineno-0-469"></a>    <span class="n">lon_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
+<a id="__codelineno-0-470" name="__codelineno-0-470"></a>    <span class="n">lat_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">lats</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
+<a id="__codelineno-0-471" name="__codelineno-0-471"></a>    <span class="k">if</span> <span class="n">lon_arr</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">lat_arr</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+<a id="__codelineno-0-472" name="__codelineno-0-472"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-473" name="__codelineno-0-473"></a>            <span class="sa">f</span><span class="s2">"lons and lats must have the same shape; got </span><span class="si">{</span><span class="n">lon_arr</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">lat_arr</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">."</span>
+<a id="__codelineno-0-474" name="__codelineno-0-474"></a>        <span class="p">)</span>
+<a id="__codelineno-0-475" name="__codelineno-0-475"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="mf">0.0</span> <span class="o">&lt;</span> <span class="n">radius_m</span> <span class="o">&lt;</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">MEAN_EARTH_RADIUS_M</span><span class="p">:</span>
+<a id="__codelineno-0-476" name="__codelineno-0-476"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-477" name="__codelineno-0-477"></a>            <span class="s2">"radius_m must be a positive, sub-antipodal ground radius in metres "</span>
+<a id="__codelineno-0-478" name="__codelineno-0-478"></a>            <span class="sa">f</span><span class="s2">"(0, </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">MEAN_EARTH_RADIUS_M</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">); got </span><span class="si">{</span><span class="n">radius_m</span><span class="si">}</span><span class="s2">."</span>
+<a id="__codelineno-0-479" name="__codelineno-0-479"></a>        <span class="p">)</span>
+<a id="__codelineno-0-480" name="__codelineno-0-480"></a>    <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+<a id="__codelineno-0-481" name="__codelineno-0-481"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"n must be at least 4 to form a ring; got </span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+<a id="__codelineno-0-482" name="__codelineno-0-482"></a>
+<a id="__codelineno-0-483" name="__codelineno-0-483"></a>    <span class="n">radius_rad</span> <span class="o">=</span> <span class="n">radius_m</span> <span class="o">/</span> <span class="n">MEAN_EARTH_RADIUS_M</span>
+<a id="__codelineno-0-484" name="__codelineno-0-484"></a>    <span class="k">return</span> <span class="p">[</span>
+<a id="__codelineno-0-485" name="__codelineno-0-485"></a>        <span class="n">_small_circle</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">lon</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">lat</span><span class="p">),</span> <span class="n">radius_rad</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+<a id="__codelineno-0-486" name="__codelineno-0-486"></a>        <span class="k">for</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">lon_arr</span><span class="p">,</span> <span class="n">lat_arr</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-0-487" name="__codelineno-0-487"></a>    <span class="p">]</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
