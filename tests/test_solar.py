@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from matplotlib.collections import PolyCollection
+from matplotlib.colors import to_rgba
 from matplotlib.path import Path as MplPath
 
 from cleopatra.basemap import solar
@@ -678,6 +679,16 @@ class TestTissotCircles:
         assert np.all(ring[:, 0] > -180.0), "longitude <= -180"
         assert np.all(ring[:, 0] <= 180.0), "longitude > 180"
 
+    def test_two_dimensional_input_raises(self):
+        """Test 2-D lons/lats of matching shape raise a clean ValueError.
+
+        Test scenario:
+            Equal-shape 2-D arrays pass the shape check but are not a sequence of
+            centres; the ndim guard must raise ValueError, not a bare TypeError.
+        """
+        with pytest.raises(ValueError, match="1-D"):
+            tissot_circles(np.zeros((2, 2)), np.zeros((2, 2)), 5e5)
+
 
 class TestAddNightshade:
     """Tests for add_nightshade."""
@@ -745,16 +756,56 @@ class TestAddNightshade:
         verts = np.vstack([p.vertices for p in art.get_paths()])
         assert np.abs(verts[:, 0]).max() > 1e6, "x not reprojected to metres"
 
-    def test_color_keyword_sets_fill(self):
-        """Test the `color` shorthand replaces the split face/edge defaults.
+    def test_crs_nonglobal_projection_stays_finite(self):
+        """Test a non-global crs drops the out-of-domain far side, staying finite.
 
         Test scenario:
-            Passing color= must not clash with the default facecolor/edgecolor;
-            the artist ends up filled.
+            An orthographic CRS is undefined for the hemisphere facing away from
+            its centre; the solstice night region spans that far side, so the raw
+            reprojection is riddled with NaN. add_nightshade must drop those and
+            still draw a non-empty, all-finite fill.
+        """
+        _, ax = plt.subplots()
+        art = add_nightshade(
+            ax, JUN_SOLSTICE, crs="+proj=ortho +lat_0=0 +lon_0=0 +datum=WGS84"
+        )
+        assert len(art.get_paths()) >= 1, "orthographic nightshade drew nothing"
+        verts = np.vstack([p.vertices for p in art.get_paths()])
+        assert np.isfinite(verts).all(), (
+            "reprojected fill still contains non-finite vertices"
+        )
+
+    def test_crs_3857_at_solstice_stays_finite(self):
+        """Test the pole-enclosed solstice case reprojects to finite Web Mercator.
+
+        Test scenario:
+            At a solstice the night region reaches a pole; EPSG:3857 maps that to
+            a large but finite y, so the fill stays finite (a smoke test for the
+            pole-enclosed branch the solar.md note warns about).
+        """
+        _, ax = plt.subplots()
+        art = add_nightshade(ax, JUN_SOLSTICE, crs=3857)
+        verts = np.vstack([p.vertices for p in art.get_paths()])
+        assert np.isfinite(verts).all(), (
+            "solstice crs=3857 produced non-finite vertices"
+        )
+
+    def test_color_keyword_sets_fill(self):
+        """Test the `color` shorthand actually colours the fill.
+
+        Test scenario:
+            Passing color= must not clash with the default facecolor/edgecolor
+            and must set the face colour to the requested value (not the default
+            black), so the assertion fails if color= is silently ignored.
         """
         _, ax = plt.subplots()
         art = add_nightshade(ax, JUN_SOLSTICE, color="navy")
         assert len(art.get_facecolor()) >= 1, "color= should produce a fill"
+        np.testing.assert_allclose(
+            art.get_facecolor()[0][:3],
+            to_rgba("navy")[:3],
+            err_msg="facecolor is not navy (rgb)",
+        )
 
     def test_rejects_non_axes(self):
         """Test a non-Axes first argument raises TypeError.
@@ -882,6 +933,11 @@ class TestAddTissot:
         _, ax = plt.subplots()
         art = add_tissot(ax, self._rings(), color="crimson")
         assert len(art.get_facecolor()) >= 1, "color= should set a face colour"
+        np.testing.assert_allclose(
+            art.get_facecolor()[0][:3],
+            to_rgba("crimson")[:3],
+            err_msg="facecolor is not crimson (rgb)",
+        )
 
     def test_rejects_non_axes(self):
         """Test a non-Axes first argument raises TypeError.
