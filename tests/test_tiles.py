@@ -1775,3 +1775,100 @@ class TestRedactUrl:
         redacted = {_redact_url(u) for u in urls}
         assert len(redacted) == 4, f"tiles collapsed to {len(redacted)} log line(s)"
         assert not any("s3cret" in u for u in redacted), "a credential survived"
+
+    @pytest.mark.parametrize(
+        "url, expected",
+        [
+            (
+                "https://example.org/wms?bbox=0,0,1,1&token=s3cret",
+                "https://example.org/wms?bbox=0,0,1,1&token=...",
+            ),
+            (
+                "https://example.org/wmts?TileMatrix=3&TileRow=2&TileCol=4",
+                "https://example.org/wmts?TileMatrix=3&TileRow=2&TileCol=4",
+            ),
+        ],
+    )
+    def test_a_loggable_name_is_kept_whatever_its_casing(self, url, expected):
+        """A lower- or mixed-cased OGC parameter name is still allow-listed.
+
+        Args:
+            url: The URL to redact.
+            expected: Its redacted form.
+
+        Test scenario:
+            The allow-list is spelled in upper case and matched through
+            `.upper()`, but services publish `bbox=` and `TileRow=` as readily
+            as `BBOX=`. Dropping that fold would mask exactly the parameters
+            the allow-list exists to keep, and the log would go back to being
+            identical for every tile -- without any test noticing, since every
+            other case in this class is already upper-cased.
+        """
+        assert _redact_url(url) == expected, f"{url} redacted to {_redact_url(url)}"
+
+    @pytest.mark.parametrize(
+        "url, expected",
+        [
+            (
+                "https://example.org/wms?BBOXX=1&LAYERSTOKEN=2",
+                "https://example.org/wms?BBOXX=...&LAYERSTOKEN=...",
+            ),
+            (
+                "https://example.org/wms?my_format=1&crs_key=2",
+                "https://example.org/wms?my_format=...&crs_key=...",
+            ),
+            (
+                "https://example.org/wms?=s3cret&LAYERS=ortho",
+                "https://example.org/wms?=...&LAYERS=ortho",
+            ),
+        ],
+    )
+    def test_a_name_outside_the_allow_list_is_masked(self, url, expected):
+        """Membership is exact, so a near-miss name does not inherit the pass.
+
+        Args:
+            url: The URL to redact.
+            expected: Its redacted form.
+
+        Test scenario:
+            `BBOXX` and `my_format` merely contain an allow-listed name, and a
+            nameless parameter has no name to match at all. Matching by
+            substring instead of by set membership would let a credential
+            called `LAYERSTOKEN` through, which is the one failure mode a
+            default-deny list is supposed to rule out.
+        """
+        assert _redact_url(url) == expected, f"{url} redacted to {_redact_url(url)}"
+
+    @pytest.mark.parametrize(
+        "url, expected",
+        [
+            (
+                "https://user:pw@example.org/wms?LAYERS=ortho&token=s3cret",
+                "https://...@example.org/wms?LAYERS=ortho&token=...",
+            ),
+            (
+                "https://user:p@ss@example.org/tiles/3/2/4.png",
+                "https://...@example.org/tiles/3/2/4.png",
+            ),
+            (
+                "https://s3cret-token@example.org/tiles/3/2/4.png",
+                "https://...@example.org/tiles/3/2/4.png",
+            ),
+        ],
+    )
+    def test_userinfo_and_query_are_masked_in_the_same_pass(self, url, expected):
+        """Both credential sites are handled together, not one or the other.
+
+        Args:
+            url: The URL to redact.
+            expected: Its redacted form.
+
+        Test scenario:
+            The two maskings are independent branches, so until now nothing
+            proved a URL carrying userinfo *and* a query got both. The other
+            two cases are the netloc shapes that defeat a naive split: an `@`
+            inside the password (only the last one separates userinfo) and a
+            bare token with no colon, which is how a keyed XYZ endpoint is
+            usually published.
+        """
+        assert _redact_url(url) == expected, f"{url} redacted to {_redact_url(url)}"

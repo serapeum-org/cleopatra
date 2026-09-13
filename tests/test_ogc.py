@@ -12,6 +12,7 @@ from __future__ import annotations
 import base64
 import copy
 import dataclasses
+import logging
 import pickle
 from dataclasses import dataclass, field, replace
 from unittest.mock import MagicMock, patch
@@ -1520,6 +1521,119 @@ class TestRoundTwoHardening:
         with pytest.raises(ValueError, match="version must be one of"):
             WMSProvider(url="https://example.org/wms", layers="ortho", version="1.0.0")
 
+    @pytest.mark.parametrize("kind", ["wmts", "wms"])
+    def test_a_percent_encoded_space_is_still_accepted(self, kind):
+        """`%20` is not whitespace, so an escaped path segment survives.
+
+        Args:
+            kind: Which provider to build.
+
+        Test scenario:
+            The whitespace rule was widened from the ends to any character, so
+            it has to be read on the URL as written -- not on its decoded form.
+            An endpoint whose path legitimately carries an escaped space is a
+            normal published URL; refusing it would make the guard reject valid
+            services while catching nothing extra.
+        """
+        url = "https://example.org/my%20wms"
+        provider = (
+            WMTSProvider(url=url, layer="L")
+            if kind == "wmts"
+            else WMSProvider(url=url, layers="ortho")
+        )
+        built = provider.build_url(x=0, y=0, z=0)
+        assert built.startswith(f"{url}?"), (
+            f"the escaped space did not survive: {built}"
+        )
+
+    @pytest.mark.parametrize("key", ["TileMatrix", "tilerow", "TILECOL", "SERVICE"])
+    def test_a_protected_parameter_is_refused_on_the_wmts_provider_too(self, key):
+        """The guard is wired into both constructors, not just `WMSProvider`.
+
+        Args:
+            key: The protected parameter the caller tried to set.
+
+        Test scenario:
+            `WMTSProvider` is where the tile triple is actually generated, so
+            an override of `TILEROW` there is the version of this mistake that
+            silently repaints the mosaic from the wrong tiles. Every other
+            protected-parameter test builds a `WMSProvider`, so leaving the
+            call out of this `__post_init__` would go unnoticed.
+        """
+        with pytest.raises(ValueError, match="identifies the tile"):
+            WMTSProvider(
+                url="https://example.org/wmts", layer="L", extra_params={key: "1"}
+            )
+
+    def test_a_non_string_key_is_coerced_before_it_is_validated(self):
+        """Validation reads the frozen copy, so a non-`str` key does not blow up.
+
+        Test scenario:
+            The protected and duplicate checks both call `key.upper()`. Running
+            them on the caller's raw mapping would raise `AttributeError` on an
+            `int` key -- the very type `_freeze_params` exists to absorb, since
+            a token or version id read out of JSON arrives that way. Ordering
+            the freeze first is what keeps the two features compatible.
+        """
+        provider = WMSProvider(
+            url="https://example.org/wms", layers="ortho", extra_params={5: "x"}
+        )
+        assert dict(provider.extra_params) == {"5": "x"}, (
+            f"the key was not coerced: {dict(provider.extra_params)}"
+        )
+        assert query_of(provider.build_url(x=0, y=0, z=0))["5"] == ["x"], (
+            "the coerced key did not reach the query"
+        )
+
+    def test_keys_that_coerce_to_one_string_collapse_rather_than_conflict(self):
+        """`{5: ..., "5": ...}` is one parameter, so the duplicate guard is silent.
+
+        Test scenario:
+            The case-duplicate guard exists to stop two spellings of one OGC
+            parameter both going on the wire. Coercion happens first and a dict
+            cannot hold `5` and `"5"` at once, so the pair is already one entry
+            by the time the guard looks -- last one wins, exactly as a repeated
+            literal key would. Nothing ambiguous reaches the service, which is
+            why this is a collapse and not a refusal.
+        """
+        provider = WMSProvider(
+            url="https://example.org/wms",
+            layers="ortho",
+            extra_params={5: "x", "5": "y"},
+        )
+        assert dict(provider.extra_params) == {"5": "y"}, (
+            f"expected the later value to win: {dict(provider.extra_params)}"
+        )
+
+    @pytest.mark.parametrize(
+        "template",
+        [
+            "https://example.org/wmts/{Layer}.png",
+            "https://example.org/wmts/{Style}/{TileMatrixSet}.png",
+        ],
+    )
+    def test_a_template_of_only_optional_placeholders_is_refused(self, template):
+        """Owning a placeholder is not the same as addressing a tile.
+
+        Args:
+            template: The template under test.
+
+        Test scenario:
+            `{Layer}`, `{Style}` and `{TileMatrixSet}` are ours, so the new
+            "none of these are mine" refusal does not fire and the template
+            reaches the required-placeholder check instead. That check has to
+            name all three missing ones -- the caller who wrote `{Layer}` alone
+            needs to be told what to add, not that the module does not fill it.
+        """
+        with pytest.raises(ValueError, match="must address a tile") as error:
+            WMTSProvider(url=template, layer="L")
+        message = str(error.value)
+        assert "does not fill" not in message, (
+            f"the wrong refusal fired for an owned placeholder: {message}"
+        )
+        for missing in ("{tilematrix}", "{tilerow}", "{tilecol}"):
+            assert missing in message, f"{missing} not named in: {message}"
+
 
 class TestCredentialsAreNotInTheRepr:
     """`repr()` does not carry what `extra_params` was documented to hold."""
@@ -1559,6 +1673,56 @@ class TestCredentialsAreNotInTheRepr:
         rendered = repr(wms)
         assert "https://example.org/wms" in rendered, f"url missing: {rendered}"
         assert "ortho" in rendered, f"layers missing: {rendered}"
+
+    def test_a_structured_value_cannot_smuggle_the_secret_out(self):
+        """A nested container is flattened to a string and then masked like any other.
+
+        Test scenario:
+            A credential loaded from YAML or JSON often arrives nested, as
+            `{"auth": {"token": ...}}`. Masking keyed on the value being a
+            `str` would print such a value verbatim; masking every entry of the
+            mapping regardless of what `_freeze_params` coerced it into is what
+            closes that.
+        """
+        provider = WMSProvider(
+            url="https://example.org/wms",
+            layers="ortho",
+            extra_params={"auth": {"token": "S3CRET"}},
+        )
+        rendered = repr(provider)
+        assert "S3CRET" not in rendered, (
+            f"the nested credential is in the repr: {rendered}"
+        )
+        assert "'auth': '...'" in rendered, (
+            f"the parameter name should survive: {rendered}"
+        )
+
+    def test_the_object_is_safe_in_a_log_line(self, caplog):
+        """`%s` formatting reaches `__repr__`, so the documented sink is covered.
+
+        Args:
+            caplog: pytest's log capture fixture.
+
+        Test scenario:
+            The masking is only worth anything if it is on the *default* way
+            the object renders. `logger.info("using %s", provider)` is the sink
+            the module names, and it goes through `__str__`, which a dataclass
+            leaves pointing at `__repr__` -- so a masking helper callers had to
+            opt into would leave this line leaking.
+        """
+        provider = WMSProvider(
+            url="https://example.org/wms",
+            layers="ortho",
+            extra_params={"token": "S3CRET-IN-A-LOG"},
+        )
+
+        with caplog.at_level(logging.INFO, logger=__name__):
+            logging.getLogger(__name__).info("using %s", provider)
+
+        assert "S3CRET-IN-A-LOG" not in caplog.text, "the credential reached the log"
+        assert "'token': '...'" in caplog.text, (
+            f"the parameter name should survive for diagnosis: {caplog.text[:200]}"
+        )
 
 
 class TestProvidersAreImmutable:
