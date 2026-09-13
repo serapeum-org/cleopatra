@@ -874,6 +874,23 @@ class TestAddNightshade:
             f"list-returning transform not applied: {verts.min()}"
         )
 
+    def test_transform_returning_non_finite_is_dropped(self):
+        """Test non-finite vertices from a transform are filtered out.
+
+        Test scenario:
+            A transform that maps the northern half of each ring to NaN (as a
+            real projection does outside its domain) must be stripped, leaving a
+            non-empty, all-finite fill from the southern vertices.
+        """
+        _, ax = plt.subplots()
+        art = add_nightshade(
+            ax, JUN_SOLSTICE, transform=lambda a: np.where(a[:, 1:2] > 0.0, np.nan, a)
+        )
+        paths = art.get_paths()
+        assert paths, "expected a fill from the finite (southern) vertices"
+        verts = np.vstack([p.vertices for p in paths])
+        assert np.isfinite(verts).all(), "non-finite transform output not dropped"
+
 
 class TestAddTissot:
     """Tests for add_tissot."""
