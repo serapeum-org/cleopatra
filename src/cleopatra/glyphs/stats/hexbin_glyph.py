@@ -117,17 +117,31 @@ class HexbinGlyph(GeoMixin, Glyph):
             (int, or an `(nx, ny)` pair, default 50), `reduce`
             (`"count"` / `"mean"` / `"sum"` / `"min"` / `"max"` / `"std"`,
             or a callable; default `"mean"`), `min_count` (drop bins with
-            fewer than this many points; matplotlib's `mincnt`), `extent`
-            (`(xmin, xmax, ymin, ymax)` binning window), `edge_color`
-            (default `"face"`), `line_width` (bin edge width, default 0.0),
-            plus the shared appearance / colorbar / scale options (`cmap`,
-            `vmin`, `vmax`, `levels`, `color_scale`, `ticks_spacing`,
-            `cbar_label`, `figsize`, `title`). Set `add_colorbar=False` to
-            suppress the per-glyph colorbar (default True).
+            fewer than this many points; matplotlib's `mincnt`, default
+            `None`), `extent` (`(xmin, xmax, ymin, ymax)` binning window),
+            `edge_color` (default `"face"`), `line_width` (bin edge width,
+            default 0.0), plus the shared appearance / colorbar / scale
+            options (`cmap`, `vmin`, `vmax`, `levels`, `color_scale`,
+            `ticks_spacing`, `cbar_label`, `figsize`, `title`). Set
+            `add_colorbar=False` to suppress the per-glyph colorbar
+            (default True).
+
+    Note:
+        Empty bins are handled differently by matplotlib's `hexbin` in the two
+        modes, and with the default `min_count=None` this glyph passes that
+        through: the **counts** mode (`values` is None) draws *every* lattice
+        cell in the window, colouring empty ones `0` (so the colorbar starts at
+        0 and the whole window is tinted), whereas the **`reduce`** mode drops
+        empty cells. Pass `min_count=1` on the counts mode to blank the empty
+        cells and match the `reduce` mode -- this is also required before
+        `color=ColorScaling.log()`, which cannot map the `0` of an empty count
+        cell.
 
     Raises:
         ValueError: If `x` / `y` are not 1-D or have mismatched lengths, if
-            `values` (when given) does not match, or if `x` is empty.
+            `values` (when given) does not match, if `x` is empty, or if the
+            binning leaves no cells to draw (an `extent` excluding the data or
+            a `min_count` above the densest cell).
 
     Examples:
         - Read the per-bin counts back off the drawn collection:
@@ -363,10 +377,9 @@ class HexbinGlyph(GeoMixin, Glyph):
                 >>> from cleopatra.glyphs.stats.hexbin_glyph import HexbinGlyph
                 >>> rng = np.random.default_rng(4)
                 >>> x, y = rng.normal(size=200), rng.normal(size=200)
-                >>> fig, ax, pc = HexbinGlyph(x, y).plot(add_colorbar=False)
-                >>> glyph_cbar_absent = HexbinGlyph(x, y)
-                >>> _ = glyph_cbar_absent.plot(add_colorbar=False)
-                >>> glyph_cbar_absent.cbar is None
+                >>> glyph = HexbinGlyph(x, y)
+                >>> fig, ax, pc = glyph.plot(add_colorbar=False)
+                >>> glyph.cbar is None
                 True
 
                 ```

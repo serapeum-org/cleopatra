@@ -37,6 +37,12 @@ y = rng.normal(0, 1, 5000)
 fig, ax, pc = HexbinGlyph(x, y, gridsize=40).plot(title="Point density")
 ```
 
+!!! note "Empty bins: counts vs `reduce`"
+    With the default `min_count=None`, the **counts** mode (no `values`) draws *every* lattice cell — empty ones
+    are coloured `0`, so the colorbar starts at 0 and the whole window is tinted — whereas the **`reduce`** mode
+    drops empty cells. Pass `min_count=1` on a counts plot to blank the empty cells (and it is required before
+    `color=ColorScaling.log()`, which cannot map an empty cell's `0`).
+
 ### Per-bin mean of a third variable, dropping sparse bins
 
 ```python
