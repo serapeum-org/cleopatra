@@ -1317,21 +1317,31 @@ class TestPlotKindDispatch:
         with pytest.raises(ValueError, match="contour=Contour"):
             glyph.plot(kind="contourf", hatches=["///"])
 
-    def test_contourf_filled_hatch_color_recolours_strokes_keeping_colorbar(self):
-        """`hatch_color` on a *filled* hatched set recolours its edges, keeping the bar."""
+    def test_contourf_filled_hatch_color_recolours_hatch_strokes_keeping_colorbar(self):
+        """`hatch_color` recolours the hatch strokes (not the band edges), keeping the bar.
+
+        Pins `hatch.color="black"` so the assertion fails if the recolour ever
+        regresses to `set_edgecolor`, which tracks the hatch only under the
+        matplotlib>=3.11 default `hatch.color="edge"`.
+        """
         glyph = ArrayGlyph(self._sample_arr())
-        glyph.plot(
-            kind="contourf",
-            contour=Contour(
-                levels=4,
-                hatches=["", "///", "...", "xx"],
-                hatch_color="red",
-            ),
+        with matplotlib.rc_context({"hatch.color": "black"}):
+            glyph.plot(
+                kind="contourf",
+                contour=Contour(
+                    levels=4,
+                    hatches=["", "///", "...", "xx"],
+                    hatch_color="red",
+                ),
+            )
+        hatch_colors = glyph.im.get_hatchcolor()
+        assert len(hatch_colors) >= 1, "a hatched set should expose hatch colours"
+        assert np.allclose(hatch_colors[0], to_rgba("red")), (
+            f"hatch_color should recolour the hatch strokes, got {hatch_colors[0]}"
         )
         edges = glyph.im.get_edgecolor()
-        assert len(edges) >= 1, "a filled contour set should expose edge colours"
-        assert np.allclose(edges[0], to_rgba("red")), (
-            f"hatch_color should recolour the strokes, got {edges[0]}"
+        assert not len(edges) or not np.allclose(edges[0], to_rgba("red")), (
+            f"hatch_color must not recolour the band edges, got {edges}"
         )
         assert glyph.cbar is not None, "a filled hatched set still gets a colorbar"
 

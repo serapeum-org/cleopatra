@@ -2606,8 +2606,10 @@ class ArrayGlyph(GeoMixin, Glyph):
             else:
                 im = plot_fn(*base_args, **contour_kwargs)
             if hatch_color is not None:
-                # Per-set stroke colour, sidestepping the global hatch.color rcParam.
-                im.set_edgecolor(hatch_color)
+                # Per-set hatch-stroke colour, independent of the global
+                # hatch.color rcParam and without recolouring the band edges
+                # (matplotlib >= 3.11).
+                im.set_hatchcolor(hatch_color)
             if kind == "contour" and self.default_options.get("labels"):
                 label_kw = {
                     "inline": True,

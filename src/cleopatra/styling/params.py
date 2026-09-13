@@ -51,8 +51,10 @@ class Contour:
             the hatch marks draw -- the overlay form used for a significance
             or uncertainty mask. `None` keeps the default filled behaviour.
         hatch_color: Colour of the hatch strokes for this set only, applied
-            via `QuadContourSet.set_edgecolor` so it does not touch the global
-            `hatch.color` rcParam. `None` leaves matplotlib's default.
+            via `QuadContourSet.set_hatchcolor` (matplotlib >= 3.11) so it
+            recolours the hatching independently of the global `hatch.color`
+            rcParam and without touching the band edges. `None` leaves
+            matplotlib's default.
 
     Examples:
         - Only the set fields are emitted:
