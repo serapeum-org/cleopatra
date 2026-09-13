@@ -148,7 +148,7 @@ def add_scale_bar(
     ticks: bool | Sequence[float] = True,
     color: str = "black",
     edge_color: str = "white",
-    label_location: str = "bottom",
+    label_location: str | None = None,
     label_size: float | None = None,
     box: bool | str | dict | None = None,
     zorder: float | None = None,
@@ -182,8 +182,11 @@ def add_scale_bar(
             positions (each in `[0, length]`); `False` draws no tick numbers.
         color: The fill of the even blocks and the colour of the ticks / text.
         edge_color: The fill of the odd blocks (and the block outline).
-        label_location: `"bottom"` (default) or `"top"` -- which side of the
-            bar the tick numbers and caption sit on.
+        label_location: `"top"` or `"bottom"` -- which side of the bar the tick
+            numbers and caption sit on. `None` (default) picks the side facing
+            the axes interior for the chosen corner (a lower corner labels
+            above the bar, an upper corner below), so the caption never spills
+            off the axes edge.
         label_size: Font size (points) for the tick numbers and caption.
             `None` uses matplotlib's default.
         box: A backing panel behind the bar, using `ColorBar`'s vocabulary --
@@ -226,10 +229,16 @@ def add_scale_bar(
         raise ValueError(f"length must be a finite positive number, got {length!r}.")
     if segments < 1:
         raise ValueError(f"segments must be >= 1, got {segments!r}.")
-    if label_location not in ("top", "bottom"):
+    if label_location not in ("top", "bottom", None):
         raise ValueError(
-            f"label_location must be 'top' or 'bottom', got {label_location!r}."
+            f"label_location must be 'top', 'bottom', or None, got {label_location!r}."
         )
+    if label_location is None:
+        # Default: grow the tick numbers / caption toward the axes interior, so a
+        # bar in a lower corner labels above the bar and one in an upper corner
+        # labels below -- otherwise a default lower-corner bar spills its caption
+        # off the bottom edge, over the axis tick labels.
+        label_location = "top" if location.startswith("lower") else "bottom"
     pad_x, pad_y = _as_margins(pad)
 
     x0d, x1d = ax.get_xlim()

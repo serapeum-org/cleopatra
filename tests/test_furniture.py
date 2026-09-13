@@ -315,6 +315,45 @@ class TestAddScaleBar:
         add_scale_bar(ax, 100_000, ticks=False, label="x", label_location=side)
         assert ax.texts[-1].get_va() == va, f"{side} caption should be va={va}"
 
+    def test_default_text_stays_on_axes(self, ax):
+        """The default call keeps every tick number and caption within the axes.
+
+        Test scenario:
+            `add_scale_bar(ax, length)` — lower-right corner with the auto label
+            side — draws all its text at axes-fraction `y` inside `[0, 1]`, not
+            spilling off the bottom edge over the axis tick labels.
+        """
+        add_scale_bar(ax, 100_000)
+        ys = [t.get_position()[1] for t in ax.texts]
+        assert ys and all(0.0 <= y <= 1.0 for y in ys), (
+            f"furniture text spilled off the axes: {ys}"
+        )
+
+    @pytest.mark.parametrize(
+        "location, va",
+        [
+            ("lower left", "bottom"),
+            ("lower right", "bottom"),
+            ("upper left", "top"),
+            ("upper right", "top"),
+        ],
+    )
+    def test_auto_label_side_faces_interior(self, ax, location, va):
+        """The auto label side faces the axes interior for each corner.
+
+        Args:
+            ax: The axes fixture.
+            location: The corner under test.
+            va: The expected caption vertical alignment (lower corners label
+                above the bar -> va="bottom"; upper corners below -> va="top").
+
+        Test scenario:
+            With no explicit `label_location`, a lower corner labels above the
+            bar and an upper corner below, so the caption stays interior.
+        """
+        add_scale_bar(ax, 100_000, location=location, ticks=False, label="x")
+        assert ax.texts[-1].get_va() == va, f"{location} caption should be va={va}"
+
     def test_box_draws_panel(self, ax):
         """`box` adds one backing rectangle on the parent axes.
 
