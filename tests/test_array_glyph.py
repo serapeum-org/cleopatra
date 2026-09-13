@@ -8343,3 +8343,64 @@ class TestFacetSuppliedAxes:
         assert isinstance(result.fig, Figure)
         assert result.axes.shape == (1, 3)
         plt.close("all")
+
+    def test_non_axes_block_rejected(self):
+        """A non-`Axes`, non-iterable `axes=` value is rejected with a clear error."""
+        stack = self._stack(n=3)
+        with pytest.raises(ValueError, match="must be matplotlib Axes"):
+            ArrayGlyph(stack).facet(col="t", axes=object())
+        plt.close("all")
+
+    def test_empty_axes_block_rejected(self):
+        """An empty `axes=` sequence is rejected before drawing."""
+        stack = self._stack(n=3)
+        with pytest.raises(ValueError, match="at least one Axes"):
+            ArrayGlyph(stack).facet(col="t", axes=[])
+        plt.close("all")
+
+    def test_flat_block_with_extra_axes_reshaped_to_single_row(self):
+        """A flat block whose length differs from nrows*ncols reshapes to one row."""
+        stack = self._stack(n=3)
+        fig, axs = plt.subplots(2, 2, squeeze=False)
+        result = ArrayGlyph(stack).facet(col="t", col_wrap=2, axes=list(axs.ravel())[:3])
+        assert result.axes.shape == (1, 3)  # 3 axes, but the grid is 2x2
+        assert result.fig is fig
+        plt.close("all")
+
+    def test_subplotspec_without_figure_rejected(self):
+        """A `SubplotSpec` whose `GridSpec` has no figure is rejected."""
+        stack = self._stack(n=3)
+        gs = GridSpec(2, 1)
+        with pytest.raises(ValueError, match="not attached to a figure"):
+            ArrayGlyph(stack).facet(col="t", axes=gs[0])
+        plt.close("all")
+
+    def test_gridspec_without_figure_rejected(self):
+        """A `GridSpec` with no figure is rejected."""
+        stack = self._stack(n=3)
+        gs = GridSpec(1, 3)
+        with pytest.raises(ValueError, match="not attached to a figure"):
+            ArrayGlyph(stack).facet(col="t", axes=gs)
+        plt.close("all")
+
+    def test_gridspec_too_small_rejected(self):
+        """A `GridSpec` smaller than the facet grid is rejected."""
+        stack = self._stack(n=3)
+        fig = plt.figure()
+        gs = GridSpec(1, 2, figure=fig)
+        with pytest.raises(ValueError, match="too small"):
+            ArrayGlyph(stack).facet(col="t", axes=gs)
+        plt.close("all")
+
+    def test_compose_forwarded_to_panels(self):
+        """`compose=True` is forwarded so panels draw over the axes' existing content."""
+        stack = self._stack(n=3)
+        fig, axs = plt.subplots(1, 3, squeeze=False)
+        for ax in axs.ravel():
+            ax.plot([0, 1], [0, 1])  # pre-existing caller content
+        result = ArrayGlyph(stack).facet(col="t", axes=axs, compose=True)
+        for ax in axs.ravel():
+            assert len(ax.get_images()) >= 1  # panel rendered
+            assert len(ax.get_lines()) >= 1  # caller's line preserved (composed)
+        assert result.fig is fig
+        plt.close("all")
