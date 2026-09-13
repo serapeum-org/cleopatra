@@ -1505,6 +1505,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../ogc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OGC services (WMS/WMTS)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../reference-data/" class="md-nav__link">
         
   
@@ -1569,34 +1597,6 @@
     
   
     Projection (globe frames)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../solar/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Solar (terminator/Tissot)
   
 
     
@@ -7150,13 +7150,6 @@ light the sphere from a direction. <code>ambient</code> is a floor so the night 
 is applied per frame from the already-rotated vertices — no texture re-sampling — so a fixed <code>sun</code>
 with a spinning globe sweeps the terminator across the surface. <code>sun=None</code> (the default) renders
 evenly.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This is the <strong>3-D</strong> globe's directional lighting (shading on a sphere). For a day/night
-terminator on an ordinary flat (lon/lat) axes, use
-<a href="../solar/"><code>cleopatra.basemap.solar</code></a> — <code>add_nightshade</code> draws the terminator and night region
-as lon/lat geometry rather than shading a sphere.</p>
-</div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.basemap.reference</span><span class="w"> </span><span class="kn">import</span> <span class="n">relief</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.globe.textured_globe_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">TexturedGlobeGlyph</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>

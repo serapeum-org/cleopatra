@@ -665,17 +665,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#daynight-terminator-tissot-indicatrix-cleopatrabasemapsolar" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Day/night terminator &amp; Tissot indicatrix — cleopatra.basemap.solar
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#colors-styles-config" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1378,6 +1367,34 @@
   
   
     <li class="md-nav__item">
+      <a href="reference/ogc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OGC services (WMS/WMTS)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="reference/reference-data/" class="md-nav__link">
         
   
@@ -1442,34 +1459,6 @@
     
   
     Projection (globe frames)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="reference/solar/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Solar (terminator/Tissot)
   
 
     
@@ -2744,17 +2733,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#daynight-terminator-tissot-indicatrix-cleopatrabasemapsolar" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Day/night terminator &amp; Tissot indicatrix — cleopatra.basemap.solar
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#colors-styles-config" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2975,15 +2953,6 @@ sensible scientific defaults.</p>
 </ul>
 <p>See the <a href="notebooks/presets/haze_preset_examples/">Haze-style presets example</a> and the
 <a href="reference/projection/">Projection reference</a>.</p>
-<h3 id="daynight-terminator-tissot-indicatrix-cleopatrabasemapsolar"><a class="toclink" href="#daynight-terminator-tissot-indicatrix-cleopatrabasemapsolar">Day/night terminator &amp; Tissot indicatrix — <code>cleopatra.basemap.solar</code></a><a class="headerlink" href="#daynight-terminator-tissot-indicatrix-cleopatrabasemapsolar" title="Permanent link">#</a></h3>
-<ul>
-<li><code>subsolar_point</code> / <code>terminator</code> / <code>night_polygon</code> compute the sun's overhead point, the terminator small
-  circle, and the filled night region for a datetime — CRS-free lon/lat maths, no ephemeris dependency.</li>
-<li><code>add_nightshade</code> shades the night region on a plain lon/lat axes (or via a <code>transform=</code>/<code>crs=</code> mapping), and
-  <code>add_tissot</code> draws distortion circles (from <code>tissot_circles</code>) that you have projected yourself. cleopatra
-  computes lon/lat and draws; it never resolves a projection.</li>
-</ul>
-<p>See the <a href="reference/solar/">Solar (terminator/Tissot) reference</a>.</p>
 <h3 id="colors-styles-config"><a class="toclink" href="#colors-styles-config"><code>Colors</code>, <code>styles</code>, <code>config</code></a><a class="headerlink" href="#colors-styles-config" title="Permanent link">#</a></h3>
 <ul>
 <li><code>Colors</code> — convert between hex / RGB(0–255) / normalized-RGB(0–1) and build colormaps from images; plus the
