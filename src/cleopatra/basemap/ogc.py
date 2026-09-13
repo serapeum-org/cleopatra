@@ -78,8 +78,11 @@ from cleopatra.basemap.tiles import Tile, _tile_xy_bounds
 GOOGLE_MAPS_COMPATIBLE = "GoogleMapsCompatible"
 
 #: WMS versions that send the CRS as `SRS=`. 1.3.0 renamed it to `CRS=` and made
-#: the `BBOX` axis order follow the CRS's own declared order.
-_WMS_SRS_VERSIONS = ("1.0.0", "1.1.0", "1.1.1")
+#: the `BBOX` axis order follow the CRS's own declared order. 1.0.0 is absent
+#: deliberately: it spelled the request `WMTVER`/`REQUEST=map`/`FORMAT=PNG`, none
+#: of which this module emits, so accepting it would have promised a request it
+#: never built.
+_WMS_SRS_VERSIONS = ("1.1.0", "1.1.1")
 
 #: WMS versions that send the CRS as `CRS=`.
 _WMS_CRS_VERSIONS = ("1.3.0",)
@@ -136,10 +139,12 @@ def _validate_endpoint(url: str, field_name: str) -> None:
     """
     if not isinstance(url, str) or not url.strip():
         raise ValueError(f"{field_name} must be a non-empty string, got {url!r}.")
-    if url != url.strip():
+    if any(char.isspace() for char in url):
         raise ValueError(
-            f"{field_name} has leading or trailing whitespace, got {url!r}. It would "
-            f"be sent verbatim, so it is refused rather than quietly trimmed."
+            f"{field_name} contains whitespace, got {url!r}. Leading and trailing "
+            f"whitespace would be sent verbatim; an interior tab or newline is "
+            f"stripped by the URL parser, so the request would differ from what was "
+            f"written. Both are refused rather than quietly repaired."
         )
     scheme = urllib.parse.urlsplit(url).scheme.lower()
     if scheme not in ("http", "https"):
@@ -195,6 +200,60 @@ def _validate_identifier(value: str, field_name: str) -> None:
     """
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{field_name} must be a non-empty string, got {value!r}.")
+
+
+#: Parameters `extra_params` may not displace. These say *which* tile is being
+#: requested and *what* operation it is; overriding them does not customise the
+#: request, it detaches every tile of the mosaic from the tile it is placed at --
+#: silently, since each request still succeeds.
+_PROTECTED_PARAMS = frozenset(
+    {
+        "SERVICE",
+        "REQUEST",
+        "BBOX",
+        "WIDTH",
+        "HEIGHT",
+        "TILEMATRIX",
+        "TILEROW",
+        "TILECOL",
+    }
+)
+
+
+def _validate_extra_params(extra_params: Mapping[str, str]) -> None:
+    """Reject `extra_params` that would break the request rather than tune it.
+
+    Two ways it can. Overriding a parameter that identifies the tile detaches
+    the image from the position the mosaic will paste it at, and since each
+    request still succeeds the result is a plausible-looking picture made of
+    the wrong tiles. And supplying the same parameter twice in different
+    casings -- `{"format": ..., "FORMAT": ...}` -- sends both to a service that
+    reads names case-insensitively, so which one wins is the service's choice.
+
+    Args:
+        extra_params: The mapping the caller passed.
+
+    Raises:
+        ValueError: If a protected parameter is present, or if two keys differ
+            only by case.
+    """
+    seen: dict[str, str] = {}
+    for key in extra_params:
+        upper = key.upper()
+        if upper in _PROTECTED_PARAMS:
+            raise ValueError(
+                f"extra_params may not set {key!r}: it identifies the tile being "
+                f"requested, so overriding it would detach every tile from where "
+                f"the mosaic places it. Protected: "
+                f"{', '.join(sorted(_PROTECTED_PARAMS))}."
+            )
+        if upper in seen:
+            raise ValueError(
+                f"extra_params has {seen[upper]!r} and {key!r}, which name the same "
+                f"case-insensitive OGC parameter. Both would be sent and the service "
+                f"would choose; supply one."
+            )
+        seen[upper] = key
 
 
 def _freeze_params(extra_params: Mapping[str, str]) -> Mapping[str, str]:
@@ -445,6 +504,49 @@ def _format_coordinate(value: float) -> str:
     return "0" if text in ("", "-", "-0") else text
 
 
+def _repr_provider(provider: object) -> str:
+    """Render a provider without printing what is in `extra_params`.
+
+    The generated `repr` prints every field, and `extra_params` is documented
+    as the place to put an API key -- so a traceback, a pytest failure line or
+    a `logger.info("using %s", provider)` published the credential through the
+    sink that is hardest to control. The tile fetcher's URL redaction does not
+    help here, because this happens before any URL exists.
+
+    The parameter *names* are kept, since knowing a token was supplied is the
+    diagnostically useful half.
+
+    Args:
+        provider: The dataclass instance to render.
+
+    Returns:
+        str: A `repr` with every `extra_params` value replaced by `...`.
+
+    Examples:
+        - The key survives, the secret does not:
+            ```python
+            >>> from cleopatra.basemap.ogc import WMSProvider
+            >>> provider = WMSProvider(
+            ...     url="https://example.org/wms",
+            ...     layers="ortho",
+            ...     extra_params={"token": "s3cret"},
+            ... )
+            >>> "s3cret" in repr(provider)
+            False
+            >>> "'token': '...'" in repr(provider)
+            True
+
+            ```
+    """
+    rendered = []
+    for spec in fields(provider):
+        value = getattr(provider, spec.name)
+        if isinstance(value, Mapping):
+            value = {key: "..." for key in value}
+        rendered.append(f"{spec.name}={value!r}")
+    return f"{type(provider).__name__}({', '.join(rendered)})"
+
+
 def _reduce_provider(provider: object) -> tuple:
     """Rebuild instructions for `pickle` and `copy`.
 
@@ -462,6 +564,11 @@ def _reduce_provider(provider: object) -> tuple:
     """
     values = []
     for spec in fields(provider):
+        # Positional reconstruction only works for constructor fields; filtering
+        # on `init` here means a future `init=False` field cannot silently break
+        # pickling.
+        if not spec.init:
+            continue
         value = getattr(provider, spec.name)
         values.append(dict(value) if isinstance(value, Mapping) else value)
     return (type(provider), tuple(values))
@@ -703,6 +810,18 @@ class WMTSProvider:
         _validate_text(self.style, "style")
         _validate_text(self.attribution, "attribution")
         present = _restful_placeholders(self.url)
+        all_placeholders = {
+            match.group(1).lower() for match in _PLACEHOLDER_RE.finditer(self.url)
+        }
+        if all_placeholders and not present:
+            listed = ", ".join(sorted(f"{{{name}}}" for name in all_placeholders))
+            raise ValueError(
+                f"url carries placeholders this module does not fill -- {listed} -- "
+                f"and none it does. A RESTful WMTS template uses {{TileMatrix}}, "
+                f"{{TileRow}} and {{TileCol}}; an XYZ {{z}}/{{x}}/{{y}} template "
+                f"belongs in add_tiles(source=...) as an xyzservices provider, not "
+                f"here. As written the braces would be sent literally."
+            )
         if present:
             missing = [f for f in _REQUIRED_RESTFUL_FIELDS if f not in present]
             if missing:
@@ -712,7 +831,16 @@ class WMTSProvider:
                     f"missing {listed}. Without them every tile resolves to "
                     f"the same URL, so the mosaic would repeat one image."
                 )
+        _validate_extra_params(_freeze_params(self.extra_params))
         object.__setattr__(self, "extra_params", _freeze_params(self.extra_params))
+
+    def __repr__(self) -> str:
+        """Render without the credential; see `_repr_provider`.
+
+        Returns:
+            str: A `repr` with every `extra_params` value masked.
+        """
+        return _repr_provider(self)
 
     def __reduce__(self) -> tuple:
         """Rebuild through the constructor; see `_reduce_provider`.
@@ -795,14 +923,30 @@ class WMTSProvider:
                 'https://example.org/3/2/4.png'
 
                 ```
-            - An endpoint that merely carries a query is still KVP, and so is
-              one whose only placeholder this module does not own:
+            - An endpoint that merely carries a query is still KVP:
                 ```python
                 >>> from cleopatra.basemap.ogc import WMTSProvider
                 >>> WMTSProvider(url="https://example.org/wmts?layer=x", layer="L").is_restful
                 False
-                >>> WMTSProvider(url="https://example.org/wmts/{Time}.png", layer="L").is_restful
-                False
+
+                ```
+            - A template whose placeholders are *all* unowned is refused
+              outright, since the braces would be sent literally:
+                ```python
+                >>> from cleopatra.basemap.ogc import WMTSProvider
+                >>> WMTSProvider(url="https://example.org/wmts/{Time}.png", layer="L")
+                Traceback (most recent call last):
+                    ...
+                ValueError: url carries placeholders this module does not fill ...
+
+                ```
+            - An unowned name *alongside* the required three is fine, and does
+              not itself make the template RESTful:
+                ```python
+                >>> from cleopatra.basemap.ogc import WMTSProvider
+                >>> template = "https://e.org/{Time}/{TileMatrix}/{TileRow}/{TileCol}.png"
+                >>> WMTSProvider(url=template, layer="L").is_restful
+                True
 
                 ```
         """
@@ -985,7 +1129,7 @@ class WMSProvider:
             It must still be a string: `None` used to reach the service as the
             four characters `None`, and came back as a service exception
             disguised as an unreadable tile.
-        version: The WMS version. `"1.3.0"` sends `CRS=`; `"1.1.1"` and older
+        version: The WMS version. `"1.3.0"` sends `CRS=`; `"1.1.1"` and `"1.1.0"`
             send `SRS=`.
         image_format: The `Format` to request. `tiles._looks_like_image`
             accepts PNG, JPEG, GIF and WebP, so a TIFF or SVG format will be
@@ -1015,7 +1159,7 @@ class WMSProvider:
         ValueError: If `url` is not a non-empty http(s) string or carries
             leading or trailing whitespace; if `layers`, `image_format` or
             `version` is not a non-empty string; if `version` is not one of
-            `1.0.0`, `1.1.0`, `1.1.1` or `1.3.0`; if `styles` or `attribution`
+            `1.1.0`, `1.1.1` or `1.3.0`; if `styles` or `attribution`
             is not a string (empty is allowed); if `transparent` is not a
             `bool`; or if `tile_size` is not a positive `int` (`bool` is
             rejected too).
@@ -1058,7 +1202,7 @@ class WMSProvider:
             >>> WMSProvider(url="https://example.org/wms", layers="ortho", version="2.0.0")
             Traceback (most recent call last):
                 ...
-            ValueError: version must be one of '1.0.0', '1.1.0', '1.1.1', '1.3.0', got '2.0.0'.
+            ValueError: version must be one of '1.1.0', '1.1.1', '1.3.0', got '2.0.0'.
 
             ```
         - A near-miss on a flag is refused rather than read as truthy:
@@ -1123,7 +1267,7 @@ class WMSProvider:
             ValueError: If `url` is not a non-empty http(s) string or carries
                 leading or trailing whitespace; if `layers`, `image_format` or
                 `version` is not a non-empty string; if `version` is not one of
-                `1.0.0`, `1.1.0`, `1.1.1` or `1.3.0`; if `styles` or
+                `1.1.0`, `1.1.1` or `1.3.0`; if `styles` or
                 `attribution` is not a string (empty is allowed); if
                 `transparent` is not a `bool`; or if `tile_size` is not a
                 positive `int` (`bool` is rejected too).
@@ -1152,7 +1296,16 @@ class WMSProvider:
             raise ValueError(
                 f"tile_size must be a positive int, got {self.tile_size!r}."
             )
+        _validate_extra_params(_freeze_params(self.extra_params))
         object.__setattr__(self, "extra_params", _freeze_params(self.extra_params))
+
+    def __repr__(self) -> str:
+        """Render without the credential; see `_repr_provider`.
+
+        Returns:
+            str: A `repr` with every `extra_params` value masked.
+        """
+        return _repr_provider(self)
 
     def __reduce__(self) -> tuple:
         """Rebuild through the constructor; see `_reduce_provider`.
@@ -1227,9 +1380,9 @@ class WMSProvider:
                 ...     WMSProvider(
                 ...         url="https://example.org/wms", layers="ortho", version=v
                 ...     ).crs_parameter
-                ...     for v in ("1.0.0", "1.1.0", "1.1.1", "1.3.0")
+                ...     for v in ("1.1.0", "1.1.1", "1.3.0")
                 ... ]
-                ['SRS', 'SRS', 'SRS', 'CRS']
+                ['SRS', 'SRS', 'CRS']
 
                 ```
         """

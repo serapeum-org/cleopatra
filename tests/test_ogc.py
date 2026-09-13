@@ -854,7 +854,6 @@ class TestWMSProviderBuildUrl:
             ("1.3.0", "CRS", "SRS"),
             ("1.1.1", "SRS", "CRS"),
             ("1.1.0", "SRS", "CRS"),
-            ("1.0.0", "SRS", "CRS"),
         ],
     )
     def test_crs_parameter_follows_the_version(self, version, expected_key, absent_key):
@@ -1108,7 +1107,7 @@ class TestWMSProviderCrsParameter:
     """`WMSProvider.crs_parameter` names the version's CRS query key."""
 
     @pytest.mark.parametrize(
-        "version, expected", [("1.3.0", "CRS"), ("1.1.1", "SRS"), ("1.0.0", "SRS")]
+        "version, expected", [("1.3.0", "CRS"), ("1.1.1", "SRS"), ("1.1.0", "SRS")]
     )
     def test_key_matches_the_version(self, version, expected):
         """The property agrees with what `build_url` sends.
@@ -1373,6 +1372,152 @@ class TestOptionalFieldsAreStillTyped:
             WMTSProvider(url="https://example.org/wmts", layer="L", version="2.0.0")
 
 
+class TestRoundTwoHardening:
+    """The guards round 2 added, each pinned to the defect that prompted it."""
+
+    def test_an_xyz_template_is_refused(self):
+        """A `{z}/{x}/{y}` template is not silently sent with literal braces.
+
+        Test scenario:
+            Round 1 made placeholder matching case-insensitive but still fell
+            through to KVP when *none* of the placeholders were ours -- so
+            pasting an XYZ template in shipped `{z}` on the wire and 404ed
+            every tile with no warning.
+        """
+        with pytest.raises(ValueError, match="placeholders this module does not fill"):
+            WMTSProvider(url="https://example.org/{z}/{x}/{y}.png", layer="L")
+
+    def test_an_unowned_placeholder_beside_the_required_ones_is_allowed(self):
+        """A service's own placeholder is still tolerated alongside ours.
+
+        Test scenario:
+            The refusal must catch the "none of them are mine" case only; a
+            template that does address a tile may carry extra names.
+        """
+        provider = WMTSProvider(
+            url="https://e.org/{Time}/{TileMatrix}/{TileRow}/{TileCol}.png", layer="L"
+        )
+        assert "{Time}" in provider.build_url(x=4, y=2, z=3), (
+            "an unowned placeholder beside the required three should survive"
+        )
+
+    @pytest.mark.parametrize("bad", ["https://e.org/w\tms", "https://e.org/w\nms"])
+    def test_interior_whitespace_in_a_url_is_refused(self, bad):
+        """A tab or newline inside the URL is rejected, not silently stripped.
+
+        Args:
+            bad: The rejected URL.
+
+        Test scenario:
+            The old check only looked at the ends. `urlsplit` strips interior
+            whitespace, so the request differed from what the caller wrote --
+            and differently again depending on whether `extra_params` was
+            empty, since only then was the URL rebuilt.
+        """
+        with pytest.raises(ValueError, match="whitespace"):
+            WMSProvider(url=bad, layers="ortho")
+
+    @pytest.mark.parametrize("key", ["BBOX", "bbox", "WIDTH", "REQUEST", "TILEROW"])
+    def test_extra_params_may_not_displace_a_tile_identifying_parameter(self, key):
+        """Overriding what identifies the tile is refused.
+
+        Args:
+            key: The protected parameter the caller tried to set.
+
+        Test scenario:
+            The case-insensitive merge round 1 introduced made these reachable.
+            Overriding `BBOX` detaches every image from the position the mosaic
+            pastes it at, and since each request still succeeds the result is a
+            plausible-looking picture made of the wrong tiles.
+        """
+        with pytest.raises(ValueError, match="identifies the tile"):
+            WMSProvider(
+                url="https://example.org/wms", layers="ortho", extra_params={key: "x"}
+            )
+
+    def test_two_extra_params_differing_only_by_case_are_refused(self):
+        """`extra_params` may not name one parameter twice.
+
+        Test scenario:
+            Round 1 reconciled casing between the generated parameters and
+            `extra_params`, but not *within* `extra_params` -- so both were
+            sent and the service chose.
+        """
+        with pytest.raises(ValueError, match="name the same case-insensitive"):
+            WMSProvider(
+                url="https://example.org/wms",
+                layers="ortho",
+                extra_params={"format": "a", "FORMAT": "b"},
+            )
+
+    def test_a_tuneable_parameter_can_still_be_overridden(self):
+        """The guard does not block the overrides that are the point.
+
+        Test scenario:
+            `FORMAT`, `STYLES` and a credential all remain settable; only the
+            parameters that address the tile are protected.
+        """
+        provider = WMSProvider(
+            url="https://example.org/wms",
+            layers="ortho",
+            extra_params={"format": "image/gif", "token": "t"},
+        )
+        query = query_of(provider.build_url(x=0, y=0, z=0))
+        assert query["format"] == ["image/gif"], f"override lost: {query}"
+        assert query["token"] == ["t"], f"credential lost: {query}"
+
+    def test_wms_1_0_0_is_not_claimed(self):
+        """WMS 1.0.0 is refused rather than built with 1.1.x spellings.
+
+        Test scenario:
+            1.0.0 used `WMTVER`, `REQUEST=map` and `FORMAT=PNG`, none of which
+            this module emits -- so accepting the version promised a request it
+            never built.
+        """
+        with pytest.raises(ValueError, match="version must be one of"):
+            WMSProvider(url="https://example.org/wms", layers="ortho", version="1.0.0")
+
+
+class TestCredentialsAreNotInTheRepr:
+    """`repr()` does not carry what `extra_params` was documented to hold."""
+
+    @pytest.mark.parametrize("kind", ["wmts", "wms"])
+    def test_the_value_is_masked_and_the_name_kept(self, kind, wmts, wms):
+        """A token survives as a name, not as a value.
+
+        Args:
+            kind: Which provider to check.
+            wmts: The WMTS fixture.
+            wms: The WMS fixture.
+
+        Test scenario:
+            The URL redaction cannot help here -- a traceback, a pytest failure
+            line or `logger.info("using %s", provider)` prints the object long
+            before any URL exists, and that is the sink hardest to control.
+        """
+        provider = replace(
+            wmts if kind == "wmts" else wms, extra_params={"token": "S3CRET"}
+        )
+        assert "S3CRET" not in repr(provider), "the credential is in the repr"
+        assert "'token': '...'" in repr(provider), (
+            f"the parameter name should survive: {repr(provider)}"
+        )
+
+    def test_the_other_fields_are_still_shown(self, wms):
+        """Masking the mapping does not blank the rest of the repr.
+
+        Args:
+            wms: The GetMap provider fixture.
+
+        Test scenario:
+            The repr still has to be useful for debugging; only the one field
+            documented to hold a secret is masked.
+        """
+        rendered = repr(wms)
+        assert "https://example.org/wms" in rendered, f"url missing: {rendered}"
+        assert "ortho" in rendered, f"layers missing: {rendered}"
+
+
 class TestProvidersAreImmutable:
     """Both dataclasses are frozen, including the mapping they hold."""
 
@@ -1632,7 +1777,7 @@ class TestCredentialsAreNotLogged:
         [
             (
                 "https://example.org/wms?LAYERS=ortho&token=s3cret",
-                "https://example.org/wms?LAYERS=...&token=...",
+                "https://example.org/wms?LAYERS=ortho&token=...",
             ),
             (
                 "https://example.org/tiles/3/2/4.png",
@@ -1641,7 +1786,7 @@ class TestCredentialsAreNotLogged:
             ("https://example.org/wms?flag", "https://example.org/wms?flag"),
             (
                 "https://example.org/wms?token=a=b&LAYERS=ortho",
-                "https://example.org/wms?token=...&LAYERS=...",
+                "https://example.org/wms?token=...&LAYERS=ortho",
             ),
             (
                 "https://example.org/wms?token=s3cret#layers",
@@ -1649,7 +1794,7 @@ class TestCredentialsAreNotLogged:
             ),
             (
                 "https://example.org/wms?token=&LAYERS=ortho",
-                "https://example.org/wms?token=...&LAYERS=...",
+                "https://example.org/wms?token=...&LAYERS=ortho",
             ),
             (
                 "https://example.org/wms?token=a&token=b",
