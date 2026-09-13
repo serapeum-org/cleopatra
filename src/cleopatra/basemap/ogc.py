@@ -51,6 +51,7 @@ from __future__ import annotations
 import urllib.parse
 from collections.abc import Mapping
 from dataclasses import dataclass, field, fields
+from decimal import Decimal
 from types import MappingProxyType
 
 from cleopatra.basemap.tiles import Tile, _tile_xy_bounds
@@ -216,6 +217,62 @@ def _query(base: str, params: Mapping[str, str]) -> str:
     parts = urllib.parse.urlsplit(base)
     merged = f"{parts.query}&{encoded}" if parts.query else encoded
     return urllib.parse.urlunsplit(parts._replace(query=merged))
+
+
+def _format_coordinate(value: float) -> str:
+    """Render one BBOX coordinate in plain decimal notation, losing nothing.
+
+    Python's default float formatting switches to an exponent for small
+    magnitudes, and a tile adjacent to the projection origin has bounds like
+    `-5.5e-10`. A `BBOX` carrying `-5.529727786779404e-10` is not what the WMS
+    grammar asks for, and services vary between rejecting it, reading it as
+    zero and reading it as garbage -- so a render centred on Greenwich and the
+    equator failed for no visible reason.
+
+    Rounding to a fixed number of decimals would fix that but cost the exact
+    round trip the whole WMS adaptation rests on: the image is requested for
+    precisely the bounds the mosaic will place it at. `Decimal` of a float is
+    that float's exact binary value, so formatting it with `f` is both
+    exponent-free and lossless -- `float(_format_coordinate(v)) == v` for every
+    `v`. Trailing zeros are trimmed to keep the URL readable.
+
+    Args:
+        value: The coordinate in EPSG:3857 metres.
+
+    Returns:
+        str: The coordinate without an exponent, parsing back to exactly
+        `value`.
+
+    Examples:
+        - A near-zero bound stays decimal instead of turning into an exponent:
+            ```python
+            >>> from cleopatra.basemap.ogc import _format_coordinate
+            >>> rendered = _format_coordinate(-5.529727786779404e-10)
+            >>> "e" in rendered
+            False
+            >>> float(rendered) == -5.529727786779404e-10
+            True
+
+            ```
+        - An ordinary bound round-trips exactly:
+            ```python
+            >>> from cleopatra.basemap.ogc import _format_coordinate
+            >>> float(_format_coordinate(5009377.085697311)) == 5009377.085697311
+            True
+
+            ```
+        - A whole number loses its decimal point rather than gaining zeros:
+            ```python
+            >>> from cleopatra.basemap.ogc import _format_coordinate
+            >>> _format_coordinate(-20037508.0)
+            '-20037508'
+
+            ```
+    """
+    text = format(Decimal(value), "f")
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return "0" if text in ("", "-", "-0") else text
 
 
 def _hash_provider(provider: object) -> int:
@@ -832,7 +889,8 @@ class WMSProvider:
 
                 ```
         """
-        left, bottom, right, top = _tile_xy_bounds(Tile(x, y, z))
+        bounds = _tile_xy_bounds(Tile(x, y, z))
+        bbox = ",".join(_format_coordinate(value) for value in bounds)
         params = {
             "SERVICE": "WMS",
             "REQUEST": "GetMap",
@@ -840,7 +898,7 @@ class WMSProvider:
             "LAYERS": self.layers,
             "STYLES": self.styles,
             self.crs_parameter: "EPSG:3857",
-            "BBOX": f"{left},{bottom},{right},{top}",
+            "BBOX": bbox,
             "WIDTH": str(self.tile_size),
             "HEIGHT": str(self.tile_size),
             "FORMAT": self.image_format,

@@ -22,7 +22,12 @@ import matplotlib.pyplot as plt
 import pytest
 
 from cleopatra.basemap import tiles as tiles_mod
-from cleopatra.basemap.ogc import WMSProvider, WMTSProvider, _query
+from cleopatra.basemap.ogc import (
+    WMSProvider,
+    WMTSProvider,
+    _format_coordinate,
+    _query,
+)
 from cleopatra.basemap.tiles import (
     _TILES_AVAILABLE,
     Tile,
@@ -677,6 +682,100 @@ class TestWMSProviderBuildUrl:
         sent = tuple(float(v) for v in query["BBOX"][0].split(","))
         assert sent == _tile_xy_bounds(tile), (
             f"BBOX {sent} != tile bounds {_tile_xy_bounds(tile)}"
+        )
+
+
+class TestBboxNotation:
+    """A `BBOX` never reaches a service in scientific notation."""
+
+    @pytest.mark.parametrize("z", [0, 1, 3, 10, 19])
+    def test_no_tile_produces_an_exponent(self, wms, z):
+        """Every tile at every zoom formats as plain decimal.
+
+        Args:
+            wms: The GetMap provider fixture.
+            z: The zoom level under test.
+
+        Test scenario:
+            Tiles adjacent to the projection origin have bounds around 1e-10,
+            which Python renders with an exponent by default. The WMS grammar
+            does not ask for that, and services vary between rejecting it and
+            misparsing it -- so a render centred on Greenwich and the equator
+            broke for no visible reason. The corners and the middle of each
+            level are checked, since the origin-adjacent tiles are the middle.
+        """
+        span = 2**z
+        corners = [(0, 0), (span - 1, span - 1), (span // 2, span // 2)]
+        for x, y in corners:
+            bbox = query_of(wms.build_url(x=x, y=y, z=z))["BBOX"][0]
+            assert "e" not in bbox.lower(), f"exponent at z={z} x={x} y={y}: {bbox}"
+
+    def test_the_bbox_still_round_trips_to_the_tile_bounds(self, wms):
+        """Formatting does not cost the coordinates their accuracy.
+
+        Args:
+            wms: The GetMap provider fixture.
+
+        Test scenario:
+            The deepest tile this package reaches is ~0.075 m across, sitting
+            2e7 m from the origin, so a careless format would place it in the
+            wrong tile entirely. Six decimals is sub-micrometre.
+        """
+        tile = Tile(2**19 - 1, 2**19 - 1, 19)
+        sent = [
+            float(v)
+            for v in query_of(wms.build_url(x=tile.x, y=tile.y, z=tile.z))["BBOX"][
+                0
+            ].split(",")
+        ]
+        expected = _tile_xy_bounds(tile)
+        assert sent == pytest.approx(expected, abs=1e-6), (
+            f"BBOX {sent} drifted from the tile bounds {expected}"
+        )
+
+
+class TestFormatCoordinate:
+    """`_format_coordinate` renders one bound for the `BBOX`."""
+
+    @pytest.mark.parametrize(
+        "value, expected",
+        [(0.0, "0"), (-0.0, "0"), (-20037508.0, "-20037508"), (1.5, "1.5")],
+    )
+    def test_tidy_values_render_tidily(self, value, expected):
+        """A whole or short value does not gain noise.
+
+        Args:
+            value: The coordinate to render.
+            expected: Its expected text form.
+
+        Test scenario:
+            Negative zero is in the table because `-0` is a legal result of the
+            trimming but a strange thing to put in a `BBOX`.
+        """
+        assert _format_coordinate(value) == expected, (
+            f"{value!r} rendered as {_format_coordinate(value)!r}"
+        )
+
+    @pytest.mark.parametrize(
+        "value",
+        [-5.529727786779404e-10, 5009377.085697311, -20037508.342789244, 1e-7, 1e17],
+    )
+    def test_every_value_is_exponent_free_and_lossless(self, value):
+        """The rendering neither uses an exponent nor loses a bit.
+
+        Args:
+            value: The coordinate to render.
+
+        Test scenario:
+            These are the two properties in tension: rounding to fixed decimals
+            kills the exponent but costs the exact round trip the mosaic
+            alignment rests on, and plain `str()` keeps the value but emits an
+            exponent near the origin. Both must hold at once.
+        """
+        rendered = _format_coordinate(value)
+        assert "e" not in rendered.lower(), f"{value!r} rendered as {rendered!r}"
+        assert float(rendered) == value, (
+            f"{rendered!r} does not parse back to {value!r}"
         )
 
 
