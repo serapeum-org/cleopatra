@@ -620,6 +620,146 @@ def _looks_like_image(data: bytes) -> bool:
     )
 
 
+#: Query parameters safe to write to a log: the OGC names that say *which* tile
+#: was requested. Everything else is masked, so the rule is default-deny -- a
+#: credential under an unexpected name is still covered. An XYZ template carries
+#: the tile in its path rather than its query, so it contributes no names here
+#: and its query, whatever it holds, is masked entirely.
+#:
+#: The membership rule is what keeps that safe as the module grows: these are
+#: exactly the parameters `cleopatra.basemap.ogc` generates itself -- the union
+#: of `WMSProvider.build_url`'s `GetMap` set and `WMTSProvider.build_url`'s
+#: `GetTile` set. So the line is drawn between values cleopatra put in the URL,
+#: which cannot be secret because cleopatra computed them, and values a caller
+#: added, which are where a token comes from. Names are folded with `upper()`
+#: before the lookup, because services publish `bbox=` and `TileRow=` as
+#: readily as `BBOX=`, and matching is by exact membership, not substring: a
+#: credential named `LAYERSTOKEN` must not inherit `LAYERS`' pass.
+_LOGGABLE_QUERY_KEYS = frozenset(
+    {
+        "SERVICE",
+        "REQUEST",
+        "VERSION",
+        "LAYER",
+        "LAYERS",
+        "STYLE",
+        "STYLES",
+        "FORMAT",
+        "TRANSPARENT",
+        "TILEMATRIXSET",
+        "TILEMATRIX",
+        "TILEROW",
+        "TILECOL",
+        "BBOX",
+        "WIDTH",
+        "HEIGHT",
+        "CRS",
+        "SRS",
+    }
+)
+
+
+def _redact_url(url: str) -> str:
+    """Return `url` with credential-shaped parts masked, for logging.
+
+    A tile URL is not always safe to write to a log. An XYZ template can embed
+    an API key, and `cleopatra.basemap.ogc` documents `extra_params` as the
+    place to put a token -- so logging the full URL of a failed fetch puts the
+    credential wherever the logs go, outliving the session.
+
+    Masking *everything* is the obvious fix and the wrong one: the tile's
+    identity lives in `BBOX` / `TILEROW` / `TILECOL`, so a fully-masked line is
+    byte-identical for every tile of a mosaic and the retry log can no longer
+    say which tile failed. The OGC parameter names that describe the
+    request are therefore kept (`_LOGGABLE_QUERY_KEYS`) and everything else is
+    masked. It is an allow-list, not a deny-list, and membership is exact: an
+    unforeseen parameter name is masked because it is not on the list, rather
+    than surviving because nobody thought to add it to one. Names are matched
+    case-insensitively, so a service publishing `bbox=` or `TileRow=` still
+    logs readably. A parameter with no `=` has no value to mask and is kept as
+    written.
+
+    Userinfo in the netloc is masked too, in the same pass, so a URL carrying
+    both a token in its query and a password in its netloc loses both. A key
+    embedded in the *path* -- the usual shape for a keyed XYZ template --
+    cannot be told apart from an ordinary path segment, so it is not masked;
+    that is a real limit of logging URLs at all, not something this function
+    can close.
+
+    Args:
+        url: The request URL.
+
+    Returns:
+        str: The URL with every query value outside `_LOGGABLE_QUERY_KEYS`, and
+        any userinfo, replaced by `...`. A URL with neither is returned
+        unchanged.
+
+    Examples:
+        - A token is masked while the tile's identity survives:
+            ```python
+            >>> from cleopatra.basemap.tiles import _redact_url
+            >>> _redact_url("https://example.org/wms?TILEROW=2&token=s3cret")
+            'https://example.org/wms?TILEROW=2&token=...'
+
+            ```
+        - Userinfo goes too:
+            ```python
+            >>> from cleopatra.basemap.tiles import _redact_url
+            >>> _redact_url("https://user:pw@example.org/tiles/3/2/4.png")
+            'https://...@example.org/tiles/3/2/4.png'
+
+            ```
+        - A URL with no query and no userinfo is unchanged:
+            ```python
+            >>> from cleopatra.basemap.tiles import _redact_url
+            >>> _redact_url("https://example.org/tiles/3/2/4.png")
+            'https://example.org/tiles/3/2/4.png'
+
+            ```
+        - Membership is exact, so a name that merely contains an allow-listed
+          one does not inherit its pass:
+            ```python
+            >>> from cleopatra.basemap.tiles import _redact_url
+            >>> _redact_url("https://example.org/wms?layers=ortho&LAYERSTOKEN=s3cret")
+            'https://example.org/wms?layers=ortho&LAYERSTOKEN=...'
+
+            ```
+        - Each tile of a mosaic still logs as itself, which is the whole point
+          of keeping some values:
+            ```python
+            >>> from cleopatra.basemap.tiles import _redact_url
+            >>> lines = [
+            ...     _redact_url(f"https://e.org/wms?BBOX=0,0,{n},{n}&token=s3cret")
+            ...     for n in range(3)
+            ... ]
+            >>> len(set(lines))
+            3
+            >>> lines[2]
+            'https://e.org/wms?BBOX=0,0,2,2&token=...'
+
+            ```
+    """
+    parts = urllib.parse.urlsplit(url)
+    netloc = parts.netloc
+    if "@" in netloc:
+        netloc = f"...@{netloc.rsplit('@', 1)[1]}"
+    query = parts.query
+    if query:
+        masked = []
+        for pair in query.split("&"):
+            name, sep, _ = pair.partition("=")
+            if not sep:
+                masked.append(pair)
+            elif name.upper() in _LOGGABLE_QUERY_KEYS:
+                masked.append(pair)
+            else:
+                masked.append(f"{name}=...")
+        query = "&".join(masked)
+    if netloc == parts.netloc and query == parts.query:
+        return url
+    return urllib.parse.urlunsplit(parts._replace(netloc=netloc, query=query))
+
+
 def fetch_single_tile(
     tile: Any,
     provider: Any,
@@ -628,6 +768,17 @@ def fetch_single_tile(
     user_agent: str = USER_AGENT,
 ) -> tuple[Any, bytes]:
     """Fetch a single tile, retrying on transient failures.
+
+    Every failed attempt is logged at debug level with a *redacted* URL. A tile
+    URL is not always safe to write to a log -- an XYZ template can embed an API
+    key, and `cleopatra.basemap.ogc` documents `extra_params` as the place to
+    put a token -- and a debug log outlives the session. Every parameter name
+    survives, and so do the values of the OGC parameters that say which tile was
+    asked for, so an OGC line still identifies the failing tile; every other
+    value is replaced with `...` (see `_redact_url`). An XYZ URL carries its
+    tile in the path, which is not masked, so its line stays distinguishable
+    too. The request that goes on the wire is the unredacted URL; only the log
+    line is masked.
 
     Args:
         tile: Tile to fetch (has `x`, `y`, `z` attributes).
@@ -702,11 +853,13 @@ def fetch_single_tile(
             break
         except (OSError, urllib.error.URLError, ConnectionError) as e:
             last_error = e
+            # Redacted: an XYZ template can embed an API key, and an OGC
+            # provider's `extra_params` is documented as the place for a token.
             logger.debug(
                 "Tile fetch attempt %d/%d failed for %s: %s",
                 attempt + 1,
                 retries + 1,
-                url,
+                _redact_url(url),
                 e,
             )
     if result_bytes is None:
@@ -941,7 +1094,10 @@ def add_tiles(
             `OpenStreetMap.Mapnik`. A dot-separated string such as
             `"CartoDB.Positron"` is resolved via
             `get_provider`. An `xyzservices.TileProvider` is
-            used directly.
+            used directly, and so is any object exposing
+            `build_url(x=, y=, z=)` -- which is how
+            `cleopatra.basemap.ogc.WMSProvider` and `WMTSProvider` bring OGC
+            services through this same path.
         crs: CRS of the data on `ax`. An integer is interpreted as an
             EPSG code; a string is passed through (`"EPSG:XXXX"` or
             WKT). `None` is treated as EPSG:3857.
@@ -1320,7 +1476,11 @@ def world_texture(
 
     Args:
         provider: An `xyzservices` provider name (e.g. `"Esri.WorldImagery"`) or
-            a resolved `xyzservices.TileProvider` (as `add_tiles` accepts);
+            a resolved `xyzservices.TileProvider`. Unlike `add_tiles` this
+            needs a Mapping-like provider, because the disk cache is keyed on
+            `provider.get("name", ...)` -- so the OGC providers in
+            `cleopatra.basemap.ogc` raise `AttributeError` here and are
+            supported only through `add_tiles`;
             `None` uses the default (`OpenStreetMap.Mapnik`). A name is resolved
             by `get_provider`.
         zoom: Tile zoom level (0..6); the world grid is `2**zoom` tiles per side.

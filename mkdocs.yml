@@ -118,6 +118,7 @@ nav:
     - KDEGlyph: reference/kde-glyph.md
     - TexturedGlobeGlyph (3-D): reference/textured-globe-glyph.md
     - Tiles (basemaps): reference/tiles.md
+    - OGC services (WMS/WMTS): reference/ogc.md
     - Reference data (coastlines/relief): reference/reference-data.md
     - Geo basemap methods (glyphs): reference/geo.md
     - Projection (globe frames): reference/projection.md

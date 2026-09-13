@@ -4,6 +4,10 @@ The `cleopatra.basemap.tiles` module adds an optional, pure-Python web-tile base
 `add_tiles` fetches XYZ map tiles covering an axes' current extent, stitches them with
 Pillow, and renders the composite underneath your data. No GDAL is required.
 
+For a service published as OGC **WMS** or **WMTS** rather than an XYZ template, pass one of
+the provider objects from [`cleopatra.basemap.ogc`](ogc.md) as the `source` — the fetch,
+stitch and compose path below is the same one they use.
+
 It is gated behind the `cleopatra[tiles]` optional extra (`pillow`, `pyproj`,
 `xyzservices`):
 
