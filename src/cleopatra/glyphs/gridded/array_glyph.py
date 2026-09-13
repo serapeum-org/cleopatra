@@ -2592,6 +2592,18 @@ class ArrayGlyph(GeoMixin, Glyph):
                     f"for kind={kind!r}.",
                     stacklevel=2,
                 )
+            if is_contourf and hatches is None:
+                if fill is False:
+                    warnings.warn(
+                        "fill=False with no hatches draws an invisible contour "
+                        "set; pass hatches=[...] to draw the overlay.",
+                        stacklevel=2,
+                    )
+                if hatch_color is not None:
+                    warnings.warn(
+                        "hatch_color has no effect without hatches.",
+                        stacklevel=2,
+                    )
             contour_kwargs: dict[str, Any]
             if is_contourf and fill is False:
                 # Unfilled overlay: only the hatch marks draw. matplotlib rejects
@@ -4143,7 +4155,19 @@ class ArrayGlyph(GeoMixin, Glyph):
                 elif unfilled_contourf:
                     # An unfilled (colors="none") set is not colour-mapped, so
                     # there is nothing to colorbar -- the hatch-overlay form.
-                    pass
+                    # Warn only if the caller explicitly asked for one, so the
+                    # dropped request is not silent.
+                    if colorbar is not None or "add_colorbar" in getattr(
+                        self,
+                        "_render_explicit_options",
+                        getattr(self, "_explicit_options", set()),
+                    ):
+                        warnings.warn(
+                            "An unfilled contourf overlay (fill=False) is not "
+                            "colour-mapped, so the requested colorbar is not "
+                            "drawn.",
+                            stacklevel=2,
+                        )
                 else:
                     self.cbar = self.create_color_bar(ax, im, cbar_kw)
 

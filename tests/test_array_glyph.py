@@ -1358,6 +1358,29 @@ class TestPlotKindDispatch:
             f"hatch_color must not recolour the contour lines, got {edges}"
         )
 
+    def test_unfilled_without_hatches_warns_invisible(self):
+        """`fill=False` with no hatches draws nothing visible and warns."""
+        glyph = ArrayGlyph(self._sample_arr())
+        with pytest.warns(UserWarning, match="invisible contour"):
+            glyph.plot(kind="contourf", contour=Contour(levels=4, fill=False))
+
+    def test_hatch_color_without_hatches_warns_no_effect(self):
+        """`hatch_color` with no hatches has no effect and warns."""
+        glyph = ArrayGlyph(self._sample_arr())
+        with pytest.warns(UserWarning, match="no effect without hatches"):
+            glyph.plot(kind="contourf", contour=Contour(levels=4, hatch_color="red"))
+
+    def test_unfilled_overlay_warns_when_colorbar_explicitly_requested(self):
+        """An explicit colorbar on an unfilled overlay is dropped, with a warning."""
+        glyph = ArrayGlyph(self._sample_arr())
+        with pytest.warns(UserWarning, match="requested colorbar is not"):
+            glyph.plot(
+                kind="contourf",
+                contour=Contour(levels=[0.5, 1.5], hatches=["///"], fill=False),
+                colorbar=True,
+            )
+        assert glyph.cbar is None, "the unfilled overlay draws no colorbar"
+
     def test_invalid_kind_raises(self):
         """`kind="bogus"` raises `ValueError` listing the valid kinds."""
         glyph = ArrayGlyph(self._sample_arr())
