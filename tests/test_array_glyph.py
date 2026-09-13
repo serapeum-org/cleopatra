@@ -3035,8 +3035,9 @@ class TestFaceting:
     def test_no_col_no_row_raises(self):
         """Calling `facet()` without `col` or `row` raises `ValueError`."""
         stack = self._stack_3d(n=3)
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError, match="at least one of"):
-            ArrayGlyph(stack).facet()
+            glyph.facet()
 
     def test_savefig_roundtrip(self, tmp_path):
         """Rendering and saving a facet figure yields a non-empty PNG."""
@@ -3452,14 +3453,16 @@ class TestFacetExtents:
     def test_extents_wrong_length_raises(self):
         """An `extents` list whose length != n_panels raises `ValueError`."""
         stack = self._stack(n=3)
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError, match="3 panels"):
-            ArrayGlyph(stack).facet(col="t", extents=[[0, 0, 1, 1]])
+            glyph.facet(col="t", extents=[[0, 0, 1, 1]])
 
     def test_extents_non_length4_element_raises(self):
         """An `extents` entry that isn't length-4 raises `ValueError`."""
         stack = self._stack(n=2)
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError, match=r"extents\[1\].*length-4"):
-            ArrayGlyph(stack).facet(col="t", extents=[[0, 0, 1, 1], [0, 0, 1]])
+            glyph.facet(col="t", extents=[[0, 0, 1, 1], [0, 0, 1]])
 
     def test_extents_with_parent_extent_raises(self):
         """`extents` and the glyph's own `extent` are mutually exclusive."""
@@ -3907,14 +3910,16 @@ class TestFacetingEdgeCases:
             values raise.
         """
         stack = self._stack(n=4)
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError, match="positive int"):
-            ArrayGlyph(stack).facet(col="t", col_wrap=0)
+            glyph.facet(col="t", col_wrap=0)
 
     def test_invalid_col_wrap_negative_raises(self) -> None:
         """A negative `col_wrap` is rejected."""
         stack = self._stack(n=4)
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError, match="positive int"):
-            ArrayGlyph(stack).facet(col="t", col_wrap=-2)
+            glyph.facet(col="t", col_wrap=-2)
 
     def test_invalid_col_wrap_type_raises(self) -> None:
         """A non-int `col_wrap` is rejected (string).
@@ -3924,8 +3929,9 @@ class TestFacetingEdgeCases:
             `isinstance` guard.
         """
         stack = self._stack(n=4)
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError, match="positive int"):
-            ArrayGlyph(stack).facet(col="t", col_wrap="three")
+            glyph.facet(col="t", col_wrap="three")
 
     def test_col_with_2d_array_raises(self) -> None:
         """Faceting a 2-D array on `col` alone raises `ValueError`.
@@ -3946,8 +3952,9 @@ class TestFacetingEdgeCases:
             is rejected.
         """
         stack = self._stack(n=4)
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError, match="`col` as well"):
-            ArrayGlyph(stack).facet(row="lev")
+            glyph.facet(row="lev")
 
     def test_row_with_3d_arr_raises(self) -> None:
         """Faceting on row+col with a 3-D arr raises `ValueError`.
@@ -3957,8 +3964,9 @@ class TestFacetingEdgeCases:
             surface a shape error.
         """
         stack = self._stack(n=4)
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError, match="4-D array"):
-            ArrayGlyph(stack).facet(col="t", row="lev")
+            glyph.facet(col="t", row="lev")
 
     def test_labels_col_length_mismatch_raises(self) -> None:
         """`labels.col` whose length differs from N raises `ValueError`."""
@@ -8326,8 +8334,9 @@ class TestFacetSuppliedAxes:
         fig = plt.figure()
         gs = GridSpec(2, 1, figure=fig)
         bad = DataStyle(style="not_a_style")
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError):
-            ArrayGlyph(stack).facet(col="t", axes=gs[0], data_style=bad)
+            glyph.facet(col="t", axes=gs[0], data_style=bad)
         assert fig.axes == []
         plt.close("all")
 
@@ -8337,8 +8346,9 @@ class TestFacetSuppliedAxes:
         fig = plt.figure()
         gs = GridSpec(1, 3, figure=fig)
         bad = DataStyle(style="not_a_style")
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError):
-            ArrayGlyph(stack).facet(col="t", axes=gs, data_style=bad)
+            glyph.facet(col="t", axes=gs, data_style=bad)
         assert fig.axes == []
         plt.close("all")
 
@@ -8355,16 +8365,18 @@ class TestFacetSuppliedAxes:
         """Supplying both `axes=` and `figure_size=` raises `ValueError`."""
         stack = self._stack(n=3)
         fig, axs = plt.subplots(1, 3, squeeze=False)
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError, match="mutually exclusive"):
-            ArrayGlyph(stack).facet(col="t", axes=axs, figure_size=(6, 3))
+            glyph.facet(col="t", axes=axs, figure_size=(6, 3))
         plt.close("all")
 
     def test_too_few_axes_raises_before_drawing(self):
         """An axes block smaller than the grid is rejected up front."""
         stack = self._stack(n=3)
         fig, axs = plt.subplots(1, 2, squeeze=False)
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError, match="1x2 block but the facet grid is 1x3"):
-            ArrayGlyph(stack).facet(col="t", axes=axs)
+            glyph.facet(col="t", axes=axs)
         plt.close("all")
 
     def test_empty_slots_hidden_only_inside_block(self):
@@ -8394,8 +8406,9 @@ class TestFacetSuppliedAxes:
         stack = self._stack(n=3)
         fig, axs = plt.subplots(1, 3, squeeze=False)
         bad = DataStyle(style="not_a_style")
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError):
-            ArrayGlyph(stack).facet(col="t", axes=axs, data_style=bad)
+            glyph.facet(col="t", axes=axs, data_style=bad)
         assert plt.fignum_exists(fig.number)  # caller's figure left intact
         plt.close("all")
 
@@ -8413,8 +8426,9 @@ class TestFacetSuppliedAxes:
         stack = self._stack(n=3)
         fig = plt.figure()
         bad = DataStyle(style="not_a_style")
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError):
-            ArrayGlyph(stack).facet(col="t", axes=fig, data_style=bad)
+            glyph.facet(col="t", axes=fig, data_style=bad)
         assert fig.axes == []  # cleopatra's partial subplots cleaned up
         assert plt.fignum_exists(fig.number)  # the caller's figure is kept
         plt.close("all")
@@ -8424,8 +8438,9 @@ class TestFacetSuppliedAxes:
         stack = self._stack(n=3)
         fig, axs = plt.subplots(1, 3, squeeze=False)
         bad = DataStyle(style="not_a_style")
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError):
-            ArrayGlyph(stack).facet(col="t", axes=axs, data_style=bad)
+            glyph.facet(col="t", axes=axs, data_style=bad)
         assert list(fig.axes) == list(axs.ravel())  # caller's axes untouched
         plt.close("all")
 
@@ -8440,22 +8455,25 @@ class TestFacetSuppliedAxes:
     def test_non_axes_block_rejected(self):
         """A non-`Axes`, non-iterable `axes=` value is rejected with a clear error."""
         stack = self._stack(n=3)
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError, match="must be matplotlib Axes"):
-            ArrayGlyph(stack).facet(col="t", axes=object())
+            glyph.facet(col="t", axes=object())
         plt.close("all")
 
     def test_empty_axes_block_rejected(self):
         """An empty `axes=` sequence is rejected before drawing."""
         stack = self._stack(n=3)
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError, match="at least one Axes"):
-            ArrayGlyph(stack).facet(col="t", axes=[])
+            glyph.facet(col="t", axes=[])
         plt.close("all")
 
     def test_string_axes_rejected_cleanly(self):
         """A string `axes=` raises a clear ValueError, not RecursionError."""
         stack = self._stack(n=3)
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError, match="must be matplotlib Axes"):
-            ArrayGlyph(stack).facet(col="t", axes="foo")
+            glyph.facet(col="t", axes="foo")
         plt.close("all")
 
     def test_block_with_stray_string_rejected_cleanly(self):
@@ -8463,24 +8481,27 @@ class TestFacetSuppliedAxes:
         stack = self._stack(n=3)
         fig, axs = plt.subplots(1, 3, squeeze=False)
         block = [axs[0, 0], "x", axs[0, 2]]
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError, match="must be matplotlib Axes"):
-            ArrayGlyph(stack).facet(col="t", axes=block)
+            glyph.facet(col="t", axes=block)
         plt.close("all")
 
     def test_flat_block_wrong_count_rejected(self):
         """A flat block that cannot fill the (nrows, ncols) grid is rejected."""
         stack = self._stack(n=3)
         fig, axs = plt.subplots(2, 2, squeeze=False)
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError, match="supply exactly 4"):
-            ArrayGlyph(stack).facet(col="t", col_wrap=2, axes=list(axs.ravel())[:3])
+            glyph.facet(col="t", col_wrap=2, axes=list(axs.ravel())[:3])
         plt.close("all")
 
     def test_2d_block_shape_must_match_grid(self):
         """A 2-D block whose shape contradicts col_wrap is rejected, not reflowed."""
         stack = self._stack(n=6)
         fig, axs = plt.subplots(3, 2, squeeze=False)  # 3x2, but col_wrap=3 wants 2x3
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError, match="3x2 block but the facet grid is 2x3"):
-            ArrayGlyph(stack).facet(col="t", col_wrap=3, axes=axs)
+            glyph.facet(col="t", col_wrap=3, axes=axs)
         plt.close("all")
 
     def test_wrapped_supplied_block_preserves_grid_shape(self):
@@ -8515,16 +8536,18 @@ class TestFacetSuppliedAxes:
         """A `SubplotSpec` whose `GridSpec` has no figure is rejected."""
         stack = self._stack(n=3)
         gs = GridSpec(2, 1)
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError, match="not attached to a figure"):
-            ArrayGlyph(stack).facet(col="t", axes=gs[0])
+            glyph.facet(col="t", axes=gs[0])
         plt.close("all")
 
     def test_gridspec_without_figure_rejected(self):
         """A `GridSpec` with no figure is rejected."""
         stack = self._stack(n=3)
         gs = GridSpec(1, 3)
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError, match="not attached to a figure"):
-            ArrayGlyph(stack).facet(col="t", axes=gs)
+            glyph.facet(col="t", axes=gs)
         plt.close("all")
 
     def test_gridspec_too_small_rejected(self):
@@ -8532,8 +8555,9 @@ class TestFacetSuppliedAxes:
         stack = self._stack(n=3)
         fig = plt.figure()
         gs = GridSpec(1, 2, figure=fig)
+        glyph = ArrayGlyph(stack)
         with pytest.raises(ValueError, match="too small"):
-            ArrayGlyph(stack).facet(col="t", axes=gs)
+            glyph.facet(col="t", axes=gs)
         plt.close("all")
 
     def test_compose_forwarded_to_panels(self):
