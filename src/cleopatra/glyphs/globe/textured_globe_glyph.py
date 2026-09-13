@@ -832,7 +832,7 @@ class TexturedGlobeGlyph:
         options.update(kwargs)
         fig, target = self._resolve_axes(ax, options)
         self._prepare()
-        _clear_prior_render_artists(target)
+        _clear_prior_render_artists(target, self)
 
         if options["background"] is not None:
             fig.set_facecolor(options["background"])
@@ -859,7 +859,7 @@ class TexturedGlobeGlyph:
         target.set_axis_off()
         target.view_init(elev=options["elev"], azim=options["azim"])
 
-        _mark_render_artists(target, surface)
+        _mark_render_artists(target, self, surface)
         self._surface = surface
         return fig, target
 

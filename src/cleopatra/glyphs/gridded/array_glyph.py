@@ -52,6 +52,7 @@ from cleopatra.glyphs.base.glyph import (
     _clear_prior_render_artists,
     _clear_projection_frame,
     _mark_render_artists,
+    _multiline_title_pad,
     _reject_grouped_kwargs,
     _restore_flat_axes,
     _root_figure,
@@ -813,8 +814,7 @@ class RgbBands:
         """
         if array.shape[0] < 3:
             raise ValueError(
-                f"RgbBands needs an array with at least 3 bands, "
-                f"got {array.shape[0]}."
+                f"RgbBands needs an array with at least 3 bands, got {array.shape[0]}."
             )
 
     def prepare(self, array: np.ndarray) -> np.ndarray:
@@ -1064,9 +1064,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             int: The number of in-domain cells on the counted frame.
         """
         first_frame = array if (is_rgb or array.ndim < 3) else array[0]
-        in_domain = ~(
-            ma.getmaskarray(first_frame) | np.isnan(ma.getdata(first_frame))
-        )
+        in_domain = ~(ma.getmaskarray(first_frame) | np.isnan(ma.getdata(first_frame)))
         return int(np.count_nonzero(in_domain))
 
     def __init__(
@@ -1696,7 +1694,10 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         default = tuple(self.default_options["figsize"])
         if self.default_options.get("projection") == "globe":
-            return (7.5, 6.5)  # the orthographic disc is ~square, not the lon/lat aspect
+            return (
+                7.5,
+                6.5,
+            )  # the orthographic disc is ~square, not the lon/lat aspect
         try:
             if self.extent is not None:
                 xmin, xmax, ymin, ymax = (float(v) for v in self.extent)
@@ -1716,12 +1717,14 @@ class ArrayGlyph(GeoMixin, Glyph):
         if not (width > 0 and height > 0):
             return default
         aspect = width / height
-        plot_height = 6.0        # target plot height (inches)
-        cbar_pad = 1.8           # room for the colorbar + its labels
+        plot_height = 6.0  # target plot height (inches)
+        cbar_pad = 1.8  # room for the colorbar + its labels
         max_width = 14.0
         fig_w = plot_height * aspect + cbar_pad
         fig_h = plot_height
-        if fig_w > max_width:    # very wide field: cap width, shrink height to keep the aspect
+        if (
+            fig_w > max_width
+        ):  # very wide field: cap width, shrink height to keep the aspect
             fig_w = max_width
             fig_h = max(3.5, (max_width - cbar_pad) / aspect)
         fig_w = max(5.0, fig_w)
@@ -2456,14 +2459,21 @@ class ArrayGlyph(GeoMixin, Glyph):
         Args:
             style: A `cleopatra.styling.colors.DATA_STYLES` preset name (see
                 `sorted(cleopatra.styling.colors.DATA_STYLES)`).
-            **kwargs: Forwarded to `plot` (e.g. `hillshade`).
+            **kwargs: Forwarded to `plot` (e.g. `hillshade`). `compose=True` is
+                the one keyword `plot` accepts that this method cannot: it
+                clears the axes before redrawing, so composing onto what is
+                already there is a contradiction and is rejected rather than
+                silently dropped.
 
         Returns:
             tuple[Figure, Axes]: The figure and axes drawn on.
 
         Raises:
             ValueError: If `style` is unknown or names a multi-layer preset
-                (raised by `plot`).
+                (raised by `plot`), or if `compose=True` is passed -- with a
+                message pointing at the `plot(data_style=DataStyle(style=...),
+                ax=..., compose=True)` call that does draw a styled layer over
+                an existing axes.
 
         Examples:
             - Restyle a rendered glyph by name:
@@ -2479,13 +2489,38 @@ class ArrayGlyph(GeoMixin, Glyph):
                 'topography'
 
                 ```
+            - `compose=True` is refused, and the glyph keeps the style it had:
+                ```python
+                >>> import matplotlib
+                >>> matplotlib.use("Agg")
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+                >>> glyph = ArrayGlyph(np.arange(60.0).reshape(6, 10))
+                >>> _ = glyph.apply_style("topography")
+                >>> glyph.apply_style("bathymetry", compose=True)
+                Traceback (most recent call last):
+                    ...
+                ValueError: apply_style() re-renders in place and clears the axes first, ...
+                >>> glyph.style
+                'topography'
+
+                ```
         """
         resolve_single_layer_style(style)
+        if kwargs.get("compose"):
+            raise ValueError(
+                "apply_style() re-renders in place and clears the axes first, so "
+                "compose=True cannot be honoured here. To draw a styled layer "
+                "over what is already on an axes, call "
+                "plot(data_style=DataStyle(style=...), ax=..., compose=True)."
+            )
         self._reset_axes_for_restyle()
         # Fold style (and an optional forwarded hillshade) into the grouped
         # data_style object; leaving hillshade unset keeps any sticky value.
         if "hillshade" in kwargs:
-            data_style = DataStyle.for_apply_style(style, hillshade=kwargs.pop("hillshade"))
+            data_style = DataStyle.for_apply_style(
+                style, hillshade=kwargs.pop("hillshade")
+            )
         else:
             data_style = DataStyle.for_apply_style(style)
         return self.plot(data_style=data_style, ax=self.ax, **kwargs)
@@ -2556,7 +2591,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         if self.fig is not None and getattr(self, "_owns_figure", False):
             self.fig.patch.set_facecolor(background)
 
-    def _plot_with_style(self, style: str) -> tuple[Figure, Axes]:
+    def _plot_with_style(
+        self, style: str, compose: bool = False
+    ) -> tuple[Figure, Axes]:
         """Render the array with a named `DATA_STYLES` preset.
 
         Delegates the drawing to `cleopatra.styling.colors.apply_data_style` so the
@@ -2564,24 +2601,37 @@ class ArrayGlyph(GeoMixin, Glyph):
         transparent nodata, optional alpha glow, and — for categorical presets
         — the discrete `disjoint_legend` are reproduced exactly. The preset's
         swatch / categorical legend stands in for the colorbar, so `self.cbar`
-        is left `None`. `add_colorbar=False` suppresses that legend.
+        is left `None`. `add_colorbar=False` suppresses that legend, and so does
+        `compose=True` on its own -- see `Glyph._draws_own_colorbar`.
 
         Args:
             style: A `DATA_STYLES` name (see `_resolve_style_layer`).
+            compose: Draw over what is already on the axes rather than replacing
+                it. Forwarded from `plot`, which would otherwise honour it on
+                its own render paths and silently ignore it on this one. Beyond
+                keeping the prior artists, it leaves the host's canvas colour,
+                projection frame, empty title and pixel-space tick labels alone
+                -- a preset's dark background belongs to the figure it was drawn
+                for -- and defaults the swatch / legend off. A placement-bearing
+                `colorbar=` still draws a real bar over the swatch.
 
         Returns:
             tuple[Figure, Axes]: The figure and axes drawn on.
         """
         layer, style_cfg = resolve_single_layer_style(style)
-        _clear_prior_render_artists(self.ax)
-        self._apply_style_background(style_cfg)
-        self._sync_projection_frame(
-            projection_draws_frame(self.default_options.get("projection"))
-        )
+        _clear_prior_render_artists(self.ax, self, compose=compose)
+        # A composed overlay owns neither the canvas nor the frame. A preset's
+        # dark background belongs to the figure it was drawn for, and tearing
+        # down the projection frame would strip the graticule the host put there.
+        if not compose:
+            self._apply_style_background(style_cfg)
+            self._sync_projection_frame(
+                projection_draws_frame(self.default_options.get("projection"))
+            )
         data = np.asarray(
             ma.filled(ma.asarray(self.arr).astype(float), np.nan), dtype=float
         )
-        legend = bool(self.default_options.get("add_colorbar", True))
+        legend = self._draws_own_colorbar(compose)
         override_colorbar = (
             self._style_wants_colorbar and style_cfg.get("categories") is None
         )
@@ -2594,15 +2644,25 @@ class ArrayGlyph(GeoMixin, Glyph):
             if override_colorbar
             else None
         )
-        if self.extent is None and self._coords is None:
+        # See `plot`: a pixel-space render hides its indices, but never on a
+        # host's axes it is only composing onto.
+        if not compose and self.extent is None and self._coords is None:
             self.ax.set_xticklabels([])
             self.ax.set_yticklabels([])
             self.ax.set_xticks([])
             self.ax.set_yticks([])
-        self.ax.set_title(
-            self.default_options["title"], fontsize=self.default_options["title_size"]
-        )
-        _mark_render_artists(self.ax, self.cbar, self.im)
+        if not compose or self.default_options["title"]:
+            self.ax.set_title(
+                self.default_options["title"],
+                fontsize=self.default_options["title_size"],
+                pad=_multiline_title_pad(
+                    self.ax,
+                    self.default_options["title"],
+                    self.default_options["title_size"],
+                ),
+            )
+        self._apply_axis_style(self.ax)
+        _mark_render_artists(self.ax, self, self.cbar, self.im)
         return cast(Figure, self.fig), self.ax
 
     def _flat_axis_bounds(self) -> tuple[float, float, float, float]:
@@ -2622,7 +2682,12 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         if self._coords is not None:
             x, y = self._coords
-            return float(np.min(x)), float(np.max(x)), float(np.min(y)), float(np.max(y))
+            return (
+                float(np.min(x)),
+                float(np.max(x)),
+                float(np.min(y)),
+                float(np.max(y)),
+            )
         if self.extent is not None:
             x0, x1, y0, y1 = self.extent
             return float(x0), float(x1), float(y0), float(y1)
@@ -2685,21 +2750,37 @@ class ArrayGlyph(GeoMixin, Glyph):
                 [a for a in (*self.ax.patches, *self.ax.lines) if id(a) not in before],
             )
             images = apply_data_style(
-                self.ax, {layer: masked}, style=style, x=x_edges, y=y_edges,
-                shading="flat", **swatch_kw, **override,
+                self.ax,
+                {layer: masked},
+                style=style,
+                x=x_edges,
+                y=y_edges,
+                shading="flat",
+                **swatch_kw,
+                **override,
             )
         elif coords is not None:
             images = apply_data_style(
-                self.ax, {layer: data}, style=style, x=coords[0], y=coords[1],
-                shading="nearest", **swatch_kw, **override,
+                self.ax,
+                {layer: data},
+                style=style,
+                x=coords[0],
+                y=coords[1],
+                shading="nearest",
+                **swatch_kw,
+                **override,
             )
         else:
             render_kwargs: dict[str, Any] = (
                 {"extent": self.extent} if self.extent is not None else {}
             )
             images = apply_data_style(
-                self.ax, {layer: data}, style=style, **swatch_kw,
-                **render_kwargs, **override,
+                self.ax,
+                {layer: data},
+                style=style,
+                **swatch_kw,
+                **render_kwargs,
+                **override,
             )
         return images[layer]
 
@@ -2713,9 +2794,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         hillshade = resolve_hillshade(self.default_options.get("hillshade"))
         if hillshade is None:
             return
-        categorical = (
-            resolve_single_layer_style(style)[1].get("categories") is not None
-        )
+        categorical = resolve_single_layer_style(style)[1].get("categories") is not None
         if categorical or self._coords is not None:
             kind = "categorical" if categorical else "curvilinear"
             warnings.warn(
@@ -2735,11 +2814,11 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         cbar_cfg = {**style_cfg, **resolve_style_overrides(self._style_color_overrides)}
         cbar_norm, _lo, _hi = resolve_style_norm(data, cbar_cfg)
-        mappable = ScalarMappable(norm=cbar_norm, cmap=resolve_colormap(cbar_cfg["cmap"]))
-        mappable.set_array([])
-        return self.create_color_bar(
-            self.ax, mappable, self._style_cbar_kw(cbar_norm)
+        mappable = ScalarMappable(
+            norm=cbar_norm, cmap=resolve_colormap(cbar_cfg["cmap"])
         )
+        mappable.set_array([])
+        return self.create_color_bar(self.ax, mappable, self._style_cbar_kw(cbar_norm))
 
     def apply_colormap(self, cmap: Colormap | str) -> np.ndarray:
         """Apply a matplotlib colormap to an array.
@@ -2943,6 +3022,13 @@ class ArrayGlyph(GeoMixin, Glyph):
         `True`) draws a real colorbar over a preset's swatch, while a spec
         carrying only colours/box styles the swatch in place.
 
+        It also records `_render_explicit_options`: the constructor's explicit
+        keys plus this call's, which `Glyph._apply_axis_style` honours in place
+        of `_explicit_options` and `Glyph._draws_own_colorbar` reads to tell an
+        asked-for colorbar from the default one. Rebuilt per call rather than
+        accumulated, and kept separate from `_explicit_options`, for the reasons
+        set out at the assignment.
+
         Args:
             colorbar: The `colorbar=` argument (`bool`, `ColorBar`, or `None`).
             kwargs: The remaining `plot` / `animate` keyword arguments.
@@ -2961,6 +3047,23 @@ class ArrayGlyph(GeoMixin, Glyph):
                 )
             else:
                 self.default_options[key] = val
+        # A key passed here is as explicit as one passed to the constructor:
+        # `_apply_axis_style` only applies options the caller actually asked for,
+        # so without this `plot(xlabel=...)` would be accepted and dropped while
+        # `ArrayGlyph(xlabel=...)` worked. Recorded only once every key has
+        # validated, so a call that raises part-way leaves nothing behind for the
+        # next one to pick up.
+        #
+        # Deliberately a separate set from `_explicit_options`, and rebuilt
+        # rather than accumulated: `create_figure_axes` reads `_explicit_options`
+        # to decide whether to override `figsize` with an auto-computed one, so
+        # folding render kwargs into it would quietly change what
+        # `plot(figsize=...)` does; and a set that only grew would keep
+        # re-applying an option on later calls that did not pass it, overwriting
+        # whatever the caller had since set on the axes themselves.
+        self._render_explicit_options = getattr(self, "_explicit_options", set()) | set(
+            kwargs
+        )
         resolved_colorbar = _resolve_colorbar(colorbar)
         self.default_options.update(resolved_colorbar)
         for key in _STYLE_OVERRIDE_KEYS:
@@ -3025,8 +3128,13 @@ class ArrayGlyph(GeoMixin, Glyph):
         )
         if norm is None:
             im = ax.pcolormesh(
-                x_edges, y_edges, masked, cmap=cmap,
-                vmin=ticks[0], vmax=ticks[-1], shading="flat",
+                x_edges,
+                y_edges,
+                masked,
+                cmap=cmap,
+                vmin=ticks[0],
+                vmax=ticks[-1],
+                shading="flat",
             )
         else:
             im = ax.pcolormesh(
@@ -3047,6 +3155,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         full_bleed: bool | str = False,
         basemap: bool | dict | Basemap | Callable[[Any], None] | None = None,
         colorbar: bool | ColorBar | None = None,
+        compose: bool = False,
         **kwargs: Unpack[PlotKwargs],
     ) -> tuple[Figure, Axes]:
         """Plot the array with customizable visualization options.
@@ -3145,13 +3254,28 @@ class ArrayGlyph(GeoMixin, Glyph):
                 projected axis, set `self.crs` first so the relief is warped to
                 match the data. Drawing the relief needs the `[tiles]` extra
                 (Pillow, and pyproj for a non-4326 `crs`).
+            compose: Draw *over* whatever is already on `ax` instead of
+                replacing it, leaving another glyph's layers, colorbar and ticks
+                intact, along with the host's title unless this glyph carries
+                one of its own -- and, on a `style=` preset, the host's canvas
+                colour and projection frame too. Off by default, where a render
+                replaces every glyph's artists on the axes (see issue #210).
+                Turn it on to lay one field over another. An overlay also draws
+                **no colorbar of its own** by default: `fig.colorbar()` takes
+                its space from the host axes, so a stack of overlays would
+                re-lay-out the host once per layer. Pass `colorbar=` or
+                `add_colorbar=True` (at construction or on the call) to get one
+                anyway.
             colorbar: Colorbar presence and placement. `None` (default) keeps
                 matplotlib's placement (honouring the legacy `add_colorbar`);
-                `False` draws no colorbar; `True` a default one. Pass a
-                `ColorBar` for control -- an edge (`location`), an `inside`
-                inset that tracks `full_bleed`, a backing `box` (defaulted on
-                for an inset), and text colours (`label_color` for the title,
-                `tick_color` for the tick numbers). Same flag as `animate(colorbar=)`.
+                `False` draws no colorbar; `True` a default one. Under
+                `compose=True`, passing anything but `None` here also counts as
+                asking for the overlay's own colorbar, which is otherwise off.
+                Pass a `ColorBar` for control -- an edge (`location`), an
+                `inside` inset that tracks `full_bleed`, a backing `box`
+                (defaulted on for an inset), and text colours (`label_color` for
+                the title, `tick_color` for the tick numbers). Same flag as
+                `animate(colorbar=)`.
                 On a `style=` preset, a placement `ColorBar` (or `True`) overrides
                 the swatch with a real colorbar; a colours-only `ColorBar` styles
                 the swatch in place (defaults < preset < explicit).
@@ -3178,11 +3302,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                 Color bar options:
                     add_colorbar : bool, optional
                         Whether to draw the glyph's own color bar, by
-                        default True. Set to False for shared-axes
-                        composition, where the host owns a single
-                        aggregated color bar; then `self.cbar` stays
-                        None and no axes space is taken by a color bar.
-                        The mappable is still reachable via `self.im`.
+                        default True -- except under `compose=True`, which
+                        defaults it off so an overlay does not take space
+                        from the host axes; passing it there (`True` or
+                        `False`) still decides the matter. With it off
+                        `self.cbar` stays None, no axes space is taken by a
+                        color bar, and the mappable is still reachable via
+                        `self.im`.
                         Note: for a constant-value field rendered as line
                         `contour` there are no contour lines to map, so the
                         color bar is skipped (with a warning) even when
@@ -3674,17 +3800,19 @@ class ArrayGlyph(GeoMixin, Glyph):
                         "'points' and 'display_cell_value' are ignored with 'style'.",
                         stacklevel=2,
                     )
-                self._plot_with_style(style)
+                self._plot_with_style(style, compose=compose)
                 if basemap is not None:
                     self._draw_basemap(basemap)
                 if full_bleed:
-                    self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
+                    self._apply_full_bleed(
+                        facecolor=full_bleed if isinstance(full_bleed, str) else None
+                    )
                 elif getattr(self, "_auto_figure", False):
                     self._tighten_figure()
                 return self.fig, self.ax
 
         if self.rgb:
-            _clear_prior_render_artists(ax)
+            _clear_prior_render_artists(ax, self, compose=compose)
             extent = tuple(self.extent) if self.extent is not None else None
             self.im = ax.imshow(arr, extent=extent)
             self.cbar = None
@@ -3708,7 +3836,10 @@ class ArrayGlyph(GeoMixin, Glyph):
                 )
                 self._vmin = vmin_final
                 self._vmax = vmax_final
-                if "ticks_spacing" not in kwargs and "ticks_spacing" not in resolved_colorbar:
+                if (
+                    "ticks_spacing" not in kwargs
+                    and "ticks_spacing" not in resolved_colorbar
+                ):
                     self.ticks_spacing = (vmax_final - vmin_final) / 10 or 1.0
                     self.default_options["ticks_spacing"] = self.ticks_spacing
 
@@ -3725,8 +3856,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 self.vmin,
                 vmin_pinned=self._vmin_explicit,
                 ticks_spacing_pinned=(
-                    "ticks_spacing" in kwargs
-                    or "ticks_spacing" in resolved_colorbar
+                    "ticks_spacing" in kwargs or "ticks_spacing" in resolved_colorbar
                 ),
             )
             self.default_options["vmax"] = self.vmax
@@ -3744,8 +3874,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                     "the glyph with coords=(lon, lat)); an extent-only or "
                     "2-D-coordinate array cannot be reprojected."
                 )
-            _clear_prior_render_artists(ax)
-            self._sync_projection_frame(projection_draws_frame(projection))
+            _clear_prior_render_artists(ax, self, compose=compose)
+            if not compose:
+                self._sync_projection_frame(projection_draws_frame(projection))
             if projection:
                 if points is not None or self.default_options.get("display_cell_value"):
                     warnings.warn(
@@ -3773,7 +3904,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             degenerate_contour = (
                 effective_kind == "contour" and self._vmax == self._vmin
             )
-            if self.default_options["add_colorbar"]:
+            if self._draws_own_colorbar(compose, colorbar):
                 if degenerate_contour:
                     warnings.warn(
                         "Constant-value field has no contour lines; skipping "
@@ -3783,15 +3914,31 @@ class ArrayGlyph(GeoMixin, Glyph):
                 else:
                     self.cbar = self.create_color_bar(ax, im, cbar_kw)
 
-        ax.set_title(
-            self.default_options["title"], fontsize=self.default_options["title_size"]
-        )
-
-        if self.extent is None and effective_kind == "imshow":
+        # A composed overlay must not retitle the host. This glyph's title is
+        # empty unless it was given one, and setting that over the host's would
+        # blank a caption the host put there.
+        if not compose or self.default_options["title"]:
+            ax.set_title(
+                self.default_options["title"],
+                fontsize=self.default_options["title_size"],
+                pad=_multiline_title_pad(
+                    ax,
+                    self.default_options["title"],
+                    self.default_options["title_size"],
+                ),
+            )
+        # Row/column indices are meaningless axis labels, so a pixel-space
+        # render hides them -- but only on an axes it owns. Composed onto a
+        # host, stripping the host's ticks is not this overlay's call. Runs
+        # before the axis styling so a caller's `xtick_font_size` is not applied
+        # to ticks that are about to be deleted.
+        if not compose and self.extent is None and effective_kind == "imshow":
             ax.set_xticklabels([])
             ax.set_yticklabels([])
             ax.set_xticks([])
             ax.set_yticks([])
+
+        self._apply_axis_style(ax)
 
         supports_overlay = effective_kind in ("imshow", "pcolormesh")
         optional_display: dict[str, Any] = {}
@@ -3808,6 +3955,7 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         _mark_render_artists(
             ax,
+            self,
             self.cbar,
             self.im,
             optional_display.get("points_scatter"),
@@ -3817,7 +3965,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         if basemap is not None:
             self._draw_basemap(basemap)
         if full_bleed:
-            self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
+            self._apply_full_bleed(
+                facecolor=full_bleed if isinstance(full_bleed, str) else None
+            )
         elif getattr(self, "_auto_figure", False):
             self._tighten_figure()
         return fig, ax
@@ -4209,6 +4359,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         full_bleed: bool | str = False,
         basemap: bool | dict | Basemap | Callable[[Any], None] | None = None,
         colorbar: bool | ColorBar | None = None,
+        compose: bool = False,
         **kwargs: Unpack[AnimateKwargs],
     ) -> FuncAnimation:
         """Create an animation from a single-band or true-colour stack.
@@ -4322,6 +4473,14 @@ class ArrayGlyph(GeoMixin, Glyph):
                 On a `style=` preset, a placement `ColorBar` (or `True`) overrides
                 the swatch with a real colorbar; a colours-only `ColorBar` styles
                 the swatch in place (defaults < preset < explicit).
+            compose: Draw *over* whatever is already on `ax` instead of
+                replacing it, leaving another glyph's layers, colorbar, title
+                and ticks intact. Off by default, where a render replaces every
+                glyph's artists on the axes (see issue #210). Same flag as
+                `plot(compose=)`, including the colorbar default: a composed
+                animation draws none of its own unless the caller asks with
+                `colorbar=` or `add_colorbar=True`, so the host keeps the
+                geometry it had.
             **kwargs: Additional keyword arguments for customizing the animation.
 
                 Plot appearance:
@@ -4345,11 +4504,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                 Color bar options:
                     add_colorbar : bool, optional
                         Whether to draw the glyph's own color bar, by
-                        default True. Set to False for shared-axes
-                        composition, where the host owns a single
-                        aggregated color bar; then `self.cbar` stays
-                        None and no axes space is taken by a color bar.
-                        The mappable is still reachable via `self.im`.
+                        default True -- except under `compose=True`, which
+                        defaults it off so the animation does not take space
+                        from the host axes; passing it there (`True` or
+                        `False`) still decides the matter. With it off
+                        `self.cbar` stays None, no axes space is taken by a
+                        color bar, and the mappable is still reachable via
+                        `self.im`.
                     cbar_orientation : str, optional
                         Prefer `colorbar=ColorBar(orientation=...)`.
                         Orientation of the color bar, by default 'vertical'.
@@ -4632,19 +4793,19 @@ class ArrayGlyph(GeoMixin, Glyph):
         style_categorical = False
 
         if rgb_frames:
-            _clear_prior_render_artists(ax)
+            _clear_prior_render_artists(ax, self, compose=compose)
             im = ax.imshow(frame_0, extent=self.extent)
             self.im = im
             self.cbar = None
         else:
             ticks = self.get_ticks()
             self._create_norm_and_cbar_kw(ticks)
-            _clear_prior_render_artists(ax)
+            _clear_prior_render_artists(ax, self, compose=compose)
             im, cbar_kw = self._plot_im_get_cbar_kw(ax, frame_0, ticks)
             self.im = im
 
             self.cbar = None
-            if self.default_options["add_colorbar"]:
+            if self._draws_own_colorbar(compose, colorbar):
                 self.cbar = self.create_color_bar(ax, im, cbar_kw)
 
             frame_0_scalar = np.asarray(
@@ -4694,7 +4855,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                     im.set_data(frame_0_scalar)
                     im.set_cmap(cat_cmap)
                     im.set_norm(cat_norm)
-                    if self.default_options["add_colorbar"]:
+                    if self._draws_own_colorbar(compose, colorbar):
                         disjoint_legend(
                             ax,
                             cat_colors,
@@ -4728,7 +4889,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                         self.cbar = self.create_color_bar(
                             ax, mappable, self._style_cbar_kw(style_norm)
                         )
-                    elif self.default_options["add_colorbar"]:
+                    elif self._draws_own_colorbar(compose, colorbar):
                         insets = list(ax.child_axes)
                         for _inset in insets:
                             _inset.remove()
@@ -4744,9 +4905,13 @@ class ArrayGlyph(GeoMixin, Glyph):
                             vmax_prefix=vmax_prefix,
                             bounds=(0.02, 0.92, 0.32, 0.06),
                             text_color=self.default_options.get("cbar_label_color")
-                            or _swatch_text_default(self.default_options.get("cbar_box")),
+                            or _swatch_text_default(
+                                self.default_options.get("cbar_box")
+                            ),
                             value_color=self.default_options.get("cbar_tick_color")
-                            or _swatch_text_default(self.default_options.get("cbar_box")),
+                            or _swatch_text_default(
+                                self.default_options.get("cbar_box")
+                            ),
                             box=self.default_options.get("cbar_box"),
                         )
                     alpha_vmin = cfg.get("alpha_vmin")
@@ -4764,14 +4929,31 @@ class ArrayGlyph(GeoMixin, Glyph):
                         cfg.get("alpha"),
                     )
 
-        ax.set_title(
-            self.default_options["title"], fontsize=self.default_options["title_size"]
-        )
-        ax.set_xticklabels([])
-        ax.set_yticklabels([])
+        # A composed animation adds a layer to someone else's axes: retitling it
+        # or stripping its ticks is the host's business, not ours.
+        if not compose or self.default_options["title"]:
+            ax.set_title(
+                self.default_options["title"],
+                fontsize=self.default_options["title_size"],
+                pad=_multiline_title_pad(
+                    ax,
+                    self.default_options["title"],
+                    self.default_options["title_size"],
+                ),
+            )
+        # Row/column indices are meaningless axis labels, so a pixel-space
+        # animation hides them -- the same rule `plot` applies. An animation
+        # given an `extent` has real coordinates to show, and until now had them
+        # blanked anyway, which quietly made `xtick_font_size` and
+        # `ytick_font_size` inert on this path.
+        if not compose and self.extent is None:
+            ax.set_xticklabels([])
+            ax.set_yticklabels([])
 
-        ax.set_xticks([])
-        ax.set_yticks([])
+            ax.set_xticks([])
+            ax.set_yticks([])
+
+        self._apply_axis_style(ax)
 
         cell_text_value: list = []
         if show_cell_value:
@@ -4928,7 +5110,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         if basemap is not None:
             self._draw_basemap(basemap)
         if full_bleed:
-            self._apply_full_bleed(facecolor=full_bleed if isinstance(full_bleed, str) else None)
+            self._apply_full_bleed(
+                facecolor=full_bleed if isinstance(full_bleed, str) else None
+            )
         else:
             plt.tight_layout()
             if getattr(self, "_auto_figure", False):
@@ -4944,6 +5128,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         self._anim = anim
         _mark_render_artists(
             ax,
+            self,
             self.cbar,
             self.im,
             self._day_text,
@@ -4952,4 +5137,3 @@ class ArrayGlyph(GeoMixin, Glyph):
             *cell_text_value,
         )
         return anim
-
