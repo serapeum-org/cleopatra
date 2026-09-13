@@ -8336,6 +8336,27 @@ class TestFacetSuppliedAxes:
         mock_tight_layout.assert_not_called()
         plt.close("all")
 
+    def test_host_path_failure_removes_created_axes(self):
+        """A failed render on a Figure host removes the subplots cleopatra added."""
+        stack = self._stack(n=3)
+        fig = plt.figure()
+        bad = DataStyle(style="not_a_style")
+        with pytest.raises(ValueError):
+            ArrayGlyph(stack).facet(col="t", axes=fig, data_style=bad)
+        assert fig.axes == []  # cleopatra's partial subplots cleaned up
+        assert plt.fignum_exists(fig.number)  # the caller's figure is kept
+        plt.close("all")
+
+    def test_pre_existing_axes_kept_on_failure(self):
+        """A failed render leaves caller-supplied pre-existing axes in place."""
+        stack = self._stack(n=3)
+        fig, axs = plt.subplots(1, 3, squeeze=False)
+        bad = DataStyle(style="not_a_style")
+        with pytest.raises(ValueError):
+            ArrayGlyph(stack).facet(col="t", axes=axs, data_style=bad)
+        assert list(fig.axes) == list(axs.ravel())  # caller's axes untouched
+        plt.close("all")
+
     def test_self_built_path_still_owns_and_lays_out(self):
         """With `axes=None` cleopatra still builds, lays out, and owns the figure."""
         stack = self._stack(n=3)

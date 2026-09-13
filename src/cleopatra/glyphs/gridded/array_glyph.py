@@ -4062,7 +4062,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         ncols: int,
         figure_size: tuple[float, float] | None,
         axes: Any,
-    ) -> tuple[Figure, np.ndarray, list[Axes], bool]:
+    ) -> tuple[Figure, np.ndarray, list[Axes], bool, bool]:
         """Resolve the figure and axes grid `facet` draws into.
 
         With `axes=None` a fresh figure is created and cleopatra owns it (it may
@@ -4071,6 +4071,11 @@ class ArrayGlyph(GeoMixin, Glyph):
         does not own it -- `facet` must not `tight_layout` or close it. The
         returned axes grid is always shape `(nrows, ncols)`, so `FacetGrid.axes`
         keeps its documented shape on every path.
+
+        `created_axes` distinguishes the two non-owning paths: when cleopatra
+        created the axes on a caller's host (`Figure` / `SubFigure` / grid spec)
+        it can remove them again on failure, but when the caller supplied
+        pre-existing axes it must leave them alone.
 
         Args:
             nrows: Number of grid rows.
@@ -4082,10 +4087,12 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `SubplotSpec` region to subdivide.
 
         Returns:
-            tuple: `(fig, axes_grid, flat_axes, owns_figure)` -- the root figure,
-            the `(nrows, ncols)` axes array for the `FacetGrid`, its row-major
-            flattening the panel loop indexes, and whether cleopatra owns the
-            figure.
+            tuple: `(fig, axes_grid, flat_axes, owns_figure, created_axes)` --
+            the root figure, the `(nrows, ncols)` axes array for the
+            `FacetGrid`, its row-major flattening the panel loop indexes,
+            whether cleopatra owns the figure, and whether cleopatra created the
+            axes (so a failure can undo them on a host but not on caller-owned
+            pre-existing axes).
 
         Raises:
             ValueError: If `axes=` and `figure_size=` are both given, if a host
@@ -4099,7 +4106,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             fig, grid = plt.subplots(
                 nrows=nrows, ncols=ncols, figsize=figure_size, squeeze=False
             )
-            return fig, grid, list(grid.ravel()), True
+            return fig, grid, list(grid.ravel()), True, True
 
         if figure_size is not None:
             raise ValueError(
@@ -4110,7 +4117,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         if isinstance(axes, (Figure, SubFigure)):
             grid = axes.subplots(nrows=nrows, ncols=ncols, squeeze=False)
             flat = list(grid.ravel())
-            return _root_figure(flat[0]), grid, flat, False
+            return _root_figure(flat[0]), grid, flat, False, True
 
         if isinstance(axes, SubplotSpec):
             host = axes.get_gridspec().figure
@@ -4124,7 +4131,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             for r in range(nrows):
                 for c in range(ncols):
                     grid[r, c] = host.add_subplot(inner[r, c])
-            return _root_figure(grid[0, 0]), grid, list(grid.ravel()), False
+            return _root_figure(grid[0, 0]), grid, list(grid.ravel()), False, True
 
         if isinstance(axes, GridSpec):
             host = axes.figure
@@ -4142,7 +4149,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             for r in range(nrows):
                 for c in range(ncols):
                     grid[r, c] = host.add_subplot(axes[r, c])
-            return _root_figure(grid[0, 0]), grid, list(grid.ravel()), False
+            return _root_figure(grid[0, 0]), grid, list(grid.ravel()), False, True
 
         flat = _flatten_axes(axes)
         if not flat:
@@ -4172,7 +4179,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             )
         grid = _axes_grid_2d(axes, flat, nrows, ncols)
         flat_axes = list(grid.ravel())
-        return _root_figure(flat_axes[0]), grid, flat_axes, False
+        return _root_figure(flat_axes[0]), grid, flat_axes, False, False
 
     def facet(
         self,
@@ -4469,7 +4476,7 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         col = cast(str, col)  # guaranteed non-None by the validation above
 
-        fig, axes_grid, flat_axes, owns_figure = self._facet_axes(
+        fig, axes_grid, flat_axes, owns_figure, created_axes = self._facet_axes(
             nrows, ncols, figure_size, axes
         )
 
@@ -4560,9 +4567,14 @@ class ArrayGlyph(GeoMixin, Glyph):
             if owns_figure:
                 fig.tight_layout()
         except Exception:
-            # Never close a figure the caller owns.
+            # Roll back what cleopatra created: close a figure it owns; on a
+            # caller's host, remove the subplots it added (but never touch
+            # pre-existing axes the caller supplied).
             if owns_figure:
                 plt.close(fig)
+            elif created_axes:
+                for panel_ax in flat_axes:
+                    panel_ax.remove()
             raise
         result = FacetGrid(fig=fig, axes=axes_grid, cbar=cbar, name_dicts=name_dicts)
         return result
