@@ -1,5 +1,231 @@
 # Changelog
 
+## 0.38.0 (2026-09-13)
+
+
+- feat!: add classified rasters and scale-bar / north-arrow furniture (#363)
+- - ArrayGlyph.plot / facet / animate accept classify=Classify(scheme=...,
+  k=...), binning the 2-D field into discrete colour classes with a
+  stepped colorbar (numpy-only, reusing the existing classification
+  engine); facet and animate resolve the classes once over the whole
+  stack so panels and frames share them.
+- New cleopatra.styling.furniture module adds add_scale_bar and
+  add_north_arrow -- frameless-inset artists modelled on stamp_mark,
+  with GeoMixin sugar. They own no geodesy: length is in axis data units
+  and rotation is caller-supplied.
+- Group the parameter-heavy signatures into typed specs: add_scale_bar
+  takes ScaleBar, add_north_arrow takes NorthArrow, and
+  ArrayGlyph.animate takes playback=Animation for its playback options.
+- Warn on conflicting combinations (a scheme with color_scale / levels,
+  a data_style preset, or an unfilled contour overlay) and roll a failed
+  classified render back so no half-applied option sticks.
+- Update the reference docs, migration guide, and the animation notebooks
+  for the new signatures.
+- BREAKING CHANGE: add_scale_bar and add_north_arrow now take a ScaleBar /
+NorthArrow spec instead of loose presentation keywords, and
+ArrayGlyph.animate takes playback=Animation(...) instead of the loose
+interval / frame_label / cell_value_text_colors / data_getter keywords.
+- Closes #351, #352
+- feat(styling): add a hatch encoding to Contour and a hatch legend (#362)
+- Contour gains hatches / fill / hatch_color, applied on the contourf                                               
+  render path. fill=False draws the bands unfilled so only the hatch                                                
+  marks show -- the significance/uncertainty overlay form -- and                                                    
+  hatch_color recolours just the hatch strokes via                                                                  
+  QuadContourSet.set_hatchcolor (matplotlib >= 3.11), leaving band                                                  
+  edges untouched.                                                                                                  
+                                                                                                                    
+  - add hatch_legend(): a Patch-proxy legend keyed by pattern rather                                                
+    than colour, the counterpart to disjoint_legend                                                                 
+  - hatch fields are contourf-only: they warn and are ignored on other                                              
+    kinds and in animate; loose hatches=/fill=/hatch_color= are rejected                                            
+    with a contour=Contour(...) hint                                                                                
+  - warn on degenerate combinations: fill=False or hatch_color with no                                              
+    hatches, and a colorbar explicitly requested on an unfilled overlay                                             
+  - raise the matplotlib floor to >=3.11 (required by set_hatchcolor)                                               
+                                                                                                                    
+  Closes #354
+- feat(glyphs): add HexbinGlyph for hexagonally-binned point density (#361)
+- Add `cleopatra.glyphs.stats.hexbin_glyph.HexbinGlyph`, the discrete
+counterpart of `KDEGlyph`: it bins an (x, y) point cloud onto a hexagonal
+lattice via `Axes.hexbin` and colours each cell by a per-bin aggregate --
+a count by default, or the `reduce` (mean/sum/min/max/std or a callable)
+of a per-point `values` array. The aggregate routes through the shared
+`Glyph._prepare_scalar_mapping` pipeline, so vmin/vmax, color_scale,
+levels, the ColorBar spec and `classify=Classify(...)` behave as for the
+other colour-mapped glyphs; a categorical scheme is rejected since a
+per-bin aggregate is continuous.
+- - Constructor `x, y, values=None` with keyword-only `ax`/`fig`/`**kwargs`
+  and shape validation, mirroring ScatterGlyph/KDEGlyph.
+- `evaluate()` returns bin centres and the aggregate without rendering
+  (on a throwaway figure, leaking no global state) and matches the drawn
+  PolyCollection.
+- Options: `gridsize` (int or pair), `reduce`, `min_count`, `extent`,
+  `edge_color`, `line_width`; geometry- and CRS-agnostic.
+- Raise a clear error when the binning leaves no cells to draw (an
+  `extent` excluding the data or a `min_count` above the densest cell).
+- Document the counts-vs-`reduce` empty-bin behaviour and the log-scale
+  footgun.
+- Tests in tests/test_hexbin_glyph.py (100% line + branch coverage);
+  HexbinGlyph folded into the shared scheme-scope and colorbar cross-glyph
+  suites; reference page, mkdocs nav, README/index catalog, architecture
+  diagram, and GeoMixin list updated.
+- Closes #353
+- feat(basemap): serve WMS and WMTS basemaps through the tile fetch-and-stitch path (#360)
+- `basemap.tiles` could only talk to an XYZ slippy-tile template, so a service
+published as OGC WMS or WMTS -- which is how most national and institutional
+imagery is served -- could not be drawn at all.
+- Almost nothing in the pipeline needed changing. `tiles` reaches a provider
+through exactly one call, `build_url(x=, y=, z=)` returning an http(s) URL;
+everything after it is service-agnostic, since the fetch returns opaque bytes
+and the mosaic is stitched from `dict[Tile, bytes]`. The gap was entirely in
+URL construction.
+- - add `WMTSProvider` and `WMSProvider` in `basemap/ogc.py`: frozen dataclasses
+  satisfying that one method, so `add_tiles(ax, WMSProvider(...))` works
+  through the unchanged public entry point
+- map WMTS directly, since its `(TileMatrix, TileRow, TileCol)` triple is
+  `(z, y, x)` on the GoogleMapsCompatible grid; support both the KVP and the
+  RESTful-template encodings, the latter substituted in one pass with
+  percent-encoded values and case-insensitive placeholder names
+- fit WMS by requesting one `GetMap` per tile, converting the tile to its Web
+  Mercator bounds with `_tile_xy_bounds`. Pinning every request to EPSG:3857
+  sidesteps the 1.3.0 axis-order trap: it is EPSG:4326 that flips to
+  latitude-first, and that is never asked for
+- render BBOX coordinates through `Decimal`, which is exponent-free and
+  lossless; tiles adjacent to the projection origin have bounds around 1e-10,
+  and plain formatting sent those in scientific notation
+- validate the service description at construction rather than per tile, so a
+  bad endpoint, an unknown version or a template that cannot address a tile
+  names the field it came from instead of arriving as an unreadable tile
+- carry credentials in `extra_params`, which also closes the keyed-provider gap
+  that existed for XYZ, and keep them out of the provider's `repr()` and out of
+  the tile fetcher's debug log
+-  `fetch_single_tile` now logs a redacted URL on a failed attempt, masking                                          
+  credential-shaped query values and userinfo while keeping the OGC and XYZ                                         
+  parameter names that say which tile failed. This changes the DEBUG log line for                                   
+  existing XYZ callers; nothing else in the render path moved.                                                      
+                                                                                                                    
+  No new runtime dependency -- `urllib.parse.urlencode` and `decimal.Decimal` are                                   
+  stdlib -- and importing the module touches neither `xyzservices` nor `pyproj`.                                    
+  Only the GoogleMapsCompatible tile-matrix set is supported, and `world_texture`                                   
+  stays XYZ-only; both limits are stated in the docstrings and on the new                                           
+  `docs/reference/ogc.md` page.                                                                                     
+                                                                                                                    
+  Closes #355
+- feat(basemap): add day/night terminator and Tissot artists for 2-D axes (#358)
+- Add cleopatra.basemap.solar: a CRS-free, matplotlib-only layer that                                               
+  draws a day/night terminator and a Tissot indicatrix on a plain lon/lat                                           
+  axes, the flat-map counterpart to TexturedGlobeGlyph's 3-D lighting.                                              
+                                                                                                                    
+  - subsolar_point / terminator / night_polygon: NOAA/Meeus solar position,                                         
+    the terminator small circle, and the filled night region as lon/lat                                             
+    rings — split at the antimeridian (or closed along the dark pole) so a                                          
+    flat map is never smeared with a whole-world band                                                               
+  - tissot_circles: geodesic circles of a fixed ground radius, in lon/lat                                           
+  - add_nightshade / add_tissot: draw the geometry as a PolyCollection in                                           
+    data coordinates, preserving axis limits; map via a transform callable                                          
+    or the optional pyproj crs= shortcut (mutually exclusive), dropping                                             
+    non-finite vertices a non-global projection produces                                                            
+  - share the small-circle geometry between terminator and tissot_circles                                           
+  - docs/reference/solar.md with a runnable example and autodoc, wired                                              
+    into the nav and index and cross-linked from the globe glyph page                                               
+  - tests/test_solar.py: 100% line and branch coverage, plus doctests                                               
+                                                                                                                    
+  No new required dependency; pyproj stays behind the [tiles] extra.                                                
+                                                                                                                    
+  Closes #356
+- feat(glyphs)!: let ArrayGlyph.facet draw into caller-supplied axes via FacetLayout (#359)
+- Add an `axes=` target on `FacetLayout` so `facet` can render its panels
+into a caller's existing `Figure`/`SubFigure`, a `GridSpec`/`SubplotSpec`
+region, or a 2-D/flat/nested block of `Axes`, instead of always building
+its own figure via `plt.subplots`. This makes the shared stack-wide
+colour scale reachable for callers assembling their own layout.
+- - Group the layout parameters (col, row, col_wrap, labels, figure_size,
+  axes, extents) into a new frozen `FacetLayout` passed as facet's first
+  argument, leaving facet's signature focused on per-panel render options
+  (kind, colorbar, color, contour, cells, data_style, compose).
+- Preserve the shared vmin/vmax on every path, return the root `Figure`,
+  and keep `FacetGrid.axes` shaped `(nrows, ncols)` (a supplied block must
+  reproduce the grid, so col_wrap is honoured).
+- When axes are supplied, do not own the figure: skip tight_layout/close,
+  hide only the empty slots inside the block, and on a mid-render failure
+  remove only the subplots created on a host while leaving pre-existing
+  caller axes untouched.
+- Forward compose= to each panel's plot; reject a malformed axes= block
+  with a clear error instead of recursing.
+- BREAKING CHANGE: ArrayGlyph.facet no longer accepts col/row/col_wrap/labels/figure_size/axes/extents as loose keywords; pass a FacetLayout as the first argument, e.g. facet(FacetLayout(col="time", col_wrap=3), color=...).
+Closes #357
+- feat(styling): add an equalising colour scale + caller norm passthrough (#349)
+- Add ColorScaling.equalize(), a continuous rank-equalising scale backed                                            
+  by a matplotlib FuncNorm over the data's empirical CDF, so every                                                  
+  quantile of a skewed field gets an equal share of the colour ramp while                                           
+  the surface stays continuous (unlike the discrete boundary scale).                                                
+  Callers can also pass a pre-built matplotlib norm directly, so any norm                                           
+  is reachable without a dedicated scale variant.                                                                   
+                                                                                                                    
+  - new ColorScale.EQUALIZE and equalize(samples=512) factory; build_norm                                           
+    gains a values= argument (a CDF needs the data itself, not just the                                             
+    tick range), supplied lazily by a _scale_values() hook that ArrayGlyph                                          
+    overrides to expose its finite cells                                                                            
+  - equalize ranks within the resolved display window, so vmin/vmax and                                             
+    robust clip the field before ranking; the bar gets quantile-placed,                                             
+    plainly formatted ticks; and plateau / constant / all-non-finite                                                
+    fields are handled or raise a clear, actionable error                                                           
+  - plot(color=my_norm) and plot(norm=my_norm) accept a matplotlib                                                  
+    Normalize; applying a ColorScaling clears a sticky caller norm, a                                               
+    caller norm's ticks sit in its own space, and passing both a scale and                                          
+    a raw norm in one call warns (the norm wins)                                                                    
+  - honoured by the colormap glyphs (ArrayGlyph, MeshGlyph) that build                                              
+    a norm                                                                                                          
+                                                                                                                    
+  Closes #343
+- fix(glyphs): default mp4 export to full colour range (#348)
+- save_animation's FFmpeg export (mp4/mov/avi) inherited ffmpeg's                                                   
+  limited/broadcast colour range (16-235), which visibly washed out the                                             
+  full-range (0-255) figures matplotlib produces. Encode full colour                                                
+  range by default instead so exported video keeps the figure's contrast.                                           
+                                                                                                                    
+  - Use the full-range yuvj* pixel format (yuv420p -> yuvj420p); the range                                          
+    is carried by the format, so the RGB->YUV conversion maps to 0-255 on                                           
+    every ffmpeg build, including the static binary imageio-ffmpeg bundles                                          
+    (which honours a bare -color_range tag only as a label, not a remap)                                            
+  - Keep the escape hatch: a caller-supplied -color_range in extra_args                                             
+    leaves the pixel format as-is, so extra_args=["-color_range", "tv"]                                             
+    restores the old limited/broadcast-range output                                                                 
+  - Extract extra_args parsing into a helper to keep cognitive complexity                                           
+    within bounds                                                                                                   
+  - Add a real-encode regression that decodes the Y-plane with an identity                                          
+    range map to read the stored luma faithfully across ffmpeg builds                                               
+  - Document the new default and the opt-out in the animation reference                                             
+                                                                                                                    
+  This changes the encoded bytes/metadata of the default FFmpeg export                                              
+  (no Python API change); callers relying on limited range can opt out as                                           
+  above.                                                                                                            
+                                                                                                                    
+  Closes #344
+- feat(glyphs): apply the advertised axis options and allow composition (#350)
+- xlabel, ylabel, their font sizes, the tick label sizes and grid_alpha                                             
+  were advertised by the option validator on every glyph and applied by                                             
+  none of them. A shared helper now applies them, and only the ones the                                             
+  caller actually passed -- applying the declared defaults would have                                               
+  restyled every figure in the package.                                                                             
+-   - add compose= to ArrayGlyph.plot/animate and VectorGlyph.plot, so a                                              
+    glyph can draw over an existing axes instead of replacing it. Off by                                            
+    default, where a render still replaces every glyph's artists on the                                             
+    axes (issue #210); a composed render leaves the host's layers,                                                  
+    colorbar, title, ticks, canvas colour and projection frame alone and                                            
+    draws no colorbar of its own unless asked                                                                       
+  - track render-artist ownership per glyph, keyed by identity, with a                                              
+    finalizer that drops a collected glyph's entry so a later glyph                                                 
+    handed the same address is not mistaken for it                                                                  
+  - pad a multi-line title clear of top-spine tick labels: matplotlib                                               
+    raises the title but anchors its first line, so every later line                                                
+    hangs down into the labels                                                                                      
+  - add thin=n to VectorGlyph for quiver/barbs, which draw one arrow per                                            
+    grid point -- unreadable and slow on a real grid                                                                
+  - document compose= and thin= in docs/reference/render-options.md                                                 
+                                                                                                                    
+  Closes #347, #346, #345
+
 ## 0.37.0 (2026-09-07)
 
 
