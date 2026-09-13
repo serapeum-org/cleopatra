@@ -380,6 +380,28 @@ def _format_coordinate(value: float) -> str:
     return "0" if text in ("", "-", "-0") else text
 
 
+def _reduce_provider(provider: object) -> tuple:
+    """Rebuild instructions for `pickle` and `copy`.
+
+    `__post_init__` stores `extra_params` as a `MappingProxyType`, which cannot
+    be pickled -- so `pickle.dumps` and `copy.deepcopy` both raised, even though
+    the class documents itself as immutable and cache-friendly. Reconstructing
+    through the constructor with a plain dict avoids that, and has the side
+    benefit of re-running validation on the rebuilt copy.
+
+    Args:
+        provider: The dataclass instance to reduce.
+
+    Returns:
+        tuple: The `(callable, args)` pair `pickle` and `copy` use to rebuild.
+    """
+    values = []
+    for spec in fields(provider):
+        value = getattr(provider, spec.name)
+        values.append(dict(value) if isinstance(value, Mapping) else value)
+    return (type(provider), tuple(values))
+
+
 def _hash_provider(provider: object) -> int:
     """Hash a provider by its fields, flattening the mapping one holds.
 
@@ -391,6 +413,10 @@ def _hash_provider(provider: object) -> int:
     keeps the hash consistent with the generated `__eq__`, which compares those
     same fields by value. Every other field is a validated `str`, `bool` or
     `int`, so it is hashable as it stands.
+
+    The type itself is part of the key, not its name: two providers in
+    different modules could share a name, and `__eq__` already refuses to
+    compare across types.
 
     Args:
         provider: The dataclass instance to hash.
@@ -405,7 +431,7 @@ def _hash_provider(provider: object) -> int:
         values.append(
             tuple(sorted(value.items())) if isinstance(value, Mapping) else value
         )
-    return hash((type(provider).__name__, *values))
+    return hash((type(provider), *values))
 
 
 @dataclass(frozen=True)
@@ -576,6 +602,14 @@ class WMTSProvider:
                     f"the same URL, so the mosaic would repeat one image."
                 )
         object.__setattr__(self, "extra_params", _freeze_params(self.extra_params))
+
+    def __reduce__(self) -> tuple:
+        """Rebuild through the constructor; see `_reduce_provider`.
+
+        Returns:
+            tuple: The `(callable, args)` pair `pickle` and `copy` use.
+        """
+        return _reduce_provider(self)
 
     def __hash__(self) -> int:
         """Hash the service description, flattening `extra_params`.
@@ -897,6 +931,14 @@ class WMSProvider:
                 f"tile_size must be a positive int, got {self.tile_size!r}."
             )
         object.__setattr__(self, "extra_params", _freeze_params(self.extra_params))
+
+    def __reduce__(self) -> tuple:
+        """Rebuild through the constructor; see `_reduce_provider`.
+
+        Returns:
+            tuple: The `(callable, args)` pair `pickle` and `copy` use.
+        """
+        return _reduce_provider(self)
 
     def __hash__(self) -> int:
         """Hash the service description, flattening `extra_params`.

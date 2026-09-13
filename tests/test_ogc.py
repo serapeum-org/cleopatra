@@ -10,7 +10,9 @@ would never call the provider at all.
 from __future__ import annotations
 
 import base64
+import copy
 import dataclasses
+import pickle
 from dataclasses import replace
 from unittest.mock import MagicMock, patch
 from urllib.parse import parse_qs, urlsplit
@@ -1073,6 +1075,72 @@ class TestWMSProviderValidation:
         expected = f"{field_name} must be a non-empty string"
         with pytest.raises(ValueError, match=expected):
             WMSProvider(**kwargs)
+
+
+class TestProvidersSurviveSerialisation:
+    """A provider can be pickled and copied, as an immutable value should be."""
+
+    @pytest.mark.parametrize("kind", ["wmts", "wms"])
+    def test_pickle_round_trips(self, kind, wmts, wms):
+        """`pickle` rebuilds an equal provider.
+
+        Args:
+            kind: Which provider to check.
+            wmts: The WMTS fixture.
+            wms: The WMS fixture.
+
+        Test scenario:
+            `extra_params` is stored as a `MappingProxyType`, which pickle
+            cannot handle, so every provider raised -- while the class
+            documented itself as immutable and cache-friendly. Anything that
+            caches a render keyed on its provider would have hit this.
+        """
+        provider = wmts if kind == "wmts" else wms
+        assert pickle.loads(pickle.dumps(provider)) == provider, (
+            "the provider did not survive a pickle round trip"
+        )
+
+    def test_extra_params_survive_the_round_trip(self):
+        """The mapping comes back with its contents and its read-only view.
+
+        Test scenario:
+            Rebuilding through the constructor re-runs `__post_init__`, so the
+            copy must be as frozen as the original rather than holding a bare
+            dict.
+        """
+        provider = WMSProvider(
+            url="https://example.org/wms", layers="ortho", extra_params={"t": "1"}
+        )
+        rebuilt = pickle.loads(pickle.dumps(provider))
+        assert dict(rebuilt.extra_params) == {"t": "1"}, "extra_params lost"
+        with pytest.raises(TypeError, match="does not support item assignment"):
+            rebuilt.extra_params["t"] = "2"
+
+    @pytest.mark.parametrize("clone", [copy.copy, copy.deepcopy])
+    def test_copying_works(self, clone, wms):
+        """Both shallow and deep copies rebuild an equal provider.
+
+        Args:
+            clone: The copy function under test.
+            wms: The GetMap provider fixture.
+
+        Test scenario:
+            `deepcopy` failed for the same reason pickling did, which would
+            surprise anyone holding a provider inside a larger config object.
+        """
+        assert clone(wms) == wms, f"{clone.__name__} did not preserve the provider"
+
+    def test_two_types_with_the_same_fields_do_not_collide(self):
+        """The hash keys on the type itself, not its name.
+
+        Test scenario:
+            Keying on `type(...).__name__` would let two same-named classes
+            from different modules collide in a dict.
+        """
+        wmts = WMTSProvider(url="https://example.org/x", layer="L")
+        wms = WMSProvider(url="https://example.org/x", layers="L")
+        assert wmts != wms, "precondition: the two providers are not equal"
+        assert len({wmts, wms}) == 2, "two provider kinds collided in a set"
 
 
 class TestOptionalFieldsAreStillTyped:
