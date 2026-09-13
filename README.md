@@ -38,6 +38,7 @@ graph TD
         line_glyph["<b>line_glyph</b><br/>LineGlyph<br/>line / bar / band"]
         polygon_glyph["<b>polygon_glyph</b><br/>PolygonGlyph<br/>polygon collections"]
         kde_glyph["<b>kde_glyph</b><br/>KDEGlyph<br/>2D kernel density"]
+        hexbin_glyph["<b>hexbin_glyph</b><br/>HexbinGlyph<br/>hexagonal binning"]
     end
 
     subgraph standalone["Standalone"]
@@ -69,10 +70,11 @@ graph TD
   animation).
 - The user-facing visualizers all subclass `Glyph` and share its colour-mapping/colorbar pipeline — `array_glyph`
   (`ArrayGlyph`, `FacetGrid`), `mesh_glyph` (`MeshGlyph`), `scatter_glyph` (`ScatterGlyph`), `vector_glyph`
-  (`VectorGlyph`), `flow_glyph` (`FlowGlyph`), `line_glyph` (`LineGlyph`), `polygon_glyph` (`PolygonGlyph`), and
-  `kde_glyph` (`KDEGlyph`). `histogram_glyph` (`HistogramGlyph`) stands alone.
-- `geo` provides `GeoMixin`, mixed into the six geographic visualizers — `array_glyph`, `mesh_glyph`, `scatter_glyph`,
-  `vector_glyph`, `flow_glyph`, and `polygon_glyph` (not `line_glyph`, `kde_glyph`, or `histogram_glyph`) — adding a
+  (`VectorGlyph`), `flow_glyph` (`FlowGlyph`), `line_glyph` (`LineGlyph`), `polygon_glyph` (`PolygonGlyph`),
+  `kde_glyph` (`KDEGlyph`), and `hexbin_glyph` (`HexbinGlyph`). `histogram_glyph` (`HistogramGlyph`) stands alone.
+- `geo` provides `GeoMixin`, mixed into the seven geographic visualizers — `array_glyph`, `mesh_glyph`,
+  `scatter_glyph`, `vector_glyph`, `flow_glyph`, `polygon_glyph`, and `hexbin_glyph` (not `line_glyph`, `kde_glyph`,
+  or `histogram_glyph`) — adding a
   settable `crs` plus one-call basemap helpers on the glyph's own axes: `add_tiles`, `add_features`, `add_relief`,
   `add_reference_map`, and `add_labels`.
 - `tiles` and `reference` are the optional (`cleopatra[tiles]`) basemap data sources `geo` wraps — `tiles`
@@ -173,8 +175,13 @@ graph TD
   <img src="docs/images/kde_glyph/kde-lines.png" width="45%" alt="Line KDE contours" />
 </p>
 
+### HexbinGlyph -- Hexagonal Binning
+- Bin an `(x, y)` point cloud onto a hexagonal lattice and colour each cell by a per-bin count (or the `reduce` of a
+  per-point `values` array) -- the discrete counterpart of `KDEGlyph`.
+
 ### Geospatial basemaps -- GeoMixin
-- `ArrayGlyph`, `MeshGlyph`, `ScatterGlyph`, `VectorGlyph`, `FlowGlyph`, and `PolygonGlyph` mix in `GeoMixin`, adding a
+- `ArrayGlyph`, `MeshGlyph`, `ScatterGlyph`, `VectorGlyph`, `FlowGlyph`, `PolygonGlyph`, and `HexbinGlyph` mix in
+  `GeoMixin`, adding a
   settable `crs` plus one-call basemap helpers on `glyph.ax`: `add_tiles` (XYZ web-tile mosaics), `add_features` /
   `add_relief` (Natural Earth coastlines, borders, land, ocean, rivers, lakes, and a hypsometric relief backdrop), a
   one-call `add_reference_map` preset (`"light"`, `"dark"`, or `"auto"`), and `add_labels` for city/point labels.
