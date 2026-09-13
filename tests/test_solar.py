@@ -1,9 +1,8 @@
 """Tests for `cleopatra.basemap.solar`.
 
 Covers the CRS-free solar geometry (`subsolar_point`, `terminator`,
-`night_polygon`), the module constants, the antimeridian/pole helpers, and the
-`NotImplementedError` contracts of the still-scaffolded artist functions
-(`add_nightshade`, `tissot_circles`, `add_tissot`).
+`night_polygon`), the artists (`tissot_circles`, `add_nightshade`, `add_tissot`),
+the module constants, and the antimeridian/pole helpers.
 
 Astronomical expectations are checked against tolerances that comfortably exceed
 the low-precision NOAA/Meeus model's error budget: solar declination reaches the
@@ -14,8 +13,10 @@ region always covers ~half the sphere.
 
 from datetime import UTC, datetime, timedelta, timezone
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from matplotlib.collections import PolyCollection
 from matplotlib.path import Path as MplPath
 
 from cleopatra.basemap import solar
@@ -41,6 +42,13 @@ DEC_SOLSTICE = datetime(2026, 12, 21, 20, 50, tzinfo=UTC)
 
 # Obliquity of the ecliptic (max |declination|) in degrees.
 OBLIQUITY_DEG = 23.44
+
+
+@pytest.fixture(autouse=True)
+def _close_figures():
+    """Close all matplotlib figures after each test to bound memory."""
+    yield
+    plt.close("all")
 
 
 def _angular_distance_deg(lon0, lat0, lon, lat):
@@ -580,38 +588,235 @@ class TestNightPolygon:
             night_polygon(JUN_SOLSTICE, n=n)
 
 
-class TestUnimplementedArtists:
-    """Tests for the still-scaffolded artist functions."""
+class TestTissotCircles:
+    """Tests for tissot_circles."""
 
-    def test_add_nightshade_raises_not_implemented(self):
-        """Test add_nightshade raises NotImplementedError.
+    def test_one_ring_per_centre(self):
+        """Test one (n, 2) ring is returned per centre, in input order.
 
         Test scenario:
-            The stub must raise before touching the axes, naming itself.
+            Two centres with the default sample count give two 64-vertex rings.
         """
-        with pytest.raises(NotImplementedError, match="add_nightshade") as exc:
-            add_nightshade(None, JUN_SOLSTICE)
-        assert "356" in str(exc.value), (
-            f"message should reference the issue: {exc.value}"
+        rings = tissot_circles([0.0, 30.0], [0.0, 45.0], 5e5)
+        assert len(rings) == 2, f"expected 2 rings, got {len(rings)}"
+        for ring in rings:
+            assert ring.shape == (DEFAULT_TISSOT_SAMPLES, 2), f"bad shape {ring.shape}"
+
+    def test_ground_radius_sets_angular_radius(self):
+        """Test the ground radius maps to the expected angular radius.
+
+        Test scenario:
+            A 500 km circle at the equator origin reaches ~4.5 deg north and
+            south (radius_m / MEAN_EARTH_RADIUS_M, in degrees).
+        """
+        ring = tissot_circles([0.0], [0.0], 5e5, n=361)[0]
+        expected = np.degrees(5e5 / MEAN_EARTH_RADIUS_M)
+        assert ring[:, 1].max() == pytest.approx(expected, abs=0.05), (
+            "north extent wrong"
+        )
+        assert ring[:, 1].min() == pytest.approx(-expected, abs=0.05), (
+            "south extent wrong"
         )
 
-    def test_tissot_circles_raises_not_implemented(self):
-        """Test tissot_circles raises NotImplementedError.
+    @pytest.mark.parametrize("n", [8, 32, 128])
+    def test_sample_count_honoured(self, n):
+        """Test the vertex count matches n.
+
+        Args:
+            n: Requested vertices per circle.
 
         Test scenario:
-            The stub must raise, naming itself.
+            The single returned ring has exactly n rows.
         """
-        with pytest.raises(NotImplementedError, match="tissot_circles"):
-            tissot_circles([0.0], [0.0], 5e5)
+        ring = tissot_circles([10.0], [20.0], 3e5, n=n)[0]
+        assert ring.shape == (n, 2), f"expected ({n}, 2), got {ring.shape}"
 
-    def test_add_tissot_raises_not_implemented(self):
-        """Test add_tissot raises NotImplementedError.
+    def test_mismatched_lengths_raise(self):
+        """Test unequal lons/lats lengths raise ValueError.
 
         Test scenario:
-            The stub must raise before touching the axes, naming itself.
+            Two longitudes but one latitude is a caller error.
         """
-        with pytest.raises(NotImplementedError, match="add_tissot"):
-            add_tissot(None, [])
+        with pytest.raises(ValueError, match="same shape"):
+            tissot_circles([0.0, 10.0], [0.0], 5e5)
+
+    @pytest.mark.parametrize("radius_m", [0.0, -1.0, 1e9])
+    def test_invalid_radius_raises(self, radius_m):
+        """Test non-positive or super-antipodal radii raise ValueError.
+
+        Args:
+            radius_m: An out-of-domain ground radius in metres.
+
+        Test scenario:
+            radius_m must be positive and below the antipode (pi * R).
+        """
+        with pytest.raises(ValueError, match="radius_m"):
+            tissot_circles([0.0], [0.0], radius_m)
+
+    def test_too_few_samples_raise(self):
+        """Test n < 4 raises ValueError.
+
+        Test scenario:
+            A ring needs at least 4 samples.
+        """
+        with pytest.raises(ValueError, match="at least 4"):
+            tissot_circles([0.0], [0.0], 5e5, n=3)
+
+
+class TestAddNightshade:
+    """Tests for add_nightshade."""
+
+    def test_returns_artist_added_to_axes(self):
+        """Test a PolyCollection is returned and registered on the axes.
+
+        Test scenario:
+            The night-shade artist is a PolyCollection on the axes with at least
+            one polygon.
+        """
+        _, ax = plt.subplots()
+        ax.set_xlim(-180, 180)
+        ax.set_ylim(-90, 90)
+        art = add_nightshade(ax, JUN_SOLSTICE)
+        assert isinstance(art, PolyCollection), f"not a PolyCollection: {type(art)}"
+        assert art in ax.collections, "artist not added to the axes"
+        assert len(art.get_paths()) >= 1, "no polygons drawn"
+
+    def test_preserves_axis_limits(self):
+        """Test the artist does not disturb existing axis limits.
+
+        Test scenario:
+            Limits set before the call are unchanged after it.
+        """
+        _, ax = plt.subplots()
+        ax.set_xlim(-20, 40)
+        ax.set_ylim(0, 60)
+        add_nightshade(ax, MAR_EQUINOX)
+        assert ax.get_xlim() == (-20.0, 40.0), f"xlim changed: {ax.get_xlim()}"
+        assert ax.get_ylim() == (0.0, 60.0), f"ylim changed: {ax.get_ylim()}"
+
+    def test_transform_is_applied(self):
+        """Test a transform callable maps the rings into axes coordinates.
+
+        Test scenario:
+            A transform shifting every vertex by +1000 pushes all drawn vertices
+            far outside the lon/lat range.
+        """
+        _, ax = plt.subplots()
+        art = add_nightshade(ax, JUN_SOLSTICE, transform=lambda a: a + 1000.0)
+        verts = np.vstack([p.vertices for p in art.get_paths()])
+        assert verts.min() > 800.0, f"transform not applied: min {verts.min()}"
+
+    def test_transform_and_crs_are_mutually_exclusive(self):
+        """Test passing both transform and crs raises ValueError.
+
+        Test scenario:
+            The two coordinate-mapping paths cannot be combined.
+        """
+        _, ax = plt.subplots()
+        with pytest.raises(ValueError, match="one of"):
+            add_nightshade(ax, JUN_SOLSTICE, transform=lambda a: a, crs=3857)
+
+    def test_crs_reprojects_to_metres(self):
+        """Test the crs shortcut reprojects lon/lat into projected coordinates.
+
+        Test scenario:
+            crs=3857 (Web Mercator) yields metre-scale vertices well beyond the
+            lon/lat range (an equinox is used so no ring reaches the poles, which
+            Mercator cannot represent).
+        """
+        _, ax = plt.subplots()
+        art = add_nightshade(ax, MAR_EQUINOX, crs=3857)
+        verts = np.vstack([p.vertices for p in art.get_paths()])
+        assert np.abs(verts[:, 0]).max() > 1e6, "x not reprojected to metres"
+
+    def test_color_keyword_sets_fill(self):
+        """Test the `color` shorthand replaces the split face/edge defaults.
+
+        Test scenario:
+            Passing color= must not clash with the default facecolor/edgecolor;
+            the artist ends up filled.
+        """
+        _, ax = plt.subplots()
+        art = add_nightshade(ax, JUN_SOLSTICE, color="navy")
+        assert len(art.get_facecolor()) >= 1, "color= should produce a fill"
+
+    def test_rejects_non_axes(self):
+        """Test a non-Axes first argument raises TypeError.
+
+        Test scenario:
+            add_nightshade validates its axes like the other basemap artists.
+        """
+        with pytest.raises(TypeError):
+            add_nightshade("not an axes", JUN_SOLSTICE)
+
+
+class TestAddTissot:
+    """Tests for add_tissot."""
+
+    @staticmethod
+    def _rings():
+        """Return two unit-square rings in axes coordinates."""
+        square = np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]])
+        return [square, square + 3.0]
+
+    def test_draws_supplied_rings(self):
+        """Test the supplied rings are drawn and the artist registered.
+
+        Test scenario:
+            Two rings produce a PolyCollection of two paths on the axes.
+        """
+        _, ax = plt.subplots()
+        art = add_tissot(ax, self._rings())
+        assert isinstance(art, PolyCollection), f"not a PolyCollection: {type(art)}"
+        assert len(art.get_paths()) == 2, (
+            f"expected 2 paths, got {len(art.get_paths())}"
+        )
+        assert art in ax.collections, "artist not added to the axes"
+
+    def test_outline_only_by_default(self):
+        """Test the default style is unfilled (outline only).
+
+        Test scenario:
+            With no style overrides the polygons carry no face colour.
+        """
+        _, ax = plt.subplots()
+        art = add_tissot(ax, self._rings())
+        face = art.get_facecolor()
+        assert len(face) == 0 or np.allclose(face[:, 3], 0.0), (
+            "default should be unfilled"
+        )
+
+    def test_preserves_axis_limits(self):
+        """Test drawing does not disturb existing axis limits.
+
+        Test scenario:
+            Limits set before the call are unchanged after it.
+        """
+        _, ax = plt.subplots()
+        ax.set_xlim(-5, 5)
+        ax.set_ylim(-5, 5)
+        add_tissot(ax, self._rings())
+        assert ax.get_xlim() == (-5.0, 5.0), f"xlim changed: {ax.get_xlim()}"
+        assert ax.get_ylim() == (-5.0, 5.0), f"ylim changed: {ax.get_ylim()}"
+
+    def test_color_keyword_overrides_outline_default(self):
+        """Test the `color` shorthand replaces the split outline defaults.
+
+        Test scenario:
+            Passing color= must not clash with the default facecolor/edgecolor.
+        """
+        _, ax = plt.subplots()
+        art = add_tissot(ax, self._rings(), color="crimson")
+        assert len(art.get_facecolor()) >= 1, "color= should set a face colour"
+
+    def test_rejects_non_axes(self):
+        """Test a non-Axes first argument raises TypeError.
+
+        Test scenario:
+            add_tissot validates its axes.
+        """
+        with pytest.raises(TypeError):
+            add_tissot("not an axes", [])
 
 
 class TestWrapLongitude:

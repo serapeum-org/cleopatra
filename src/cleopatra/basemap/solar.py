@@ -31,17 +31,16 @@ Accuracy is deliberately low-precision: the NOAA/Meeus solar-position formulae
 are sub-degree over the relevant centuries, which is far finer than a shaded
 overlay needs. No ephemeris dependency.
 
-Example (CRS-free geometry)::
+Example (lon/lat axes)::
 
     from datetime import UTC, datetime
-    from cleopatra.basemap.solar import night_polygon, subsolar_point
+    from cleopatra.basemap.solar import add_nightshade
 
     when = datetime(2026, 6, 21, 12, tzinfo=UTC)
-    lon, lat = subsolar_point(when)   # where the sun is overhead
-    rings = night_polygon(when)       # filled night region as lon/lat rings
+    add_nightshade(ax, when, alpha=0.35, color="black", zorder=5)   # shade the night
 
-The `add_nightshade` / `add_tissot` artists that draw this geometry on an axes
-are forthcoming (see #356); today the module provides the CRS-free maths above.
+Consumers whose axes is not lon/lat pass a ``transform`` callable, or the
+optional ``crs=`` pyproj shortcut, so cleopatra never resolves a projection.
 
 See also `cleopatra.glyphs.globe.textured_globe_glyph` for the 3-D globe's
 directional lighting, which answers a different question (shading on a sphere,
@@ -56,6 +55,13 @@ from typing import Any
 
 import numpy as np
 from matplotlib.collections import PolyCollection
+
+from cleopatra.basemap.reference import (
+    _is_4326,
+    _make_transformer,
+    _reproject_arr,
+    _validate_axes,
+)
 
 #: Solar altitude (degrees) that defines the terminator. The standard value of
 #: ``-0.83`` accounts for atmospheric refraction plus the sun's semidiameter at
@@ -226,27 +232,9 @@ def terminator(
         raise ValueError(f"n must be at least 4 to form a ring; got {n}.")
 
     lon_s, lat_s = subsolar_point(when)
-    lon0, lat0 = np.radians(lon_s), np.radians(lat_s)
-    # Points where the solar altitude equals ``refraction`` lie a great-circle
-    # distance ``90 - refraction`` from the subsolar point.
-    rho = np.radians(90.0 - refraction)
-    bearing = np.linspace(0.0, 2.0 * np.pi, n)
-
-    # Clip guards the sum-of-products against a 1-ULP overshoot of +/-1 at the
-    # terminator-through-pole boundary (lat_s == refraction), which would make
-    # arcsin return NaN.
-    lat = np.arcsin(
-        np.clip(
-            np.sin(lat0) * np.cos(rho) + np.cos(lat0) * np.sin(rho) * np.cos(bearing),
-            -1.0,
-            1.0,
-        )
-    )
-    lon = lon0 + np.arctan2(
-        np.sin(bearing) * np.sin(rho) * np.cos(lat0),
-        np.cos(rho) - np.sin(lat0) * np.sin(lat),
-    )
-    return np.column_stack([_wrap_longitude(np.degrees(lon)), np.degrees(lat)])
+    # The terminator is the small circle at angular distance 90 - refraction from
+    # the subsolar point (a great circle only when refraction == 0).
+    return _small_circle(lon_s, lat_s, np.radians(90.0 - refraction), n)
 
 
 def night_polygon(
@@ -366,11 +354,51 @@ def add_nightshade(
         ValueError: If both ``transform`` and ``crs`` are given.
         ImportError: If ``crs`` requires reprojection but ``pyproj`` (the
             ``[tiles]`` extra) is not installed.
+
+    Examples:
+        - Shade the night region on a lon/lat axes and keep the artist; the axis
+          limits are preserved:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from datetime import UTC, datetime
+            >>> fig, ax = plt.subplots()
+            >>> _ = ax.set_xlim(-180, 180)
+            >>> _ = ax.set_ylim(-90, 90)
+            >>> art = add_nightshade(ax, datetime(2026, 6, 21, 12, tzinfo=UTC), alpha=0.3)
+            >>> art in ax.collections
+            True
+            >>> bool(ax.get_xlim() == (-180.0, 180.0))
+            True
+
+            ```
     """
-    # Planned for #356: reject transform+crs together; build night_polygon(when,
-    # ...); apply transform() or reference._make_transformer(crs)/_reproject_arr;
-    # add a PolyCollection on ax.transData; save/restore the limits; return it.
-    raise NotImplementedError("add_nightshade is not implemented yet (see #356).")
+    if transform is not None and crs is not None:
+        raise ValueError("Pass at most one of transform= or crs=, not both.")
+    _validate_axes(ax)
+
+    rings = night_polygon(when, refraction=refraction, n=n)
+    if transform is not None:
+        rings = [np.asarray(transform(ring), dtype=float) for ring in rings]
+    elif crs is not None and not _is_4326(crs):
+        transformer = _make_transformer(crs)
+        rings = [_reproject_arr(ring, transformer) for ring in rings]
+
+    opts: dict[str, Any] = {"facecolor": "black", "edgecolor": "none", "alpha": 0.35}
+    if "color" in style:
+        # `color` sets both face and edge; drop the split defaults to avoid a clash.
+        opts.pop("facecolor")
+        opts.pop("edgecolor")
+    opts.update(style)
+
+    xlim, ylim = ax.get_xlim(), ax.get_ylim()
+    artist = PolyCollection(rings, **opts)
+    artist.set_transform(ax.transData)
+    ax.add_collection(artist)
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    return artist
 
 
 def tissot_circles(
@@ -396,11 +424,52 @@ def tissot_circles(
     Returns:
         list[numpy.ndarray]: One ``(n, 2)`` lon/lat ring per centre, in input
         order.
+
+    Raises:
+        ValueError: If ``lons`` and ``lats`` differ in shape, if ``radius_m`` is
+            not a positive sub-antipodal radius (``0 < radius_m < pi * R``), or
+            if ``n < 4``.
+
+    Examples:
+        - One ~500 km circle around the origin, sampled coarsely:
+            ```python
+            >>> import numpy as np
+            >>> rings = tissot_circles([0.0], [0.0], 5e5, n=8)
+            >>> len(rings)
+            1
+            >>> rings[0].shape
+            (8, 2)
+            >>> bool(np.isfinite(rings[0]).all())
+            True
+
+            ```
+        - The ground radius maps to a fixed angular radius (~4.5 deg at 500 km):
+            ```python
+            >>> rings = tissot_circles([0.0], [0.0], 5e5, n=4)
+            >>> round(float(rings[0][:, 1].max()), 1)
+            4.5
+
+            ```
     """
-    # Planned for #356: for each (lon, lat), sample n bearings and step the
-    # angular radius radius_m / MEAN_EARTH_RADIUS_M along a great circle to
-    # (n, 2) lon/lat.
-    raise NotImplementedError("tissot_circles is not implemented yet (see #356).")
+    lon_arr = np.atleast_1d(np.asarray(lons, dtype=float))
+    lat_arr = np.atleast_1d(np.asarray(lats, dtype=float))
+    if lon_arr.shape != lat_arr.shape:
+        raise ValueError(
+            f"lons and lats must have the same shape; got {lon_arr.shape} and {lat_arr.shape}."
+        )
+    if not 0.0 < radius_m < np.pi * MEAN_EARTH_RADIUS_M:
+        raise ValueError(
+            "radius_m must be a positive, sub-antipodal ground radius in metres "
+            f"(0, {np.pi * MEAN_EARTH_RADIUS_M:.0f}); got {radius_m}."
+        )
+    if n < 4:
+        raise ValueError(f"n must be at least 4 to form a ring; got {n}.")
+
+    radius_rad = radius_m / MEAN_EARTH_RADIUS_M
+    return [
+        _small_circle(float(lon), float(lat), radius_rad, n)
+        for lon, lat in zip(lon_arr, lat_arr, strict=True)
+    ]
 
 
 def add_tissot(ax: Any, ellipses: Sequence[np.ndarray], **style: Any) -> PolyCollection:
@@ -409,9 +478,10 @@ def add_tissot(ax: Any, ellipses: Sequence[np.ndarray], **style: Any) -> PolyCol
     **cleopatra draws what it is given and computes no distortion**: the shape a
     circle takes is a property of the consumer's projection, so the consumer
     projects `tissot_circles` output through its own transform and passes the
-    result here. A thin wrapper over the existing
-    `cleopatra.glyphs.primitives.polygon_glyph.PolygonGlyph`, which already draws
-    a sequence of polygons with differing vertex counts.
+    result here. It draws the rings as an unfilled `PolyCollection` (outline only
+    by default) -- the same "sequence of polygons with differing vertex counts"
+    shape `cleopatra.glyphs.primitives.polygon_glyph.PolygonGlyph` handles -- and
+    preserves the current axis limits.
 
     Args:
         ax: A matplotlib `~matplotlib.axes.Axes`.
@@ -422,15 +492,79 @@ def add_tissot(ax: Any, ellipses: Sequence[np.ndarray], **style: Any) -> PolyCol
 
     Returns:
         matplotlib.collections.PolyCollection: The Tissot artist.
+
+    Raises:
+        TypeError: If ``ax`` is not a matplotlib Axes.
+
+    Examples:
+        - Draw two supplied rings (already in axes coordinates) and keep them:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> import numpy as np
+            >>> theta = np.linspace(0, 2 * np.pi, 16)
+            >>> circle = np.column_stack([np.cos(theta), np.sin(theta)])
+            >>> fig, ax = plt.subplots()
+            >>> art = add_tissot(ax, [circle, circle + 3.0], edgecolor="crimson")
+            >>> len(art.get_paths())
+            2
+            >>> art in ax.collections
+            True
+
+            ```
     """
-    # Planned for #356: draw `ellipses` unchanged via PolygonGlyph (outline-only
-    # by default); preserve axis limits; return the artist.
-    raise NotImplementedError("add_tissot is not implemented yet (see #356).")
+    _validate_axes(ax)
+    verts = [np.asarray(ring, dtype=float) for ring in ellipses]
+
+    opts: dict[str, Any] = {"facecolor": "none", "edgecolor": "black", "linewidth": 0.8}
+    if "color" in style:
+        # `color` sets both face and edge; drop the split defaults to avoid a clash.
+        opts.pop("facecolor")
+        opts.pop("edgecolor")
+    opts.update(style)
+
+    xlim, ylim = ax.get_xlim(), ax.get_ylim()
+    artist = PolyCollection(verts, **opts)
+    artist.set_transform(ax.transData)
+    ax.add_collection(artist)
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    return artist
 
 
 # --------------------------------------------------------------------------- #
 # Internal helpers                                                            #
 # --------------------------------------------------------------------------- #
+def _small_circle(
+    center_lon: float, center_lat: float, radius_rad: float, n: int
+) -> np.ndarray:
+    """Return an ``(n, 2)`` closed lon/lat ring at a fixed angular radius.
+
+    Samples ``n`` bearings around ``(center_lon, center_lat)`` and steps
+    ``radius_rad`` radians of great-circle distance to each. Shared by
+    `terminator` (radius ``90 - refraction``) and `tissot_circles` (radius
+    ``radius_m / MEAN_EARTH_RADIUS_M``).
+    """
+    lon0, lat0 = np.radians(center_lon), np.radians(center_lat)
+    bearing = np.linspace(0.0, 2.0 * np.pi, n)
+    # Clip guards the sum-of-products against a 1-ULP overshoot of +/-1 (which
+    # would make arcsin return NaN) when the circle grazes a pole.
+    lat = np.arcsin(
+        np.clip(
+            np.sin(lat0) * np.cos(radius_rad)
+            + np.cos(lat0) * np.sin(radius_rad) * np.cos(bearing),
+            -1.0,
+            1.0,
+        )
+    )
+    lon = lon0 + np.arctan2(
+        np.sin(bearing) * np.sin(radius_rad) * np.cos(lat0),
+        np.cos(radius_rad) - np.sin(lat0) * np.sin(lat),
+    )
+    return np.column_stack([_wrap_longitude(np.degrees(lon)), np.degrees(lat)])
+
+
 def _wrap_longitude(lon: Any) -> np.ndarray:
     """Wrap longitudes (deg) into the half-open range ``(-180, 180]``."""
     wrapped = (np.asarray(lon, dtype=float) + 180.0) % 360.0 - 180.0
