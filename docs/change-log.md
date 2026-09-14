@@ -1,5 +1,42 @@
 # Changelog
 
+## 0.39.0 (2026-09-14)
+
+
+- feat(watermark)!: add a text watermark and make the glyph the way to stamp (#366)
+- `styling.watermark` could stamp a logo image but had nothing for text, so a
+social-media animation wanting the usual pair -- a corner logo plus diagonal
+brand text and a credit line -- had to roll its own. Two earthlens showcase
+notebooks each carry a byte-identical copy of the same helper.
+- - add `_stamp_watermark`: translucent brand text across the middle of a
+  figure, plus an optional credit line along the bottom
+- size the text by a figure fraction measured on what is rendered, not by a
+  point size scaled off the figure width. That rule made the share of the
+  frame depend on how many characters the text had: on an 8x4.5in figure it
+  drew "eo" at 23% and "a-much-longer-brand-name" at 128%, off the canvas
+- replace the credit line's hardcoded 0.014 offset and 7.5 point size with
+  `margin` and `credit_frac`, the shapes the mark already uses, and validate
+  every input on its terms
+- keep the outline asymmetry the notebook helper chose: the credit line is
+  stroked and the diagonal text is not, because an outline on the large text
+  reads as a solid caption rather than a watermark
+- add `WatermarkMixin`, so both stamps are glyph methods --
+  `glyph.stamp_mark(logo)` -- on all twelve glyph classes
+- record the rendered figure as `_rendered_fig` on `HistogramGlyph` and
+  `TexturedGlobeGlyph`, which do not inherit `Glyph` and use `_fig` for the
+  figure bound at construction. Without it they would have inherited a method
+  that existed and always raised
+- Only the GoogleMapsCompatible-style guarantee the mark gives does not carry
+over: a mark on an inset axes keeps its share of a proportionally resized
+figure, whereas text is measured in points and keeps its absolute size. Stamp
+after the final `set_size_inches` and the two behave alike.
+- Closes #365
+- BREAKING CHANGE: `cleopatra.styling.watermark.stamp_mark` was public API from
+0.37.0 and is now private, alongside the new `_stamp_watermark`; `__all__` is
+`["WatermarkMixin"]`. Replace `stamp_mark(glyph.fig, logo, ...)` with
+`glyph.stamp_mark(logo, ...)`. A figure that no glyph owns is deliberately no
+longer a supported target. earthlens imports the old name in seven notebooks.
+
 ## 0.38.0 (2026-09-13)
 
 
