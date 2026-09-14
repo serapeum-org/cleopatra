@@ -14,9 +14,15 @@ shadow would imply a light direction nothing else in the frame has.
 This is a presentation helper, not a glyph: it takes a finished `Figure` and
 draws on top of it via a frameless inset axes in figure-fraction coordinates
 (the dpi-independent counterpart of `Figure.figimage`, which is pixel-based).
-It covers only single-image, corner-anchored marks -- text watermarks,
-tiled / repeated marks, and any licensing / provenance semantics are
-deliberately out of scope.
+`stamp_watermark` is its text counterpart: the diagonal translucent brand
+text across the middle of a frame, plus an optional credit line along the
+bottom. The two are designed to be used together -- a corner logo from
+`stamp_mark`, brand text from `stamp_watermark` -- and share their conventions,
+so a size is a fraction of the figure and a position is a margin from its edge
+rather than a point size or an offset in inches.
+
+Tiled / repeated marks and any licensing / provenance semantics remain out of
+scope.
 
 The gaussian blur for the halo uses `PIL` (Pillow), already a hard cleopatra
 dependency, so no new dependency (and no SciPy) is pulled in.
@@ -27,6 +33,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
+from matplotlib import patheffects
 from PIL import Image, ImageFilter
 
 from cleopatra.glyphs.base.compositing import alpha_over
@@ -36,8 +43,9 @@ if TYPE_CHECKING:
 
     from matplotlib.axes import Axes
     from matplotlib.figure import Figure
+    from matplotlib.text import Text
 
-__all__ = ["stamp_mark"]
+__all__ = ["stamp_mark", "stamp_watermark"]
 
 #: The four corner anchors `stamp_mark` accepts.
 _CORNERS = ("lower right", "lower left", "upper right", "upper left")
@@ -55,6 +63,30 @@ _HALO_ALPHA = 0.5
 
 #: Inset zorder: the mark sits above ordinary figure content.
 _MARK_ZORDER = 1_000_001
+
+#: Watermark text sits *below* the brand mark, so a corner logo overlapping the
+#: diagonal text stays legible, and both sit above ordinary figure content.
+_WATERMARK_ZORDER = 1_000_000
+
+#: The credit line sits above both -- it is the smallest element and the one
+#: that must never be occluded.
+_CREDIT_ZORDER = 1_000_002
+
+#: Outline drawn behind the credit line only. The big diagonal text is left
+#: plain on purpose: an outline makes it read as a solid caption rather than a
+#: watermark, while the credit is small enough that it needs the stroke to stay
+#: legible against arbitrary frame content.
+_CREDIT_STROKE_WIDTH = 2.0
+_CREDIT_STROKE_COLOR = "black"
+_CREDIT_STROKE_ALPHA = 0.9
+
+#: Fitting a font size to a figure fraction is iterative: rendered text size is
+#: very nearly linear in point size, but hinting quantises glyphs to whole
+#: pixels, so one correction lands within a fraction of a percent and a short
+#: loop closes the rest. Both bounds are generous; the loop normally exits on
+#: the tolerance after two or three passes.
+_FIT_TOLERANCE = 0.002
+_FIT_MAX_PASSES = 12
 
 
 def stamp_mark(
@@ -222,6 +254,244 @@ def stamp_mark(
     ax.axis("off")
     ax.set_in_layout(False)
     return ax
+
+
+def _fit_text_to_frac(fig: Figure, artist: Text, frac: float) -> None:
+    """Scale `artist`'s font size until its longer on-figure side is `frac`.
+
+    Matplotlib sizes text in points, which is an *absolute* unit: a figure
+    resized after the text is placed keeps the same point size and so the text
+    covers a different share of the frame. Measuring the rendered extent and
+    solving for the point size that hits a figure fraction is what makes the
+    text behave like `stamp_mark`'s `frac` instead.
+
+    Rendered size is very nearly linear in point size, so one correction is
+    almost right; hinting quantises glyphs to whole pixels, so the loop repeats
+    until the measured fraction is within `_FIT_TOLERANCE` (or the pass budget
+    runs out, which leaves the closest size tried rather than failing).
+
+    The extent is the artist's *rotated* bounding box, so a diagonal watermark
+    is sized by the box it actually occupies rather than by its unrotated width.
+
+    Args:
+        fig: The figure the artist belongs to.
+        artist: The text to resize, already added to `fig`.
+        frac: The target fraction of the corresponding figure side.
+    """
+    figure_box = fig.get_window_extent()
+    for _ in range(_FIT_MAX_PASSES):
+        box = artist.get_window_extent()
+        longest = max(box.width / figure_box.width, box.height / figure_box.height)
+        if longest <= 0.0:
+            # Only an empty string measures zero -- whitespace has real width
+            # and height. `stamp_watermark` rejects one, so this guards the
+            # helper against a direct caller rather than a reachable input.
+            return
+        if abs(longest - frac) <= _FIT_TOLERANCE:
+            return
+        artist.set_fontsize(artist.get_fontsize() * frac / longest)
+
+
+def stamp_watermark(
+    fig: Figure,
+    text: str,
+    *,
+    frac: float = 0.55,
+    angle: float = 30.0,
+    alpha: float = 0.65,
+    color: str = "white",
+    credit: str | None = None,
+    credit_frac: float = 0.28,
+    credit_alpha: float = 1.0,
+    margin: float = 0.014,
+) -> tuple[Text, Text | None]:
+    """Stamp diagonal brand text across a figure, sized as a fraction of it.
+
+    The text counterpart to `stamp_mark`: translucent brand text centred on
+    `fig` at an angle, with an optional credit line along the bottom edge. Like
+    `stamp_mark` it sizes by a *fraction of the figure* rather than in points,
+    and positions by a *margin from the edge* rather than a hardcoded offset.
+
+    Sizing by fraction is what makes the parameter mean the same thing for any
+    text. A point size scaled off the figure's width -- the obvious shortcut --
+    renders a short word small and a long one straight off the canvas, because
+    how much of the frame a string covers depends on how many characters it
+    has. `frac` is measured on what is actually rendered, so a two-letter brand
+    and a twenty-character one both land at the fraction asked for.
+
+    The diagonal text is drawn plain and the credit line is drawn with a dark
+    outline. That asymmetry is deliberate: an outline on the large text makes it
+    read as a solid caption rather than a watermark, while the credit line is
+    small enough that it needs the stroke to stay legible against whatever the
+    frame happens to contain.
+
+    Args:
+        fig: The matplotlib `Figure` to stamp. The text is drawn on top of
+            whatever the figure already contains.
+        text: The brand text. Must be a non-empty string.
+        frac: The size of the text's *longer* on-figure side as a fraction of
+            the corresponding figure side, in ``(0, 1]`` -- measured on the
+            rotated bounding box, so `angle` is accounted for. Defaults to
+            ``0.55``.
+        angle: Rotation in degrees, counter-clockwise. Defaults to ``30.0``.
+        alpha: Opacity of the brand text, in ``[0, 1]``. Defaults to ``0.65``,
+            translucent enough to read as a watermark over the frame.
+        color: Any matplotlib colour for both the brand text and the credit.
+            Defaults to ``"white"``, which is what reads on the dark canvases
+            these watermarks are usually stamped on.
+        credit: An optional credit line drawn along the bottom edge (a repo or
+            attribution URL). `None` (default) draws no credit line; a blank
+            string is refused rather than stamping an empty artist.
+        credit_frac: The credit line's width as a fraction of the figure width,
+            in ``(0, 1]``. Defaults to ``0.28``. Ignored when `credit` is
+            `None`.
+        credit_alpha: Opacity of the credit line, in ``[0, 1]``. Defaults to
+            ``1.0`` -- the credit is information, not decoration.
+        margin: The gap between the credit line and the bottom edge, as a
+            fraction of the figure height, in ``[0, 1)``. Defaults to
+            ``0.014``. Ignored when `credit` is `None`.
+
+    Returns:
+        tuple[Text, Text | None]: The brand-text artist and the credit-line
+        artist, so either can be adjusted further. The second is `None` when no
+        `credit` was given.
+
+    Raises:
+        ValueError: If `text` is not a non-empty string, if `credit` is given
+            but is not a non-empty string, if `frac` or
+            `credit_frac` is not in ``(0, 1]``, if `alpha` or `credit_alpha` is
+            not in ``[0, 1]``, if `angle` is not finite, or if `margin` is not
+            in ``[0, 1)``.
+
+    Notes:
+        Like `stamp_mark`, the size is baked at stamp time from the figure's
+        current size, so call `stamp_watermark` **last** -- after any
+        `tight_layout()` / layout finalization, and after the final
+        `set_size_inches`. The proportion holds across dpi.
+
+        It does **not** survive a later `set_size_inches`, and here the text
+        differs from `stamp_mark`: a mark lives on an inset axes in
+        figure-fraction coordinates and so keeps its share of a figure resized
+        proportionally afterwards, whereas text is measured in points and keeps
+        its *absolute* size, halving its share when the figure doubles. Stamp
+        after the final resize and the two behave alike; stamp before one and
+        only the mark follows.
+
+        The font size is fitted by measuring the rendered text, which needs a
+        renderer; on a figure that has never been drawn matplotlib creates one
+        on demand, so no explicit `draw()` is required.
+
+    Examples:
+        - Stamp brand text across a figure and read back its share of it:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styling.watermark import stamp_watermark
+            >>> fig = plt.figure(figsize=(8, 4.5))
+            >>> brand, credit = stamp_watermark(fig, "earthlens", frac=0.5)
+            >>> credit is None
+            True
+            >>> box = brand.get_window_extent()
+            >>> figure_box = fig.get_window_extent()
+            >>> round(float(max(box.width / figure_box.width,
+            ...                 box.height / figure_box.height)), 2)
+            0.5
+            >>> plt.close(fig)
+
+            ```
+        - Add a credit line along the bottom:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styling.watermark import stamp_watermark
+            >>> fig = plt.figure(figsize=(8, 4.5))
+            >>> brand, credit = stamp_watermark(
+            ...     fig, "earthlens", credit="github.com/serapeum-org/earthlens"
+            ... )
+            >>> credit.get_text()
+            'github.com/serapeum-org/earthlens'
+            >>> plt.close(fig)
+
+            ```
+        - An out-of-range opacity is refused, as on `stamp_mark`:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styling.watermark import stamp_watermark
+            >>> fig = plt.figure()
+            >>> stamp_watermark(fig, "earthlens", alpha=1.5)
+            Traceback (most recent call last):
+                ...
+            ValueError: alpha must be in [0, 1], got 1.5.
+
+            ```
+
+    See Also:
+        stamp_mark: The image counterpart, for a corner logo.
+    """
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError(f"text must be a non-empty string, got {text!r}.")
+    if not 0.0 < frac <= 1.0:
+        raise ValueError(f"frac must be in (0, 1], got {frac!r}.")
+    if not 0.0 <= alpha <= 1.0:
+        raise ValueError(f"alpha must be in [0, 1], got {alpha!r}.")
+    if not np.isfinite(angle):
+        raise ValueError(f"angle must be a finite number of degrees, got {angle!r}.")
+    if credit is not None:
+        if not isinstance(credit, str) or not credit.strip():
+            raise ValueError(
+                f"credit must be a non-empty string or None, got {credit!r}. A blank "
+                f"credit would stamp an artist with nothing in it; pass None to draw "
+                f"no credit line."
+            )
+        if not 0.0 < credit_frac <= 1.0:
+            raise ValueError(f"credit_frac must be in (0, 1], got {credit_frac!r}.")
+        if not 0.0 <= credit_alpha <= 1.0:
+            raise ValueError(f"credit_alpha must be in [0, 1], got {credit_alpha!r}.")
+        if not 0.0 <= margin < 1.0:
+            raise ValueError(f"margin must be in [0, 1), got {margin!r}.")
+
+    brand = fig.text(
+        0.5,
+        0.5,
+        text,
+        rotation=angle,
+        ha="center",
+        va="center",
+        fontweight="bold",
+        color=color,
+        alpha=alpha,
+        zorder=_WATERMARK_ZORDER,
+    )
+    brand.set_in_layout(False)
+    _fit_text_to_frac(fig, brand, frac)
+
+    if credit is None:
+        return brand, None
+
+    credit_artist = fig.text(
+        0.5,
+        margin,
+        credit,
+        ha="center",
+        va="bottom",
+        color=color,
+        alpha=credit_alpha,
+        zorder=_CREDIT_ZORDER,
+        path_effects=[
+            patheffects.withStroke(
+                linewidth=_CREDIT_STROKE_WIDTH,
+                foreground=_CREDIT_STROKE_COLOR,
+                alpha=_CREDIT_STROKE_ALPHA,
+            )
+        ],
+    )
+    credit_artist.set_in_layout(False)
+    _fit_text_to_frac(fig, credit_artist, credit_frac)
+    return brand, credit_artist
 
 
 def _float_to_uint8(arr: np.ndarray) -> np.ndarray:

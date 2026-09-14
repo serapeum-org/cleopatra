@@ -1,9 +1,14 @@
-"""Tests for the figure watermark / brand-mark helper -- issue #312.
+"""Tests for the figure watermark helpers -- issues #312 and #365.
 
 Covers `cleopatra.styling.watermark.stamp_mark`: corner placement in
 figure-fraction coordinates, dpi-invariant sizing, undistorted aspect, the
 optional gaussian-blurred halo, image-input handling (RGBA/RGB arrays,
 float arrays, file paths), and input validation.
+
+And `stamp_watermark`, its text counterpart: fraction-based sizing that means
+the same thing for any text, credit-line placement by margin, the deliberate
+outline asymmetry between the two artists, and input validation matching
+`stamp_mark`'s.
 """
 
 from __future__ import annotations
@@ -17,7 +22,14 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from cleopatra.styling.watermark import _CORNERS, _HALO_SIGMAS, DEFAULT_BLUR, stamp_mark
+from cleopatra.styling.watermark import (
+    _CORNERS,
+    _HALO_SIGMAS,
+    DEFAULT_BLUR,
+    _fit_text_to_frac,
+    stamp_mark,
+    stamp_watermark,
+)
 
 
 @pytest.fixture
@@ -194,8 +206,12 @@ class TestStampMark:
             skipped, so the axes measures exactly `frac` -- like `shadow=False`.
         """
         frac = 0.2
-        haloed = stamp_mark(fig, logo, frac=frac, shadow=True, blur=0.0).get_position().width
-        assert np.isclose(haloed, frac), f"blur=0 should not grow the axes: {haloed} != {frac}"
+        haloed = (
+            stamp_mark(fig, logo, frac=frac, shadow=True, blur=0.0).get_position().width
+        )
+        assert np.isclose(haloed, frac), (
+            f"blur=0 should not grow the axes: {haloed} != {frac}"
+        )
 
     def test_mark_painted_extent_is_frac(self):
         """The **mark's own painted width** is `frac` of the figure, halo or not.
@@ -238,7 +254,9 @@ class TestStampMark:
         mark = np.zeros((40, 80, 4), dtype=np.uint8)
         mark[..., 0] = 255
         mark[..., 3] = 255
-        stamp_mark(figure, mark, frac=0.25, corner="lower left", margin=0.15, shadow=True)
+        stamp_mark(
+            figure, mark, frac=0.25, corner="lower left", margin=0.15, shadow=True
+        )
         figure.canvas.draw()
         rgba = np.asarray(figure.canvas.buffer_rgba())
         red = (rgba[..., 0] > 200) & (rgba[..., 1] < 60) & (rgba[..., 2] < 60)
@@ -564,3 +582,491 @@ class TestStampMark:
             "upper right",
             "upper left",
         }
+
+
+def _share_of_figure(fig, artist):
+    """The artist's longer side as a fraction of the corresponding figure side.
+
+    Args:
+        fig: The figure the artist is on.
+        artist: The text artist to measure.
+
+    Returns:
+        float: The larger of the width and height fractions.
+    """
+    figure_box = fig.get_window_extent()
+    box = artist.get_window_extent()
+    return float(max(box.width / figure_box.width, box.height / figure_box.height))
+
+
+def _notebook_helper(fig, text, *, angle=30, text_alpha=0.65):
+    """The earthlens notebooks' local helper, reproduced for comparison.
+
+    Args:
+        fig: The figure to stamp.
+        text: The brand text.
+        angle: Rotation in degrees.
+        text_alpha: Opacity of the text.
+
+    Returns:
+        matplotlib.text.Text: The stamped artist.
+    """
+    fig_w_in, _ = fig.get_size_inches()
+    return fig.text(
+        0.5,
+        0.5,
+        text,
+        rotation=angle,
+        ha="center",
+        va="center",
+        fontsize=fig_w_in * 6,
+        fontweight="bold",
+        color="white",
+        alpha=text_alpha,
+        zorder=1_000_000,
+    )
+
+
+class TestStampWatermark:
+    """`stamp_watermark` places brand text sized as a fraction of the figure."""
+
+    @pytest.mark.parametrize("frac", [0.2, 0.55, 0.9])
+    def test_the_text_lands_at_the_requested_fraction(self, fig, frac):
+        """The rendered text occupies `frac` of the figure's longer side.
+
+        Args:
+            fig: The figure fixture.
+            frac: The requested fraction.
+
+        Test scenario:
+            This is the parameter's whole contract -- it is measured on what is
+            actually rendered, not on a point size that happens to correlate.
+        """
+        brand, _ = stamp_watermark(fig, "earthlens", frac=frac)
+        assert _share_of_figure(fig, brand) == pytest.approx(frac, abs=0.01), (
+            f"asked for {frac}, rendered {_share_of_figure(fig, brand)}"
+        )
+
+    @pytest.mark.parametrize("text", ["eo", "earthlens", "a-much-longer-brand-name"])
+    def test_the_fraction_is_independent_of_the_text_length(self, fig, text):
+        """Any text lands at the same fraction.
+
+        Args:
+            fig: The figure fixture.
+            text: The brand text under test.
+
+        Test scenario:
+            The defect this replaces: a point size scaled off the figure width
+            renders a short word small and a long one off the canvas, because
+            how much of the frame a string covers depends on its length. The
+            notebook helper puts this same long name at ~128% of the figure.
+        """
+        brand, _ = stamp_watermark(fig, text, frac=0.55)
+        assert _share_of_figure(fig, brand) == pytest.approx(0.55, abs=0.02), (
+            f"{text!r} rendered at {_share_of_figure(fig, brand)}, not 0.55"
+        )
+
+    def test_it_beats_the_notebook_helper_on_a_long_name(self, fig):
+        """The helper being replaced overflows where this one does not.
+
+        Args:
+            fig: The figure fixture.
+
+        Test scenario:
+            A positive assertion that the replacement is worth making: the same
+            input that runs off the canvas with the old sizing rule stays on it
+            here. Without this the length-independence test above could pass
+            against a rule that was never broken.
+        """
+        long_name = "a-much-longer-brand-name"
+        old = _notebook_helper(fig, long_name)
+        new, _ = stamp_watermark(fig, long_name, frac=0.55)
+        assert _share_of_figure(fig, old) > 1.0, (
+            "precondition: the old rule should overflow the figure for this name"
+        )
+        assert _share_of_figure(fig, new) <= 1.0, (
+            f"the new rule also overflowed: {_share_of_figure(fig, new)}"
+        )
+
+    def test_the_angle_reaches_the_artist(self, fig):
+        """`angle` is applied as the text's rotation.
+
+        Args:
+            fig: The figure fixture.
+
+        Test scenario:
+            The diagonal is the point of the watermark; a dropped rotation
+            would still render plausible-looking text.
+        """
+        brand, _ = stamp_watermark(fig, "earthlens", angle=45.0)
+        assert brand.get_rotation() == pytest.approx(45.0), (
+            f"rotation not applied: {brand.get_rotation()}"
+        )
+
+    def test_the_brand_text_is_translucent_and_unstroked(self, fig):
+        """The large text carries alpha and no outline.
+
+        Args:
+            fig: The figure fixture.
+
+        Test scenario:
+            The design decision carried over from the notebooks: an outline on
+            the big text makes it read as a solid caption rather than a
+            watermark.
+        """
+        brand, _ = stamp_watermark(fig, "earthlens", alpha=0.4)
+        assert brand.get_alpha() == pytest.approx(0.4), "alpha not applied"
+        assert not brand.get_path_effects(), (
+            "the brand text should carry no outline, only the credit line does"
+        )
+
+    def test_no_credit_line_by_default(self, fig):
+        """Without `credit` only the brand text is drawn.
+
+        Args:
+            fig: The figure fixture.
+
+        Test scenario:
+            The credit is opt-in; returning `None` is what lets a caller tell
+            the two cases apart without inspecting the figure.
+        """
+        brand, credit = stamp_watermark(fig, "earthlens")
+        assert credit is None, f"expected no credit artist, got {credit!r}"
+        assert brand in fig.texts, "the brand text was not added to the figure"
+
+
+class TestStampWatermarkCredit:
+    """The optional credit line along the bottom edge."""
+
+    def test_the_credit_sits_at_the_margin(self, fig):
+        """`margin` places the credit above the bottom edge.
+
+        Args:
+            fig: The figure fixture.
+
+        Test scenario:
+            The parameter replaces a hardcoded `0.014`, so it has to actually
+            move the artist.
+        """
+        _, credit = stamp_watermark(fig, "earthlens", credit="example.org", margin=0.2)
+        assert credit.get_position()[1] == pytest.approx(0.2), (
+            f"margin not applied: {credit.get_position()}"
+        )
+
+    def test_the_credit_is_sized_by_fraction_too(self, fig):
+        """`credit_frac` sets the credit's share of the figure.
+
+        Args:
+            fig: The figure fixture.
+
+        Test scenario:
+            The other hardcoded constant replaced -- a `7.5` point size that
+            meant nothing in particular at any other figure size.
+        """
+        _, credit = stamp_watermark(
+            fig,
+            "earthlens",
+            credit="github.com/serapeum-org/earthlens",
+            credit_frac=0.4,
+        )
+        assert _share_of_figure(fig, credit) == pytest.approx(0.4, abs=0.02), (
+            f"credit rendered at {_share_of_figure(fig, credit)}, not 0.4"
+        )
+
+    def test_the_credit_is_stroked(self, fig):
+        """The credit line carries the outline the brand text does not.
+
+        Args:
+            fig: The figure fixture.
+
+        Test scenario:
+            The other half of the deliberate asymmetry: the credit is small
+            enough that it needs a stroke to stay legible against arbitrary
+            frame content.
+        """
+        brand, credit = stamp_watermark(fig, "earthlens", credit="example.org")
+        assert credit.get_path_effects(), "the credit line should carry an outline"
+        assert not brand.get_path_effects(), "the brand text should not"
+
+    def test_the_credit_sits_above_the_brand_text(self, fig):
+        """Z-order puts the credit on top.
+
+        Args:
+            fig: The figure fixture.
+
+        Test scenario:
+            The credit is the smallest element and the one that must never be
+            occluded by the diagonal text it is stamped alongside.
+        """
+        brand, credit = stamp_watermark(fig, "earthlens", credit="example.org")
+        assert credit.get_zorder() > brand.get_zorder(), (
+            f"credit z={credit.get_zorder()} not above brand z={brand.get_zorder()}"
+        )
+
+    def test_the_credit_alpha_is_separate(self, fig):
+        """`credit_alpha` is independent of the brand text's `alpha`.
+
+        Args:
+            fig: The figure fixture.
+
+        Test scenario:
+            The credit is information rather than decoration, so it defaults to
+            opaque while the brand text is translucent.
+        """
+        brand, credit = stamp_watermark(
+            fig, "earthlens", alpha=0.3, credit="example.org", credit_alpha=0.9
+        )
+        assert brand.get_alpha() == pytest.approx(0.3), "brand alpha wrong"
+        assert credit.get_alpha() == pytest.approx(0.9), "credit alpha wrong"
+
+
+class TestStampWatermarkValidation:
+    """Invalid input is refused the way `stamp_mark` refuses it."""
+
+    @pytest.mark.parametrize("bad", ["", "   ", 5])
+    def test_a_blank_credit_raises(self, fig, bad):
+        """A blank `credit` is refused rather than stamping an empty artist.
+
+        Args:
+            fig: The figure fixture.
+            bad: The rejected value.
+
+        Test scenario:
+            A blank string looks like it means "no credit line" but would add
+            an artist with nothing in it, which is the silently-accepted no-op
+            the rest of this module refuses. `None` is absent from the table on
+            purpose -- it is the documented way to ask for no credit, covered
+            by `test_no_credit_line_by_default`.
+        """
+        with pytest.raises(ValueError, match="credit must be a non-empty string"):
+            stamp_watermark(fig, "earthlens", credit=bad)
+
+    @pytest.mark.parametrize("bad", ["", "   ", None, 5])
+    def test_a_bad_text_raises(self, fig, bad):
+        """`text` must be a non-empty string.
+
+        Args:
+            fig: The figure fixture.
+            bad: The rejected value.
+
+        Test scenario:
+            An empty watermark renders nothing and reports nothing, which is
+            the silent-no-op this package exists to avoid.
+        """
+        with pytest.raises(ValueError, match="text must be a non-empty string"):
+            stamp_watermark(fig, bad)
+
+    @pytest.mark.parametrize("frac", [0.0, -0.1, 1.5])
+    def test_an_out_of_range_frac_raises(self, fig, frac):
+        """`frac` must be in (0, 1], as on `stamp_mark`.
+
+        Args:
+            fig: The figure fixture.
+            frac: The rejected value.
+
+        Test scenario:
+            Matching `stamp_mark`'s bound exactly is the point -- two sibling
+            functions that validate the same-named parameter differently is
+            worse than neither validating.
+        """
+        with pytest.raises(ValueError, match=r"frac must be in \(0, 1\]"):
+            stamp_watermark(fig, "earthlens", frac=frac)
+
+    @pytest.mark.parametrize("alpha", [-0.1, 1.5])
+    def test_an_out_of_range_alpha_raises(self, fig, alpha):
+        """`alpha` must be in [0, 1].
+
+        Args:
+            fig: The figure fixture.
+            alpha: The rejected value.
+
+        Test scenario:
+            Matplotlib silently clips an out-of-range alpha, so the caller
+            would never learn the value they tuned was ignored.
+        """
+        with pytest.raises(ValueError, match=r"alpha must be in \[0, 1\]"):
+            stamp_watermark(fig, "earthlens", alpha=alpha)
+
+    @pytest.mark.parametrize("angle", [float("nan"), float("inf"), float("-inf")])
+    def test_a_non_finite_angle_raises(self, fig, angle):
+        """`angle` must be a finite number of degrees.
+
+        Args:
+            fig: The figure fixture.
+            angle: The rejected value.
+
+        Test scenario:
+            A NaN rotation renders the text at an undefined position rather
+            than raising, which is the worst of both outcomes.
+        """
+        with pytest.raises(ValueError, match="angle must be a finite number"):
+            stamp_watermark(fig, "earthlens", angle=angle)
+
+    @pytest.mark.parametrize("credit_alpha", [-0.1, 1.5])
+    def test_an_out_of_range_credit_alpha_raises(self, fig, credit_alpha):
+        """`credit_alpha` must be in [0, 1].
+
+        Args:
+            fig: The figure fixture.
+            credit_alpha: The rejected value.
+
+        Test scenario:
+            The credit's opacity is validated on the same terms as the brand
+            text's.
+        """
+        with pytest.raises(ValueError, match=r"credit_alpha must be in \[0, 1\]"):
+            stamp_watermark(
+                fig, "earthlens", credit="example.org", credit_alpha=credit_alpha
+            )
+
+    @pytest.mark.parametrize("credit_frac", [0.0, 1.5])
+    def test_an_out_of_range_credit_frac_raises(self, fig, credit_frac):
+        """`credit_frac` must be in (0, 1].
+
+        Args:
+            fig: The figure fixture.
+            credit_frac: The rejected value.
+
+        Test scenario:
+            Same bound as `frac`, for the same reason.
+        """
+        with pytest.raises(ValueError, match=r"credit_frac must be in \(0, 1\]"):
+            stamp_watermark(
+                fig, "earthlens", credit="example.org", credit_frac=credit_frac
+            )
+
+    @pytest.mark.parametrize("margin", [-0.1, 1.0, 1.5])
+    def test_an_out_of_range_margin_raises(self, fig, margin):
+        """`margin` must be in [0, 1), as on `stamp_mark`.
+
+        Args:
+            fig: The figure fixture.
+            margin: The rejected value.
+
+        Test scenario:
+            `1.0` is in the table because the bound is half-open on that side,
+            matching `stamp_mark` exactly.
+        """
+        with pytest.raises(ValueError, match=r"margin must be in \[0, 1\)"):
+            stamp_watermark(fig, "earthlens", credit="example.org", margin=margin)
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {"credit_frac": 5.0},
+            {"credit_alpha": 2.0},
+            {"margin": 3.0},
+        ],
+    )
+    def test_credit_only_parameters_are_unvalidated_without_a_credit(self, fig, kwargs):
+        """The credit's parameters are only checked when a credit is drawn.
+
+        Args:
+            fig: The figure fixture.
+            kwargs: Credit-only parameters with impossible values.
+
+        Test scenario:
+            Deliberate: they are dead when `credit is None`, so raising on them
+            would reject a call that renders correctly. Pinned so the choice is
+            visible rather than looking like an oversight.
+        """
+        brand, credit = stamp_watermark(fig, "earthlens", **kwargs)
+        assert credit is None, "no credit should be drawn"
+        assert brand in fig.texts, "the brand text should still be stamped"
+
+
+class TestFitTextToFrac:
+    """The sizing helper behind `stamp_watermark`'s `frac`."""
+
+    def test_unmeasurable_text_is_left_alone(self, fig):
+        """Text with no rendered extent does not divide by zero.
+
+        Args:
+            fig: The figure fixture.
+
+        Test scenario:
+            Only the empty string measures zero -- whitespace has real width
+            and height, so `"   "` is resized like any other text.
+            `stamp_watermark` refuses an empty `text` and an empty `credit`, so
+            this guard is unreachable through the public function, which is
+            exactly why it is worth exercising directly: without it the helper
+            divides the target fraction by a zero extent.
+        """
+        artist = fig.text(0.5, 0.5, "", fontsize=20)
+        _fit_text_to_frac(fig, artist, 0.5)
+        assert artist.get_fontsize() == pytest.approx(20), (
+            f"an unmeasurable artist should keep its size, got {artist.get_fontsize()}"
+        )
+
+    def test_it_converges_within_the_tolerance(self, fig):
+        """The fit lands inside `_FIT_TOLERANCE` of the target.
+
+        Args:
+            fig: The figure fixture.
+
+        Test scenario:
+            Rendered size is near-linear in point size but hinting quantises
+            glyphs, so the loop has to iterate. Pinning the tolerance is what
+            says the loop converges rather than merely running.
+        """
+        artist = fig.text(0.5, 0.5, "earthlens", fontsize=8)
+        _fit_text_to_frac(fig, artist, 0.6)
+        assert _share_of_figure(fig, artist) == pytest.approx(0.6, abs=0.01), (
+            f"fit landed at {_share_of_figure(fig, artist)}, not 0.6"
+        )
+
+
+class TestStampWatermarkWithStampMark:
+    """The two helpers are designed to be used on the same figure."""
+
+    def test_both_can_stamp_the_same_figure(self, fig, logo):
+        """A corner logo and diagonal text coexist.
+
+        Args:
+            fig: The figure fixture.
+            logo: The logo-array fixture.
+
+        Test scenario:
+            The use case from the earthlens notebooks that motivated this: a
+            `stamp_mark` logo in the corner, `stamp_watermark` text across the
+            middle, a credit line along the bottom.
+        """
+        mark_ax = stamp_mark(fig, logo, frac=0.18, corner="lower left")
+        brand, credit = stamp_watermark(
+            fig, "earthlens", credit="github.com/serapeum-org/earthlens"
+        )
+
+        assert mark_ax in fig.axes, "the mark axes is missing"
+        assert brand in fig.texts and credit in fig.texts, "the text is missing"
+
+    def test_the_mark_sits_above_the_brand_text(self, fig, logo):
+        """Z-order puts the logo over the diagonal text.
+
+        Args:
+            fig: The figure fixture.
+            logo: The logo-array fixture.
+
+        Test scenario:
+            A corner logo overlapping the diagonal text has to stay legible;
+            the text is the background element of the two.
+        """
+        mark_ax = stamp_mark(fig, logo, frac=0.18, corner="lower left")
+        brand, _ = stamp_watermark(fig, "earthlens")
+        assert mark_ax.get_zorder() > brand.get_zorder(), (
+            f"mark z={mark_ax.get_zorder()} not above text z={brand.get_zorder()}"
+        )
+
+    def test_the_figure_renders_with_both(self, fig, logo):
+        """Drawing the figure with both stamps raises nothing.
+
+        Args:
+            fig: The figure fixture.
+            logo: The logo-array fixture.
+
+        Test scenario:
+            The artists are excluded from layout, so a draw must not trip the
+            tight-layout machinery the way an in-layout artist would.
+        """
+        stamp_mark(fig, logo, frac=0.18, corner="lower left")
+        stamp_watermark(fig, "earthlens", credit="example.org")
+        fig.canvas.draw()
