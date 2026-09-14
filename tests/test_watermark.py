@@ -1051,7 +1051,8 @@ class TestStampWatermarkWithStampMark:
         )
 
         assert mark_ax in fig.axes, "the mark axes is missing"
-        assert brand in fig.texts and credit in fig.texts, "the text is missing"
+        assert brand in fig.texts, "the brand text is missing"
+        assert credit in fig.texts, "the credit line is missing"
 
     def test_the_mark_sits_above_the_brand_text(self, fig, logo):
         """Z-order puts the logo over the diagonal text.
@@ -1267,9 +1268,8 @@ class TestWatermarkMixin:
         """
         ax = _stamp_mark(fig, logo, frac=0.2)
         brand, _ = _stamp_watermark(fig, "cleopatra")
-        assert ax in fig.axes and brand in fig.texts, (
-            "the free functions should still stamp an arbitrary figure"
-        )
+        assert ax in fig.axes, "the mark did not reach the figure"
+        assert brand in fig.texts, "the brand text did not reach the figure"
 
 
 class _DetachedAxes:
@@ -1307,8 +1307,9 @@ class TestWatermarkFigureResolution:
             matplotlib, where it surfaces as an `AttributeError` on `NoneType`
             far from the cause. The resolver keeps the explanation instead.
         """
+        glyph = _GlyphWithDetachedAxes()
         with pytest.raises(ValueError, match="has no figure to stamp yet"):
-            _GlyphWithDetachedAxes().stamp_watermark("cleopatra")
+            glyph.stamp_watermark("cleopatra")
 
 
 class TestRenderedFigureTracking:
@@ -1363,9 +1364,8 @@ class TestRenderedFigureTracking:
         """
         figure, axes = plt.subplots()
         glyph = HistogramGlyph(np.random.default_rng(0).normal(size=50), ax=axes)
-        assert glyph._rendered_fig is None and glyph._fig is None, (
-            "precondition: the glyph holds only an axes"
-        )
+        assert glyph._rendered_fig is None, "precondition: nothing rendered yet"
+        assert glyph._fig is None, "precondition: no construction figure either"
         brand, _ = glyph.stamp_watermark("cleopatra")
         assert brand in figure.texts, "the stamp did not land on the axes' figure"
         plt.close("all")

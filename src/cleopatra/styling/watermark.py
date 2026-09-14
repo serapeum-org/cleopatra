@@ -300,6 +300,62 @@ def _fit_text_to_frac(fig: Figure, artist: Text, frac: float) -> None:
         artist.set_fontsize(artist.get_fontsize() * frac / longest)
 
 
+def _validate_watermark_options(
+    text: str,
+    *,
+    frac: float,
+    alpha: float,
+    angle: float,
+    credit: str | None,
+    credit_frac: float,
+    credit_alpha: float,
+    margin: float,
+) -> None:
+    """Check every `_stamp_watermark` argument, or raise saying which failed.
+
+    Split out of `_stamp_watermark` so that function reads as the two artists it
+    draws rather than as ten guard clauses in front of them. The credit-only
+    parameters are checked only when a credit is actually drawn: they are dead
+    otherwise, and rejecting a call that renders correctly would be worse than
+    leaving them unread.
+
+    Args:
+        text: The brand text.
+        frac: The brand text's target figure fraction.
+        alpha: The brand text's opacity.
+        angle: The brand text's rotation in degrees.
+        credit: The credit line, or `None` for no credit line.
+        credit_frac: The credit line's target figure fraction.
+        credit_alpha: The credit line's opacity.
+        margin: The credit line's gap from the bottom edge.
+
+    Raises:
+        ValueError: On the first argument that is out of contract, naming it.
+    """
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError(f"text must be a non-empty string, got {text!r}.")
+    if not 0.0 < frac <= 1.0:
+        raise ValueError(f"frac must be in (0, 1], got {frac!r}.")
+    if not 0.0 <= alpha <= 1.0:
+        raise ValueError(f"alpha must be in [0, 1], got {alpha!r}.")
+    if not np.isfinite(angle):
+        raise ValueError(f"angle must be a finite number of degrees, got {angle!r}.")
+    if credit is None:
+        return
+    if not isinstance(credit, str) or not credit.strip():
+        raise ValueError(
+            f"credit must be a non-empty string or None, got {credit!r}. A blank "
+            f"credit would stamp an artist with nothing in it; pass None to draw "
+            f"no credit line."
+        )
+    if not 0.0 < credit_frac <= 1.0:
+        raise ValueError(f"credit_frac must be in (0, 1], got {credit_frac!r}.")
+    if not 0.0 <= credit_alpha <= 1.0:
+        raise ValueError(f"credit_alpha must be in [0, 1], got {credit_alpha!r}.")
+    if not 0.0 <= margin < 1.0:
+        raise ValueError(f"margin must be in [0, 1), got {margin!r}.")
+
+
 def _stamp_watermark(
     fig: Figure,
     text: str,
@@ -440,27 +496,16 @@ def _stamp_watermark(
     See Also:
         _stamp_mark: The image counterpart, for a corner logo.
     """
-    if not isinstance(text, str) or not text.strip():
-        raise ValueError(f"text must be a non-empty string, got {text!r}.")
-    if not 0.0 < frac <= 1.0:
-        raise ValueError(f"frac must be in (0, 1], got {frac!r}.")
-    if not 0.0 <= alpha <= 1.0:
-        raise ValueError(f"alpha must be in [0, 1], got {alpha!r}.")
-    if not np.isfinite(angle):
-        raise ValueError(f"angle must be a finite number of degrees, got {angle!r}.")
-    if credit is not None:
-        if not isinstance(credit, str) or not credit.strip():
-            raise ValueError(
-                f"credit must be a non-empty string or None, got {credit!r}. A blank "
-                f"credit would stamp an artist with nothing in it; pass None to draw "
-                f"no credit line."
-            )
-        if not 0.0 < credit_frac <= 1.0:
-            raise ValueError(f"credit_frac must be in (0, 1], got {credit_frac!r}.")
-        if not 0.0 <= credit_alpha <= 1.0:
-            raise ValueError(f"credit_alpha must be in [0, 1], got {credit_alpha!r}.")
-        if not 0.0 <= margin < 1.0:
-            raise ValueError(f"margin must be in [0, 1), got {margin!r}.")
+    _validate_watermark_options(
+        text,
+        frac=frac,
+        alpha=alpha,
+        angle=angle,
+        credit=credit,
+        credit_frac=credit_frac,
+        credit_alpha=credit_alpha,
+        margin=margin,
+    )
 
     brand = fig.text(
         0.5,
