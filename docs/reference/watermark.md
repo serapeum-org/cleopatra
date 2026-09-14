@@ -11,6 +11,19 @@ every notebook. Two entry points, designed to be used together:
 Both size by a fraction of the figure and position by a margin from its edge, so a mark keeps its
 proportions across the several dpis a figure is exported at.
 
+Both are also available **on every glyph as methods**, so the common case needs no import:
+
+```python
+glyph.plot()
+glyph.stamp_mark(LOGO, frac=0.18, corner="lower left")
+glyph.stamp_watermark("earthlens", credit="github.com/serapeum-org/earthlens")
+```
+
+The methods are thin sugar over the free functions — same parameters, same validation — and stamp
+the glyph's own figure. The free functions remain the primitives, and are what you want for a
+figure no single glyph owns. Note that a stamp lands on the whole **figure**, so on a figure
+carrying several glyphs it does not matter which one you call it through.
+
 ## `stamp_mark` — a logo image
 
 `stamp_mark(fig, path, *, frac=0.11, corner="lower right", margin=0.025, shadow=True,
