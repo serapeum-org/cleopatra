@@ -4,9 +4,9 @@ The `cleopatra.styling.watermark` module puts a mark on a finished matplotlib `F
 single call, so anything you publish or share can carry one without re-rolling the same glue in
 every notebook. Two entry points, designed to be used together:
 
-- **`stamp_mark`** — a logo *image*, anchored in a corner.
-- **`stamp_watermark`** — diagonal brand *text* across the middle, with an optional credit line
-  along the bottom.
+- **`glyph.stamp_mark(...)`** — a logo *image*, anchored in a corner.
+- **`glyph.stamp_watermark(...)`** — diagonal brand *text* across the middle, with an optional
+  credit line along the bottom.
 
 Both size by a fraction of the figure and position by a margin from its edge, so a mark keeps its
 proportions across the several dpis a figure is exported at.
@@ -19,14 +19,15 @@ glyph.stamp_mark(LOGO, frac=0.18, corner="lower left")
 glyph.stamp_watermark("earthlens", credit="github.com/serapeum-org/earthlens")
 ```
 
-The methods are thin sugar over the free functions — same parameters, same validation — and stamp
-the glyph's own figure. The free functions remain the primitives, and are what you want for a
-figure no single glyph owns. Note that a stamp lands on the whole **figure**, so on a figure
-carrying several glyphs it does not matter which one you call it through.
+Both stamp the glyph's own figure, and both are **the** way in: the functions underneath
+(`_stamp_mark`, `_stamp_watermark`) are private, so there is one supported route rather than two
+equivalent ones. A stamp lands on the whole **figure**, so on a figure carrying several glyphs it
+does not matter which one you call it through.
 
 ## `stamp_mark` — a logo image
 
-`stamp_mark(fig, path, *, frac=0.11, corner="lower right", margin=0.025, shadow=True,
+
+`glyph.stamp_mark(path, *, frac=0.11, corner="lower right", margin=0.025, shadow=True,
 blur=0.065)`. Two things make it more than a one-liner over `imshow`:
 
 - **Fraction-of-figure sizing.** The mark is drawn on a frameless inset axes in
@@ -50,14 +51,14 @@ It is a presentation helper, not a glyph: it takes whatever `Figure` you hand it
 top. Single-image, corner-anchored marks only — tiled / repeated marks and any licensing /
 provenance semantics are out of scope.
 
-`stamp_mark` accepts the mark either as a **file path** (any format Pillow can open, read as
+`stamp_mark` takes the mark either as a **file path** (any format Pillow can open, read as
 RGBA) or as an in-memory `(H, W, 3)` / `(H, W, 4)` NumPy array (`uint8` `0-255` or float
 `0-1`; RGB gains an opaque alpha). It returns the frameless inset `Axes` it drew on, so you
 can adjust it further.
 
 ## `stamp_watermark` — brand text
 
-`stamp_watermark(fig, text, *, frac=0.55, angle=30.0, alpha=0.65, color="white", credit=None,
+`glyph.stamp_watermark(text, *, frac=0.55, angle=30.0, alpha=0.65, color="white", credit=None,
 credit_frac=0.28, credit_alpha=1.0, margin=0.014)` stamps translucent brand text across the middle
 of the figure, and optionally a credit line along the bottom.
 
@@ -76,10 +77,8 @@ of the figure, and optionally a credit line along the bottom.
 It returns `(brand_text, credit_text)` — the second is `None` when no `credit` was given.
 
 ```python
-from cleopatra.styling.watermark import stamp_mark, stamp_watermark
-
-stamp_mark(fig, LOGO, frac=0.18, corner="lower left")
-stamp_watermark(fig, "earthlens", credit="github.com/serapeum-org/earthlens")
+glyph.stamp_mark(LOGO, frac=0.18, corner="lower left")
+glyph.stamp_watermark("earthlens", credit="github.com/serapeum-org/earthlens")
 ```
 
 !!! note "Call both last"
@@ -93,21 +92,23 @@ stamp_watermark(fig, "earthlens", credit="github.com/serapeum-org/earthlens")
 ## Usage
 
 ```python
-import matplotlib.pyplot as plt
 import numpy as np
-from cleopatra.styling.watermark import stamp_mark
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+
+glyph = ArrayGlyph(np.arange(60.0).reshape(6, 10))
+glyph.plot()
 
 fig = plt.figure(figsize=(12, 8))
 fig.add_subplot(111).imshow(np.random.default_rng(0).random((60, 90)), cmap="magma")
 
 # a file on disk...
-stamp_mark(fig, "brand/logo.png", frac=0.12, corner="lower right")
+glyph.stamp_mark("brand/logo.png", frac=0.12, corner="lower right")
 
 # ...or an in-memory RGBA array, in a different corner, without the shadow
 logo = np.zeros((80, 160, 4), dtype=np.uint8)
 logo[..., :3] = 255
 logo[..., 3] = 255
-stamp_mark(fig, logo, frac=0.09, corner="upper left", shadow=False)
+glyph.stamp_mark(logo, frac=0.09, corner="upper left", shadow=False)
 
 fig.savefig("figure.png", dpi=200)  # the mark keeps its proportion at any dpi
 ```
@@ -119,10 +120,10 @@ both axes or an `(x, y)` pair. The pair matters when a mark has to tuck hard int
 one axis while keeping a gap on the other:
 
 ```python
-stamp_mark(fig, "brand/logo.png", margin=(0.025, 0.0))  # flush with the bottom, inset from the right
+glyph.stamp_mark("brand/logo.png", margin=(0.025, 0.0))  # flush with the bottom, inset from the right
 ```
 
-!!! note "Call `stamp_mark` last, and save the whole figure"
+!!! note "Stamp last, and save the whole figure"
 
     The mark is baked at stamp time from the figure's current size, so stamp **after** any
     `tight_layout()` / layout finalization and after the final `set_size_inches` (stamping first
@@ -142,4 +143,13 @@ stamp_mark(fig, "brand/logo.png", margin=(0.025, 0.0))  # flush with the bottom,
     `frac`; `margin` is still measured to the mark, so a halo beside a small margin is clipped at
     the figure edge (which is what you want when tucking a mark into a corner).
 
-::: cleopatra.styling.watermark.stamp_mark
+## Method Documentation
+
+::: cleopatra.styling.watermark.WatermarkMixin
+    options:
+      show_root_heading: true
+      show_source: true
+      heading_level: 3
+      members:
+        - stamp_mark
+        - stamp_watermark

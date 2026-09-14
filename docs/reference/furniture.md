@@ -3,8 +3,8 @@
 The `cleopatra.styling.furniture` module draws the two remaining pieces of standard chart
 furniture cleopatra did not have: a **scale bar** and a **north arrow**. Both are free
 functions that decorate an existing `matplotlib.axes.Axes` and return the frameless inset axes
-they drew on, exactly like `stamp_mark` — so they read alike and anchor identically (they share
-`stamp_mark`'s corner-placement plumbing) and use the same `box` / `label_location` /
+they drew on, exactly like the watermark stamps — so they read alike and anchor identically (they share
+the same corner-placement plumbing) and use the same `box` / `label_location` /
 `label_size` vocabulary as `ColorBar`.
 
 ```python

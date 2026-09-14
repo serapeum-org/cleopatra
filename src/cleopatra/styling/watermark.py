@@ -1,6 +1,6 @@
 """Figure watermark / brand-mark helper.
 
-`stamp_mark` places a logo or watermark image onto a matplotlib `Figure`,
+`_stamp_mark` places a logo or watermark image onto a matplotlib `Figure`,
 sized as a *fraction of the figure* (so it stays proportional across the
 several dpis a figure is often exported at -- an MP4 master, a smaller web
 copy, a GIF) and anchored in one of the four corners, with an optional
@@ -14,16 +14,18 @@ shadow would imply a light direction nothing else in the frame has.
 This is a presentation helper, not a glyph: it takes a finished `Figure` and
 draws on top of it via a frameless inset axes in figure-fraction coordinates
 (the dpi-independent counterpart of `Figure.figimage`, which is pixel-based).
-Both are free functions taking a `Figure`, and both are also available as
-glyph methods through `WatermarkMixin` -- `glyph.stamp_mark(logo)` rather than
-importing and passing `glyph.fig` -- following the same
-free-function-plus-sugar shape `styling.furniture` and `basemap.geo` already
-use for the scale bar and north arrow.
 
-`stamp_watermark` is its text counterpart: the diagonal translucent brand
+**The public entry point is `WatermarkMixin`, which every glyph inherits** --
+`glyph.stamp_mark(logo)` and `glyph.stamp_watermark("brand")`. The two
+functions below are private: they take a bare `Figure`, and stamping one that
+no glyph owns is deliberately not part of the supported surface, so there is a
+single way to do this rather than two.
+
+`_stamp_watermark` is its text counterpart: the diagonal translucent brand
 text across the middle of a frame, plus an optional credit line along the
 bottom. The two are designed to be used together -- a corner logo from
-`stamp_mark`, brand text from `stamp_watermark` -- and share their conventions,
+`glyph.stamp_mark`, brand text from `glyph.stamp_watermark` -- and share their
+conventions,
 so a size is a fraction of the figure and a position is a margin from its edge
 rather than a point size or an offset in inches.
 
@@ -51,9 +53,9 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
     from matplotlib.text import Text
 
-__all__ = ["WatermarkMixin", "stamp_mark", "stamp_watermark"]
+__all__ = ["WatermarkMixin"]
 
-#: The four corner anchors `stamp_mark` accepts.
+#: The four corner anchors `_stamp_mark` accepts.
 _CORNERS = ("lower right", "lower left", "upper right", "upper left")
 
 #: Default halo blur sigma, as a fraction of the mark's own (unpadded) width.
@@ -95,7 +97,7 @@ _FIT_TOLERANCE = 0.002
 _FIT_MAX_PASSES = 12
 
 
-def stamp_mark(
+def _stamp_mark(
     fig: Figure,
     path: str | os.PathLike | np.ndarray,
     *,
@@ -156,7 +158,7 @@ def stamp_mark(
 
     Notes:
         The mark is baked at stamp time from the figure's current size, so call
-        `stamp_mark` **last** -- after any `tight_layout()` / layout
+        the stamp **last** -- after any `tight_layout()` / layout
         finalization (stamping first then calling `tight_layout()` warns), and
         after the final `set_size_inches`. Placement holds across dpi but not
         across a later figure-size change. Saving with `bbox_inches="tight"`
@@ -185,12 +187,12 @@ def stamp_mark(
             >>> matplotlib.use("Agg")
             >>> import numpy as np
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.styling.watermark import stamp_mark
+            >>> from cleopatra.styling.watermark import _stamp_mark
             >>> fig = plt.figure(figsize=(8, 6))
             >>> logo = np.zeros((40, 80, 4), dtype=np.uint8)
             >>> logo[..., :3] = 255  # white
             >>> logo[..., 3] = 255   # opaque
-            >>> ax = stamp_mark(fig, logo, frac=0.2, shadow=False)
+            >>> ax = _stamp_mark(fig, logo, frac=0.2, shadow=False)
             >>> [round(float(v), 3) for v in ax.get_position().bounds]
             [0.775, 0.025, 0.2, 0.133]
             >>> plt.close(fig)
@@ -269,7 +271,7 @@ def _fit_text_to_frac(fig: Figure, artist: Text, frac: float) -> None:
     resized after the text is placed keeps the same point size and so the text
     covers a different share of the frame. Measuring the rendered extent and
     solving for the point size that hits a figure fraction is what makes the
-    text behave like `stamp_mark`'s `frac` instead.
+    text behave like the mark's `frac` instead.
 
     Rendered size is very nearly linear in point size, so one correction is
     almost right; hinting quantises glyphs to whole pixels, so the loop repeats
@@ -290,7 +292,7 @@ def _fit_text_to_frac(fig: Figure, artist: Text, frac: float) -> None:
         longest = max(box.width / figure_box.width, box.height / figure_box.height)
         if longest <= 0.0:
             # Only an empty string measures zero -- whitespace has real width
-            # and height. `stamp_watermark` rejects one, so this guards the
+            # and height. `_stamp_watermark` rejects one, so this guards the
             # helper against a direct caller rather than a reachable input.
             return
         if abs(longest - frac) <= _FIT_TOLERANCE:
@@ -298,7 +300,7 @@ def _fit_text_to_frac(fig: Figure, artist: Text, frac: float) -> None:
         artist.set_fontsize(artist.get_fontsize() * frac / longest)
 
 
-def stamp_watermark(
+def _stamp_watermark(
     fig: Figure,
     text: str,
     *,
@@ -313,9 +315,9 @@ def stamp_watermark(
 ) -> tuple[Text, Text | None]:
     """Stamp diagonal brand text across a figure, sized as a fraction of it.
 
-    The text counterpart to `stamp_mark`: translucent brand text centred on
+    The text counterpart to `_stamp_mark`: translucent brand text centred on
     `fig` at an angle, with an optional credit line along the bottom edge. Like
-    `stamp_mark` it sizes by a *fraction of the figure* rather than in points,
+    `_stamp_mark` it sizes by a *fraction of the figure* rather than in points,
     and positions by a *margin from the edge* rather than a hardcoded offset.
 
     Sizing by fraction is what makes the parameter mean the same thing for any
@@ -370,13 +372,13 @@ def stamp_watermark(
             in ``[0, 1)``.
 
     Notes:
-        Like `stamp_mark`, the size is baked at stamp time from the figure's
-        current size, so call `stamp_watermark` **last** -- after any
+        Like `_stamp_mark`, the size is baked at stamp time from the figure's
+        current size, so stamp **last** -- after any
         `tight_layout()` / layout finalization, and after the final
         `set_size_inches`. The proportion holds across dpi.
 
         It does **not** survive a later `set_size_inches`, and here the text
-        differs from `stamp_mark`: a mark lives on an inset axes in
+        differs from the mark: a mark lives on an inset axes in
         figure-fraction coordinates and so keeps its share of a figure resized
         proportionally afterwards, whereas text is measured in points and keeps
         its *absolute* size, halving its share when the figure doubles. Stamp
@@ -393,9 +395,9 @@ def stamp_watermark(
             >>> import matplotlib
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.styling.watermark import stamp_watermark
+            >>> from cleopatra.styling.watermark import _stamp_watermark
             >>> fig = plt.figure(figsize=(8, 4.5))
-            >>> brand, credit = stamp_watermark(fig, "earthlens", frac=0.5)
+            >>> brand, credit = _stamp_watermark(fig, "earthlens", frac=0.5)
             >>> credit is None
             True
             >>> box = brand.get_window_extent()
@@ -411,9 +413,9 @@ def stamp_watermark(
             >>> import matplotlib
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.styling.watermark import stamp_watermark
+            >>> from cleopatra.styling.watermark import _stamp_watermark
             >>> fig = plt.figure(figsize=(8, 4.5))
-            >>> brand, credit = stamp_watermark(
+            >>> brand, credit = _stamp_watermark(
             ...     fig, "earthlens", credit="github.com/serapeum-org/earthlens"
             ... )
             >>> credit.get_text()
@@ -421,14 +423,14 @@ def stamp_watermark(
             >>> plt.close(fig)
 
             ```
-        - An out-of-range opacity is refused, as on `stamp_mark`:
+        - An out-of-range opacity is refused, as on the mark:
             ```python
             >>> import matplotlib
             >>> matplotlib.use("Agg")
             >>> import matplotlib.pyplot as plt
-            >>> from cleopatra.styling.watermark import stamp_watermark
+            >>> from cleopatra.styling.watermark import _stamp_watermark
             >>> fig = plt.figure()
-            >>> stamp_watermark(fig, "earthlens", alpha=1.5)
+            >>> _stamp_watermark(fig, "earthlens", alpha=1.5)
             Traceback (most recent call last):
                 ...
             ValueError: alpha must be in [0, 1], got 1.5.
@@ -436,7 +438,7 @@ def stamp_watermark(
             ```
 
     See Also:
-        stamp_mark: The image counterpart, for a corner logo.
+        _stamp_mark: The image counterpart, for a corner logo.
     """
     if not isinstance(text, str) or not text.strip():
         raise ValueError(f"text must be a non-empty string, got {text!r}.")
@@ -671,14 +673,12 @@ def _composite_halo(image: np.ndarray, blur: float) -> tuple[np.ndarray, float, 
 
 
 class WatermarkMixin:
-    """Glyph-side sugar over `stamp_mark` and `stamp_watermark`.
+    """The glyph-side entry point for both figure stamps.
 
-    Both stamps act on a whole `Figure`, so a glyph can offer them once it has
-    one: `glyph.stamp_mark(logo)` instead of importing the function and passing
-    `glyph.fig` by hand. The free functions remain the primitives and are
-    unchanged -- this only spares the import, in the same shape
-    `cleopatra.basemap.geo.GeoMixin` uses to expose `styling.furniture`'s scale
-    bar and north arrow.
+    Both stamps act on a whole `Figure`, and every glyph knows its own, so the
+    glyph is where they are offered: `glyph.stamp_mark(logo)`. The functions
+    underneath are private, which makes this the one supported way in rather
+    than a convenience beside an equally public free function.
 
     A figure is what these need, and glyphs spell it differently. `Glyph` keeps
     the one it rendered on in `fig`. `HistogramGlyph` and `TexturedGlobeGlyph`
@@ -722,11 +722,11 @@ class WatermarkMixin:
     def stamp_mark(self, path: str | os.PathLike | np.ndarray, **kwargs: Any) -> Axes:
         """Stamp a logo image on this glyph's figure.
 
-        Thin sugar over `cleopatra.styling.watermark.stamp_mark`; the free
-        function remains available for a figure this glyph does not own.
+        The supported way to stamp a logo. `_stamp_mark` underneath takes a
+        bare `Figure` and is private: a figure no glyph owns is out of scope.
 
         Args:
-            path: The mark image, as `stamp_mark` accepts it.
+            path: The mark image, as `_stamp_mark` accepts it.
             **kwargs: Forwarded verbatim (`frac`, `corner`, `margin`, `shadow`,
                 `blur`).
 
@@ -735,20 +735,22 @@ class WatermarkMixin:
 
         Raises:
             ValueError: If the glyph has not been rendered yet, or as
-                `stamp_mark` raises.
+                `_stamp_mark` raises.
 
         See Also:
-            cleopatra.styling.watermark.stamp_mark: The underlying function.
+            cleopatra.styling.watermark._stamp_mark: The private function
+                underneath.
         """
         # The bare name is the module-level function, not this method: a method
         # name never enters the enclosing scope its body is resolved in.
-        return stamp_mark(self._watermark_figure(), path, **kwargs)
+        return _stamp_mark(self._watermark_figure(), path, **kwargs)
 
     def stamp_watermark(self, text: str, **kwargs: Any) -> tuple[Text, Text | None]:
         """Stamp diagonal brand text on this glyph's figure.
 
-        Thin sugar over `cleopatra.styling.watermark.stamp_watermark`; the free
-        function remains available for a figure this glyph does not own.
+        The supported way to stamp brand text. `_stamp_watermark` underneath
+        takes a bare `Figure` and is private: a figure no glyph owns is out of
+        scope.
 
         Args:
             text: The brand text.
@@ -761,11 +763,11 @@ class WatermarkMixin:
 
         Raises:
             ValueError: If the glyph has not been rendered yet, or as
-                `stamp_watermark` raises.
+                `_stamp_watermark` raises.
 
         See Also:
-            cleopatra.styling.watermark.stamp_watermark: The underlying
-                function.
+            cleopatra.styling.watermark._stamp_watermark: The private
+                function underneath.
 
         Examples:
             - Stamp a logo and brand text without importing either:
@@ -784,4 +786,4 @@ class WatermarkMixin:
 
                 ```
         """
-        return stamp_watermark(self._watermark_figure(), text, **kwargs)
+        return _stamp_watermark(self._watermark_figure(), text, **kwargs)

@@ -5,10 +5,10 @@ figure-fraction coordinates, dpi-invariant sizing, undistorted aspect, the
 optional gaussian-blurred halo, image-input handling (RGBA/RGB arrays,
 float arrays, file paths), and input validation.
 
-And `stamp_watermark`, its text counterpart: fraction-based sizing that means
+And `_stamp_watermark`, its text counterpart: fraction-based sizing that means
 the same thing for any text, credit-line placement by margin, the deliberate
 outline asymmetry between the two artists, and input validation matching
-`stamp_mark`'s.
+`_stamp_mark`'s.
 
 Plus `WatermarkMixin`, which exposes both as glyph methods so a caller does not
 have to import them and pass the figure by hand.
@@ -37,8 +37,8 @@ from cleopatra.styling.watermark import (
     DEFAULT_BLUR,
     WatermarkMixin,
     _fit_text_to_frac,
-    stamp_mark,
-    stamp_watermark,
+    _stamp_mark,
+    _stamp_watermark,
 )
 
 
@@ -70,7 +70,7 @@ def logo():
 
 
 class TestStampMark:
-    """Tests for `stamp_mark`."""
+    """Tests for `_stamp_mark`."""
 
     @pytest.mark.parametrize(
         "corner, at_right, at_top",
@@ -97,7 +97,7 @@ class TestStampMark:
             correct edges by `margin`.
         """
         frac, margin = 0.11, 0.025
-        ax = stamp_mark(
+        ax = _stamp_mark(
             fig, logo, frac=frac, corner=corner, margin=margin, shadow=False
         )
         x0, y0, w, h = (float(v) for v in ax.get_position().bounds)
@@ -118,7 +118,7 @@ class TestStampMark:
             its bounds are identical at 100 and 300 dpi -- so it stays
             proportional across an MP4 master, a web copy, and a GIF.
         """
-        ax = stamp_mark(fig, logo, shadow=False)
+        ax = _stamp_mark(fig, logo, shadow=False)
         fig.set_dpi(100)
         at_100 = tuple(ax.get_position().bounds)
         fig.set_dpi(300)
@@ -135,7 +135,7 @@ class TestStampMark:
             width:height (0.5 here), even though the figure itself is not
             square -- so a logo is never stretched.
         """
-        ax = stamp_mark(fig, logo, shadow=False)
+        ax = _stamp_mark(fig, logo, shadow=False)
         box = ax.get_position()
         w_in = box.width * 8.0
         h_in = box.height * 6.0
@@ -155,7 +155,7 @@ class TestStampMark:
         tall = np.zeros((400, 40, 4), dtype=np.uint8)
         tall[..., :3] = 255
         tall[..., 3] = 255
-        ax = stamp_mark(fig, tall, frac=0.5, corner="upper left", shadow=False)
+        ax = _stamp_mark(fig, tall, frac=0.5, corner="upper left", shadow=False)
         x0, y0, w, h = (float(v) for v in ax.get_position().bounds)
         assert 0.0 <= x0, f"mark overflows the left edge: x0={x0}"
         assert x0 + w <= 1.0, f"mark overflows the right edge: {(x0, w)}"
@@ -176,7 +176,7 @@ class TestStampMark:
             resampled axes would not guarantee.
         """
         n_before = len(fig.axes)
-        ax = stamp_mark(fig, logo, shadow=True)
+        ax = _stamp_mark(fig, logo, shadow=True)
         assert len(fig.axes) - n_before == 1, (
             "halo should be composited, not drawn on its own axes"
         )
@@ -199,8 +199,8 @@ class TestStampMark:
             render at 1/grow (about 72 %) of the requested size.
         """
         frac = 0.2
-        plain = stamp_mark(fig, logo, frac=frac, shadow=False).get_position().width
-        haloed = stamp_mark(fig, logo, frac=frac, shadow=True).get_position().width
+        plain = _stamp_mark(fig, logo, frac=frac, shadow=False).get_position().width
+        haloed = _stamp_mark(fig, logo, frac=frac, shadow=True).get_position().width
         grow = 1.0 + 2.0 * _HALO_SIGMAS * DEFAULT_BLUR
         assert np.isclose(plain, frac), f"unhaloed mark should measure frac: {plain}"
         assert np.isclose(haloed, frac * grow, rtol=0.02), (
@@ -217,7 +217,9 @@ class TestStampMark:
         """
         frac = 0.2
         haloed = (
-            stamp_mark(fig, logo, frac=frac, shadow=True, blur=0.0).get_position().width
+            _stamp_mark(fig, logo, frac=frac, shadow=True, blur=0.0)
+            .get_position()
+            .width
         )
         assert np.isclose(haloed, frac), (
             f"blur=0 should not grow the axes: {haloed} != {frac}"
@@ -238,7 +240,7 @@ class TestStampMark:
             mark = np.zeros((40, 80, 4), dtype=np.uint8)
             mark[..., 0] = 255  # opaque pure red, distinct from the black halo
             mark[..., 3] = 255
-            stamp_mark(
+            _stamp_mark(
                 figure, mark, frac=0.25, corner="lower left", margin=0.15, shadow=shadow
             )
             figure.canvas.draw()
@@ -264,7 +266,7 @@ class TestStampMark:
         mark = np.zeros((40, 80, 4), dtype=np.uint8)
         mark[..., 0] = 255
         mark[..., 3] = 255
-        stamp_mark(
+        _stamp_mark(
             figure, mark, frac=0.25, corner="lower left", margin=0.15, shadow=True
         )
         figure.canvas.draw()
@@ -289,7 +291,9 @@ class TestStampMark:
         mark = np.zeros((40, 80, 4), dtype=np.uint8)
         mark[..., 0] = 255
         mark[..., 3] = 255
-        stamp_mark(figure, mark, frac=0.3, corner="lower left", margin=0.3, shadow=True)
+        _stamp_mark(
+            figure, mark, frac=0.3, corner="lower left", margin=0.3, shadow=True
+        )
         figure.canvas.draw()
         rgba = np.asarray(figure.canvas.buffer_rgba())
         red = (rgba[..., 0] > 200) & (rgba[..., 1] < 60) & (rgba[..., 2] < 60)
@@ -312,7 +316,7 @@ class TestStampMark:
             Without a shadow exactly one axes is added.
         """
         n_before = len(fig.axes)
-        stamp_mark(fig, logo, shadow=False)
+        _stamp_mark(fig, logo, shadow=False)
         assert len(fig.axes) - n_before == 1, (
             "no-shadow stamp should add exactly one axes"
         )
@@ -324,7 +328,7 @@ class TestStampMark:
             The returned axes has its frame off (no white box), no visible
             axis, and a very high zorder so it draws on top of the plot.
         """
-        ax = stamp_mark(fig, logo, shadow=False)
+        ax = _stamp_mark(fig, logo, shadow=False)
         assert not ax.get_frame_on(), "mark axes must be frameless (no background box)"
         assert not ax.axison, "mark axes must have its axis turned off"
         assert ax.get_zorder() >= 1_000_000, (
@@ -339,7 +343,7 @@ class TestStampMark:
             names the bad value.
         """
         with pytest.raises(ValueError, match=r"corner must be one of.*'middle'"):
-            stamp_mark(fig, logo, corner="middle")
+            _stamp_mark(fig, logo, corner="middle")
 
     @pytest.mark.parametrize("frac", [0.0, -0.1, 1.5])
     def test_invalid_frac_raises(self, fig, logo, frac):
@@ -354,7 +358,7 @@ class TestStampMark:
             Zero, negative, and above-one fractions are all rejected.
         """
         with pytest.raises(ValueError, match="frac must be in"):
-            stamp_mark(fig, logo, frac=frac)
+            _stamp_mark(fig, logo, frac=frac)
 
     def test_margin_accepts_an_xy_pair(self, fig, logo):
         """`margin` takes an ``(x, y)`` pair, not just one scalar.
@@ -365,7 +369,7 @@ class TestStampMark:
             ``margin=(0.025, 0.0)`` puts the mark flush with the bottom edge and
             0.025 in from the right.
         """
-        ax = stamp_mark(
+        ax = _stamp_mark(
             fig, logo, corner="lower right", margin=(0.025, 0.0), shadow=False
         )
         x0, y0, w, _ = (float(v) for v in ax.get_position().bounds)
@@ -388,7 +392,7 @@ class TestStampMark:
             (``None``) are all rejected with a clear message.
         """
         with pytest.raises(ValueError, match="margin must be"):
-            stamp_mark(fig, logo, margin=bad)
+            _stamp_mark(fig, logo, margin=bad)
 
     def test_margin_plus_size_off_canvas_raises(self, fig, logo):
         """A margin that leaves no room for the mark raises, not silent overflow.
@@ -396,10 +400,10 @@ class TestStampMark:
         Test scenario:
             `frac` and `margin` are each in range, but `margin=0.95` +
             `frac=0.11` sums past 1, which would place the mark off the opposite
-            edge. `stamp_mark` raises a clear `ValueError` instead.
+            edge. `_stamp_mark` raises a clear `ValueError` instead.
         """
         with pytest.raises(ValueError, match="exceeds the figure"):
-            stamp_mark(fig, logo, frac=0.11, margin=0.95, shadow=False)
+            _stamp_mark(fig, logo, frac=0.11, margin=0.95, shadow=False)
 
     def test_negative_blur_raises(self, fig, logo):
         """A negative `blur` raises `ValueError`.
@@ -408,7 +412,7 @@ class TestStampMark:
             Blur is a sigma, so it cannot be negative.
         """
         with pytest.raises(ValueError, match="blur must be non-negative"):
-            stamp_mark(fig, logo, blur=-0.1)
+            _stamp_mark(fig, logo, blur=-0.1)
 
     @pytest.mark.parametrize("margin", [-0.01, 1.0, 1.5])
     def test_invalid_margin_raises(self, fig, logo, margin):
@@ -423,7 +427,7 @@ class TestStampMark:
             Negative and >= 1 margins are rejected.
         """
         with pytest.raises(ValueError, match="margin must be in"):
-            stamp_mark(fig, logo, margin=margin)
+            _stamp_mark(fig, logo, margin=margin)
 
     def test_rgb_array_gets_opaque_alpha(self, fig):
         """A 3-channel RGB array is accepted and stamped opaque.
@@ -433,7 +437,7 @@ class TestStampMark:
             added internally -- producing a normal mark axes.
         """
         rgb = np.full((30, 30, 3), 128, dtype=np.uint8)
-        ax = stamp_mark(fig, rgb, shadow=False)
+        ax = _stamp_mark(fig, rgb, shadow=False)
         assert ax.images, "RGB array should produce a drawn image"
 
     def test_float_array_accepted(self, fig):
@@ -443,7 +447,7 @@ class TestStampMark:
             A float image in ``[0, 1]`` renders without error.
         """
         rgba = np.ones((30, 60, 4), dtype=np.float32)
-        ax = stamp_mark(fig, rgba, shadow=False)
+        ax = _stamp_mark(fig, rgba, shadow=False)
         assert ax.images, "float array should produce a drawn image"
 
     def test_missing_path_raises(self, fig, tmp_path):
@@ -454,7 +458,7 @@ class TestStampMark:
             `FileNotFoundError` at stamp time, not a confusing later failure.
         """
         with pytest.raises(FileNotFoundError):
-            stamp_mark(fig, str(tmp_path / "does_not_exist.png"), shadow=False)
+            _stamp_mark(fig, str(tmp_path / "does_not_exist.png"), shadow=False)
 
     def test_uint16_array_rejected(self, fig):
         """A non-``uint8`` integer array is rejected, not truncated mod 256.
@@ -466,7 +470,7 @@ class TestStampMark:
         """
         u16 = np.full((20, 20, 4), 1000, dtype=np.uint16)
         with pytest.raises(ValueError, match="uint8"):
-            stamp_mark(fig, u16, shadow=False)
+            _stamp_mark(fig, u16, shadow=False)
 
     def test_out_of_range_float_array_rejected(self, fig):
         """A float array outside ``[0, 1]`` is rejected, not clipped to white.
@@ -478,7 +482,7 @@ class TestStampMark:
         """
         f255 = np.full((20, 20, 4), 128.0, dtype=np.float32)
         with pytest.raises(ValueError, match=r"\[0, 1\]"):
-            stamp_mark(fig, f255, shadow=False)
+            _stamp_mark(fig, f255, shadow=False)
 
     @pytest.mark.parametrize("bad", [np.nan, np.inf, -np.inf])
     def test_non_finite_float_array_rejected(self, fig, bad):
@@ -497,7 +501,7 @@ class TestStampMark:
         arr = np.ones((20, 20, 4), dtype=np.float32)
         arr[0, 0, 0] = bad
         with pytest.raises(ValueError, match="finite"):
-            stamp_mark(fig, arr, shadow=False)
+            _stamp_mark(fig, arr, shadow=False)
 
     def test_float_rgb_array_accepted(self, fig):
         """A float ``0-1`` **RGB** ``(H, W, 3)`` array is accepted (opaque alpha).
@@ -507,7 +511,7 @@ class TestStampMark:
             an opaque alpha added internally.
         """
         rgb = np.full((30, 60, 3), 0.5, dtype=np.float32)
-        ax = stamp_mark(fig, rgb, shadow=False)
+        ax = _stamp_mark(fig, rgb, shadow=False)
         assert ax.images, "float RGB array should produce a drawn image"
 
     def test_bool_array_rejected(self, fig):
@@ -519,7 +523,7 @@ class TestStampMark:
         """
         b = np.ones((20, 20, 4), dtype=bool)
         with pytest.raises(ValueError, match="uint8"):
-            stamp_mark(fig, b, shadow=False)
+            _stamp_mark(fig, b, shadow=False)
 
     @pytest.mark.parametrize("bad", [np.zeros((10, 10)), np.zeros((10, 10, 2))])
     def test_bad_array_shape_raises(self, fig, bad):
@@ -533,19 +537,19 @@ class TestStampMark:
             2-D and 2-channel arrays are rejected with a shape message.
         """
         with pytest.raises(ValueError, match="must be"):
-            stamp_mark(fig, bad, shadow=False)
+            _stamp_mark(fig, bad, shadow=False)
 
     def test_zero_size_image_rejected(self, fig):
         """A zero-size image dimension raises clearly, not a matplotlib error.
 
         Test scenario:
             A ``(0, W, C)`` array passes the shape check but has no pixels;
-            `stamp_mark` rejects it up front rather than surfacing a confusing
+            `_stamp_mark` rejects it up front rather than surfacing a confusing
             matplotlib-internal reduction error.
         """
         empty = np.zeros((0, 10, 4), dtype=np.uint8)
         with pytest.raises(ValueError, match="zero-size"):
-            stamp_mark(fig, empty, shadow=False)
+            _stamp_mark(fig, empty, shadow=False)
 
     def test_file_path_input(self, fig, tmp_path, logo):
         """A PNG file path is loaded via PIL and stamped.
@@ -561,7 +565,7 @@ class TestStampMark:
         """
         png = tmp_path / "logo.png"
         Image.fromarray(logo).save(png)
-        ax_path = stamp_mark(fig, str(png), shadow=False)
+        ax_path = _stamp_mark(fig, str(png), shadow=False)
         assert ax_path.images, "file-path input should produce a drawn image"
         assert np.allclose(
             ax_path.get_position().bounds,
@@ -574,8 +578,8 @@ class TestStampMark:
         Test scenario:
             Doubling `frac` doubles the mark's figure-fraction width.
         """
-        small = stamp_mark(fig, logo, frac=0.1, shadow=False).get_position().width
-        big = stamp_mark(fig, logo, frac=0.2, shadow=False).get_position().width
+        small = _stamp_mark(fig, logo, frac=0.1, shadow=False).get_position().width
+        big = _stamp_mark(fig, logo, frac=0.2, shadow=False).get_position().width
         assert np.isclose(big, 2 * small), (
             f"frac should scale width linearly: {big} vs {small}"
         )
@@ -638,7 +642,7 @@ def _notebook_helper(fig, text, *, angle=30, text_alpha=0.65):
 
 
 class TestStampWatermark:
-    """`stamp_watermark` places brand text sized as a fraction of the figure."""
+    """`_stamp_watermark` places brand text sized as a fraction of the figure."""
 
     @pytest.mark.parametrize("frac", [0.2, 0.55, 0.9])
     def test_the_text_lands_at_the_requested_fraction(self, fig, frac):
@@ -652,7 +656,7 @@ class TestStampWatermark:
             This is the parameter's whole contract -- it is measured on what is
             actually rendered, not on a point size that happens to correlate.
         """
-        brand, _ = stamp_watermark(fig, "earthlens", frac=frac)
+        brand, _ = _stamp_watermark(fig, "earthlens", frac=frac)
         assert _share_of_figure(fig, brand) == pytest.approx(frac, abs=0.01), (
             f"asked for {frac}, rendered {_share_of_figure(fig, brand)}"
         )
@@ -671,7 +675,7 @@ class TestStampWatermark:
             how much of the frame a string covers depends on its length. The
             notebook helper puts this same long name at ~128% of the figure.
         """
-        brand, _ = stamp_watermark(fig, text, frac=0.55)
+        brand, _ = _stamp_watermark(fig, text, frac=0.55)
         assert _share_of_figure(fig, brand) == pytest.approx(0.55, abs=0.02), (
             f"{text!r} rendered at {_share_of_figure(fig, brand)}, not 0.55"
         )
@@ -690,7 +694,7 @@ class TestStampWatermark:
         """
         long_name = "a-much-longer-brand-name"
         old = _notebook_helper(fig, long_name)
-        new, _ = stamp_watermark(fig, long_name, frac=0.55)
+        new, _ = _stamp_watermark(fig, long_name, frac=0.55)
         assert _share_of_figure(fig, old) > 1.0, (
             "precondition: the old rule should overflow the figure for this name"
         )
@@ -708,7 +712,7 @@ class TestStampWatermark:
             The diagonal is the point of the watermark; a dropped rotation
             would still render plausible-looking text.
         """
-        brand, _ = stamp_watermark(fig, "earthlens", angle=45.0)
+        brand, _ = _stamp_watermark(fig, "earthlens", angle=45.0)
         assert brand.get_rotation() == pytest.approx(45.0), (
             f"rotation not applied: {brand.get_rotation()}"
         )
@@ -724,7 +728,7 @@ class TestStampWatermark:
             the big text makes it read as a solid caption rather than a
             watermark.
         """
-        brand, _ = stamp_watermark(fig, "earthlens", alpha=0.4)
+        brand, _ = _stamp_watermark(fig, "earthlens", alpha=0.4)
         assert brand.get_alpha() == pytest.approx(0.4), "alpha not applied"
         assert not brand.get_path_effects(), (
             "the brand text should carry no outline, only the credit line does"
@@ -740,7 +744,7 @@ class TestStampWatermark:
             The credit is opt-in; returning `None` is what lets a caller tell
             the two cases apart without inspecting the figure.
         """
-        brand, credit = stamp_watermark(fig, "earthlens")
+        brand, credit = _stamp_watermark(fig, "earthlens")
         assert credit is None, f"expected no credit artist, got {credit!r}"
         assert brand in fig.texts, "the brand text was not added to the figure"
 
@@ -758,7 +762,7 @@ class TestStampWatermarkCredit:
             The parameter replaces a hardcoded `0.014`, so it has to actually
             move the artist.
         """
-        _, credit = stamp_watermark(fig, "earthlens", credit="example.org", margin=0.2)
+        _, credit = _stamp_watermark(fig, "earthlens", credit="example.org", margin=0.2)
         assert credit.get_position()[1] == pytest.approx(0.2), (
             f"margin not applied: {credit.get_position()}"
         )
@@ -773,7 +777,7 @@ class TestStampWatermarkCredit:
             The other hardcoded constant replaced -- a `7.5` point size that
             meant nothing in particular at any other figure size.
         """
-        _, credit = stamp_watermark(
+        _, credit = _stamp_watermark(
             fig,
             "earthlens",
             credit="github.com/serapeum-org/earthlens",
@@ -794,7 +798,7 @@ class TestStampWatermarkCredit:
             enough that it needs a stroke to stay legible against arbitrary
             frame content.
         """
-        brand, credit = stamp_watermark(fig, "earthlens", credit="example.org")
+        brand, credit = _stamp_watermark(fig, "earthlens", credit="example.org")
         assert credit.get_path_effects(), "the credit line should carry an outline"
         assert not brand.get_path_effects(), "the brand text should not"
 
@@ -808,7 +812,7 @@ class TestStampWatermarkCredit:
             The credit is the smallest element and the one that must never be
             occluded by the diagonal text it is stamped alongside.
         """
-        brand, credit = stamp_watermark(fig, "earthlens", credit="example.org")
+        brand, credit = _stamp_watermark(fig, "earthlens", credit="example.org")
         assert credit.get_zorder() > brand.get_zorder(), (
             f"credit z={credit.get_zorder()} not above brand z={brand.get_zorder()}"
         )
@@ -823,7 +827,7 @@ class TestStampWatermarkCredit:
             The credit is information rather than decoration, so it defaults to
             opaque while the brand text is translucent.
         """
-        brand, credit = stamp_watermark(
+        brand, credit = _stamp_watermark(
             fig, "earthlens", alpha=0.3, credit="example.org", credit_alpha=0.9
         )
         assert brand.get_alpha() == pytest.approx(0.3), "brand alpha wrong"
@@ -831,7 +835,7 @@ class TestStampWatermarkCredit:
 
 
 class TestStampWatermarkValidation:
-    """Invalid input is refused the way `stamp_mark` refuses it."""
+    """Invalid input is refused the way `_stamp_mark` refuses it."""
 
     @pytest.mark.parametrize("bad", ["", "   ", 5])
     def test_a_blank_credit_raises(self, fig, bad):
@@ -849,7 +853,7 @@ class TestStampWatermarkValidation:
             by `test_no_credit_line_by_default`.
         """
         with pytest.raises(ValueError, match="credit must be a non-empty string"):
-            stamp_watermark(fig, "earthlens", credit=bad)
+            _stamp_watermark(fig, "earthlens", credit=bad)
 
     @pytest.mark.parametrize("bad", ["", "   ", None, 5])
     def test_a_bad_text_raises(self, fig, bad):
@@ -864,23 +868,23 @@ class TestStampWatermarkValidation:
             the silent-no-op this package exists to avoid.
         """
         with pytest.raises(ValueError, match="text must be a non-empty string"):
-            stamp_watermark(fig, bad)
+            _stamp_watermark(fig, bad)
 
     @pytest.mark.parametrize("frac", [0.0, -0.1, 1.5])
     def test_an_out_of_range_frac_raises(self, fig, frac):
-        """`frac` must be in (0, 1], as on `stamp_mark`.
+        """`frac` must be in (0, 1], as on `_stamp_mark`.
 
         Args:
             fig: The figure fixture.
             frac: The rejected value.
 
         Test scenario:
-            Matching `stamp_mark`'s bound exactly is the point -- two sibling
+            Matching `_stamp_mark`'s bound exactly is the point -- two sibling
             functions that validate the same-named parameter differently is
             worse than neither validating.
         """
         with pytest.raises(ValueError, match=r"frac must be in \(0, 1\]"):
-            stamp_watermark(fig, "earthlens", frac=frac)
+            _stamp_watermark(fig, "earthlens", frac=frac)
 
     @pytest.mark.parametrize("alpha", [-0.1, 1.5])
     def test_an_out_of_range_alpha_raises(self, fig, alpha):
@@ -895,7 +899,7 @@ class TestStampWatermarkValidation:
             would never learn the value they tuned was ignored.
         """
         with pytest.raises(ValueError, match=r"alpha must be in \[0, 1\]"):
-            stamp_watermark(fig, "earthlens", alpha=alpha)
+            _stamp_watermark(fig, "earthlens", alpha=alpha)
 
     @pytest.mark.parametrize("angle", [float("nan"), float("inf"), float("-inf")])
     def test_a_non_finite_angle_raises(self, fig, angle):
@@ -910,7 +914,7 @@ class TestStampWatermarkValidation:
             than raising, which is the worst of both outcomes.
         """
         with pytest.raises(ValueError, match="angle must be a finite number"):
-            stamp_watermark(fig, "earthlens", angle=angle)
+            _stamp_watermark(fig, "earthlens", angle=angle)
 
     @pytest.mark.parametrize("credit_alpha", [-0.1, 1.5])
     def test_an_out_of_range_credit_alpha_raises(self, fig, credit_alpha):
@@ -925,7 +929,7 @@ class TestStampWatermarkValidation:
             text's.
         """
         with pytest.raises(ValueError, match=r"credit_alpha must be in \[0, 1\]"):
-            stamp_watermark(
+            _stamp_watermark(
                 fig, "earthlens", credit="example.org", credit_alpha=credit_alpha
             )
 
@@ -941,13 +945,13 @@ class TestStampWatermarkValidation:
             Same bound as `frac`, for the same reason.
         """
         with pytest.raises(ValueError, match=r"credit_frac must be in \(0, 1\]"):
-            stamp_watermark(
+            _stamp_watermark(
                 fig, "earthlens", credit="example.org", credit_frac=credit_frac
             )
 
     @pytest.mark.parametrize("margin", [-0.1, 1.0, 1.5])
     def test_an_out_of_range_margin_raises(self, fig, margin):
-        """`margin` must be in [0, 1), as on `stamp_mark`.
+        """`margin` must be in [0, 1), as on `_stamp_mark`.
 
         Args:
             fig: The figure fixture.
@@ -955,10 +959,10 @@ class TestStampWatermarkValidation:
 
         Test scenario:
             `1.0` is in the table because the bound is half-open on that side,
-            matching `stamp_mark` exactly.
+            matching `_stamp_mark` exactly.
         """
         with pytest.raises(ValueError, match=r"margin must be in \[0, 1\)"):
-            stamp_watermark(fig, "earthlens", credit="example.org", margin=margin)
+            _stamp_watermark(fig, "earthlens", credit="example.org", margin=margin)
 
     @pytest.mark.parametrize(
         "kwargs",
@@ -980,13 +984,13 @@ class TestStampWatermarkValidation:
             would reject a call that renders correctly. Pinned so the choice is
             visible rather than looking like an oversight.
         """
-        brand, credit = stamp_watermark(fig, "earthlens", **kwargs)
+        brand, credit = _stamp_watermark(fig, "earthlens", **kwargs)
         assert credit is None, "no credit should be drawn"
         assert brand in fig.texts, "the brand text should still be stamped"
 
 
 class TestFitTextToFrac:
-    """The sizing helper behind `stamp_watermark`'s `frac`."""
+    """The sizing helper behind `_stamp_watermark`'s `frac`."""
 
     def test_unmeasurable_text_is_left_alone(self, fig):
         """Text with no rendered extent does not divide by zero.
@@ -997,7 +1001,7 @@ class TestFitTextToFrac:
         Test scenario:
             Only the empty string measures zero -- whitespace has real width
             and height, so `"   "` is resized like any other text.
-            `stamp_watermark` refuses an empty `text` and an empty `credit`, so
+            `_stamp_watermark` refuses an empty `text` and an empty `credit`, so
             this guard is unreachable through the public function, which is
             exactly why it is worth exercising directly: without it the helper
             divides the target fraction by a zero extent.
@@ -1038,11 +1042,11 @@ class TestStampWatermarkWithStampMark:
 
         Test scenario:
             The use case from the earthlens notebooks that motivated this: a
-            `stamp_mark` logo in the corner, `stamp_watermark` text across the
+            `_stamp_mark` logo in the corner, `_stamp_watermark` text across the
             middle, a credit line along the bottom.
         """
-        mark_ax = stamp_mark(fig, logo, frac=0.18, corner="lower left")
-        brand, credit = stamp_watermark(
+        mark_ax = _stamp_mark(fig, logo, frac=0.18, corner="lower left")
+        brand, credit = _stamp_watermark(
             fig, "earthlens", credit="github.com/serapeum-org/earthlens"
         )
 
@@ -1060,8 +1064,8 @@ class TestStampWatermarkWithStampMark:
             A corner logo overlapping the diagonal text has to stay legible;
             the text is the background element of the two.
         """
-        mark_ax = stamp_mark(fig, logo, frac=0.18, corner="lower left")
-        brand, _ = stamp_watermark(fig, "earthlens")
+        mark_ax = _stamp_mark(fig, logo, frac=0.18, corner="lower left")
+        brand, _ = _stamp_watermark(fig, "earthlens")
         assert mark_ax.get_zorder() > brand.get_zorder(), (
             f"mark z={mark_ax.get_zorder()} not above text z={brand.get_zorder()}"
         )
@@ -1077,8 +1081,8 @@ class TestStampWatermarkWithStampMark:
             The artists are excluded from layout, so a draw must not trip the
             tight-layout machinery the way an in-layout artist would.
         """
-        stamp_mark(fig, logo, frac=0.18, corner="lower left")
-        stamp_watermark(fig, "earthlens", credit="example.org")
+        _stamp_mark(fig, logo, frac=0.18, corner="lower left")
+        _stamp_watermark(fig, "earthlens", credit="example.org")
         fig.canvas.draw()
 
 
@@ -1202,7 +1206,7 @@ class TestWatermarkMixin:
             logo: The logo-array fixture.
 
         Test scenario:
-            `stamp_mark` is wired at the same time as `stamp_watermark` on
+            `_stamp_mark` is wired at the same time as `_stamp_watermark` on
             purpose -- giving the newer function sugar the older one lacked
             would be a worse inconsistency than neither having it.
         """
@@ -1261,8 +1265,8 @@ class TestWatermarkMixin:
             They remain the primitives -- the mixin only spares the import, and
             a figure the glyph does not own still has to go through them.
         """
-        ax = stamp_mark(fig, logo, frac=0.2)
-        brand, _ = stamp_watermark(fig, "cleopatra")
+        ax = _stamp_mark(fig, logo, frac=0.2)
+        brand, _ = _stamp_watermark(fig, "cleopatra")
         assert ax in fig.axes and brand in fig.texts, (
             "the free functions should still stamp an arbitrary figure"
         )
