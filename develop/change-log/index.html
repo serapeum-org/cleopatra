@@ -2463,6 +2463,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0390-2026-09-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.39.0 (2026-09-14)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0380-2026-09-13" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3306,6 +3317,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0390-2026-09-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.39.0 (2026-09-14)
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#0380-2026-09-13" class="md-nav__link">
@@ -4152,6 +4174,46 @@
 
 
 <h1 id="changelog"><a class="toclink" href="#changelog">Changelog</a><a class="headerlink" href="#changelog" title="Permanent link">#</a></h1>
+<h2 id="0390-2026-09-14"><a class="toclink" href="#0390-2026-09-14">0.39.0 (2026-09-14)</a><a class="headerlink" href="#0390-2026-09-14" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(watermark)!: add a text watermark and make the glyph the way to stamp (#366)</li>
+<li><code>styling.watermark</code> could stamp a logo image but had nothing for text, so a
+social-media animation wanting the usual pair -- a corner logo plus diagonal
+brand text and a credit line -- had to roll its own. Two earthlens showcase
+notebooks each carry a byte-identical copy of the same helper.</li>
+<li>
+<ul>
+<li>add <code>_stamp_watermark</code>: translucent brand text across the middle of a
+  figure, plus an optional credit line along the bottom</li>
+</ul>
+</li>
+<li>size the text by a figure fraction measured on what is rendered, not by a
+  point size scaled off the figure width. That rule made the share of the
+  frame depend on how many characters the text had: on an 8x4.5in figure it
+  drew "eo" at 23% and "a-much-longer-brand-name" at 128%, off the canvas</li>
+<li>replace the credit line's hardcoded 0.014 offset and 7.5 point size with
+  <code>margin</code> and <code>credit_frac</code>, the shapes the mark already uses, and validate
+  every input on its terms</li>
+<li>keep the outline asymmetry the notebook helper chose: the credit line is
+  stroked and the diagonal text is not, because an outline on the large text
+  reads as a solid caption rather than a watermark</li>
+<li>add <code>WatermarkMixin</code>, so both stamps are glyph methods --
+  <code>glyph.stamp_mark(logo)</code> -- on all twelve glyph classes</li>
+<li>record the rendered figure as <code>_rendered_fig</code> on <code>HistogramGlyph</code> and
+  <code>TexturedGlobeGlyph</code>, which do not inherit <code>Glyph</code> and use <code>_fig</code> for the
+  figure bound at construction. Without it they would have inherited a method
+  that existed and always raised</li>
+<li>Only the GoogleMapsCompatible-style guarantee the mark gives does not carry
+over: a mark on an inset axes keeps its share of a proportionally resized
+figure, whereas text is measured in points and keeps its absolute size. Stamp
+after the final <code>set_size_inches</code> and the two behave alike.</li>
+<li>Closes #365</li>
+<li>BREAKING CHANGE: <code>cleopatra.styling.watermark.stamp_mark</code> was public API from
+0.37.0 and is now private, alongside the new <code>_stamp_watermark</code>; <code>__all__</code> is
+<code>["WatermarkMixin"]</code>. Replace <code>stamp_mark(glyph.fig, logo, ...)</code> with
+<code>glyph.stamp_mark(logo, ...)</code>. A figure that no glyph owns is deliberately no
+longer a supported target. earthlens imports the old name in seven notebooks.</li>
+</ul>
 <h2 id="0380-2026-09-13"><a class="toclink" href="#0380-2026-09-13">0.38.0 (2026-09-13)</a><a class="headerlink" href="#0380-2026-09-13" title="Permanent link">#</a></h2>
 <ul>
 <li>feat!: add classified rasters and scale-bar / north-arrow furniture (#363)</li>
