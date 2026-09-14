@@ -1,11 +1,20 @@
-# Watermark — Stamp a Logo / Brand-Mark on a Figure
+# Watermark — Stamp a Logo or Brand Text on a Figure
 
-The `cleopatra.styling.watermark` module places a logo or watermark image onto a finished
-matplotlib `Figure` with a single call, so anything you publish or share can carry a mark
-without re-rolling the same inset-axes glue in every notebook.
+The `cleopatra.styling.watermark` module puts a mark on a finished matplotlib `Figure` with a
+single call, so anything you publish or share can carry one without re-rolling the same glue in
+every notebook. Two entry points, designed to be used together:
 
-The one entry point is `stamp_mark(fig, path, *, frac=0.11, corner="lower right", margin=0.025,
-shadow=True, blur=0.065)`. Two things make it more than a one-liner over `imshow`:
+- **`stamp_mark`** — a logo *image*, anchored in a corner.
+- **`stamp_watermark`** — diagonal brand *text* across the middle, with an optional credit line
+  along the bottom.
+
+Both size by a fraction of the figure and position by a margin from its edge, so a mark keeps its
+proportions across the several dpis a figure is exported at.
+
+## `stamp_mark` — a logo image
+
+`stamp_mark(fig, path, *, frac=0.11, corner="lower right", margin=0.025, shadow=True,
+blur=0.065)`. Two things make it more than a one-liner over `imshow`:
 
 - **Fraction-of-figure sizing.** The mark is drawn on a frameless inset axes in
   *figure-fraction* coordinates, so it stays the same proportion (and corner offset) no
@@ -25,13 +34,48 @@ shadow=True, blur=0.065)`. Two things make it more than a one-liner over `imshow
   the frame has. `blur` is the halo's sigma as a fraction of the mark's own width.
 
 It is a presentation helper, not a glyph: it takes whatever `Figure` you hand it and draws on
-top. Single-image, corner-anchored marks only — text watermarks, tiled / repeated marks, and
-any licensing / provenance semantics are out of scope.
+top. Single-image, corner-anchored marks only — tiled / repeated marks and any licensing /
+provenance semantics are out of scope.
 
 `stamp_mark` accepts the mark either as a **file path** (any format Pillow can open, read as
 RGBA) or as an in-memory `(H, W, 3)` / `(H, W, 4)` NumPy array (`uint8` `0-255` or float
 `0-1`; RGB gains an opaque alpha). It returns the frameless inset `Axes` it drew on, so you
 can adjust it further.
+
+## `stamp_watermark` — brand text
+
+`stamp_watermark(fig, text, *, frac=0.55, angle=30.0, alpha=0.65, color="white", credit=None,
+credit_frac=0.28, credit_alpha=1.0, margin=0.014)` stamps translucent brand text across the middle
+of the figure, and optionally a credit line along the bottom.
+
+- **The fraction means the same thing for any text.** Scaling a point size off the figure width —
+  the obvious shortcut — renders a short word small and a long one straight off the canvas,
+  because how much of a frame a string covers depends on how many characters it has. `frac` is
+  measured on what is actually rendered, so a two-letter brand and a twenty-character one both
+  land at the fraction you asked for.
+- **The credit line is placed by `margin`**, a fraction of the figure height above the bottom
+  edge, and sized by `credit_frac` — the same shapes `stamp_mark` uses, rather than a hardcoded
+  offset and point size.
+- **Only the credit line is outlined.** That asymmetry is deliberate: an outline on the large
+  diagonal text makes it read as a solid caption rather than a watermark, while the credit is
+  small enough that it needs the stroke to stay legible against whatever the frame contains.
+
+It returns `(brand_text, credit_text)` — the second is `None` when no `credit` was given.
+
+```python
+from cleopatra.styling.watermark import stamp_mark, stamp_watermark
+
+stamp_mark(fig, LOGO, frac=0.18, corner="lower left")
+stamp_watermark(fig, "earthlens", credit="github.com/serapeum-org/earthlens")
+```
+
+!!! note "Call both last"
+    Like `stamp_mark`, the text size is baked from the figure's current size, so stamp **after**
+    any `tight_layout()` and after the final `set_size_inches`. The proportion holds across dpi.
+    It does not survive a later `set_size_inches`, and here the text differs from the mark: a mark
+    lives on an inset axes in figure-fraction coordinates and keeps its share of a figure resized
+    proportionally afterwards, whereas text is measured in points and keeps its *absolute* size,
+    halving its share when the figure doubles.
 
 ## Usage
 
