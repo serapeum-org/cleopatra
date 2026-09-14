@@ -14,6 +14,12 @@ shadow would imply a light direction nothing else in the frame has.
 This is a presentation helper, not a glyph: it takes a finished `Figure` and
 draws on top of it via a frameless inset axes in figure-fraction coordinates
 (the dpi-independent counterpart of `Figure.figimage`, which is pixel-based).
+Both are free functions taking a `Figure`, and both are also available as
+glyph methods through `WatermarkMixin` -- `glyph.stamp_mark(logo)` rather than
+importing and passing `glyph.fig` -- following the same
+free-function-plus-sugar shape `styling.furniture` and `basemap.geo` already
+use for the scale bar and north arrow.
+
 `stamp_watermark` is its text counterpart: the diagonal translucent brand
 text across the middle of a frame, plus an optional credit line along the
 bottom. The two are designed to be used together -- a corner logo from
@@ -30,7 +36,7 @@ dependency, so no new dependency (and no SciPy) is pulled in.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from matplotlib import patheffects
@@ -45,7 +51,7 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
     from matplotlib.text import Text
 
-__all__ = ["stamp_mark", "stamp_watermark"]
+__all__ = ["WatermarkMixin", "stamp_mark", "stamp_watermark"]
 
 #: The four corner anchors `stamp_mark` accepts.
 _CORNERS = ("lower right", "lower left", "upper right", "upper left")
@@ -662,3 +668,120 @@ def _composite_halo(image: np.ndarray, blur: float) -> tuple[np.ndarray, float, 
     out = alpha_over(mark, halo)
     pad_h, pad_w = out.shape[:2]
     return (out * 255).round().astype(np.uint8), pad_w / img_w, pad_h / img_h
+
+
+class WatermarkMixin:
+    """Glyph-side sugar over `stamp_mark` and `stamp_watermark`.
+
+    Both stamps act on a whole `Figure`, so a glyph can offer them once it has
+    one: `glyph.stamp_mark(logo)` instead of importing the function and passing
+    `glyph.fig` by hand. The free functions remain the primitives and are
+    unchanged -- this only spares the import, in the same shape
+    `cleopatra.basemap.geo.GeoMixin` uses to expose `styling.furniture`'s scale
+    bar and north arrow.
+
+    A figure is what these need, and glyphs spell it differently. `Glyph` keeps
+    the one it rendered on in `fig`. `HistogramGlyph` and `TexturedGlobeGlyph`
+    do not inherit `Glyph` and use `_fig` for something else -- the figure bound
+    at *construction*, consulted on every render to decide where to draw -- so
+    they record the figure actually drawn on as `_rendered_fig`.
+    `_watermark_figure` prefers that, then `fig`, then `_fig`, then the axes'
+    own figure, so the mixin works on any of them without first making them
+    agree on a name.
+
+    Note that a figure may carry several glyphs. The stamp lands on the whole
+    figure, not on the glyph's own axes, whichever glyph it was called through.
+    """
+
+    def _watermark_figure(self) -> Figure:
+        """Resolve the figure to stamp.
+
+        Returns:
+            Figure: The glyph's figure.
+
+        Raises:
+            ValueError: If the glyph has no figure yet, which means it has not
+                been rendered.
+        """
+        for name in ("fig", "_rendered_fig", "_fig"):
+            figure = getattr(self, name, None)
+            if figure is not None:
+                return figure
+        for name in ("ax", "_ax"):
+            axes = getattr(self, name, None)
+            if axes is not None:
+                figure = axes.get_figure()
+                if figure is not None:
+                    return figure
+        raise ValueError(
+            f"{type(self).__name__} has no figure to stamp yet -- render it first "
+            f"(e.g. plot()), or call cleopatra.styling.watermark.stamp_mark on a "
+            f"figure of your own."
+        )
+
+    def stamp_mark(self, path: str | os.PathLike | np.ndarray, **kwargs: Any) -> Axes:
+        """Stamp a logo image on this glyph's figure.
+
+        Thin sugar over `cleopatra.styling.watermark.stamp_mark`; the free
+        function remains available for a figure this glyph does not own.
+
+        Args:
+            path: The mark image, as `stamp_mark` accepts it.
+            **kwargs: Forwarded verbatim (`frac`, `corner`, `margin`, `shadow`,
+                `blur`).
+
+        Returns:
+            Axes: The frameless inset axes the mark was drawn on.
+
+        Raises:
+            ValueError: If the glyph has not been rendered yet, or as
+                `stamp_mark` raises.
+
+        See Also:
+            cleopatra.styling.watermark.stamp_mark: The underlying function.
+        """
+        # The bare name is the module-level function, not this method: a method
+        # name never enters the enclosing scope its body is resolved in.
+        return stamp_mark(self._watermark_figure(), path, **kwargs)
+
+    def stamp_watermark(self, text: str, **kwargs: Any) -> tuple[Text, Text | None]:
+        """Stamp diagonal brand text on this glyph's figure.
+
+        Thin sugar over `cleopatra.styling.watermark.stamp_watermark`; the free
+        function remains available for a figure this glyph does not own.
+
+        Args:
+            text: The brand text.
+            **kwargs: Forwarded verbatim (`frac`, `angle`, `alpha`, `color`,
+                `credit`, `credit_frac`, `credit_alpha`, `margin`).
+
+        Returns:
+            tuple[Text, Text | None]: The brand-text artist and the credit-line
+            artist, the second being `None` when no `credit` was given.
+
+        Raises:
+            ValueError: If the glyph has not been rendered yet, or as
+                `stamp_watermark` raises.
+
+        See Also:
+            cleopatra.styling.watermark.stamp_watermark: The underlying
+                function.
+
+        Examples:
+            - Stamp a logo and brand text without importing either:
+                ```python
+                >>> import matplotlib
+                >>> matplotlib.use("Agg")
+                >>> import numpy as np
+                >>> import matplotlib.pyplot as plt
+                >>> from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
+                >>> glyph = ArrayGlyph(np.arange(60.0).reshape(6, 10))
+                >>> _ = glyph.plot()
+                >>> brand, credit = glyph.stamp_watermark("cleopatra")
+                >>> brand.get_text()
+                'cleopatra'
+                >>> plt.close("all")
+
+                ```
+        """
+        return stamp_watermark(self._watermark_figure(), text, **kwargs)
