@@ -67,6 +67,7 @@ from cleopatra.glyphs.base.glyph import (
     _mark_render_artists,
     _root_figure,
 )
+from cleopatra.styling.watermark import WatermarkMixin
 
 #: Earth's axial tilt (obliquity of the ecliptic), in degrees -- the default lean of the polar axis.
 EARTH_TILT_DEG = 23.44
@@ -96,7 +97,7 @@ SAMPLING_MODES = (SAMPLING_POINT, SAMPLING_AREA)
 _INHERIT: Any = object()
 
 
-class TexturedGlobeGlyph:
+class TexturedGlobeGlyph(WatermarkMixin):
     """Wrap an equirectangular texture onto a tilted, spinnable 3-D sphere.
 
     The glyph takes an equirectangular (plate-carree) `(H, W, 3)` or `(H, W, 4)` array -- rows running north (row 0,
@@ -246,6 +247,9 @@ class TexturedGlobeGlyph:
         self._sun = self._normalize_sun(sun)
         self._ambient = self._validate_ambient(ambient)
         self._fig = fig
+        #: The figure the most recent render drew on; see `HistogramGlyph` for
+        #: why this is separate from `_fig`.
+        self._rendered_fig: Figure | None = None
         self._ax = ax
 
         self._reject_unknown_options(kwargs)
@@ -630,6 +634,9 @@ class TexturedGlobeGlyph:
                     "TexturedGlobeGlyph needs a 3-D axes; create one with fig.add_subplot(projection='3d')."
                 )
             fig = _root_figure(target)
+        # Remembered so the inherited watermark stamps have a figure to act on;
+        # `_fig` is the construction-time target and must keep that meaning.
+        self._rendered_fig = fig
         return fig, target
 
     # ------------------------------------------------------------------ #

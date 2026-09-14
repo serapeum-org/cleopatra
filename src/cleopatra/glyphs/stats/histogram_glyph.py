@@ -58,7 +58,6 @@ plt.show()
 
 from collections.abc import Sequence
 
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
@@ -66,14 +65,15 @@ from matplotlib.colors import Normalize
 from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 
-from cleopatra.styling.colors import resolve_colormap
 from cleopatra.glyphs.base.glyph import (
     _apply_axis_options,
     _clear_prior_render_artists,
     _mark_render_artists,
     _root_figure,
 )
+from cleopatra.styling.colors import resolve_colormap
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
+from cleopatra.styling.watermark import WatermarkMixin
 
 STATISTICAL_DEFAULT_OPTIONS = {
     "figsize": (5, 5),
@@ -88,7 +88,7 @@ STATISTICAL_DEFAULT_OPTIONS = STYLE_DEFAULTS | STATISTICAL_DEFAULT_OPTIONS
 DEFAULT_OPTIONS = STATISTICAL_DEFAULT_OPTIONS
 
 
-class HistogramGlyph:
+class HistogramGlyph(WatermarkMixin):
     """A class for creating statistical plots, specifically histograms.
 
     This class provides methods for initializing the class with numerical values and optional keyword arguments,
@@ -256,6 +256,10 @@ class HistogramGlyph:
         self._values = values
         self._fig = fig
         self._ax = ax
+        #: The figure the most recent render actually drew on, as opposed to
+        #: `_fig`, which is the one bound at construction. Read by
+        #: `WatermarkMixin` so the inherited stamps work after any render.
+        self._rendered_fig: Figure | None = None
         options_dict = STATISTICAL_DEFAULT_OPTIONS.copy()
         options_dict.update(kwargs)
         self._default_options = options_dict
@@ -611,6 +615,8 @@ class HistogramGlyph:
             ax = fig.add_subplot(111)
         else:
             fig, ax = plt.subplots(figsize=self.default_options["figsize"])
+        # See `_resolve_fig_ax`: remembered for the inherited watermark stamps.
+        self._rendered_fig = fig
         return fig, ax
 
     @staticmethod
@@ -657,11 +663,19 @@ class HistogramGlyph:
         """
         if ax is None:
             ax = self._ax
+        # Each branch records the figure it resolved, so the watermark stamps
+        # inherited from `WatermarkMixin` have one to act on. `_fig` cannot be
+        # reused for that: it is the construction-time target consulted here on
+        # every call, and overwriting it would move where a later render lands.
         if ax is not None:
-            return _root_figure(ax), ax
+            self._rendered_fig = _root_figure(ax)
+            return self._rendered_fig, ax
         if self._fig is not None:
+            self._rendered_fig = self._fig
             return self._fig, self._fig.add_subplot(111)
-        return plt.subplots(figsize=self.default_options["figsize"])
+        fig, new_ax = plt.subplots(figsize=self.default_options["figsize"])
+        self._rendered_fig = fig
+        return fig, new_ax
 
     def _columns(self) -> list[np.ndarray]:
         """Split the stored values into one 1D array per series.

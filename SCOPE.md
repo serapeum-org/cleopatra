@@ -92,7 +92,7 @@ colorbars, ticks, classification, and animation.
   helpers, which fetch a handful of *fixed public* reference datasets (never
   user data) that cleopatra re-hosts as dependency-light artifacts — see
   "Supporting utilities"; reading a **presentation asset** — a logo / watermark
-  image for `styling.watermark.stamp_mark` — which is decoration on the rendered
+  image for `glyph.stamp_mark` — which is decoration on the rendered
   figure, not user data, and loads via Pillow (an existing dependency), never
   GDAL/geopandas; and re-encoding cleopatra's **own animation output** between
   formats — see "Animation output" below.
@@ -144,7 +144,7 @@ Ask, in order:
 1. **Input** — does it start from in-memory NumPy data (not a file/CRS/URL)?
    (Three deliberate exceptions: the `tiles` / `reference` basemap helpers,
    which acquire fixed *public* reference data, never user files; a presentation
-   asset such as a logo for `stamp_mark`; and the animation re-encoders, whose
+   asset such as a logo for `glyph.stamp_mark`; and the animation re-encoders, whose
    input is cleopatra's own output — see "Animation output".)
 2. **Output** — does it produce a matplotlib `Figure`/`Axes`/artist (or an
    animation of one)?

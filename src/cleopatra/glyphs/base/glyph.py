@@ -46,6 +46,7 @@ from cleopatra.styling.styles import (
     classify,
     disjoint_legend,
 )
+from cleopatra.styling.watermark import WatermarkMixin
 
 #: Qualitative colormap `_prepare_categorical_mapping` falls back to when the
 #: caller left `cmap` at the shared continuous/diverging default -- see the
@@ -786,7 +787,7 @@ def _restore_flat_axes(
     ax.set_ylim(lo_y - py, hi_y + py)
 
 
-class Glyph:
+class Glyph(WatermarkMixin):
     """Base class for cleopatra visualization glyphs.
 
     Handles figure/axes management, default options, color scale

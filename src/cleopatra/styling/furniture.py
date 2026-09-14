@@ -3,7 +3,7 @@
 Two free functions that decorate an existing `matplotlib.axes.Axes` with the
 two remaining pieces of standard figure furniture cleopatra did not have --
 a scale bar (a segmented bar with tick numbers and a caption) and a north
-arrow (a rotatable compass mark). They sit beside `stamp_mark`
+arrow (a rotatable compass mark). They sit beside the watermark stamps
 (`cleopatra.styling.watermark`) and share its placement plumbing (`_CORNERS`,
 `_as_margins`, `_corner_origin`) so all three anchor identically, and they
 read like `cleopatra.styling.colorbar.ColorBar` (the same `box` /
