@@ -714,9 +714,8 @@ class WatermarkMixin:
                 if figure is not None:
                     return figure
         raise ValueError(
-            f"{type(self).__name__} has no figure to stamp yet -- render it first "
-            f"(e.g. plot()), or call cleopatra.styling.watermark.stamp_mark on a "
-            f"figure of your own."
+            f"{type(self).__name__} has no figure to stamp yet -- render it "
+            f"first (e.g. plot()), then stamp."
         )
 
     def stamp_mark(self, path: str | os.PathLike | np.ndarray, **kwargs: Any) -> Axes:

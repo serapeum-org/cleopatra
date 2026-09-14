@@ -1,6 +1,6 @@
 """Tests for the figure watermark helpers -- issues #312 and #365.
 
-Covers `cleopatra.styling.watermark.stamp_mark`: corner placement in
+Covers `_stamp_mark`, reached through `glyph.stamp_mark`: corner placement in
 figure-fraction coordinates, dpi-invariant sizing, undistorted aspect, the
 optional gaussian-blurred halo, image-input handling (RGBA/RGB arrays,
 float arrays, file paths), and input validation.
