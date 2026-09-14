@@ -1512,7 +1512,7 @@
   <span class="md-ellipsis">
     
   
-    Watermark (figure mark)
+    Watermark (logo + brand text)
   
 
     
@@ -2872,7 +2872,7 @@ colorbars, ticks, classification, and animation.</p>
   helpers, which fetch a handful of <em>fixed public</em> reference datasets (never
   user data) that cleopatra re-hosts as dependency-light artifacts — see
   "Supporting utilities"; reading a <strong>presentation asset</strong> — a logo / watermark
-  image for <code>styling.watermark.stamp_mark</code> — which is decoration on the rendered
+  image for <code>glyph.stamp_mark</code> — which is decoration on the rendered
   figure, not user data, and loads via Pillow (an existing dependency), never
   GDAL/geopandas; and re-encoding cleopatra's <strong>own animation output</strong> between
   formats — see "Animation output" below.</li>
@@ -2918,7 +2918,7 @@ or that grew a codec/container matrix, would be out of scope.</p>
 <li><strong>Input</strong> — does it start from in-memory NumPy data (not a file/CRS/URL)?
    (Three deliberate exceptions: the <code>tiles</code> / <code>reference</code> basemap helpers,
    which acquire fixed <em>public</em> reference data, never user files; a presentation
-   asset such as a logo for <code>stamp_mark</code>; and the animation re-encoders, whose
+   asset such as a logo for <code>glyph.stamp_mark</code>; and the animation re-encoders, whose
    input is cleopatra's own output — see "Animation output".)</li>
 <li><strong>Output</strong> — does it produce a matplotlib <code>Figure</code>/<code>Axes</code>/artist (or an
    animation of one)?</li>
