@@ -881,6 +881,7 @@ class MeshGlyph(GeoMixin, Glyph):
         color: ColorScaling | None = None,
         contour: Contour | None = None,
         data_style: DataStyle | None = None,
+        compose: bool = False,
         **kwargs: Any,
     ) -> tuple[plt.Figure, plt.Axes]:
         """Plot mesh data using matplotlib triangulation.
@@ -931,6 +932,12 @@ class MeshGlyph(GeoMixin, Glyph):
                 (`cleopatra.styling.params.DataStyle`), e.g.
                 `DataStyle(style="dem", hillshade=True)`. Replaces the
                 loose `style` / `hillshade` keywords.
+            compose: Draw *over* whatever is already on `ax` instead of
+                replacing it, by default `False`. `False` clears every glyph's
+                prior artists from the axes first (the replace-don't-orphan
+                default); `True` clears only this glyph's own prior artists, so
+                a mesh can be layered onto a host raster / another glyph -- the
+                same opt-in `ArrayGlyph` and `VectorGlyph` expose.
             **kwargs: Construction-time-style overrides for the non-grouped
                 `default_options` (`cmap`, `vmin`, `vmax`, `title_size`,
                 `figsize`, …). The loose `ticks_spacing` / `cbar_*` keys
@@ -1182,7 +1189,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 raise ValueError(
                     "hillshade needs node-centered elevation; pass location='node'"
                 )
-            _clear_prior_render_artists(self.ax, self)
+            _clear_prior_render_artists(self.ax, self, compose=compose)
             self.im = None
             self._cbar = None
             self._apply_projection()
@@ -1190,7 +1197,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 self.ax, data, edgecolor, norm, hillshade, **render_kwargs
             )
         else:
-            _clear_prior_render_artists(self.ax, self)
+            _clear_prior_render_artists(self.ax, self, compose=compose)
             self.im = None
             self._cbar = None
             self._apply_projection()
@@ -1251,6 +1258,7 @@ class MeshGlyph(GeoMixin, Glyph):
         color: ColorScaling | None = None,
         contour: Contour | None = None,
         data_style: DataStyle | None = None,
+        compose: bool = False,
         **kwargs: Any,
     ) -> FuncAnimation:
         """Create an animation from time-varying mesh data.
@@ -1273,6 +1281,10 @@ class MeshGlyph(GeoMixin, Glyph):
             colorbar: Typed `ColorBar` spec (placement / caption / sizing) for
                 the animation's colorbar, or `True`/`None` to draw a default one;
                 `False` suppresses it. Default `None` (draw).
+            compose: Draw *over* whatever is already on the axes instead of
+                replacing it, by default `False`. `True` clears only this glyph's
+                own prior artists, so the animation layers onto existing content
+                (see `plot`).
             **kwargs: Override any key in `default_options` (cmap,
                 vmin, vmax, color_scale, gamma, midpoint, figsize,
                 title, etc.). The loose `ticks_spacing` / `cbar_*` keys
@@ -1368,7 +1380,7 @@ class MeshGlyph(GeoMixin, Glyph):
 
         self.contour_labels = None
 
-        _clear_prior_render_artists(ax, self)
+        _clear_prior_render_artists(ax, self, compose=compose)
         self.im = None
         self._cbar = None
 
@@ -1439,6 +1451,7 @@ class MeshGlyph(GeoMixin, Glyph):
         color: str = "black",
         linewidth: float = 0.3,
         figsize: tuple[int, int] = (10, 8),
+        compose: bool = False,
         **kwargs: Any,
     ) -> tuple[plt.Figure, plt.Axes]:
         """Plot mesh edges as a wireframe.
@@ -1452,6 +1465,10 @@ class MeshGlyph(GeoMixin, Glyph):
             color: Edge color. Default is `"black"`.
             linewidth: Edge line width. Default is `0.3`.
             figsize: Figure size in inches. Default is `(10, 8)`.
+            compose: Draw *over* whatever is already on `ax` instead of
+                replacing it, by default `False`. `True` clears only this
+                glyph's own prior artists, so the wireframe overlays existing
+                content (see `plot`).
             **kwargs: Additional keyword arguments passed to
                 `LineCollection`.
 
@@ -1486,7 +1503,7 @@ class MeshGlyph(GeoMixin, Glyph):
         elif self.fig is None:
             self.fig, self.ax = plt.subplots(1, 1, figsize=figsize)
 
-        _clear_prior_render_artists(self.ax, self)
+        _clear_prior_render_artists(self.ax, self, compose=compose)
         self.im = None
         self._cbar = None
 

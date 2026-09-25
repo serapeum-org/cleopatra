@@ -404,7 +404,9 @@ class HistogramGlyph(WatermarkMixin):
         keys = cls.option_keys()
         return {key: val for key, val in kwargs.items() if key in keys}
 
-    def histogram(self, **kwargs) -> tuple[Figure, Axes, dict]:
+    def histogram(
+        self, *, compose: bool = False, **kwargs
+    ) -> tuple[Figure, Axes, dict]:
         """Create a histogram from the stored numerical values.
 
         This method generates a histogram visualization of the numerical values stored
@@ -412,6 +414,11 @@ class HistogramGlyph(WatermarkMixin):
         (multiple histograms overlaid on the same plot).
 
         Args:
+            compose: Draw *over* whatever is already on the axes instead of
+                replacing it, by default `False`. `False` clears every glyph's
+                prior artists first (the replace-don't-orphan default); `True`
+                clears only this glyph's own, so the histogram layers onto a
+                shared axes -- the same opt-in the gridded glyphs expose.
             **kwargs: Additional keyword arguments to customize the histogram appearance.
                 These will override any options set during initialization.
                 Supported arguments include:
@@ -548,7 +555,7 @@ class HistogramGlyph(WatermarkMixin):
         else:
             num_samples = 1
 
-        _clear_prior_render_artists(ax, self)
+        _clear_prior_render_artists(ax, self, compose=compose)
 
         for i in range(num_samples):
             if self.values.ndim == 1:
@@ -711,6 +718,7 @@ class HistogramGlyph(WatermarkMixin):
         labels: Sequence[str] | None = None,
         notch: bool = False,
         showfliers: bool = True,
+        compose: bool = False,
         **kwargs,
     ) -> tuple[Figure, Axes, dict]:
         """Draw a box-and-whisker plot of the stored values.
@@ -732,6 +740,9 @@ class HistogramGlyph(WatermarkMixin):
                 Default is False.
             showfliers: Draw outlier points beyond the whiskers.
                 Default is True.
+            compose: Draw *over* whatever is already on the axes instead of
+                replacing it, by default `False`. `True` clears only this
+                glyph's own prior artists, so it layers onto a shared axes.
             **kwargs: Forwarded to `Axes.boxplot`.
 
         Returns:
@@ -755,7 +766,7 @@ class HistogramGlyph(WatermarkMixin):
         """
         self._reject_fig_kwarg(kwargs)
         fig, ax = self._resolve_fig_ax(ax)
-        _clear_prior_render_artists(ax, self)
+        _clear_prior_render_artists(ax, self, compose=compose)
         columns = self._columns()
         tick_labels = (
             list(labels)
@@ -787,6 +798,7 @@ class HistogramGlyph(WatermarkMixin):
         labels: Sequence[str] | None = None,
         ax: Axes | None = None,
         widths: float = 0.5,
+        compose: bool = False,
         **kwargs,
     ) -> tuple[Figure, Axes, dict]:
         """Draw grouped boxes at explicit x positions.
@@ -806,6 +818,9 @@ class HistogramGlyph(WatermarkMixin):
                 when none is available. `fig` is a construction-time
                 binding, not a parameter here.
             widths: Box width in data units. Default is 0.5.
+            compose: Draw *over* whatever is already on the axes instead of
+                replacing it, by default `False`. `True` clears only this
+                glyph's own prior artists, so it layers onto a shared axes.
             **kwargs: Forwarded to `Axes.boxplot`.
 
         Returns:
@@ -852,7 +867,7 @@ class HistogramGlyph(WatermarkMixin):
             )
 
         fig, ax = self._resolve_fig_ax(ax)
-        _clear_prior_render_artists(ax, self)
+        _clear_prior_render_artists(ax, self, compose=compose)
         bp = ax.boxplot(
             columns,
             positions=list(positions),
@@ -879,6 +894,7 @@ class HistogramGlyph(WatermarkMixin):
         cmap=None,
         vmin: float | None = None,
         vmax: float | None = None,
+        compose: bool = False,
         **kwargs,
     ) -> tuple[Figure, Axes, BarContainer]:
         """Draw a warming-stripes band: one colour bar per value.
@@ -897,6 +913,9 @@ class HistogramGlyph(WatermarkMixin):
                 option.
             vmin: Lower colour limit. Defaults to the data minimum.
             vmax: Upper colour limit. Defaults to the data maximum.
+            compose: Draw *over* whatever is already on the axes instead of
+                replacing it, by default `False`. `True` clears only this
+                glyph's own prior artists, so it layers onto a shared axes.
             **kwargs: Forwarded to `Axes.bar`.
 
         Returns:
@@ -924,7 +943,7 @@ class HistogramGlyph(WatermarkMixin):
         if values.ndim != 1:
             raise ValueError(f"stripes requires 1D values; got {values.ndim}D.")
         fig, ax = self._resolve_fig_ax(ax)
-        _clear_prior_render_artists(ax, self)
+        _clear_prior_render_artists(ax, self, compose=compose)
         cmap = cmap if cmap is not None else self.default_options["cmap"]
         cmap_obj = resolve_colormap(cmap)
         lo = float(np.nanmin(values)) if vmin is None else vmin

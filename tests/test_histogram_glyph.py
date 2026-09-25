@@ -5,12 +5,15 @@ import numpy as np
 import pytest
 
 matplotlib.use("agg")
+import inspect
+
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 
 import cleopatra.glyphs.stats.histogram_glyph as histogram_glyph_module
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph
 
 
@@ -185,9 +188,7 @@ class TestHistogramFigAxInjection:
         """
         fig0, ax0 = plt.subplots()
         plt.figure()  # make a different figure the pyplot "current" one
-        stat = HistogramGlyph(
-            self._data(), ax=ax0, xlabel="X values", ylabel="Counts"
-        )
+        stat = HistogramGlyph(self._data(), ax=ax0, xlabel="X values", ylabel="Counts")
         _, ax, _ = stat.histogram()
         assert ax.get_xlabel() == "X values", (
             f"xlabel not applied to injected axes: {ax.get_xlabel()!r}"
@@ -795,3 +796,48 @@ class TestOptionKeysAndFilterKwargs:
         raw = {"bins": 20, "bogus": 1, "alpha": 0.5}
         safe = HistogramGlyph.filter_kwargs(raw)
         assert list(safe) == ["bins", "alpha"], f"order not preserved: {list(safe)}"
+
+
+class TestHistogramGlyphCompose:
+    """HistogramGlyph render methods honour compose= (issue #370)."""
+
+    @staticmethod
+    def _raster_axes():
+        """An axes carrying a composed ArrayGlyph raster."""
+        fig, ax = plt.subplots()
+        ArrayGlyph(np.arange(100.0).reshape(10, 10)).plot(ax=ax, compose=True)
+        return fig, ax
+
+    def test_histogram_compose_true_keeps_prior_layer(self):
+        """histogram(compose=True) draws over a prior raster instead of wiping it."""
+        _, ax = self._raster_axes()
+        HistogramGlyph(np.random.default_rng(0).normal(size=200), ax=ax).histogram(
+            compose=True
+        )
+        assert len(ax.get_images()) == 1, "raster should survive a composed histogram"
+        assert len(ax.patches) > 0, "the histogram bars should be drawn too"
+
+    def test_histogram_default_replaces_prior_layer(self):
+        """Default (compose=False) clears the prior raster."""
+        _, ax = self._raster_axes()
+        HistogramGlyph(np.random.default_rng(0).normal(size=200), ax=ax).histogram()
+        assert len(ax.get_images()) == 0, "default render should replace the raster"
+
+    def test_boxplot_compose_true_keeps_prior_layer(self):
+        """boxplot(compose=True) draws over a prior raster instead of wiping it."""
+        _, ax = self._raster_axes()
+        HistogramGlyph(np.random.default_rng(0).normal(size=200)).boxplot(
+            ax=ax, compose=True
+        )
+        assert len(ax.get_images()) == 1, "raster should survive a composed boxplot"
+
+    def test_render_methods_expose_compose(self):
+        """histogram / boxplot / multiboxplot / stripes all declare compose."""
+        for method in (
+            HistogramGlyph.histogram,
+            HistogramGlyph.boxplot,
+            HistogramGlyph.multiboxplot,
+            HistogramGlyph.stripes,
+        ):
+            params = inspect.signature(method).parameters
+            assert "compose" in params, f"{method.__name__} should expose compose"
