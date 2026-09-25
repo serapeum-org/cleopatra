@@ -2334,6 +2334,46 @@ class TestMeshGlyphCompose:
             "own prior mesh artist replaced, not duplicated"
         )
 
+    def test_plot_compose_true_applies_explicit_title_and_labels(self):
+        """compose=True still honours an explicitly-passed title/xlabel (as ArrayGlyph)."""
+        fig, ax = plt.subplots()
+        ax.set_title("HOST")
+        ax.set_xlabel("hostx")
+        mesh, data = self._mesh()
+        mesh.plot(data, ax=ax, compose=True, title="X", xlabel="mx")
+        assert ax.get_title() == "X", "an explicit title must be applied under compose"
+        assert ax.get_xlabel() == "mx", (
+            "an explicit xlabel must be applied under compose"
+        )
+
+    def test_plot_compose_true_bare_keeps_host_framing(self):
+        """A bare compose overlay leaves the host title/xlabel untouched."""
+        fig, ax = plt.subplots()
+        ax.set_title("HOST")
+        ax.set_xlabel("hostx")
+        mesh, data = self._mesh()
+        mesh.plot(data, ax=ax, compose=True)
+        assert ax.get_title() == "HOST", (
+            "a bare overlay must not clobber the host title"
+        )
+        assert ax.get_xlabel() == "hostx", "a bare overlay must not clobber host labels"
+
+    def test_plot_compose_true_categorical_keeps_prior_layer(self):
+        """A categorical preset composes over a host: legend kept, no colorbar."""
+        fig, ax = self._raster_axes()
+        mesh, _ = self._mesh()
+        mesh.plot(
+            np.array([1.0, 2.0]),
+            ax=ax,
+            compose=True,
+            data_style=DataStyle(style="flow_direction_d8"),
+        )
+        assert len(ax.get_images()) == 1, (
+            "raster should survive a composed categorical mesh"
+        )
+        assert mesh._cbar is None, "a categorical preset draws a legend, not a colorbar"
+        assert ax.get_legend() is not None, "the disjoint legend should be stamped"
+
     def test_plot_outline_compose_true_keeps_prior_layer(self):
         """plot_outline(compose=True) overlays the wireframe on a prior raster."""
         _, ax = self._raster_axes()
@@ -2373,6 +2413,31 @@ class TestMeshGlyphCompose:
             "a composed animation should not draw its own colorbar"
         )
         assert len(fig.axes) == 1, "no colorbar axes should be added to the host figure"
+        fig.canvas.draw()
+
+    def test_animate_compose_true_colorbar_explicit_still_draws(self):
+        """animate(compose=True, colorbar=True) still draws the colorbar (elif branch)."""
+        fig, ax = plt.subplots()
+        ArrayGlyph(np.arange(100.0).reshape(10, 10), extent=[0, 0, 1, 1]).plot(
+            ax=ax, compose=True
+        )
+        mesh = MeshGlyph(
+            np.array([0.0, 1.0, 1.0, 0.0]),
+            np.array([0.0, 0.0, 1.0, 1.0]),
+            np.array([[0, 1, 2], [0, 2, 3]]),
+            fig=fig,
+            ax=ax,
+        )
+        anim = mesh.animate(
+            [np.array([1.0, 2.0]), np.array([2.0, 3.0])],
+            time=["t0", "t1"],
+            location="face",
+            compose=True,
+            colorbar=True,
+        )
+        assert anim is not None, "animate should return the FuncAnimation"
+        assert mesh._cbar is not None, "explicit colorbar=True draws even under compose"
+        fig.canvas.draw()
 
     def test_animate_colorbar_false_suppresses_colorbar(self):
         """animate(colorbar=False) draws no colorbar even for a normal render."""
@@ -2393,6 +2458,7 @@ class TestMeshGlyphCompose:
         assert anim is not None, "animate should return the FuncAnimation"
         assert mesh._cbar is None, "colorbar=False should suppress the colorbar"
         assert len(fig.axes) == 1, "no colorbar axes should be added"
+        fig.canvas.draw()
 
     def test_render_methods_expose_compose(self):
         """plot / animate / plot_outline all declare a compose parameter."""

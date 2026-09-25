@@ -1095,7 +1095,12 @@ class MeshGlyph(GeoMixin, Glyph):
         # re-lays it out, so composing defaults the colorbar off; only an
         # explicit request (colorbar=True or a ColorBar spec) still draws one.
         # Outside compose the historical default holds: draw unless colorbar is
-        # False. Matches ArrayGlyph / VectorGlyph (Glyph._draws_own_colorbar).
+        # False. Same contract as ArrayGlyph / VectorGlyph, but hand-rolled
+        # rather than delegated to Glyph._draws_own_colorbar: mesh never plumbs
+        # colorbar= into default_options["add_colorbar"] (which that helper reads,
+        # defaulting True), so delegating would draw for colorbar=False outside
+        # compose. Keep this in sync with _draws_own_colorbar if the contract
+        # changes.
         if colorbar is False:
             draw_colorbar = False
         elif compose:
@@ -1250,15 +1255,16 @@ class MeshGlyph(GeoMixin, Glyph):
                 self.ax, cat_colors, cat_labels, title=cat_title, loc="upper right"
             )
 
-        if self.default_options["title"] and not compose:
+        # Honour an explicit title/axis-style even when composing, as ArrayGlyph
+        # does: the default title is None, and _apply_axis_style applies only
+        # explicitly-passed options, so a bare overlay leaves the host framing
+        # untouched while an explicit title=/xlabel=/... is still applied.
+        if self.default_options["title"]:
             self.ax.set_title(
                 self.default_options["title"],
                 fontsize=self.default_options["title_size"],
             )
-        # A composed overlay leaves the host's axis framing (ticks, labels,
-        # grid, title) intact; only its own render (aspect) is applied.
-        if not compose:
-            self._apply_axis_style(self.ax)
+        self._apply_axis_style(self.ax)
         self.ax.set_aspect("equal")
 
         _mark_render_artists(self.ax, self, self._cbar, self.im)
@@ -1423,13 +1429,15 @@ class MeshGlyph(GeoMixin, Glyph):
         if draw_colorbar:
             self._cbar = self.create_color_bar(ax, tpc, cbar_kw)
 
-        if self.default_options["title"] and not compose:
+        # See plot: an explicit title/axis-style is honoured even when composing;
+        # a bare overlay leaves the host framing intact (default title is None,
+        # _apply_axis_style applies only explicitly-passed options).
+        if self.default_options["title"]:
             ax.set_title(
                 self.default_options["title"],
                 fontsize=self.default_options["title_size"],
             )
-        if not compose:
-            self._apply_axis_style(ax)
+        self._apply_axis_style(ax)
         ax.set_aspect("equal")
 
         day_text = ax.text(
