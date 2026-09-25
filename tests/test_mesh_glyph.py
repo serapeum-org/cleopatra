@@ -2287,6 +2287,28 @@ class TestMeshGlyphCompose:
         )
         return fig, ax
 
+    @staticmethod
+    def _animate(fig, ax, **kwargs):
+        """Animate a two-frame unit-square mesh on `ax`, returning (mesh, anim).
+
+        Forces one draw so the returned animation is not GC'd unrendered.
+        """
+        mesh = MeshGlyph(
+            np.array([0.0, 1.0, 1.0, 0.0]),
+            np.array([0.0, 0.0, 1.0, 1.0]),
+            np.array([[0, 1, 2], [0, 2, 3]]),
+            fig=fig,
+            ax=ax,
+        )
+        anim = mesh.animate(
+            [np.array([1.0, 2.0]), np.array([2.0, 3.0])],
+            time=["t0", "t1"],
+            location="face",
+            **kwargs,
+        )
+        fig.canvas.draw()
+        return mesh, anim
+
     def test_plot_compose_true_keeps_prior_layer(self):
         """compose=True layers the mesh over a prior raster instead of wiping it."""
         fig, ax = self._raster_axes()
@@ -2390,75 +2412,29 @@ class TestMeshGlyphCompose:
 
     def test_animate_compose_true_keeps_prior_layer(self):
         """animate(compose=True) draws the first frame over a prior raster."""
-        fig, ax = plt.subplots()
-        ArrayGlyph(np.arange(100.0).reshape(10, 10), extent=[0, 0, 1, 1]).plot(
-            ax=ax, compose=True
-        )
-        mesh = MeshGlyph(
-            np.array([0.0, 1.0, 1.0, 0.0]),
-            np.array([0.0, 0.0, 1.0, 1.0]),
-            np.array([[0, 1, 2], [0, 2, 3]]),
-            fig=fig,
-            ax=ax,
-        )
-        anim = mesh.animate(
-            [np.array([1.0, 2.0]), np.array([2.0, 3.0])],
-            time=["t0", "t1"],
-            location="face",
-            compose=True,
-        )
+        fig, ax = self._raster_axes()
+        mesh, anim = self._animate(fig, ax, compose=True)
         assert anim is not None, "animate should return the FuncAnimation"
         assert len(ax.get_images()) == 1, "raster should survive a composed animation"
         assert mesh._cbar is None, (
             "a composed animation should not draw its own colorbar"
         )
         assert len(fig.axes) == 1, "no colorbar axes should be added to the host figure"
-        fig.canvas.draw()
 
     def test_animate_compose_true_colorbar_explicit_still_draws(self):
         """animate(compose=True, colorbar=True) still draws the colorbar (elif branch)."""
-        fig, ax = plt.subplots()
-        ArrayGlyph(np.arange(100.0).reshape(10, 10), extent=[0, 0, 1, 1]).plot(
-            ax=ax, compose=True
-        )
-        mesh = MeshGlyph(
-            np.array([0.0, 1.0, 1.0, 0.0]),
-            np.array([0.0, 0.0, 1.0, 1.0]),
-            np.array([[0, 1, 2], [0, 2, 3]]),
-            fig=fig,
-            ax=ax,
-        )
-        anim = mesh.animate(
-            [np.array([1.0, 2.0]), np.array([2.0, 3.0])],
-            time=["t0", "t1"],
-            location="face",
-            compose=True,
-            colorbar=True,
-        )
+        fig, ax = self._raster_axes()
+        mesh, anim = self._animate(fig, ax, compose=True, colorbar=True)
         assert anim is not None, "animate should return the FuncAnimation"
         assert mesh._cbar is not None, "explicit colorbar=True draws even under compose"
-        fig.canvas.draw()
 
     def test_animate_colorbar_false_suppresses_colorbar(self):
         """animate(colorbar=False) draws no colorbar even for a normal render."""
         fig, ax = plt.subplots()
-        mesh = MeshGlyph(
-            np.array([0.0, 1.0, 1.0, 0.0]),
-            np.array([0.0, 0.0, 1.0, 1.0]),
-            np.array([[0, 1, 2], [0, 2, 3]]),
-            fig=fig,
-            ax=ax,
-        )
-        anim = mesh.animate(
-            [np.array([1.0, 2.0]), np.array([2.0, 3.0])],
-            time=["t0", "t1"],
-            location="face",
-            colorbar=False,
-        )
+        mesh, anim = self._animate(fig, ax, colorbar=False)
         assert anim is not None, "animate should return the FuncAnimation"
         assert mesh._cbar is None, "colorbar=False should suppress the colorbar"
         assert len(fig.axes) == 1, "no colorbar axes should be added"
-        fig.canvas.draw()
 
     def test_render_methods_expose_compose(self):
         """plot / animate / plot_outline all declare a compose parameter."""
