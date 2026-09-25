@@ -1697,18 +1697,21 @@ class TestClearAndMarkRenderArtists:
         finally:
             plt.close(fig)
 
-    @pytest.mark.parametrize("error", [KeyError, NotImplementedError, AttributeError])
+    @pytest.mark.parametrize(
+        "error", [KeyError, NotImplementedError, ValueError, AttributeError]
+    )
     def test_clear_tolerates_already_removed_artist(self, error):
-        """A `.remove()` failure from an already-partially-removed artist doesn't stop cleanup.
+        """A `.remove()` failure from an already-detached artist doesn't stop cleanup.
 
         Test scenario:
-            Locks in H1's fix: matplotlib raises a different exception type
-            depending on how much of the artist is already detached
-            (`KeyError` for a colorbar axes off the figure's axes stack,
-            `NotImplementedError` for any other artist already detached,
-            `AttributeError` for a colorbar whose mappable was detached out
-            from under it). All three must be swallowed, and the other
-            marked artist must still be removed.
+            matplotlib raises a different exception type depending on how much
+            of the artist is already detached (`KeyError` for a colorbar axes
+            off the figure's axes stack, `NotImplementedError` for any other
+            artist already detached, `AttributeError` for a colorbar whose
+            mappable was detached out from under it, and `ValueError:
+            list.remove(x)` when a consumer already called `Artist.remove()`
+            itself -- issue #369). All must be swallowed, and the other marked
+            artist must still be removed.
         """
         fig, ax = plt.subplots()
         try:
@@ -1738,6 +1741,31 @@ class TestClearAndMarkRenderArtists:
             )
             with pytest.raises(RuntimeError):
                 _clear_prior_render_artists(ax, owner)
+        finally:
+            plt.close(fig)
+
+    def test_rerender_after_consumer_detaches_tracked_artist(self):
+        """Re-rendering after a consumer detached a tracked artist does not raise (issue #369).
+
+        Test scenario:
+            A layer-managing consumer calls `Artist.remove()` on artists
+            cleopatra is still tracking (a rebuild/restyle/rollback). The next
+            render clears the stale entry via `_clear_prior_render_artists`,
+            whose `artist.remove()` would raise
+            `ValueError: list.remove(x): x not in list` on the already-detached
+            artist. The render must complete instead of propagating that.
+        """
+        data = np.arange(36, dtype=float).reshape(6, 6)
+        fig, ax = plt.subplots()
+        try:
+            ArrayGlyph(data, ax=ax).plot(ax=ax)
+            for group in list(ax._cleo_render_artists.values()):
+                for artist in group:
+                    artist.remove()
+            ArrayGlyph(data, ax=ax).plot(ax=ax)
+            assert ax._cleo_render_artists is not None, (
+                "the re-render should register its own artists"
+            )
         finally:
             plt.close(fig)
 
