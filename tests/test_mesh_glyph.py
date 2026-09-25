@@ -2319,6 +2319,24 @@ class TestMeshGlyphCompose:
         mesh.plot_outline(ax=ax, compose=True)
         assert len(ax.get_images()) == 1, "outline composed over the raster keeps it"
 
+    def test_animate_compose_true_keeps_prior_layer(self):
+        """animate(compose=True) draws the first frame over a prior raster."""
+        fig, ax = plt.subplots()
+        ArrayGlyph(np.arange(100.0).reshape(10, 10), extent=[0, 0, 1, 1]).plot(
+            ax=ax, compose=True
+        )
+        node_x = np.array([0.0, 1.0, 1.0, 0.0])
+        node_y = np.array([0.0, 0.0, 1.0, 1.0])
+        faces = np.array([[0, 1, 2], [0, 2, 3]])
+        mesh = MeshGlyph(node_x, node_y, faces, fig=fig, ax=ax)
+        mesh.animate(
+            [np.array([1.0, 2.0]), np.array([2.0, 3.0])],
+            time=["t0", "t1"],
+            location="face",
+            compose=True,
+        )
+        assert len(ax.get_images()) == 1, "raster should survive a composed animation"
+
     def test_render_methods_expose_compose(self):
         """plot / animate / plot_outline all declare a compose parameter."""
         for method in (MeshGlyph.plot, MeshGlyph.animate, MeshGlyph.plot_outline):

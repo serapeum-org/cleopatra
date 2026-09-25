@@ -831,6 +831,23 @@ class TestHistogramGlyphCompose:
         )
         assert len(ax.get_images()) == 1, "raster should survive a composed boxplot"
 
+    def test_multiboxplot_compose_true_keeps_prior_layer(self):
+        """multiboxplot(compose=True) draws over a prior raster instead of wiping it."""
+        _, ax = self._raster_axes()
+        values = np.random.default_rng(0).normal(size=(50, 3))
+        HistogramGlyph(values, color=["r", "g", "b"]).multiboxplot(ax=ax, compose=True)
+        assert len(ax.get_images()) == 1, (
+            "raster should survive a composed multiboxplot"
+        )
+
+    def test_stripes_compose_true_keeps_prior_layer(self):
+        """stripes(compose=True) draws over a prior raster instead of wiping it."""
+        _, ax = self._raster_axes()
+        HistogramGlyph(np.random.default_rng(0).normal(size=40)).stripes(
+            ax=ax, compose=True
+        )
+        assert len(ax.get_images()) == 1, "raster should survive composed stripes"
+
     def test_render_methods_expose_compose(self):
         """histogram / boxplot / multiboxplot / stripes all declare compose."""
         for method in (
