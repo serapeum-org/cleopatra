@@ -2374,6 +2374,26 @@ class TestMeshGlyphCompose:
         )
         assert len(fig.axes) == 1, "no colorbar axes should be added to the host figure"
 
+    def test_animate_colorbar_false_suppresses_colorbar(self):
+        """animate(colorbar=False) draws no colorbar even for a normal render."""
+        fig, ax = plt.subplots()
+        mesh = MeshGlyph(
+            np.array([0.0, 1.0, 1.0, 0.0]),
+            np.array([0.0, 0.0, 1.0, 1.0]),
+            np.array([[0, 1, 2], [0, 2, 3]]),
+            fig=fig,
+            ax=ax,
+        )
+        anim = mesh.animate(
+            [np.array([1.0, 2.0]), np.array([2.0, 3.0])],
+            time=["t0", "t1"],
+            location="face",
+            colorbar=False,
+        )
+        assert anim is not None, "animate should return the FuncAnimation"
+        assert mesh._cbar is None, "colorbar=False should suppress the colorbar"
+        assert len(fig.axes) == 1, "no colorbar axes should be added"
+
     def test_render_methods_expose_compose(self):
         """plot / animate / plot_outline all declare a compose parameter."""
         for method in (MeshGlyph.plot, MeshGlyph.animate, MeshGlyph.plot_outline):
