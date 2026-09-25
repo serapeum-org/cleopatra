@@ -1296,9 +1296,11 @@ class MeshGlyph(GeoMixin, Glyph):
             interval: Milliseconds between frames. Default is 200.
             text_loc: `[x, y]` position for the time label text.
                 Default is `[0.1, 0.2]`.
-            colorbar: Typed `ColorBar` spec (placement / caption / sizing) for
-                the animation's colorbar, or `True`/`None` to draw a default one;
-                `False` suppresses it. Default `None` (draw).
+            colorbar: Draw a colorbar. `None` (default) draws one for a normal
+                render but suppresses it under `compose=True` (an overlay's
+                colorbar would re-lay-out the host axes); `True` or a typed
+                `ColorBar` spec (placement / caption / sizing) always draws one,
+                even composing; `False` suppresses it.
             compose: Draw *over* whatever is already on the axes instead of
                 replacing it, by default `False`. `True` clears only this glyph's
                 own prior artists, so the animation layers onto existing content
