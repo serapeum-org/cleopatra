@@ -939,7 +939,11 @@ class MeshGlyph(GeoMixin, Glyph):
                 prior artists from the axes first (the replace-don't-orphan
                 default); `True` clears only this glyph's own prior artists, so
                 a mesh can be layered onto a host raster / another glyph -- the
-                same opt-in `ArrayGlyph` and `VectorGlyph` expose.
+                same opt-in `ArrayGlyph` and `VectorGlyph` expose. A composed
+                overlay still applies any framing you pass explicitly
+                (`title=`, `xlabel=`, …) and its own aspect, but leaves the
+                host's existing title / ticks / labels and colorbar untouched
+                when you pass none.
             **kwargs: Construction-time-style overrides for the non-grouped
                 `default_options` (`cmap`, `vmin`, `vmax`, `title_size`,
                 `figsize`, …). The loose `ticks_spacing` / `cbar_*` keys
@@ -1309,8 +1313,10 @@ class MeshGlyph(GeoMixin, Glyph):
                 even composing; `False` suppresses it.
             compose: Draw *over* whatever is already on the axes instead of
                 replacing it, by default `False`. `True` clears only this glyph's
-                own prior artists, so the animation layers onto existing content
-                (see `plot`).
+                own prior artists, so the animation layers onto existing content;
+                explicit framing (`title=`, `xlabel=`, …) is still applied while
+                the host's existing framing is left intact, and `tight_layout` is
+                skipped so the host layout is preserved (see `plot`).
             **kwargs: Override any key in `default_options` (cmap,
                 vmin, vmax, color_scale, gamma, midpoint, figsize,
                 title, etc.). The loose `ticks_spacing` / `cbar_*` keys
