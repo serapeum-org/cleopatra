@@ -404,9 +404,7 @@ class HistogramGlyph(WatermarkMixin):
         keys = cls.option_keys()
         return {key: val for key, val in kwargs.items() if key in keys}
 
-    def histogram(
-        self, *, compose: bool = False, **kwargs
-    ) -> tuple[Figure, Axes, dict]:
+    def histogram(self, compose: bool = False, **kwargs) -> tuple[Figure, Axes, dict]:
         """Create a histogram from the stored numerical values.
 
         This method generates a histogram visualization of the numerical values stored
@@ -418,7 +416,9 @@ class HistogramGlyph(WatermarkMixin):
                 replacing it, by default `False`. `False` clears every glyph's
                 prior artists first (the replace-don't-orphan default); `True`
                 clears only this glyph's own, so the histogram layers onto a
-                shared axes -- the same opt-in the gridded glyphs expose.
+                shared axes (e.g. several distributions on one axes). The
+                histogram still applies its own axis framing (labels, grid) to
+                that axes either way.
             **kwargs: Additional keyword arguments to customize the histogram appearance.
                 These will override any options set during initialization.
                 Supported arguments include:

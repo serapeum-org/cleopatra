@@ -848,6 +848,29 @@ class TestHistogramGlyphCompose:
         )
         assert len(ax.get_images()) == 1, "raster should survive composed stripes"
 
+    def test_boxplot_default_replaces_prior_layer(self):
+        """Default boxplot clears the prior raster (replace-don't-orphan)."""
+        _, ax = self._raster_axes()
+        HistogramGlyph(np.random.default_rng(0).normal(size=200)).boxplot(ax=ax)
+        assert len(ax.get_images()) == 0, "default boxplot should replace the raster"
+
+    def test_stripes_default_replaces_prior_layer(self):
+        """Default stripes clears the prior raster (replace-don't-orphan)."""
+        _, ax = self._raster_axes()
+        HistogramGlyph(np.random.default_rng(0).normal(size=40)).stripes(ax=ax)
+        assert len(ax.get_images()) == 0, "default stripes should replace the raster"
+
+    def test_histogram_compose_true_replaces_own_prior_render(self):
+        """compose=True still clears the histogram's own prior bars (no accumulation)."""
+        fig, ax = plt.subplots()
+        glyph = HistogramGlyph(np.random.default_rng(0).normal(size=200), ax=ax)
+        glyph.histogram()
+        n_after_first = len(ax.patches)
+        glyph.histogram(compose=True)
+        assert len(ax.patches) == n_after_first, (
+            "own prior bars replaced under compose, not duplicated"
+        )
+
     def test_render_methods_expose_compose(self):
         """histogram / boxplot / multiboxplot / stripes all declare compose."""
         for method in (
