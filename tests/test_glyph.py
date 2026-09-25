@@ -1704,14 +1704,16 @@ class TestClearAndMarkRenderArtists:
         """A `.remove()` failure from an already-detached artist doesn't stop cleanup.
 
         Test scenario:
-            matplotlib raises a different exception type depending on how much
-            of the artist is already detached (`KeyError` for a colorbar axes
-            off the figure's axes stack, `NotImplementedError` for any other
-            artist already detached, `AttributeError` for a colorbar whose
-            mappable was detached out from under it, and `ValueError:
-            list.remove(x)` when a consumer already called `Artist.remove()`
-            itself -- issue #369). All must be swallowed, and the other marked
-            artist must still be removed.
+            The exceptions matplotlib can raise from a redundant
+            `artist.remove()`: `ValueError: list.remove(x)` -- the normal
+            result of a second remove of any previously-attached artist, which
+            is the issue #369 case when a consumer detached the artist itself;
+            `NotImplementedError` -- an artist that was never attached
+            (`_remove_method is None`); and `KeyError` / `AttributeError` --
+            colorbar-specific edges (a colorbar axes off the figure's axes
+            stack, or one whose mappable was detached out from under it). Each
+            must be swallowed, and the other marked artist must still be
+            removed.
         """
         fig, ax = plt.subplots()
         try:
@@ -1763,8 +1765,11 @@ class TestClearAndMarkRenderArtists:
                 for artist in group:
                     artist.remove()
             ArrayGlyph(data, ax=ax).plot(ax=ax)
+            assert len(ax.images) >= 1, (
+                "the re-render should draw a live image onto the axes"
+            )
             assert ax._cleo_render_artists is not None, (
-                "the re-render should register its own artists"
+                "and register its own artists for the next clear"
             )
         finally:
             plt.close(fig)
