@@ -1765,8 +1765,9 @@ class TestClearAndMarkRenderArtists:
                 for artist in group:
                     artist.remove()
             ArrayGlyph(data, ax=ax).plot(ax=ax)
-            assert len(ax.images) >= 1, (
-                "the re-render should draw a live image onto the axes"
+            assert len(ax.images) == 1, (
+                "the re-render should leave exactly one live image -- no stale "
+                "image should survive the clear"
             )
             assert ax._cleo_render_artists is not None, (
                 "and register its own artists for the next clear"
