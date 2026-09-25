@@ -3040,7 +3040,7 @@ instance with the <code>option_keys</code> and <code>filter_kwargs</code> classm
       </thead>
       <tbody>
             <tr class="doc-section-item">
-              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;histogram&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;compose&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;False&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;**&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;kwargs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt; (&lt;code&gt;cleopatra.glyphs.stats.histogram_glyph.HistogramGlyph.histogram&lt;/code&gt;)" href="#cleopatra.glyphs.stats.histogram_glyph.HistogramGlyph.histogram">histogram</a></code></td>
+              <td><code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;highlight language-python&quot;&gt;&lt;span class=&quot;n&quot;&gt;histogram&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;compose&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;False&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;**&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;kwargs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt; (&lt;code&gt;cleopatra.glyphs.stats.histogram_glyph.HistogramGlyph.histogram&lt;/code&gt;)" href="#cleopatra.glyphs.stats.histogram_glyph.HistogramGlyph.histogram">histogram</a></code></td>
               <td>
                 <div class="doc-md-description">
                   <p>Creates a histogram from the given values with customizable options.</p>
@@ -4285,21 +4285,21 @@ Create a histogram from 2D data with custom colors:
 <a id="__codelineno-0-404" name="__codelineno-0-404"></a>        <span class="n">keys</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">option_keys</span><span class="p">()</span>
 <a id="__codelineno-0-405" name="__codelineno-0-405"></a>        <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">val</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">}</span>
 <a id="__codelineno-0-406" name="__codelineno-0-406"></a>
-<a id="__codelineno-0-407" name="__codelineno-0-407"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">histogram</span><span class="p">(</span>
-<a id="__codelineno-0-408" name="__codelineno-0-408"></a>        <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">compose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-<a id="__codelineno-0-409" name="__codelineno-0-409"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Figure</span><span class="p">,</span> <span class="n">Axes</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
-<a id="__codelineno-0-410" name="__codelineno-0-410"></a><span class="w">        </span><span class="sd">"""Create a histogram from the stored numerical values.</span>
-<a id="__codelineno-0-411" name="__codelineno-0-411"></a>
-<a id="__codelineno-0-412" name="__codelineno-0-412"></a><span class="sd">        This method generates a histogram visualization of the numerical values stored</span>
-<a id="__codelineno-0-413" name="__codelineno-0-413"></a><span class="sd">        in the object. It can handle both 1D data (single histogram) and 2D data</span>
-<a id="__codelineno-0-414" name="__codelineno-0-414"></a><span class="sd">        (multiple histograms overlaid on the same plot).</span>
-<a id="__codelineno-0-415" name="__codelineno-0-415"></a>
-<a id="__codelineno-0-416" name="__codelineno-0-416"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-417" name="__codelineno-0-417"></a><span class="sd">            compose: Draw *over* whatever is already on the axes instead of</span>
-<a id="__codelineno-0-418" name="__codelineno-0-418"></a><span class="sd">                replacing it, by default `False`. `False` clears every glyph's</span>
-<a id="__codelineno-0-419" name="__codelineno-0-419"></a><span class="sd">                prior artists first (the replace-don't-orphan default); `True`</span>
-<a id="__codelineno-0-420" name="__codelineno-0-420"></a><span class="sd">                clears only this glyph's own, so the histogram layers onto a</span>
-<a id="__codelineno-0-421" name="__codelineno-0-421"></a><span class="sd">                shared axes -- the same opt-in the gridded glyphs expose.</span>
+<a id="__codelineno-0-407" name="__codelineno-0-407"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">histogram</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">compose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Figure</span><span class="p">,</span> <span class="n">Axes</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+<a id="__codelineno-0-408" name="__codelineno-0-408"></a><span class="w">        </span><span class="sd">"""Create a histogram from the stored numerical values.</span>
+<a id="__codelineno-0-409" name="__codelineno-0-409"></a>
+<a id="__codelineno-0-410" name="__codelineno-0-410"></a><span class="sd">        This method generates a histogram visualization of the numerical values stored</span>
+<a id="__codelineno-0-411" name="__codelineno-0-411"></a><span class="sd">        in the object. It can handle both 1D data (single histogram) and 2D data</span>
+<a id="__codelineno-0-412" name="__codelineno-0-412"></a><span class="sd">        (multiple histograms overlaid on the same plot).</span>
+<a id="__codelineno-0-413" name="__codelineno-0-413"></a>
+<a id="__codelineno-0-414" name="__codelineno-0-414"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-415" name="__codelineno-0-415"></a><span class="sd">            compose: Draw *over* whatever is already on the axes instead of</span>
+<a id="__codelineno-0-416" name="__codelineno-0-416"></a><span class="sd">                replacing it, by default `False`. `False` clears every glyph's</span>
+<a id="__codelineno-0-417" name="__codelineno-0-417"></a><span class="sd">                prior artists first (the replace-don't-orphan default); `True`</span>
+<a id="__codelineno-0-418" name="__codelineno-0-418"></a><span class="sd">                clears only this glyph's own, so the histogram layers onto a</span>
+<a id="__codelineno-0-419" name="__codelineno-0-419"></a><span class="sd">                shared axes (e.g. several distributions on one axes). The</span>
+<a id="__codelineno-0-420" name="__codelineno-0-420"></a><span class="sd">                histogram still applies its own axis framing (labels, grid) to</span>
+<a id="__codelineno-0-421" name="__codelineno-0-421"></a><span class="sd">                that axes either way.</span>
 <a id="__codelineno-0-422" name="__codelineno-0-422"></a><span class="sd">            **kwargs: Additional keyword arguments to customize the histogram appearance.</span>
 <a id="__codelineno-0-423" name="__codelineno-0-423"></a><span class="sd">                These will override any options set during initialization.</span>
 <a id="__codelineno-0-424" name="__codelineno-0-424"></a><span class="sd">                Supported arguments include:</span>
@@ -5862,7 +5862,7 @@ dict returned by <code>Axes.boxplot</code> (keys: <code>boxes</code>,
 
 
 <h4 id="cleopatra.glyphs.stats.histogram_glyph.HistogramGlyph.histogram" class="doc doc-heading"><a href="#cleopatra.glyphs.stats.histogram_glyph.HistogramGlyph.histogram" class="toclink">
-            <code class="highlight language-python"><span class="n">histogram</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">compose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">histogram</span><span class="p">(</span><span class="n">compose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
 </a><a href="#cleopatra.glyphs.stats.histogram_glyph.HistogramGlyph.histogram" class="headerlink" title="Permanent link">#</a></h4>
 
@@ -5899,7 +5899,9 @@ in the object. It can handle both 1D data (single histogram) and 2D data
 replacing it, by default <code>False</code>. <code>False</code> clears every glyph's
 prior artists first (the replace-don't-orphan default); <code>True</code>
 clears only this glyph's own, so the histogram layers onto a
-shared axes -- the same opt-in the gridded glyphs expose.</p>
+shared axes (e.g. several distributions on one axes). The
+histogram still applies its own axis framing (labels, grid) to
+that axes either way.</p>
               </div>
             </td>
             <td>
@@ -6299,21 +6301,21 @@ regions visible.</p>
 <span class="normal"><a href="#__codelineno-0-579">579</a></span>
 <span class="normal"><a href="#__codelineno-0-580">580</a></span>
 <span class="normal"><a href="#__codelineno-0-581">581</a></span>
-<span class="normal"><a href="#__codelineno-0-582">582</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-407" name="__codelineno-0-407"></a><span class="k">def</span><span class="w"> </span><span class="nf">histogram</span><span class="p">(</span>
-<a id="__codelineno-0-408" name="__codelineno-0-408"></a>    <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">compose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-<a id="__codelineno-0-409" name="__codelineno-0-409"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Figure</span><span class="p">,</span> <span class="n">Axes</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
-<a id="__codelineno-0-410" name="__codelineno-0-410"></a><span class="w">    </span><span class="sd">"""Create a histogram from the stored numerical values.</span>
-<a id="__codelineno-0-411" name="__codelineno-0-411"></a>
-<a id="__codelineno-0-412" name="__codelineno-0-412"></a><span class="sd">    This method generates a histogram visualization of the numerical values stored</span>
-<a id="__codelineno-0-413" name="__codelineno-0-413"></a><span class="sd">    in the object. It can handle both 1D data (single histogram) and 2D data</span>
-<a id="__codelineno-0-414" name="__codelineno-0-414"></a><span class="sd">    (multiple histograms overlaid on the same plot).</span>
-<a id="__codelineno-0-415" name="__codelineno-0-415"></a>
-<a id="__codelineno-0-416" name="__codelineno-0-416"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-417" name="__codelineno-0-417"></a><span class="sd">        compose: Draw *over* whatever is already on the axes instead of</span>
-<a id="__codelineno-0-418" name="__codelineno-0-418"></a><span class="sd">            replacing it, by default `False`. `False` clears every glyph's</span>
-<a id="__codelineno-0-419" name="__codelineno-0-419"></a><span class="sd">            prior artists first (the replace-don't-orphan default); `True`</span>
-<a id="__codelineno-0-420" name="__codelineno-0-420"></a><span class="sd">            clears only this glyph's own, so the histogram layers onto a</span>
-<a id="__codelineno-0-421" name="__codelineno-0-421"></a><span class="sd">            shared axes -- the same opt-in the gridded glyphs expose.</span>
+<span class="normal"><a href="#__codelineno-0-582">582</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-407" name="__codelineno-0-407"></a><span class="k">def</span><span class="w"> </span><span class="nf">histogram</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">compose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Figure</span><span class="p">,</span> <span class="n">Axes</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+<a id="__codelineno-0-408" name="__codelineno-0-408"></a><span class="w">    </span><span class="sd">"""Create a histogram from the stored numerical values.</span>
+<a id="__codelineno-0-409" name="__codelineno-0-409"></a>
+<a id="__codelineno-0-410" name="__codelineno-0-410"></a><span class="sd">    This method generates a histogram visualization of the numerical values stored</span>
+<a id="__codelineno-0-411" name="__codelineno-0-411"></a><span class="sd">    in the object. It can handle both 1D data (single histogram) and 2D data</span>
+<a id="__codelineno-0-412" name="__codelineno-0-412"></a><span class="sd">    (multiple histograms overlaid on the same plot).</span>
+<a id="__codelineno-0-413" name="__codelineno-0-413"></a>
+<a id="__codelineno-0-414" name="__codelineno-0-414"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-415" name="__codelineno-0-415"></a><span class="sd">        compose: Draw *over* whatever is already on the axes instead of</span>
+<a id="__codelineno-0-416" name="__codelineno-0-416"></a><span class="sd">            replacing it, by default `False`. `False` clears every glyph's</span>
+<a id="__codelineno-0-417" name="__codelineno-0-417"></a><span class="sd">            prior artists first (the replace-don't-orphan default); `True`</span>
+<a id="__codelineno-0-418" name="__codelineno-0-418"></a><span class="sd">            clears only this glyph's own, so the histogram layers onto a</span>
+<a id="__codelineno-0-419" name="__codelineno-0-419"></a><span class="sd">            shared axes (e.g. several distributions on one axes). The</span>
+<a id="__codelineno-0-420" name="__codelineno-0-420"></a><span class="sd">            histogram still applies its own axis framing (labels, grid) to</span>
+<a id="__codelineno-0-421" name="__codelineno-0-421"></a><span class="sd">            that axes either way.</span>
 <a id="__codelineno-0-422" name="__codelineno-0-422"></a><span class="sd">        **kwargs: Additional keyword arguments to customize the histogram appearance.</span>
 <a id="__codelineno-0-423" name="__codelineno-0-423"></a><span class="sd">            These will override any options set during initialization.</span>
 <a id="__codelineno-0-424" name="__codelineno-0-424"></a><span class="sd">            Supported arguments include:</span>
