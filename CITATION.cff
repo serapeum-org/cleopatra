@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "cleopatra"
+abstract: "visualization package"
+authors:
+  - family-names: Farrag
+    given-names: Mostafa
+    email: moah.farag@gmail.com
+version: "0.39.0"
+date-released: 2026-09-14
+license: GPL-3.0
+repository-code: "https://github.com/serapeum-org/cleopatra"
+url: "https://serapeum-org.github.io/cleopatra/"
+keywords:
+  - "matplotlib"
+  - "visualization"
