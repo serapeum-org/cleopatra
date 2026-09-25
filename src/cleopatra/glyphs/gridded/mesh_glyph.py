@@ -875,7 +875,7 @@ class MeshGlyph(GeoMixin, Glyph):
         location: str = "face",
         ax: Any = None,
         edgecolor: str = "none",
-        colorbar: bool | ColorBar | None = True,
+        colorbar: bool | ColorBar | None = None,
         title: str | None = None,
         filled: bool = True,
         color: ColorScaling | None = None,
@@ -906,9 +906,11 @@ class MeshGlyph(GeoMixin, Glyph):
                 figure/axes.
             edgecolor: Edge color for face rendering. Default is
                 `"none"`.
-            colorbar: Draw a colorbar, by default `True`. Accepts a typed
-                `ColorBar` spec (placement / caption / sizing) or `True`/`None`
-                to draw a default one; `False` suppresses it.
+            colorbar: Draw a colorbar. `None` (default) draws one for a normal
+                render but suppresses it under `compose=True` (an overlay's
+                colorbar would re-lay-out the host axes); `True` or a typed
+                `ColorBar` spec (placement / caption / sizing) always draws one,
+                even composing; `False` suppresses it.
             title: Plot title. Overrides `default_options["title"]`.
             filled: For node data, draw filled contours (`tricontourf`,
                 the default) or line contours (`tricontour`) when
@@ -1089,8 +1091,17 @@ class MeshGlyph(GeoMixin, Glyph):
             _resolve_colorbar(colorbar) if isinstance(colorbar, ColorBar) else {}
         )
         self.default_options.update(resolved_colorbar)
-        if colorbar is not False:
-            colorbar = True
+        # A composed overlay's colorbar takes space from the host axes and
+        # re-lays it out, so composing defaults the colorbar off; only an
+        # explicit request (colorbar=True or a ColorBar spec) still draws one.
+        # Outside compose the historical default holds: draw unless colorbar is
+        # False. Matches ArrayGlyph / VectorGlyph (Glyph._draws_own_colorbar).
+        if colorbar is False:
+            draw_colorbar = False
+        elif compose:
+            draw_colorbar = colorbar is not None
+        else:
+            draw_colorbar = True
 
         # `style`/`hillshade` now arrive via the `data_style` group object;
         # detect whether this call provided each so the sticky-state logic
@@ -1167,6 +1178,10 @@ class MeshGlyph(GeoMixin, Glyph):
                 )
                 data = np.where(np.isin(data_f, cat_values), data_f, np.nan)
                 colorbar = False
+                # A categorical preset draws a discrete legend, never a
+                # colorbar. `draw_colorbar` was resolved before the preset was
+                # known, so clear it here too (not just `colorbar`).
+                draw_colorbar = False
                 self.default_options["hillshade"] = False
                 style_legend = (cat_colors, cat_labels, cfg["label"])
                 if location == "node":
@@ -1226,7 +1241,7 @@ class MeshGlyph(GeoMixin, Glyph):
             }
             self.contour_labels = self.ax.clabel(tpc, **label_kw)
 
-        if colorbar:
+        if draw_colorbar:
             self._cbar = self.create_color_bar(self.ax, tpc, cbar_kw)
 
         if style_legend is not None:
@@ -1235,12 +1250,15 @@ class MeshGlyph(GeoMixin, Glyph):
                 self.ax, cat_colors, cat_labels, title=cat_title, loc="upper right"
             )
 
-        if self.default_options["title"]:
+        if self.default_options["title"] and not compose:
             self.ax.set_title(
                 self.default_options["title"],
                 fontsize=self.default_options["title_size"],
             )
-        self._apply_axis_style(self.ax)
+        # A composed overlay leaves the host's axis framing (ticks, labels,
+        # grid, title) intact; only its own render (aspect) is applied.
+        if not compose:
+            self._apply_axis_style(self.ax)
         self.ax.set_aspect("equal")
 
         _mark_render_artists(self.ax, self, self._cbar, self.im)
@@ -1392,15 +1410,24 @@ class MeshGlyph(GeoMixin, Glyph):
             norm=norm,
         )
         self.im = tpc
-        if colorbar is not False:
+        # See plot: a composed overlay's colorbar re-lays out the host, so
+        # composing defaults it off; an explicit request still draws one.
+        if colorbar is False:
+            draw_colorbar = False
+        elif compose:
+            draw_colorbar = colorbar is not None
+        else:
+            draw_colorbar = True
+        if draw_colorbar:
             self._cbar = self.create_color_bar(ax, tpc, cbar_kw)
 
-        if self.default_options["title"]:
+        if self.default_options["title"] and not compose:
             ax.set_title(
                 self.default_options["title"],
                 fontsize=self.default_options["title_size"],
             )
-        self._apply_axis_style(ax)
+        if not compose:
+            self._apply_axis_style(ax)
         ax.set_aspect("equal")
 
         day_text = ax.text(
@@ -1434,7 +1461,8 @@ class MeshGlyph(GeoMixin, Glyph):
             self.im = current_mappable[0]
             _mark_render_artists(ax, self, self._cbar, self.im, self._day_text)
 
-        plt.tight_layout()
+        if not compose:
+            plt.tight_layout()
         anim = FuncAnimation(
             fig,
             _update,

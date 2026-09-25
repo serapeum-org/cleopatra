@@ -2289,11 +2289,26 @@ class TestMeshGlyphCompose:
 
     def test_plot_compose_true_keeps_prior_layer(self):
         """compose=True layers the mesh over a prior raster instead of wiping it."""
-        _, ax = self._raster_axes()
+        fig, ax = self._raster_axes()
         mesh, data = self._mesh()
         mesh.plot(data, ax=ax, compose=True)
         assert len(ax.get_images()) == 1, "raster should survive a composed mesh render"
         assert len(ax.collections) == 1, "the mesh collection should be drawn too"
+
+    def test_plot_compose_true_suppresses_colorbar(self):
+        """compose=True does not add the mesh's colorbar axes to the host figure."""
+        fig, ax = self._raster_axes()
+        mesh, data = self._mesh()
+        mesh.plot(data, ax=ax, compose=True)
+        assert mesh._cbar is None, "a composed overlay should not draw its own colorbar"
+        assert len(fig.axes) == 1, "no colorbar axes should be added to the host figure"
+
+    def test_plot_compose_true_colorbar_explicit_still_draws(self):
+        """An explicit colorbar=True is honoured even under compose."""
+        fig, ax = self._raster_axes()
+        mesh, data = self._mesh()
+        mesh.plot(data, ax=ax, compose=True, colorbar=True)
+        assert mesh._cbar is not None, "explicit colorbar=True should still draw"
 
     def test_plot_default_replaces_prior_layer(self):
         """Default (compose=False) clears prior artists, replacing the raster."""
@@ -2301,6 +2316,13 @@ class TestMeshGlyphCompose:
         mesh, data = self._mesh()
         mesh.plot(data, ax=ax)
         assert len(ax.get_images()) == 0, "default render should replace the raster"
+
+    def test_plot_default_draws_colorbar(self):
+        """A normal (non-composed) render still draws a colorbar by default."""
+        fig, ax = plt.subplots()
+        mesh, data = self._mesh()
+        mesh.plot(data, ax=ax)
+        assert mesh._cbar is not None, "a normal render draws a colorbar by default"
 
     def test_plot_compose_true_replaces_own_prior_render(self):
         """compose=True still clears the mesh's own prior artists (no accumulation)."""
@@ -2319,23 +2341,38 @@ class TestMeshGlyphCompose:
         mesh.plot_outline(ax=ax, compose=True)
         assert len(ax.get_images()) == 1, "outline composed over the raster keeps it"
 
+    def test_plot_outline_default_replaces_prior_layer(self):
+        """Default plot_outline clears prior artists, replacing the raster."""
+        _, ax = self._raster_axes()
+        mesh, _ = self._mesh()
+        mesh.plot_outline(ax=ax)
+        assert len(ax.get_images()) == 0, "default outline should replace the raster"
+
     def test_animate_compose_true_keeps_prior_layer(self):
         """animate(compose=True) draws the first frame over a prior raster."""
         fig, ax = plt.subplots()
         ArrayGlyph(np.arange(100.0).reshape(10, 10), extent=[0, 0, 1, 1]).plot(
             ax=ax, compose=True
         )
-        node_x = np.array([0.0, 1.0, 1.0, 0.0])
-        node_y = np.array([0.0, 0.0, 1.0, 1.0])
-        faces = np.array([[0, 1, 2], [0, 2, 3]])
-        mesh = MeshGlyph(node_x, node_y, faces, fig=fig, ax=ax)
-        mesh.animate(
+        mesh = MeshGlyph(
+            np.array([0.0, 1.0, 1.0, 0.0]),
+            np.array([0.0, 0.0, 1.0, 1.0]),
+            np.array([[0, 1, 2], [0, 2, 3]]),
+            fig=fig,
+            ax=ax,
+        )
+        anim = mesh.animate(
             [np.array([1.0, 2.0]), np.array([2.0, 3.0])],
             time=["t0", "t1"],
             location="face",
             compose=True,
         )
+        assert anim is not None, "animate should return the FuncAnimation"
         assert len(ax.get_images()) == 1, "raster should survive a composed animation"
+        assert mesh._cbar is None, (
+            "a composed animation should not draw its own colorbar"
+        )
+        assert len(fig.axes) == 1, "no colorbar axes should be added to the host figure"
 
     def test_render_methods_expose_compose(self):
         """plot / animate / plot_outline all declare a compose parameter."""
