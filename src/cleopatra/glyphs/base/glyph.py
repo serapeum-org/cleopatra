@@ -678,7 +678,11 @@ def _clear_prior_render_artists(
         for artist in registry.pop(token, ()):
             try:
                 artist.remove()
-            except (KeyError, NotImplementedError, AttributeError):
+            except (KeyError, NotImplementedError, ValueError, AttributeError):
+                # An artist a consumer already detached is the cleared state
+                # this wants, not an error: matplotlib answers a second
+                # Artist.remove() with `ValueError: list.remove(x): x not in
+                # list`. Mirrors _clear_projection_frame's guard.
                 pass
     if not registry:
         ax._cleo_render_artists = None  # type: ignore[attr-defined]
