@@ -221,23 +221,36 @@ def _normalise_tracks(
                 f"track {name!r} needs 'lon' and 'lat' columns (a pandas "
                 f"DataFrame or a dict of arrays, not a dict of dicts)."
             )
-        if lon.size == 0:
-            raise ValueError(f"track {name!r} has no fixes (empty 'lon'/'lat').")
+        if lon.ndim != 1 or lon.size == 0:
+            raise ValueError(
+                f"track {name!r} needs a non-empty 1-D 'lon'/'lat' (got shape "
+                f"{lon.shape})."
+            )
+        n = len(lon)
         vmax = _column(table, "vmax_kt")
         vmax = np.full(lon.shape, np.nan) if vmax is None else vmax
-        time = table["time"] if "time" in table else np.arange(len(lon))
+        time = np.asarray(table["time"]) if "time" in table else np.arange(n)
+        columns: dict[str, Any] = {"lat": lat, "vmax_kt": vmax, "time": time}
+        for kt in _WIND_RADII_KT:
+            for quad, _, _ in _QUADRANTS:
+                radius = _column(table, f"r{kt}_{quad}")
+                if radius is not None:
+                    columns[f"r{kt}_{quad}"] = radius
+        for col_name, arr in columns.items():
+            if len(arr) != n:
+                raise ValueError(
+                    f"track {name!r} column {col_name!r} has length {len(arr)}, "
+                    f"expected {n} to match 'lon'."
+                )
         storm: dict[str, Any] = {
             "lon": lon,
             "lat": lat,
             "vmax_kt": vmax,
             "hours": _as_hours(time),
         }
-        for kt in _WIND_RADII_KT:
-            for quad, _, _ in _QUADRANTS:
-                col = f"r{kt}_{quad}"
-                radius = _column(table, col)
-                if radius is not None:
-                    storm[col] = radius
+        for key, arr in columns.items():
+            if key.startswith("r"):
+                storm[key] = arr
         storms[name] = storm
     return storms
 

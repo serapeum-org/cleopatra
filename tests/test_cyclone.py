@@ -113,8 +113,23 @@ class TestCycloneOverlay:
     def test_empty_track_raises_clear_error(self):
         """A present-but-empty lon/lat raises a clear error, not a cryptic IndexError."""
         empty = {"lon": np.array([]), "lat": np.array([]), "vmax_kt": np.array([])}
-        with pytest.raises(ValueError, match="has no fixes"):
+        with pytest.raises(ValueError, match="non-empty 1-D"):
             CycloneOverlay(empty)
+
+    def test_scalar_lon_raises_clear_error(self):
+        """A scalar (0-d) lon is rejected instead of failing opaquely later."""
+        with pytest.raises(ValueError, match="non-empty 1-D"):
+            CycloneOverlay({"lon": 5.0, "lat": 3.0})
+
+    def test_column_length_mismatch_raises(self):
+        """A column shorter than lon is rejected at construction, not mid-render."""
+        bad = {
+            "lon": np.array([0.0, 1.0, 2.0]),
+            "lat": np.array([0.0, 1.0, 2.0]),
+            "vmax_kt": np.array([30.0, 40.0]),
+        }
+        with pytest.raises(ValueError, match="expected 3 to match"):
+            CycloneOverlay(bad)
 
     def test_init_creates_and_returns_artists(self):
         """`init` adds the storm's artists to the axes and returns them."""
