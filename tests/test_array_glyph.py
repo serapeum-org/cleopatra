@@ -1,7 +1,6 @@
 import os
 import re
 import shutil
-import tempfile
 import warnings
 from unittest.mock import patch
 
