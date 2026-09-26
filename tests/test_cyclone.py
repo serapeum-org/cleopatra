@@ -208,6 +208,26 @@ class TestCycloneOverlay:
         assert wedge.get_visible(), "wedge visible at a positive radius"
         assert wedge.r == 3.0, f"wedge radius tracks the fix, got {wedge.r}"
 
+    def test_wind_radii_wedge_hidden_at_zero_radius(self):
+        """A wind-radius of 0 at a fix hides that quadrant's wedge."""
+        overlay = CycloneOverlay({"K": _track(r34_ne=np.array([0.0, 0.0, 0.0, 0.0]))})
+        anim = _driven(overlay)
+        anim._init_func()
+        anim._func(2)
+        wedge, _ = overlay._artists["K"].wedges[0]
+        assert not wedge.get_visible(), "a zero wind-radius wedge stays hidden"
+
+    def test_non_datetime_object_time_falls_back_to_float_hours(self):
+        """An object-dtype numeric `time` that is not datetime is read as hours."""
+        track = _track(
+            time=np.array([0.0, 24.0], dtype=object),
+            lon=np.array([-120.0, -121.0]),
+            lat=np.array([15.0, 16.0]),
+            vmax_kt=np.array([35.0, 60.0]),
+        )
+        overlay = CycloneOverlay({"K": track})
+        assert overlay.storms["K"]["hours"].tolist() == [0.0, 24.0]
+
 
 class TestAddIntensityKey:
     """Tests for the line-swatch intensity-key helper."""
