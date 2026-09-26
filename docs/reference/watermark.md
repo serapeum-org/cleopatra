@@ -19,15 +19,16 @@ glyph.stamp_mark(LOGO, frac=0.18, corner="lower left")
 glyph.stamp_watermark("earthlens", credit="github.com/serapeum-org/earthlens")
 ```
 
-Both stamp the glyph's own figure, and both are **the** way in for the common case: the functions
-underneath (`_stamp_mark`, `_stamp_watermark`) are private, so there is one supported route rather
-than two equivalent ones. A stamp lands on the whole **figure**, so on a figure carrying several
-glyphs it does not matter which one you call it through.
+Both stamp the glyph's own figure, and for the common single-glyph case both are **the** way in:
+the functions underneath (`_stamp_mark`, `_stamp_watermark`) are private, so a stamp goes through the
+glyph rather than a second equivalent free function. A stamp lands on the whole **figure**, so on a
+figure carrying several glyphs it does not matter which one you call it through.
 
-The one sanctioned exception is a **composite figure no single glyph owns** — several glyphs' panels
-laid out in one `plt.figure` (the documented multi-panel pattern), or a figure built entirely
-outside cleopatra. For that, the module-level **`stamp_mark_on(fig, path, ...)`** is a supported,
-public escape hatch onto the same image stamp — see the `stamp_mark_on` section below.
+The one sanctioned exception is the **mark image on a composite figure no single glyph owns** —
+several glyphs' panels laid out in one `plt.figure` (the documented multi-panel pattern), or a figure
+built entirely outside cleopatra. For that, the module-level **`stamp_mark_on(fig, path, ...)`** is a
+supported, public escape hatch onto the same image stamp — see the `stamp_mark_on` section below.
+(Brand *text* on such a figure stays glyph-only; there is no `stamp_watermark_on`.)
 
 ## `stamp_mark` — a logo image
 
@@ -182,3 +183,9 @@ glyph.stamp_mark("brand/logo.png", margin=(0.025, 0.0))  # flush with the bottom
       members:
         - stamp_mark
         - stamp_watermark
+
+::: cleopatra.styling.watermark.stamp_mark_on
+    options:
+      show_root_heading: true
+      show_source: true
+      heading_level: 3

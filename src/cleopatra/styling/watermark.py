@@ -21,12 +21,13 @@ functions below are private: they take a bare `Figure`, and for a
 single-glyph render stamping one that no glyph owns is deliberately not part
 of the supported surface, so there is one obvious way to do it.
 
-The one sanctioned exception is a **composite** figure -- several glyphs'
-panels laid out in one figure (the documented multi-panel pattern), or a
-figure built entirely outside cleopatra -- which no single glyph owns. For
-that, `stamp_mark_on(fig, logo, ...)` is a supported, public escape hatch onto
-the same image stamp, so a composite layout need not import the private
-`_stamp_mark`.
+The one sanctioned exception is the corner *mark image* on a **composite**
+figure -- several glyphs' panels laid out in one figure (the documented
+multi-panel pattern), or a figure built entirely outside cleopatra -- which no
+single glyph owns. For that, `stamp_mark_on(fig, logo, ...)` is a supported,
+public escape hatch onto the same image stamp, so a composite layout need not
+import the private `_stamp_mark`. Brand *text* on such a figure stays
+glyph-only -- there is no `stamp_watermark_on`.
 
 `_stamp_watermark` is its text counterpart: the diagonal translucent brand
 text across the middle of a frame, plus an optional credit line along the
