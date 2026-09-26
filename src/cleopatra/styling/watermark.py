@@ -725,7 +725,14 @@ def _composite_halo(image: np.ndarray, blur: float) -> tuple[np.ndarray, float, 
 
 
 def stamp_mark_on(
-    fig: Figure, path: str | os.PathLike | np.ndarray, **kwargs: Any
+    fig: Figure,
+    path: str | os.PathLike | np.ndarray,
+    *,
+    frac: float = 0.11,
+    corner: str = "lower right",
+    margin: float | tuple[float, float] = 0.025,
+    shadow: bool = True,
+    blur: float = DEFAULT_BLUR,
 ) -> Axes:
     """Stamp a logo image on a figure that no single glyph owns.
 
@@ -735,26 +742,38 @@ def stamp_mark_on(
     whole figure, so there is no glyph whose `stamp_mark` covers it. For the
     common single-glyph case use the glyph method `WatermarkMixin.stamp_mark`,
     which stays the primary, discoverable API; this is its figure-taking
-    counterpart for the case that method cannot express, so a composite layout
-    need not reach for the private `_stamp_mark`.
+    counterpart, so a composite layout need not reach for the private
+    `_stamp_mark`. It draws the same corner mark; the options below are
+    `_stamp_mark`'s, forwarded unchanged.
 
     Args:
         fig: The matplotlib `Figure` to stamp -- typically a multi-panel
             composite. The mark is drawn on top of whatever it already holds.
-        path: The mark image, as the glyph method accepts it: a file path (any
-            format `PIL` can open) or an in-memory RGB / RGBA array.
-        **kwargs: Mark placement and style options forwarded verbatim to the
-            stamp: `frac`, `corner`, `margin`, `shadow`, `blur`.
+        path: The mark image: a file path (any format `PIL` can open, read as
+            RGBA) or an in-memory `(H, W, 3)` / `(H, W, 4)` array.
+        frac: The mark's longer on-figure side as a fraction of the figure, in
+            `(0, 1]`, so the mark stays proportional across dpis. Defaults to
+            `0.11`.
+        corner: Which corner to anchor to -- `"lower right"` (default),
+            `"lower left"`, `"upper right"`, or `"upper left"`.
+        margin: The gap between the mark and the figure edges, a scalar or an
+            `(x, y)` pair each in `[0, 1)`. Defaults to `0.025`.
+        shadow: Whether to composite a gaussian-blurred halo behind the mark so
+            it reads on a busy or dark canvas. Defaults to `True`.
+        blur: Halo blur sigma as a fraction of the mark's own width; must be
+            non-negative. Defaults to `DEFAULT_BLUR`.
 
     Returns:
         Axes: The frameless inset axes the mark was drawn on.
 
     Raises:
-        ValueError: As the underlying stamp raises -- an unknown `corner`, a
-            `frac` outside `(0, 1]`, a `margin` that is not a scalar or
-            `(x, y)` pair in `[0, 1)` (or one that pushes the mark off the
-            figure), a negative `blur`, or an out-of-contract image array.
+        ValueError: For an unknown `corner`, a `frac` outside `(0, 1]`, a
+            `margin` that is not a scalar or `(x, y)` pair in `[0, 1)` (or one
+            that pushes the mark off the figure), a negative `blur`, or an
+            out-of-contract image array.
         FileNotFoundError: If `path` is a file path that does not exist.
+        PIL.UnidentifiedImageError: If `path` is a file that is not an image
+            `PIL` can decode.
 
     Examples:
         - Stamp a logo once on a composite figure built from several panels:
@@ -776,8 +795,12 @@ def stamp_mark_on(
     See Also:
         WatermarkMixin.stamp_mark: The glyph method for the common
             single-glyph case -- the primary API.
+        cleopatra.styling.watermark._stamp_mark: The private figure stamp this
+            delegates to.
     """
-    return _stamp_mark(fig, path, **kwargs)
+    return _stamp_mark(
+        fig, path, frac=frac, corner=corner, margin=margin, shadow=shadow, blur=blur
+    )
 
 
 class WatermarkMixin:
@@ -849,6 +872,8 @@ class WatermarkMixin:
         See Also:
             cleopatra.styling.watermark.stamp_mark_on: The figure-taking
                 counterpart, for a composite figure no single glyph owns.
+            cleopatra.styling.watermark._stamp_mark: The private figure stamp
+                underneath.
         """
         # The bare name is the module-level function, not this method: a method
         # name never enters the enclosing scope its body is resolved in.
