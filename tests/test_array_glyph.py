@@ -900,7 +900,7 @@ class TestFrameLabel:
         """Without `stroke`, the drawn label has no path effects (unchanged)."""
         fig, ax = plt.subplots()
         artist = FrameLabel().draw(ax, default_size=12)
-        assert artist.get_path_effects() == [], "default label must have no outline"
+        assert not artist.get_path_effects(), "default label must have no outline"
         plt.close(fig)
 
 
@@ -1010,6 +1010,45 @@ class TestFrameOverlayHook:
         anim.save(str(tmp_path / "a.gif"), writer="pillow", fps=6)
         assert glyph._day_text.get_text() == "23:00 UTC"
         assert glyph._day_text.get_path_effects(), "stroke should reach the label"
+
+    def test_blit_funcs_return_im_and_cache_holds_and_refetches(self):
+        """Drive the interactive blit funcs directly (what `save`'s blit=False skips).
+
+        Test scenario:
+            Stepping `anim._func` over held sub-frames asserts `im` is in every
+            returned blit list, a lazy `data_getter` fires once per data frame
+            (not per sub-frame), a loop-back to frame 0 re-fetches, and a held
+            sub-frame keeps the data frame's raster without re-fetching.
+        """
+        base = np.arange(3 * 2 * 2, dtype=float).reshape(3, 2, 2)
+        calls: list[int] = []
+
+        def getter(i):
+            calls.append(i)
+            return base[i]
+
+        glyph = ArrayGlyph(base)
+        anim = glyph.animate(
+            ["t0", "t1", "t2"], playback=Animation(sub_frames=2, data_getter=getter)
+        )
+        anim._init_func()
+        calls.clear()
+
+        returned = [anim._func(k) for k in range(6)]
+        assert all(glyph.im in out for out in returned), (
+            "im must be blitted every frame"
+        )
+        assert calls == [0, 1, 2], f"data_getter must fire once per data frame: {calls}"
+
+        calls.clear()
+        anim._func(0)
+        assert calls == [0], f"loop-back to frame 0 must re-fetch: {calls}"
+        assert np.array_equal(glyph.im.get_array(), base[0]), "raster is not frame 0"
+
+        calls.clear()
+        anim._func(1)
+        assert calls == [], f"a held sub-frame must not re-fetch: {calls}"
+        assert np.array_equal(glyph.im.get_array(), base[0]), "held raster changed"
 
 
 class TestPanelLabels:
