@@ -67,18 +67,19 @@ can adjust it further.
 `stamp_mark_on(fig, path, *, frac=0.11, corner="lower right", margin=0.025, shadow=True,
 blur=0.065)` is the module-level counterpart of `glyph.stamp_mark`, for a **composite figure no
 single glyph owns**: several glyphs' panels laid out in one `plt.figure` (the sanctioned
-multi-panel pattern — each panel drawn with `plot(fig=fig, ax=ax, ...)`), or a figure built
-entirely outside cleopatra. There is no one glyph whose `stamp_mark` covers the shared figure, so
-this takes the `Figure` directly. It draws the same corner mark with the same options and returns
-the same frameless inset `Axes`.
+multi-panel pattern — each panel drawn by a glyph bound to that panel's axes,
+`ArrayGlyph(arr, ax=ax).plot()`), or a figure built entirely outside cleopatra. There is no one
+glyph whose `stamp_mark` covers the shared figure, so this takes the `Figure` directly. It draws
+the same corner mark with the same options and returns the same frameless inset `Axes`.
 
 ```python
 import matplotlib.pyplot as plt
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 from cleopatra.styling.watermark import stamp_mark_on
 
 fig, axes = plt.subplots(1, 3, figsize=(15, 4))
 for ax, arr in zip(axes, arrays):
-    Dataset.from_array(arr).plot(fig=fig, ax=ax)   # each glyph owns only its own ax
+    ArrayGlyph(arr, ax=ax).plot()   # each glyph owns only its own panel axes
 stamp_mark_on(fig, "brand/logo.png", corner="lower right")
 ```
 

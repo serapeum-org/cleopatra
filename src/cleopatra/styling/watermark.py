@@ -738,8 +738,9 @@ def stamp_mark_on(
     """Stamp a logo image on a figure that no single glyph owns.
 
     The supported escape hatch for a *composite* figure -- one assembled from
-    several glyphs' panels (a `GridSpec` of `plot(fig=fig, ax=ax, ...)` calls),
-    or one built entirely outside cleopatra -- where no single glyph owns the
+    several glyphs' panels (a `GridSpec` whose panels are each an
+    `ArrayGlyph(arr, ax=ax).plot()`), or one built entirely outside cleopatra
+    -- where no single glyph owns the
     whole figure, so there is no glyph whose `stamp_mark` covers it. For the
     common single-glyph case use the glyph method `WatermarkMixin.stamp_mark`,
     which stays the primary, discoverable API; this is its figure-taking
