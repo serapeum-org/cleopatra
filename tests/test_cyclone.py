@@ -110,6 +110,12 @@ class TestCycloneOverlay:
         with pytest.raises(ValueError, match="needs 'lon' and 'lat'"):
             CycloneOverlay(bad)
 
+    def test_empty_track_raises_clear_error(self):
+        """A present-but-empty lon/lat raises a clear error, not a cryptic IndexError."""
+        empty = {"lon": np.array([]), "lat": np.array([]), "vmax_kt": np.array([])}
+        with pytest.raises(ValueError, match="has no fixes"):
+            CycloneOverlay(empty)
+
     def test_init_creates_and_returns_artists(self):
         """`init` adds the storm's artists to the axes and returns them."""
         overlay = CycloneOverlay({"K": _track(r34_ne=np.array([1.0, 1.0, 1.0, 1.0]))})

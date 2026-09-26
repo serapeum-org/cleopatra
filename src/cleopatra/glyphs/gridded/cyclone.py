@@ -77,7 +77,9 @@ _QUADRANTS: tuple[tuple[str, float, float], ...] = (
 _WIND_RADII_KT: tuple[int, ...] = (34, 50, 64)
 
 
-def category_of(vmax_kt: float, palette=SAFFIR_SIMPSON) -> tuple[str, str]:
+def category_of(
+    vmax_kt: float, palette: tuple[tuple[str, float, str], ...] = SAFFIR_SIMPSON
+) -> tuple[str, str]:
     """Return the `(label, colour)` for a sustained wind in knots.
 
     Args:
@@ -108,9 +110,10 @@ def category_of(vmax_kt: float, palette=SAFFIR_SIMPSON) -> tuple[str, str]:
             ```
     """
     label, colour = palette[0][0], palette[0][2]
-    for name, threshold, col in palette:
-        if np.isfinite(vmax_kt) and vmax_kt >= threshold:
-            label, colour = name, col
+    if np.isfinite(vmax_kt):
+        for name, threshold, col in palette:
+            if vmax_kt >= threshold:
+                label, colour = name, col
     return label, colour
 
 
@@ -214,7 +217,12 @@ def _normalise_tracks(
         lon = _column(table, "lon")
         lat = _column(table, "lat")
         if lon is None or lat is None:
-            raise ValueError(f"track {name!r} needs 'lon' and 'lat' columns.")
+            raise ValueError(
+                f"track {name!r} needs 'lon' and 'lat' columns (a pandas "
+                f"DataFrame or a dict of arrays, not a dict of dicts)."
+            )
+        if lon.size == 0:
+            raise ValueError(f"track {name!r} has no fixes (empty 'lon'/'lat').")
         vmax = _column(table, "vmax_kt")
         vmax = np.full(lon.shape, np.nan) if vmax is None else vmax
         time = table["time"] if "time" in table else np.arange(len(lon))
