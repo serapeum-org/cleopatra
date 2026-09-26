@@ -13,6 +13,7 @@ from matplotlib.collections import PathCollection
 from matplotlib.colors import BoundaryNorm, Normalize, PowerNorm, to_rgba
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
+from matplotlib.patches import Circle
 from matplotlib.text import Text
 from matplotlib.transforms import Bbox
 from PIL import Image
@@ -29,10 +30,12 @@ from cleopatra.glyphs.gridded.array_glyph import (
     FacetGrid,
     FacetLayout,
     FrameLabel,
+    FrameOverlay,
     PanelLabels,
     PlotKwargs,
     PointOverlay,
     RgbBands,
+    _as_artists,
     _resolve_colorbar,
     _swatch_text_default,
 )
@@ -866,6 +869,226 @@ class TestFrameLabel:
         assert label.location == [0.3, 0.4], f"Got {label.location!r}"
         assert label.color == "yellow", f"Got {label.color!r}"
         assert label.size == 18, f"Got {label.size!r}"
+
+    def test_new_option_defaults(self):
+        """`text`/`stroke` default to `None`; `stroke_width` to `3.0`."""
+        label = FrameLabel()
+        assert label.text is None, f"Got {label.text!r}"
+        assert label.stroke is None, f"Got {label.stroke!r}"
+        assert label.stroke_width == 3.0, f"Got {label.stroke_width!r}"
+
+    def test_format_default_matches_historical_label(self):
+        """With `text=None`, `format` reproduces `"Date = " + str(label)[:10]`."""
+        assert FrameLabel().format("2026-09-02T20:00:00", 0) == "Date = 2026-09-02"
+
+    def test_format_callable_receives_raw_label(self):
+        """A callable `text` is passed the raw `time` entry and its result used."""
+        assert FrameLabel(text=lambda t: f"{t} UTC").format("20:00", 3) == "20:00 UTC"
+
+    def test_format_string_fills_label_and_index(self):
+        """A `text` format string is filled with `{label}` and `{index}`."""
+        assert FrameLabel(text="{index:02d}: {label}").format("frame", 7) == "07: frame"
+
+    def test_stroke_applied_in_draw(self):
+        """`stroke` adds a path-effect outline to the drawn label artist."""
+        fig, ax = plt.subplots()
+        artist = FrameLabel(stroke="black", stroke_width=4).draw(ax, default_size=12)
+        assert artist.get_path_effects(), "stroke should add a path effect"
+        plt.close(fig)
+
+    def test_no_stroke_leaves_label_without_path_effects(self):
+        """Without `stroke`, the drawn label has no path effects (unchanged)."""
+        fig, ax = plt.subplots()
+        artist = FrameLabel().draw(ax, default_size=12)
+        assert not artist.get_path_effects(), "default label must have no outline"
+        plt.close(fig)
+
+
+class _RecordingOverlay:
+    """A minimal duck-typed `FrameOverlay` that records its `update` calls."""
+
+    def __init__(self) -> None:
+        """Start with no recorded calls and no artist yet."""
+        self.init_calls = 0
+        self.updates: list[tuple[int, float]] = []
+        self._dot: Circle | None = None
+
+    def init(self, ax):
+        """Create the overlay's single dot once and return it."""
+        self.init_calls += 1
+        self._dot = Circle((0, 0), radius=0.3, color="magenta")
+        ax.add_patch(self._dot)
+        return [self._dot]
+
+    def update(self, frame_index, phase):
+        """Record the call, move the dot, and return it (as a bare artist)."""
+        self.updates.append((frame_index, phase))
+        self._dot.center = (frame_index + phase, frame_index)
+        return self._dot
+
+
+class TestFrameOverlayUnit:
+    """Unit tests for the `FrameOverlay` protocol and `_as_artists` helper."""
+
+    def test_duck_typed_object_satisfies_runtime_protocol(self):
+        """An object with `init`/`update` matches `FrameOverlay` without subclassing."""
+        assert isinstance(_RecordingOverlay(), FrameOverlay)
+
+    def test_as_artists_none_is_empty(self):
+        """`_as_artists(None)` is an empty list (an overlay may return nothing)."""
+        assert _as_artists(None) == []
+
+    def test_as_artists_wraps_single_artist(self):
+        """A single `Artist` is wrapped in a one-element list."""
+        dot = Circle((0, 0))
+        assert _as_artists(dot) == [dot]
+
+    def test_as_artists_passes_through_iterable(self):
+        """An iterable of artists is returned as a list of the same artists."""
+        a, b = Circle((0, 0)), Circle((1, 1))
+        assert _as_artists([a, b]) == [a, b]
+
+    def test_as_artists_rejects_str(self):
+        """A `str`/`bytes` return is a misuse and raises rather than splitting to chars."""
+        with pytest.raises(TypeError, match="must return None, an Artist"):
+            _as_artists("ab")
+        with pytest.raises(TypeError, match="must return None, an Artist"):
+            _as_artists(b"ab")
+
+    def test_as_artists_rejects_iterable_with_non_artist(self):
+        """An iterable carrying a non-Artist item raises instead of reaching the blitter."""
+        mixed = [Circle((0, 0)), 5]
+        with pytest.raises(TypeError, match="non-Artist item"):
+            _as_artists(mixed)
+        with pytest.raises(TypeError, match="non-Artist item"):
+            _as_artists({"a": 1})
+
+    def test_animation_overlay_defaults(self):
+        """`Animation` defaults to no overlays and one animation frame per step."""
+        play = Animation()
+        assert play.overlays == ()
+        assert play.sub_frames == 1
+
+    def test_sub_frames_must_be_a_positive_integer(
+        self, coello_data: np.ndarray, animate_time_list: list
+    ):
+        """`sub_frames < 1` is rejected before any rendering work."""
+        glyph = ArrayGlyph(coello_data)
+        play = Animation(sub_frames=0)
+        with pytest.raises(ValueError, match="sub_frames must be a positive integer"):
+            glyph.animate(animate_time_list, playback=play)
+
+    def test_sub_frames_accepts_numpy_int_and_rejects_bool(self):
+        """A numpy integer is a valid count; `bool` is rejected despite subclassing int."""
+        stack = np.arange(2 * 2 * 2, dtype=float).reshape(2, 2, 2)
+        glyph = ArrayGlyph(stack)
+        anim = glyph.animate(["a", "b"], playback=Animation(sub_frames=np.int64(2)))
+        assert anim is not None, "a numpy-int sub_frames must be accepted"
+        bool_play = Animation(sub_frames=True)
+        with pytest.raises(ValueError, match="sub_frames must be a positive integer"):
+            glyph.animate(["a", "b"], playback=bool_play)
+
+
+@pytest.mark.plot
+class TestFrameOverlayHook:
+    """Rendered behaviour of `overlays` / `sub_frames` / `FrameLabel` in `animate`."""
+
+    def test_overlay_init_runs_once_and_update_each_frame(self, tmp_path):
+        """The overlay is created once; `update` runs once per data frame at phase 0."""
+        stack = np.arange(4 * 3 * 3, dtype=float).reshape(4, 3, 3)
+        overlay = _RecordingOverlay()
+        anim = ArrayGlyph(stack).animate(
+            ["t0", "t1", "t2", "t3"], playback=Animation(overlays=[overlay])
+        )
+        anim.save(str(tmp_path / "a.gif"), writer="pillow", fps=6)
+        assert overlay.init_calls == 1, f"init ran {overlay.init_calls} times, want 1"
+        assert [d for d, _ in overlay.updates] == [0, 1, 2, 3]
+        assert {round(p, 6) for _, p in overlay.updates} == {0.0}
+
+    def test_sub_frames_hold_each_data_frame_with_phase(self, tmp_path):
+        """`sub_frames=2` holds each data frame for two frames with phases 0 and 0.5."""
+        stack = np.arange(3 * 3 * 3, dtype=float).reshape(3, 3, 3)
+        overlay = _RecordingOverlay()
+        anim = ArrayGlyph(stack).animate(
+            ["t0", "t1", "t2"], playback=Animation(overlays=[overlay], sub_frames=2)
+        )
+        anim.save(str(tmp_path / "a.gif"), writer="pillow", fps=6)
+        assert [d for d, _ in overlay.updates] == [0, 0, 1, 1, 2, 2]
+        assert [round(p, 3) for _, p in overlay.updates] == [0.0, 0.5] * 3
+
+    def test_frame_label_text_callable_and_stroke_reach_animation(self, tmp_path):
+        """A callable `text` and a `stroke` on `FrameLabel` drive the rendered label."""
+        stack = np.arange(2 * 3 * 3, dtype=float).reshape(2, 3, 3)
+        glyph = ArrayGlyph(stack)
+        anim = glyph.animate(
+            ["2026-09-02T20:00:00", "2026-09-02T23:00:00"],
+            playback=Animation(
+                frame_label=FrameLabel(text=lambda t: f"{t[11:16]} UTC", stroke="black")
+            ),
+        )
+        anim.save(str(tmp_path / "a.gif"), writer="pillow", fps=6)
+        assert glyph._day_text.get_text() == "23:00 UTC"
+        assert glyph._day_text.get_path_effects(), "stroke should reach the label"
+
+    def test_blit_funcs_return_im_and_cache_holds_and_refetches(self):
+        """Drive the interactive blit funcs directly (what `save`'s blit=False skips).
+
+        Test scenario:
+            Stepping `anim._func` over held sub-frames asserts `im` is in every
+            returned blit list, a lazy `data_getter` fires once per data frame
+            (not per sub-frame), a loop-back to frame 0 re-fetches, and a held
+            sub-frame keeps the data frame's raster without re-fetching.
+        """
+        base = np.arange(3 * 2 * 2, dtype=float).reshape(3, 2, 2)
+        calls: list[int] = []
+
+        def getter(i):
+            calls.append(i)
+            return base[i]
+
+        glyph = ArrayGlyph(base)
+        anim = glyph.animate(
+            ["t0", "t1", "t2"], playback=Animation(sub_frames=2, data_getter=getter)
+        )
+        anim._init_func()
+        calls.clear()
+
+        returned = [anim._func(k) for k in range(6)]
+        assert all(glyph.im in out for out in returned), (
+            "im must be blitted every frame"
+        )
+        assert calls == [0, 1, 2], f"data_getter must fire once per data frame: {calls}"
+
+        calls.clear()
+        anim._func(0)
+        assert calls == [0], f"loop-back to frame 0 must re-fetch: {calls}"
+        assert np.array_equal(glyph.im.get_array(), base[0]), "raster is not frame 0"
+
+        calls.clear()
+        anim._func(1)
+        assert calls == [], f"a held sub-frame must not re-fetch: {calls}"
+        assert np.array_equal(glyph.im.get_array(), base[0]), "held raster changed"
+
+    def test_reanimate_clears_previous_overlay_artists(self):
+        """A non-compose re-animate clears the prior overlay's artists (no #210 leak).
+
+        Test scenario:
+            Overlay artists must be registered like the raster and point scatter,
+            so a second `animate` on the same glyph clears the first overlay's
+            patch instead of leaving it as an orphaned axes child.
+        """
+        stack = np.arange(2 * 3 * 3, dtype=float).reshape(2, 3, 3)
+        glyph = ArrayGlyph(stack)
+        glyph.animate(["a", "b"], playback=Animation(overlays=[_RecordingOverlay()]))
+        first = [p for p in glyph.ax.patches if isinstance(p, Circle)]
+        glyph.animate(["a", "b"], playback=Animation(overlays=[_RecordingOverlay()]))
+        second = [p for p in glyph.ax.patches if isinstance(p, Circle)]
+        assert len(first) == 1, (
+            f"first animate should leave one overlay patch: {len(first)}"
+        )
+        assert len(second) == 1, (
+            f"re-animate must clear the prior overlay patch (#210 class): {len(second)}"
+        )
 
 
 class TestPanelLabels:
