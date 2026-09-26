@@ -25,6 +25,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
+import cleopatra.styling.watermark as watermark_module
 from cleopatra.glyphs.globe.textured_globe_glyph import TexturedGlobeGlyph
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 from cleopatra.glyphs.primitives.line_glyph import LineGlyph
@@ -604,9 +605,9 @@ class TestStampMarkOn:
 
     def test_is_public(self):
         """`stamp_mark_on` is exported in the module's public `__all__`."""
-        import cleopatra.styling.watermark as wm
-
-        assert "stamp_mark_on" in wm.__all__, "stamp_mark_on must be public"
+        assert "stamp_mark_on" in watermark_module.__all__, (
+            "stamp_mark_on must be public"
+        )
 
     def test_stamps_a_composite_figure_no_glyph_owns(self):
         """A multi-panel composite figure gets the mark though no glyph owns it.
@@ -627,23 +628,28 @@ class TestStampMarkOn:
         finally:
             plt.close(composite)
 
-    def test_delegates_to_private_stamp(self, fig, logo):
+    def test_delegates_to_private_stamp(self, logo):
         """A faithful wrapper: same placement as `_stamp_mark` for the same input.
 
         Test scenario:
-            For one figure size and set of options, the public wrapper and the
-            private function place the mark at identical figure-fraction bounds.
+            Given two identical bare figures and one set of options, the public
+            wrapper and the private function place the mark at identical
+            figure-fraction bounds.
         """
-        public = stamp_mark_on(fig, logo, frac=0.2, corner="upper left", shadow=False)
-        public_bounds = [round(float(v), 6) for v in public.get_position().bounds]
-        fig2 = plt.figure(figsize=(8.0, 6.0))
+        fig_public = plt.figure(figsize=(8.0, 6.0))
+        fig_private = plt.figure(figsize=(8.0, 6.0))
         try:
-            private = _stamp_mark(
-                fig2, logo, frac=0.2, corner="upper left", shadow=False
+            public = stamp_mark_on(
+                fig_public, logo, frac=0.2, corner="upper left", shadow=False
             )
+            private = _stamp_mark(
+                fig_private, logo, frac=0.2, corner="upper left", shadow=False
+            )
+            public_bounds = [round(float(v), 6) for v in public.get_position().bounds]
             private_bounds = [round(float(v), 6) for v in private.get_position().bounds]
         finally:
-            plt.close(fig2)
+            plt.close(fig_public)
+            plt.close(fig_private)
         assert public_bounds == private_bounds, (
             f"wrapper must match _stamp_mark: {public_bounds} != {private_bounds}"
         )
