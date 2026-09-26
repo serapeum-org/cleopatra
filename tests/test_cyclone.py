@@ -64,6 +64,11 @@ class TestCategoryOf:
         """A NaN wind falls to the weakest category rather than raising."""
         assert category_of(float("nan"))[0] == "TD"
 
+    def test_inf_maps_to_strongest(self):
+        """A wind above every threshold (incl. +inf) maps to the strongest category."""
+        assert category_of(float("inf"))[0] == "Cat 5"
+        assert category_of(float("-inf"))[0] == "TD"
+
     def test_returns_palette_colour(self):
         """The returned colour is the palette entry for that category."""
         assert category_of(140.0)[1] == SAFFIR_SIMPSON[-1][2]

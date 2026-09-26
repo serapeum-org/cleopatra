@@ -88,8 +88,9 @@ def category_of(
 
     Returns:
         The `(label, colour)` of the strongest category whose threshold
-        `vmax_kt` meets (the weakest category for a wind below every threshold,
-        including a NaN wind).
+        `vmax_kt` meets: the weakest category for a wind below every threshold
+        (including a NaN wind), and the strongest for a wind above them all
+        (including `+inf`).
 
     Examples:
         - A hurricane-force wind maps to its Saffir-Simpson category:
@@ -108,12 +109,20 @@ def category_of(
             'TD'
 
             ```
+        - A wind above every threshold maps to the strongest category:
+            ```python
+            >>> from cleopatra.glyphs.gridded.cyclone import category_of
+            >>> category_of(float("inf"))[0]
+            'Cat 5'
+
+            ```
     """
     label, colour = palette[0][0], palette[0][2]
-    if np.isfinite(vmax_kt):
-        for name, threshold, col in palette:
-            if vmax_kt >= threshold:
-                label, colour = name, col
+    # No finiteness guard: a NaN wind fails every `>=` and stays weakest, while a
+    # wind above all thresholds (incl. +inf) reaches the strongest category.
+    for name, threshold, col in palette:
+        if vmax_kt >= threshold:
+            label, colour = name, col
     return label, colour
 
 
