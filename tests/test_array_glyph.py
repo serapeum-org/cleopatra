@@ -957,8 +957,9 @@ class TestFrameOverlayUnit:
 
     def test_as_artists_rejects_iterable_with_non_artist(self):
         """An iterable carrying a non-Artist item raises instead of reaching the blitter."""
+        mixed = [Circle((0, 0)), 5]
         with pytest.raises(TypeError, match="non-Artist item"):
-            _as_artists([Circle((0, 0)), 5])
+            _as_artists(mixed)
         with pytest.raises(TypeError, match="non-Artist item"):
             _as_artists({"a": 1})
 
@@ -973,8 +974,9 @@ class TestFrameOverlayUnit:
     ):
         """`sub_frames < 1` is rejected before any rendering work."""
         glyph = ArrayGlyph(coello_data)
+        play = Animation(sub_frames=0)
         with pytest.raises(ValueError, match="sub_frames must be a positive integer"):
-            glyph.animate(animate_time_list, playback=Animation(sub_frames=0))
+            glyph.animate(animate_time_list, playback=play)
 
     def test_sub_frames_accepts_numpy_int_and_rejects_bool(self):
         """A numpy integer is a valid count; `bool` is rejected despite subclassing int."""
@@ -982,8 +984,9 @@ class TestFrameOverlayUnit:
         glyph = ArrayGlyph(stack)
         anim = glyph.animate(["a", "b"], playback=Animation(sub_frames=np.int64(2)))
         assert anim is not None, "a numpy-int sub_frames must be accepted"
+        bool_play = Animation(sub_frames=True)
         with pytest.raises(ValueError, match="sub_frames must be a positive integer"):
-            glyph.animate(["a", "b"], playback=Animation(sub_frames=True))
+            glyph.animate(["a", "b"], playback=bool_play)
 
 
 @pytest.mark.plot
