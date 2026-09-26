@@ -1,5 +1,88 @@
 # Changelog
 
+## 0.40.0 (2026-09-26)
+
+
+- feat(glyphs): per-frame overlay hook and a tropical-cyclone overlay for animate() (#376)
+- Implements #372 in two layers on ArrayGlyph.animate.
+- Part 1 - a generic per-frame overlay hook:
+- Animation(overlays=[...]): each overlay declares its artists via
+  init(ax) and refreshes them via update(frame_index, phase); animate
+  owns the blitting and registers the artists so a re-render clears them.
+  A runtime-checkable FrameOverlay protocol.
+- Animation(sub_frames=N): hold each data frame for N animation frames
+  (raster re-fetched only when the data index changes; a lazy
+  data_getter fires once per data frame), giving overlays a phase in
+  [0, 1).
+- FrameLabel gains text= (format string or callable) and
+  stroke=/stroke_width=.
+- Part 2 - a CycloneOverlay built on that hook (cleopatra.glyphs.gridded.cyclone):
+- Draws, from a per-storm track table, a Saffir-Simpson category-coloured
+  track on a dark halo (persisting after the last fix), a hollow eye glow
+  scaled by wind and pulsed by phase, per-quadrant 34/50/64-kt wind-radii,
+  a ripple ring that expands faster (and stays visible) for a rapidly-
+  intensifying storm, and a name/category/mph tag with a leader line.
+- Adds the SAFFIR_SIMPSON palette + category_of, a
+  rapid_intensification_mask detector (>= 30 kt in 24 h), and an
+  add_intensity_key line-swatch legend.
+- Track read duck-typed (a pandas DataFrame or a dict of arrays); pandas
+  is not a dependency, column shapes are validated, and fetching the data
+  stays out of scope (earthlens).
+- Backward compatible: sub_frames=1 with no overlays renders exactly as
+before. Name tags use a fixed offset; adaptive collision-avoidance
+placement is a follow-up.
+- Closes #372
+- feat(watermark): add stamp_mark_on for a figure no single glyph owns (#375)
+- stamp_mark moved to a glyph method in 0.39.0, which left a composite
+figure no single glyph owns -- several glyphs' panels in one plt.figure,
+or a figure built outside cleopatra -- with no supported way to carry a
+mark: the only route was importing the private _stamp_mark.
+- Add a module-level stamp_mark_on(fig, path, ...), exported in __all__,
+as the supported escape hatch for that composite case. It delegates to
+_stamp_mark with an explicit keyword-only signature mirroring it, so it
+draws the same corner mark with the same options; the glyph method
+stays the primary API. The hatch is scoped to the mark image -- brand
+text on such a figure stays glyph-only.
+- - document it in the module docstring and the watermark reference, with
+  a mkdocstrings autodoc block, distinct from the glyph method
+- tests: public-ness, delegation equivalence, kwarg forwarding and
+  validation pass-through, and a signature-default parity guard
+- Closes #371
+- feat(glyphs): add a compose= opt-in to MeshGlyph and HistogramGlyph (#374)
+- MeshGlyph and HistogramGlyph always cleared every other glyph's artists
+on render, so whether two layers survived depended on draw order. Add a
+compose= parameter that threads into each _clear_prior_render_artists
+call, matching the opt-in ArrayGlyph and VectorGlyph already expose.
+- - add compose: bool = False to MeshGlyph.plot / animate / plot_outline
+  and HistogramGlyph.histogram / boxplot / multiboxplot / stripes
+- compose=False (default) replaces prior artists; compose=True clears
+  only the glyph's own, layering it onto a shared axes
+- a composed mesh overlay suppresses its own colorbar unless one is
+  requested (colorbar=True or a ColorBar spec) and leaves the host's
+  title, ticks, labels and layout intact, while still applying framing
+  passed explicitly to the call
+- make HistogramGlyph.histogram's compose positional-or-keyword, in line
+  with the other render methods
+- cover the compose branches for every render method and document the
+  compose framing contract on plot / animate
+- Closes #370
+- fix(glyphs): tolerate an already-detached artist in render cleanup (#373)
+- _clear_prior_render_artists caught KeyError/NotImplementedError/
+AttributeError around artist.remove() but not ValueError. When a
+layer-managing consumer has already detached a tracked artist itself
+(a rebuild, restyle, or rollback), matplotlib answers the second
+Artist.remove() with "ValueError: list.remove(x): x not in list", so
+the next render on that axes raised instead of clearing.
+- - add ValueError to the caught set, matching the sibling
+  _clear_projection_frame guard -- an artist already gone is the
+  cleared state this wants, not an error
+- catching it also lets the loop finish removing the rest of a
+  partially-detached entry instead of bailing on the first
+- tests: parametrize the tolerated-exception case with ValueError and
+  add an end-to-end regression that detaches tracked artists then
+  re-renders, asserting exactly one live image remains
+- Closes #369
+
 ## 0.39.0 (2026-09-14)
 
 
