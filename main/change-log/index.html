@@ -2463,6 +2463,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0400-2026-09-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.40.0 (2026-09-26)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0390-2026-09-14" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3317,6 +3328,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0400-2026-09-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.40.0 (2026-09-26)
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#0390-2026-09-14" class="md-nav__link">
@@ -4174,6 +4196,100 @@
 
 
 <h1 id="changelog"><a class="toclink" href="#changelog">Changelog</a><a class="headerlink" href="#changelog" title="Permanent link">#</a></h1>
+<h2 id="0400-2026-09-26"><a class="toclink" href="#0400-2026-09-26">0.40.0 (2026-09-26)</a><a class="headerlink" href="#0400-2026-09-26" title="Permanent link">#</a></h2>
+<ul>
+<li>feat(glyphs): per-frame overlay hook and a tropical-cyclone overlay for animate() (#376)</li>
+<li>Implements #372 in two layers on ArrayGlyph.animate.</li>
+<li>Part 1 - a generic per-frame overlay hook:</li>
+<li>Animation(overlays=[...]): each overlay declares its artists via
+  init(ax) and refreshes them via update(frame_index, phase); animate
+  owns the blitting and registers the artists so a re-render clears them.
+  A runtime-checkable FrameOverlay protocol.</li>
+<li>Animation(sub_frames=N): hold each data frame for N animation frames
+  (raster re-fetched only when the data index changes; a lazy
+  data_getter fires once per data frame), giving overlays a phase in
+  [0, 1).</li>
+<li>FrameLabel gains text= (format string or callable) and
+  stroke=/stroke_width=.</li>
+<li>Part 2 - a CycloneOverlay built on that hook (cleopatra.glyphs.gridded.cyclone):</li>
+<li>Draws, from a per-storm track table, a Saffir-Simpson category-coloured
+  track on a dark halo (persisting after the last fix), a hollow eye glow
+  scaled by wind and pulsed by phase, per-quadrant 34/50/64-kt wind-radii,
+  a ripple ring that expands faster (and stays visible) for a rapidly-
+  intensifying storm, and a name/category/mph tag with a leader line.</li>
+<li>Adds the SAFFIR_SIMPSON palette + category_of, a
+  rapid_intensification_mask detector (&gt;= 30 kt in 24 h), and an
+  add_intensity_key line-swatch legend.</li>
+<li>Track read duck-typed (a pandas DataFrame or a dict of arrays); pandas
+  is not a dependency, column shapes are validated, and fetching the data
+  stays out of scope (earthlens).</li>
+<li>Backward compatible: sub_frames=1 with no overlays renders exactly as
+before. Name tags use a fixed offset; adaptive collision-avoidance
+placement is a follow-up.</li>
+<li>Closes #372</li>
+<li>feat(watermark): add stamp_mark_on for a figure no single glyph owns (#375)</li>
+<li>stamp_mark moved to a glyph method in 0.39.0, which left a composite
+figure no single glyph owns -- several glyphs' panels in one plt.figure,
+or a figure built outside cleopatra -- with no supported way to carry a
+mark: the only route was importing the private _stamp_mark.</li>
+<li>Add a module-level stamp_mark_on(fig, path, ...), exported in <strong>all</strong>,
+as the supported escape hatch for that composite case. It delegates to
+_stamp_mark with an explicit keyword-only signature mirroring it, so it
+draws the same corner mark with the same options; the glyph method
+stays the primary API. The hatch is scoped to the mark image -- brand
+text on such a figure stays glyph-only.</li>
+<li>
+<ul>
+<li>document it in the module docstring and the watermark reference, with
+  a mkdocstrings autodoc block, distinct from the glyph method</li>
+</ul>
+</li>
+<li>tests: public-ness, delegation equivalence, kwarg forwarding and
+  validation pass-through, and a signature-default parity guard</li>
+<li>Closes #371</li>
+<li>feat(glyphs): add a compose= opt-in to MeshGlyph and HistogramGlyph (#374)</li>
+<li>MeshGlyph and HistogramGlyph always cleared every other glyph's artists
+on render, so whether two layers survived depended on draw order. Add a
+compose= parameter that threads into each _clear_prior_render_artists
+call, matching the opt-in ArrayGlyph and VectorGlyph already expose.</li>
+<li>
+<ul>
+<li>add compose: bool = False to MeshGlyph.plot / animate / plot_outline
+  and HistogramGlyph.histogram / boxplot / multiboxplot / stripes</li>
+</ul>
+</li>
+<li>compose=False (default) replaces prior artists; compose=True clears
+  only the glyph's own, layering it onto a shared axes</li>
+<li>a composed mesh overlay suppresses its own colorbar unless one is
+  requested (colorbar=True or a ColorBar spec) and leaves the host's
+  title, ticks, labels and layout intact, while still applying framing
+  passed explicitly to the call</li>
+<li>make HistogramGlyph.histogram's compose positional-or-keyword, in line
+  with the other render methods</li>
+<li>cover the compose branches for every render method and document the
+  compose framing contract on plot / animate</li>
+<li>Closes #370</li>
+<li>fix(glyphs): tolerate an already-detached artist in render cleanup (#373)</li>
+<li>_clear_prior_render_artists caught KeyError/NotImplementedError/
+AttributeError around artist.remove() but not ValueError. When a
+layer-managing consumer has already detached a tracked artist itself
+(a rebuild, restyle, or rollback), matplotlib answers the second
+Artist.remove() with "ValueError: list.remove(x): x not in list", so
+the next render on that axes raised instead of clearing.</li>
+<li>
+<ul>
+<li>add ValueError to the caught set, matching the sibling
+  _clear_projection_frame guard -- an artist already gone is the
+  cleared state this wants, not an error</li>
+</ul>
+</li>
+<li>catching it also lets the loop finish removing the rest of a
+  partially-detached entry instead of bailing on the first</li>
+<li>tests: parametrize the tolerated-exception case with ValueError and
+  add an end-to-end regression that detaches tracked artists then
+  re-renders, asserting exactly one live image remains</li>
+<li>Closes #369</li>
+</ul>
 <h2 id="0390-2026-09-14"><a class="toclink" href="#0390-2026-09-14">0.39.0 (2026-09-14)</a><a class="headerlink" href="#0390-2026-09-14" title="Permanent link">#</a></h2>
 <ul>
 <li>feat(watermark)!: add a text watermark and make the glyph the way to stamp (#366)</li>
