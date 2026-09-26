@@ -209,6 +209,49 @@ def _column(table: Mapping[str, Any], key: str) -> np.ndarray | None:
     return np.asarray(table[key], dtype=float)
 
 
+def _radius_columns(table: Mapping[str, Any]) -> dict[str, np.ndarray]:
+    """Read the present wind-radius columns (`r34_ne` ...) as a `{name: array}`."""
+    radii: dict[str, np.ndarray] = {}
+    for kt in _WIND_RADII_KT:
+        for quad, _, _ in _QUADRANTS:
+            radius = _column(table, f"r{kt}_{quad}")
+            if radius is not None:
+                radii[f"r{kt}_{quad}"] = radius
+    return radii
+
+
+def _normalise_one_track(name: str, table: Mapping[str, Any]) -> dict[str, Any]:
+    """Normalise one storm's table to `{column: array}`, validating shapes.
+
+    Raises:
+        ValueError: If `lon`/`lat` are missing, `lon` is not a non-empty 1-D
+            array, or any other column's length does not match `lon`.
+    """
+    lon = _column(table, "lon")
+    lat = _column(table, "lat")
+    if lon is None or lat is None:
+        raise ValueError(
+            f"track {name!r} needs 'lon' and 'lat' columns (a pandas DataFrame "
+            f"or a dict of arrays, not a dict of dicts)."
+        )
+    if lon.ndim != 1 or lon.size == 0:
+        raise ValueError(
+            f"track {name!r} needs a non-empty 1-D 'lon'/'lat' (got shape {lon.shape})."
+        )
+    n = len(lon)
+    vmax = _column(table, "vmax_kt")
+    vmax = np.full(lon.shape, np.nan) if vmax is None else vmax
+    time = np.asarray(table["time"]) if "time" in table else np.arange(n)
+    radii = _radius_columns(table)
+    for col_name, arr in {"lat": lat, "vmax_kt": vmax, "time": time, **radii}.items():
+        if len(arr) != n:
+            raise ValueError(
+                f"track {name!r} column {col_name!r} has length {len(arr)}, "
+                f"expected {n} to match 'lon'."
+            )
+    return {"lon": lon, "lat": lat, "vmax_kt": vmax, "hours": _as_hours(time), **radii}
+
+
 def _normalise_tracks(
     tracks: Mapping[str, Any],
 ) -> dict[str, dict[str, Any]]:
@@ -217,51 +260,11 @@ def _normalise_tracks(
     Accepts either a single storm's table (a mapping with a `lon` column) or a
     mapping of storm name to table. Each table is read column-by-column into
     numpy arrays via duck typing (a `pandas.DataFrame` or a `dict` of arrays both
-    work); the `time` column is coerced to hours.
+    work); the `time` column is coerced to hours and column shapes are validated.
     """
     is_single = "lon" in tracks and not isinstance(tracks.get("lon"), Mapping)
     raw = {"": tracks} if is_single else tracks
-    storms: dict[str, dict[str, Any]] = {}
-    for name, table in raw.items():
-        lon = _column(table, "lon")
-        lat = _column(table, "lat")
-        if lon is None or lat is None:
-            raise ValueError(
-                f"track {name!r} needs 'lon' and 'lat' columns (a pandas "
-                f"DataFrame or a dict of arrays, not a dict of dicts)."
-            )
-        if lon.ndim != 1 or lon.size == 0:
-            raise ValueError(
-                f"track {name!r} needs a non-empty 1-D 'lon'/'lat' (got shape "
-                f"{lon.shape})."
-            )
-        n = len(lon)
-        vmax = _column(table, "vmax_kt")
-        vmax = np.full(lon.shape, np.nan) if vmax is None else vmax
-        time = np.asarray(table["time"]) if "time" in table else np.arange(n)
-        columns: dict[str, Any] = {"lat": lat, "vmax_kt": vmax, "time": time}
-        for kt in _WIND_RADII_KT:
-            for quad, _, _ in _QUADRANTS:
-                radius = _column(table, f"r{kt}_{quad}")
-                if radius is not None:
-                    columns[f"r{kt}_{quad}"] = radius
-        for col_name, arr in columns.items():
-            if len(arr) != n:
-                raise ValueError(
-                    f"track {name!r} column {col_name!r} has length {len(arr)}, "
-                    f"expected {n} to match 'lon'."
-                )
-        storm: dict[str, Any] = {
-            "lon": lon,
-            "lat": lat,
-            "vmax_kt": vmax,
-            "hours": _as_hours(time),
-        }
-        for key, arr in columns.items():
-            if key.startswith("r"):
-                storm[key] = arr
-        storms[name] = storm
-    return storms
+    return {name: _normalise_one_track(name, table) for name, table in raw.items()}
 
 
 @dataclass
