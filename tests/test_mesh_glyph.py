@@ -17,6 +17,7 @@ import pytest
 from matplotlib.colors import to_rgba
 from matplotlib.text import Text
 
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
 from cleopatra.styling.colorbar import ColorBar
 from cleopatra.styling.params import Contour, DataStyle
@@ -642,7 +643,10 @@ class TestContourLabels:
         """`labels=True` populates `contour_labels` with `Text` artists."""
         mg = self._grid_glyph()
         fig, ax = mg.plot(
-            self._smooth_field(mg), location="node", filled=False, contour=Contour(labels=True)
+            self._smooth_field(mg),
+            location="node",
+            filled=False,
+            contour=Contour(labels=True),
         )
         assert isinstance(mg.contour_labels, list)
         assert len(mg.contour_labels) > 0
@@ -679,7 +683,10 @@ class TestContourLabels:
         """`labels=True` is ignored for `filled=True` (no isolines to label)."""
         mg = self._grid_glyph()
         fig, ax = mg.plot(
-            self._smooth_field(mg), location="node", filled=True, contour=Contour(labels=True)
+            self._smooth_field(mg),
+            location="node",
+            filled=True,
+            contour=Contour(labels=True),
         )
         assert mg.contour_labels is None
         plt.close(fig)
@@ -708,7 +715,9 @@ class TestContourLabels:
         data = self._smooth_field(mg)
         mg.plot(data, location="node", filled=False, contour=Contour(labels=True))
         assert mg.contour_labels is not None
-        fig, ax = mg.plot(data, location="node", filled=True, contour=Contour(labels=True))
+        fig, ax = mg.plot(
+            data, location="node", filled=True, contour=Contour(labels=True)
+        )
         assert mg.contour_labels is None
         plt.close(fig)
 
@@ -1644,7 +1653,12 @@ class TestMeshGlyphHillshade:
         """Node-centered `hillshade` renders a per-face shaded `tripcolor` mesh."""
         nx, ny, faces, z = self._terrain_mesh()
         mg = MeshGlyph(nx, ny, faces)
-        mg.plot(z, location="node", cmap="terrain", data_style=DataStyle(hillshade={"vert_exag": 3}))
+        mg.plot(
+            z,
+            location="node",
+            cmap="terrain",
+            data_style=DataStyle(hillshade={"vert_exag": 3}),
+        )
         facecolors = mg.im.get_facecolor()
         assert facecolors.shape[1] == 4
         assert len(np.unique(np.round(facecolors[:, 0], 3))) > 5, "faces should vary"
@@ -1656,7 +1670,10 @@ class TestMeshGlyphHillshade:
         nx, ny, faces, _ = self._terrain_mesh()
         with pytest.raises(ValueError, match="node-centered"):
             MeshGlyph(nx, ny, faces).plot(
-                np.ones(len(faces)), location="face", data_style=DataStyle(hillshade=True))
+                np.ones(len(faces)),
+                location="face",
+                data_style=DataStyle(hillshade=True),
+            )
         plt.close("all")
 
     def test_without_hillshade_uses_contours(self):
@@ -1675,7 +1692,9 @@ class TestMeshGlyphHillshade:
         """
         nx, ny, faces, z = self._terrain_mesh()
         mg = MeshGlyph(nx, ny, faces)
-        mg.plot(z, location="node", cmap="terrain", data_style=DataStyle(hillshade=True))
+        mg.plot(
+            z, location="node", cmap="terrain", data_style=DataStyle(hillshade=True)
+        )
         assert type(mg.im).__name__ == "PolyCollection", (
             "constructor hillshade should shade"
         )
@@ -1690,7 +1709,13 @@ class TestMeshGlyphHillshade:
         """
         nx, ny, faces, z = self._terrain_mesh()
         mg = MeshGlyph(nx, ny, faces)
-        mg.plot(z, location="node", filled=False, contour=Contour(labels=True), data_style=DataStyle(hillshade=True))
+        mg.plot(
+            z,
+            location="node",
+            filled=False,
+            contour=Contour(labels=True),
+            data_style=DataStyle(hillshade=True),
+        )
         assert mg.contour_labels is None, "labels are a no-op under hillshade"
         plt.close("all")
 
@@ -1706,7 +1731,9 @@ class TestMeshGlyphHillshade:
             z,
             location="node",
             cmap="terrain",
-            color=ColorScaling.power(gamma=0.4), data_style=DataStyle(hillshade=True))
+            color=ColorScaling.power(gamma=0.4),
+            data_style=DataStyle(hillshade=True),
+        )
         assert type(mg.im).__name__ == "PolyCollection"
         assert type(mg.im.norm).__name__ == "PowerNorm", (
             "the color_scale norm is applied"
@@ -1724,7 +1751,9 @@ class TestMeshGlyphHillshade:
         faces = np.array([[0, 1, 3], [1, 2, 3], [0, 1, 2]])
         z = np.array([10.0, 20.0, 30.0, np.nan])  # node 3 is nodata
         mg = MeshGlyph(nx, ny, faces)
-        mg.plot(z, location="node", cmap="terrain", data_style=DataStyle(hillshade=True))
+        mg.plot(
+            z, location="node", cmap="terrain", data_style=DataStyle(hillshade=True)
+        )
         alphas = mg.im.get_facecolor()[:, 3]
         assert np.allclose(alphas[[0, 1]], 0.0), "nodata-touching faces are transparent"
         assert alphas[2] > 0.0, "the fully-finite face stays opaque"
@@ -1766,7 +1795,9 @@ class TestMeshGlyphDataStyle:
             .astype(float)
         )
         g = MeshGlyph(nx, ny, faces)
-        _, ax = g.plot(d8, location="face", data_style=DataStyle(style="flow_direction_d8"))
+        _, ax = g.plot(
+            d8, location="face", data_style=DataStyle(style="flow_direction_d8")
+        )
         assert ax.get_legend() is not None
         assert g._cbar is None
         plt.close("all")
@@ -1776,7 +1807,10 @@ class TestMeshGlyphDataStyle:
         nx, ny, faces = self._mesh()
         with pytest.raises(ValueError, match="unknown data style"):
             MeshGlyph(nx, ny, faces).plot(
-                np.ones(len(faces)), location="face", data_style=DataStyle(style="not_a_style"))
+                np.ones(len(faces)),
+                location="face",
+                data_style=DataStyle(style="not_a_style"),
+            )
         plt.close("all")
 
     def test_continuous_style_composes_with_hillshade(self):
@@ -1784,7 +1818,9 @@ class TestMeshGlyphDataStyle:
         nx, ny, faces = self._mesh()
         z = 50 + 150 * np.exp(-(((nx - 7) / 2) ** 2 + ((ny - 5) / 3) ** 2))
         g = MeshGlyph(nx, ny, faces)
-        g.plot(z, location="node", data_style=DataStyle(style="topography", hillshade=True))
+        g.plot(
+            z, location="node", data_style=DataStyle(style="topography", hillshade=True)
+        )
         assert type(g.im).__name__ == "PolyCollection"
         plt.close("all")
 
@@ -1798,7 +1834,8 @@ class TestMeshGlyphDataStyle:
         )
         with pytest.warns(UserWarning, match="interpolates discrete class codes"):
             MeshGlyph(nx, ny, faces).plot(
-                codes, location="node", data_style=DataStyle(style="flow_direction_d8"))
+                codes, location="node", data_style=DataStyle(style="flow_direction_d8")
+            )
         plt.close("all")
 
     def test_symlog_preset_colorbar_uses_a_log_locator(self):
@@ -2228,3 +2265,179 @@ class TestFigAxResolution:
         assert glyph.fig is fig0, "should keep the bound figure"
         assert glyph.im is not None, "should have drawn a frame"
         assert anim is not None, "should return an animation"
+
+
+class TestMeshGlyphCompose:
+    """MeshGlyph.plot / animate / plot_outline honour compose= (issue #370)."""
+
+    @staticmethod
+    def _mesh():
+        """A unit square split into two triangles, with per-face data."""
+        node_x = np.array([0.0, 1.0, 1.0, 0.0])
+        node_y = np.array([0.0, 0.0, 1.0, 1.0])
+        faces = np.array([[0, 1, 2], [0, 2, 3]])
+        return MeshGlyph(node_x, node_y, faces), np.array([1.0, 2.0])
+
+    @staticmethod
+    def _raster_axes():
+        """An axes carrying a composed ArrayGlyph raster."""
+        fig, ax = plt.subplots()
+        ArrayGlyph(np.arange(100.0).reshape(10, 10), extent=[0, 0, 1, 1]).plot(
+            ax=ax, compose=True
+        )
+        return fig, ax
+
+    @staticmethod
+    def _animate(fig, ax, **kwargs):
+        """Animate a two-frame unit-square mesh on `ax`, returning (mesh, anim).
+
+        Forces one draw so the returned animation is not GC'd unrendered.
+        """
+        mesh = MeshGlyph(
+            np.array([0.0, 1.0, 1.0, 0.0]),
+            np.array([0.0, 0.0, 1.0, 1.0]),
+            np.array([[0, 1, 2], [0, 2, 3]]),
+            fig=fig,
+            ax=ax,
+        )
+        anim = mesh.animate(
+            [np.array([1.0, 2.0]), np.array([2.0, 3.0])],
+            time=["t0", "t1"],
+            location="face",
+            **kwargs,
+        )
+        fig.canvas.draw()
+        return mesh, anim
+
+    def test_plot_compose_true_keeps_prior_layer(self):
+        """compose=True layers the mesh over a prior raster instead of wiping it."""
+        fig, ax = self._raster_axes()
+        mesh, data = self._mesh()
+        mesh.plot(data, ax=ax, compose=True)
+        assert len(ax.get_images()) == 1, "raster should survive a composed mesh render"
+        assert len(ax.collections) == 1, "the mesh collection should be drawn too"
+
+    def test_plot_compose_true_suppresses_colorbar(self):
+        """compose=True does not add the mesh's colorbar axes to the host figure."""
+        fig, ax = self._raster_axes()
+        mesh, data = self._mesh()
+        mesh.plot(data, ax=ax, compose=True)
+        assert mesh._cbar is None, "a composed overlay should not draw its own colorbar"
+        assert len(fig.axes) == 1, "no colorbar axes should be added to the host figure"
+
+    def test_plot_compose_true_colorbar_explicit_still_draws(self):
+        """An explicit colorbar=True is honoured even under compose."""
+        fig, ax = self._raster_axes()
+        mesh, data = self._mesh()
+        mesh.plot(data, ax=ax, compose=True, colorbar=True)
+        assert mesh._cbar is not None, "explicit colorbar=True should still draw"
+
+    def test_plot_default_replaces_prior_layer(self):
+        """Default (compose=False) clears prior artists, replacing the raster."""
+        _, ax = self._raster_axes()
+        mesh, data = self._mesh()
+        mesh.plot(data, ax=ax)
+        assert len(ax.get_images()) == 0, "default render should replace the raster"
+
+    def test_plot_default_draws_colorbar(self):
+        """A normal (non-composed) render still draws a colorbar by default."""
+        fig, ax = plt.subplots()
+        mesh, data = self._mesh()
+        mesh.plot(data, ax=ax)
+        assert mesh._cbar is not None, "a normal render draws a colorbar by default"
+
+    def test_plot_compose_true_replaces_own_prior_render(self):
+        """compose=True still clears the mesh's own prior artists (no accumulation)."""
+        fig, ax = plt.subplots()
+        mesh, data = self._mesh()
+        mesh.plot(data, ax=ax)
+        mesh.plot(data * 2.0, ax=ax, compose=True)
+        assert len(ax.collections) == 1, (
+            "own prior mesh artist replaced, not duplicated"
+        )
+
+    def test_plot_compose_true_applies_explicit_title_and_labels(self):
+        """compose=True still honours an explicitly-passed title/xlabel (as ArrayGlyph)."""
+        fig, ax = plt.subplots()
+        ax.set_title("HOST")
+        ax.set_xlabel("hostx")
+        mesh, data = self._mesh()
+        mesh.plot(data, ax=ax, compose=True, title="X", xlabel="mx")
+        assert ax.get_title() == "X", "an explicit title must be applied under compose"
+        assert ax.get_xlabel() == "mx", (
+            "an explicit xlabel must be applied under compose"
+        )
+
+    def test_plot_compose_true_bare_keeps_host_framing(self):
+        """A bare compose overlay leaves the host title/xlabel untouched."""
+        fig, ax = plt.subplots()
+        ax.set_title("HOST")
+        ax.set_xlabel("hostx")
+        mesh, data = self._mesh()
+        mesh.plot(data, ax=ax, compose=True)
+        assert ax.get_title() == "HOST", (
+            "a bare overlay must not clobber the host title"
+        )
+        assert ax.get_xlabel() == "hostx", "a bare overlay must not clobber host labels"
+
+    def test_plot_compose_true_categorical_keeps_prior_layer(self):
+        """A categorical preset composes over a host: legend kept, no colorbar."""
+        fig, ax = self._raster_axes()
+        mesh, _ = self._mesh()
+        mesh.plot(
+            np.array([1.0, 2.0]),
+            ax=ax,
+            compose=True,
+            data_style=DataStyle(style="flow_direction_d8"),
+        )
+        assert len(ax.get_images()) == 1, (
+            "raster should survive a composed categorical mesh"
+        )
+        assert mesh._cbar is None, "a categorical preset draws a legend, not a colorbar"
+        assert ax.get_legend() is not None, "the disjoint legend should be stamped"
+
+    def test_plot_outline_compose_true_keeps_prior_layer(self):
+        """plot_outline(compose=True) overlays the wireframe on a prior raster."""
+        _, ax = self._raster_axes()
+        mesh, _ = self._mesh()
+        mesh.plot_outline(ax=ax, compose=True)
+        assert len(ax.get_images()) == 1, "outline composed over the raster keeps it"
+
+    def test_plot_outline_default_replaces_prior_layer(self):
+        """Default plot_outline clears prior artists, replacing the raster."""
+        _, ax = self._raster_axes()
+        mesh, _ = self._mesh()
+        mesh.plot_outline(ax=ax)
+        assert len(ax.get_images()) == 0, "default outline should replace the raster"
+
+    def test_animate_compose_true_keeps_prior_layer(self):
+        """animate(compose=True) draws the first frame over a prior raster."""
+        fig, ax = self._raster_axes()
+        mesh, anim = self._animate(fig, ax, compose=True)
+        assert anim is not None, "animate should return the FuncAnimation"
+        assert len(ax.get_images()) == 1, "raster should survive a composed animation"
+        assert mesh._cbar is None, (
+            "a composed animation should not draw its own colorbar"
+        )
+        assert len(fig.axes) == 1, "no colorbar axes should be added to the host figure"
+
+    def test_animate_compose_true_colorbar_explicit_still_draws(self):
+        """animate(compose=True, colorbar=True) still draws the colorbar (elif branch)."""
+        fig, ax = self._raster_axes()
+        mesh, anim = self._animate(fig, ax, compose=True, colorbar=True)
+        assert anim is not None, "animate should return the FuncAnimation"
+        assert mesh._cbar is not None, "explicit colorbar=True draws even under compose"
+
+    def test_animate_colorbar_false_suppresses_colorbar(self):
+        """animate(colorbar=False) draws no colorbar even for a normal render."""
+        fig, ax = plt.subplots()
+        mesh, anim = self._animate(fig, ax, colorbar=False)
+        assert anim is not None, "animate should return the FuncAnimation"
+        assert mesh._cbar is None, "colorbar=False should suppress the colorbar"
+        assert len(fig.axes) == 1, "no colorbar axes should be added"
+
+    def test_render_methods_expose_compose(self):
+        """plot / animate / plot_outline all declare a compose parameter."""
+        for method in (MeshGlyph.plot, MeshGlyph.animate, MeshGlyph.plot_outline):
+            params = inspect.signature(method).parameters
+            assert "compose" in params, f"{method.__name__} should expose compose"

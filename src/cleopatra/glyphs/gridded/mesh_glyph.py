@@ -875,12 +875,13 @@ class MeshGlyph(GeoMixin, Glyph):
         location: str = "face",
         ax: Any = None,
         edgecolor: str = "none",
-        colorbar: bool | ColorBar | None = True,
+        colorbar: bool | ColorBar | None = None,
         title: str | None = None,
         filled: bool = True,
         color: ColorScaling | None = None,
         contour: Contour | None = None,
         data_style: DataStyle | None = None,
+        compose: bool = False,
         **kwargs: Any,
     ) -> tuple[plt.Figure, plt.Axes]:
         """Plot mesh data using matplotlib triangulation.
@@ -905,9 +906,11 @@ class MeshGlyph(GeoMixin, Glyph):
                 figure/axes.
             edgecolor: Edge color for face rendering. Default is
                 `"none"`.
-            colorbar: Draw a colorbar, by default `True`. Accepts a typed
-                `ColorBar` spec (placement / caption / sizing) or `True`/`None`
-                to draw a default one; `False` suppresses it.
+            colorbar: Draw a colorbar. `None` (default) draws one for a normal
+                render but suppresses it under `compose=True` (an overlay's
+                colorbar would re-lay-out the host axes); `True` or a typed
+                `ColorBar` spec (placement / caption / sizing) always draws one,
+                even composing; `False` suppresses it.
             title: Plot title. Overrides `default_options["title"]`.
             filled: For node data, draw filled contours (`tricontourf`,
                 the default) or line contours (`tricontour`) when
@@ -931,6 +934,16 @@ class MeshGlyph(GeoMixin, Glyph):
                 (`cleopatra.styling.params.DataStyle`), e.g.
                 `DataStyle(style="dem", hillshade=True)`. Replaces the
                 loose `style` / `hillshade` keywords.
+            compose: Draw *over* whatever is already on `ax` instead of
+                replacing it, by default `False`. `False` clears every glyph's
+                prior artists from the axes first (the replace-don't-orphan
+                default); `True` clears only this glyph's own prior artists, so
+                a mesh can be layered onto a host raster / another glyph -- the
+                same opt-in `ArrayGlyph` and `VectorGlyph` expose. A composed
+                overlay still applies any framing you pass explicitly
+                (`title=`, `xlabel=`, …) and its own aspect, but leaves the
+                host's existing title / ticks / labels and colorbar untouched
+                when you pass none.
             **kwargs: Construction-time-style overrides for the non-grouped
                 `default_options` (`cmap`, `vmin`, `vmax`, `title_size`,
                 `figsize`, …). The loose `ticks_spacing` / `cbar_*` keys
@@ -1082,8 +1095,22 @@ class MeshGlyph(GeoMixin, Glyph):
             _resolve_colorbar(colorbar) if isinstance(colorbar, ColorBar) else {}
         )
         self.default_options.update(resolved_colorbar)
-        if colorbar is not False:
-            colorbar = True
+        # A composed overlay's colorbar takes space from the host axes and
+        # re-lays it out, so composing defaults the colorbar off; only an
+        # explicit request (colorbar=True or a ColorBar spec) still draws one.
+        # Outside compose the historical default holds: draw unless colorbar is
+        # False. Same contract as ArrayGlyph / VectorGlyph, but hand-rolled
+        # rather than delegated to Glyph._draws_own_colorbar: mesh never plumbs
+        # colorbar= into default_options["add_colorbar"] (which that helper reads,
+        # defaulting True), so delegating would draw for colorbar=False outside
+        # compose. Keep this in sync with _draws_own_colorbar if the contract
+        # changes.
+        if colorbar is False:
+            draw_colorbar = False
+        elif compose:
+            draw_colorbar = colorbar is not None
+        else:
+            draw_colorbar = True
 
         # `style`/`hillshade` now arrive via the `data_style` group object;
         # detect whether this call provided each so the sticky-state logic
@@ -1160,6 +1187,10 @@ class MeshGlyph(GeoMixin, Glyph):
                 )
                 data = np.where(np.isin(data_f, cat_values), data_f, np.nan)
                 colorbar = False
+                # A categorical preset draws a discrete legend, never a
+                # colorbar. `draw_colorbar` was resolved before the preset was
+                # known, so clear it here too (not just `colorbar`).
+                draw_colorbar = False
                 self.default_options["hillshade"] = False
                 style_legend = (cat_colors, cat_labels, cfg["label"])
                 if location == "node":
@@ -1182,7 +1213,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 raise ValueError(
                     "hillshade needs node-centered elevation; pass location='node'"
                 )
-            _clear_prior_render_artists(self.ax, self)
+            _clear_prior_render_artists(self.ax, self, compose=compose)
             self.im = None
             self._cbar = None
             self._apply_projection()
@@ -1190,7 +1221,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 self.ax, data, edgecolor, norm, hillshade, **render_kwargs
             )
         else:
-            _clear_prior_render_artists(self.ax, self)
+            _clear_prior_render_artists(self.ax, self, compose=compose)
             self.im = None
             self._cbar = None
             self._apply_projection()
@@ -1219,7 +1250,7 @@ class MeshGlyph(GeoMixin, Glyph):
             }
             self.contour_labels = self.ax.clabel(tpc, **label_kw)
 
-        if colorbar:
+        if draw_colorbar:
             self._cbar = self.create_color_bar(self.ax, tpc, cbar_kw)
 
         if style_legend is not None:
@@ -1228,6 +1259,10 @@ class MeshGlyph(GeoMixin, Glyph):
                 self.ax, cat_colors, cat_labels, title=cat_title, loc="upper right"
             )
 
+        # Honour an explicit title/axis-style even when composing, as ArrayGlyph
+        # does: the default title is None, and _apply_axis_style applies only
+        # explicitly-passed options, so a bare overlay leaves the host framing
+        # untouched while an explicit title=/xlabel=/... is still applied.
         if self.default_options["title"]:
             self.ax.set_title(
                 self.default_options["title"],
@@ -1251,6 +1286,7 @@ class MeshGlyph(GeoMixin, Glyph):
         color: ColorScaling | None = None,
         contour: Contour | None = None,
         data_style: DataStyle | None = None,
+        compose: bool = False,
         **kwargs: Any,
     ) -> FuncAnimation:
         """Create an animation from time-varying mesh data.
@@ -1270,9 +1306,17 @@ class MeshGlyph(GeoMixin, Glyph):
             interval: Milliseconds between frames. Default is 200.
             text_loc: `[x, y]` position for the time label text.
                 Default is `[0.1, 0.2]`.
-            colorbar: Typed `ColorBar` spec (placement / caption / sizing) for
-                the animation's colorbar, or `True`/`None` to draw a default one;
-                `False` suppresses it. Default `None` (draw).
+            colorbar: Draw a colorbar. `None` (default) draws one for a normal
+                render but suppresses it under `compose=True` (an overlay's
+                colorbar would re-lay-out the host axes); `True` or a typed
+                `ColorBar` spec (placement / caption / sizing) always draws one,
+                even composing; `False` suppresses it.
+            compose: Draw *over* whatever is already on the axes instead of
+                replacing it, by default `False`. `True` clears only this glyph's
+                own prior artists, so the animation layers onto existing content;
+                explicit framing (`title=`, `xlabel=`, …) is still applied while
+                the host's existing framing is left intact, and `tight_layout` is
+                skipped so the host layout is preserved (see `plot`).
             **kwargs: Override any key in `default_options` (cmap,
                 vmin, vmax, color_scale, gamma, midpoint, figsize,
                 title, etc.). The loose `ticks_spacing` / `cbar_*` keys
@@ -1368,7 +1412,7 @@ class MeshGlyph(GeoMixin, Glyph):
 
         self.contour_labels = None
 
-        _clear_prior_render_artists(ax, self)
+        _clear_prior_render_artists(ax, self, compose=compose)
         self.im = None
         self._cbar = None
 
@@ -1380,9 +1424,20 @@ class MeshGlyph(GeoMixin, Glyph):
             norm=norm,
         )
         self.im = tpc
-        if colorbar is not False:
+        # See plot: a composed overlay's colorbar re-lays out the host, so
+        # composing defaults it off; an explicit request still draws one.
+        if colorbar is False:
+            draw_colorbar = False
+        elif compose:
+            draw_colorbar = colorbar is not None
+        else:
+            draw_colorbar = True
+        if draw_colorbar:
             self._cbar = self.create_color_bar(ax, tpc, cbar_kw)
 
+        # See plot: an explicit title/axis-style is honoured even when composing;
+        # a bare overlay leaves the host framing intact (default title is None,
+        # _apply_axis_style applies only explicitly-passed options).
         if self.default_options["title"]:
             ax.set_title(
                 self.default_options["title"],
@@ -1422,7 +1477,8 @@ class MeshGlyph(GeoMixin, Glyph):
             self.im = current_mappable[0]
             _mark_render_artists(ax, self, self._cbar, self.im, self._day_text)
 
-        plt.tight_layout()
+        if not compose:
+            plt.tight_layout()
         anim = FuncAnimation(
             fig,
             _update,
@@ -1439,6 +1495,7 @@ class MeshGlyph(GeoMixin, Glyph):
         color: str = "black",
         linewidth: float = 0.3,
         figsize: tuple[int, int] = (10, 8),
+        compose: bool = False,
         **kwargs: Any,
     ) -> tuple[plt.Figure, plt.Axes]:
         """Plot mesh edges as a wireframe.
@@ -1452,6 +1509,10 @@ class MeshGlyph(GeoMixin, Glyph):
             color: Edge color. Default is `"black"`.
             linewidth: Edge line width. Default is `0.3`.
             figsize: Figure size in inches. Default is `(10, 8)`.
+            compose: Draw *over* whatever is already on `ax` instead of
+                replacing it, by default `False`. `True` clears only this
+                glyph's own prior artists, so the wireframe overlays existing
+                content (see `plot`).
             **kwargs: Additional keyword arguments passed to
                 `LineCollection`.
 
@@ -1486,7 +1547,7 @@ class MeshGlyph(GeoMixin, Glyph):
         elif self.fig is None:
             self.fig, self.ax = plt.subplots(1, 1, figsize=figsize)
 
-        _clear_prior_render_artists(self.ax, self)
+        _clear_prior_render_artists(self.ax, self, compose=compose)
         self.im = None
         self._cbar = None
 
