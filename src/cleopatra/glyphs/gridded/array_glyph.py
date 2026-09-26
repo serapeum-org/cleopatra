@@ -752,9 +752,9 @@ def _as_artists(result: Iterable[Artist] | Artist | None) -> list[Artist]:
         per-frame blit list uniformly.
 
     Raises:
-        TypeError: If `result` is a `str`/`bytes` -- iterable, but a misuse that
-            would otherwise be split into single-character items and fail
-            obscurely in the blitter.
+        TypeError: If `result` is a `str`/`bytes`, or an iterable containing a
+            non-`Artist` item -- misuses that would otherwise be split into
+            characters or fed to the blitter and fail obscurely there.
     """
     if result is None:
         return []
@@ -765,7 +765,13 @@ def _as_artists(result: Iterable[Artist] | Artist | None) -> list[Artist]:
             "a frame overlay's init/update must return None, an Artist, or an "
             f"iterable of Artists, not {type(result).__name__!r}."
         )
-    return list(result)
+    artists = list(result)
+    if not all(isinstance(item, Artist) for item in artists):
+        raise TypeError(
+            "a frame overlay's init/update must return None, an Artist, or an "
+            "iterable of Artists; got an iterable with a non-Artist item."
+        )
+    return artists
 
 
 @dataclass(frozen=True)

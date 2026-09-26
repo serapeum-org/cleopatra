@@ -955,6 +955,13 @@ class TestFrameOverlayUnit:
         with pytest.raises(TypeError, match="must return None, an Artist"):
             _as_artists(b"ab")
 
+    def test_as_artists_rejects_iterable_with_non_artist(self):
+        """An iterable carrying a non-Artist item raises instead of reaching the blitter."""
+        with pytest.raises(TypeError, match="non-Artist item"):
+            _as_artists([Circle((0, 0)), 5])
+        with pytest.raises(TypeError, match="non-Artist item"):
+            _as_artists({"a": 1})
+
     def test_animation_overlay_defaults(self):
         """`Animation` defaults to no overlays and one animation frame per step."""
         play = Animation()
