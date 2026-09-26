@@ -15,11 +15,18 @@ This is a presentation helper, not a glyph: it takes a finished `Figure` and
 draws on top of it via a frameless inset axes in figure-fraction coordinates
 (the dpi-independent counterpart of `Figure.figimage`, which is pixel-based).
 
-**The public entry point is `WatermarkMixin`, which every glyph inherits** --
+**The primary entry point is `WatermarkMixin`, which every glyph inherits** --
 `glyph.stamp_mark(logo)` and `glyph.stamp_watermark("brand")`. The two
-functions below are private: they take a bare `Figure`, and stamping one that
-no glyph owns is deliberately not part of the supported surface, so there is a
-single way to do this rather than two.
+functions below are private: they take a bare `Figure`, and for a
+single-glyph render stamping one that no glyph owns is deliberately not part
+of the supported surface, so there is one obvious way to do it.
+
+The one sanctioned exception is a **composite** figure -- several glyphs'
+panels laid out in one figure (the documented multi-panel pattern), or a
+figure built entirely outside cleopatra -- which no single glyph owns. For
+that, `stamp_mark_on(fig, logo, ...)` is a supported, public escape hatch onto
+the same image stamp, so a composite layout need not import the private
+`_stamp_mark`.
 
 `_stamp_watermark` is its text counterpart: the diagonal translucent brand
 text across the middle of a frame, plus an optional credit line along the
@@ -53,7 +60,7 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
     from matplotlib.text import Text
 
-__all__ = ["WatermarkMixin"]
+__all__ = ["WatermarkMixin", "stamp_mark_on"]
 
 #: The four corner anchors `_stamp_mark` accepts.
 _CORNERS = ("lower right", "lower left", "upper right", "upper left")
@@ -717,6 +724,62 @@ def _composite_halo(image: np.ndarray, blur: float) -> tuple[np.ndarray, float, 
     return (out * 255).round().astype(np.uint8), pad_w / img_w, pad_h / img_h
 
 
+def stamp_mark_on(
+    fig: Figure, path: str | os.PathLike | np.ndarray, **kwargs: Any
+) -> Axes:
+    """Stamp a logo image on a figure that no single glyph owns.
+
+    The supported escape hatch for a *composite* figure -- one assembled from
+    several glyphs' panels (a `GridSpec` of `plot(fig=fig, ax=ax, ...)` calls),
+    or one built entirely outside cleopatra -- where no single glyph owns the
+    whole figure, so there is no glyph whose `stamp_mark` covers it. For the
+    common single-glyph case use the glyph method `WatermarkMixin.stamp_mark`,
+    which stays the primary, discoverable API; this is its figure-taking
+    counterpart for the case that method cannot express, so a composite layout
+    need not reach for the private `_stamp_mark`.
+
+    Args:
+        fig: The matplotlib `Figure` to stamp -- typically a multi-panel
+            composite. The mark is drawn on top of whatever it already holds.
+        path: The mark image, as the glyph method accepts it: a file path (any
+            format `PIL` can open) or an in-memory RGB / RGBA array.
+        **kwargs: Mark placement and style options forwarded verbatim to the
+            stamp: `frac`, `corner`, `margin`, `shadow`, `blur`.
+
+    Returns:
+        Axes: The frameless inset axes the mark was drawn on.
+
+    Raises:
+        ValueError: As the underlying stamp raises -- an unknown `corner`, a
+            `frac` outside `(0, 1]`, a `margin` that is not a scalar or
+            `(x, y)` pair in `[0, 1)` (or one that pushes the mark off the
+            figure), a negative `blur`, or an out-of-contract image array.
+        FileNotFoundError: If `path` is a file path that does not exist.
+
+    Examples:
+        - Stamp a logo once on a composite figure built from several panels:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import numpy as np
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styling.watermark import stamp_mark_on
+            >>> fig, axes = plt.subplots(1, 3, figsize=(8, 6))
+            >>> logo = np.full((40, 80, 4), 255, dtype=np.uint8)
+            >>> ax = stamp_mark_on(fig, logo, frac=0.2, shadow=False)
+            >>> [round(float(v), 3) for v in ax.get_position().bounds]
+            [0.775, 0.025, 0.2, 0.133]
+            >>> plt.close(fig)
+
+            ```
+
+    See Also:
+        WatermarkMixin.stamp_mark: The glyph method for the common
+            single-glyph case -- the primary API.
+    """
+    return _stamp_mark(fig, path, **kwargs)
+
+
 class WatermarkMixin:
     """The glyph-side entry point for both figure stamps.
 
@@ -766,8 +829,10 @@ class WatermarkMixin:
     def stamp_mark(self, path: str | os.PathLike | np.ndarray, **kwargs: Any) -> Axes:
         """Stamp a logo image on this glyph's figure.
 
-        The supported way to stamp a logo. `_stamp_mark` underneath takes a
-        bare `Figure` and is private: a figure no glyph owns is out of scope.
+        The primary way to stamp a logo, for the common single-glyph case.
+        `_stamp_mark` underneath takes a bare `Figure` and is private; a
+        *composite* figure no single glyph owns has its own supported entry
+        point, `stamp_mark_on`.
 
         Args:
             path: The mark image, as `_stamp_mark` accepts it.
@@ -782,8 +847,8 @@ class WatermarkMixin:
                 `_stamp_mark` raises.
 
         See Also:
-            cleopatra.styling.watermark._stamp_mark: The private function
-                underneath.
+            cleopatra.styling.watermark.stamp_mark_on: The figure-taking
+                counterpart, for a composite figure no single glyph owns.
         """
         # The bare name is the module-level function, not this method: a method
         # name never enters the enclosing scope its body is resolved in.

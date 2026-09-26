@@ -39,6 +39,7 @@ from cleopatra.styling.watermark import (
     _fit_text_to_frac,
     _stamp_mark,
     _stamp_watermark,
+    stamp_mark_on,
 )
 
 
@@ -596,6 +597,66 @@ class TestStampMark:
             "upper right",
             "upper left",
         }
+
+
+class TestStampMarkOn:
+    """Tests for the public `stamp_mark_on` escape hatch (issue #371)."""
+
+    def test_is_public(self):
+        """`stamp_mark_on` is exported in the module's public `__all__`."""
+        import cleopatra.styling.watermark as wm
+
+        assert "stamp_mark_on" in wm.__all__, "stamp_mark_on must be public"
+
+    def test_stamps_a_composite_figure_no_glyph_owns(self):
+        """A multi-panel composite figure gets the mark though no glyph owns it.
+
+        Test scenario:
+            A `plt.subplots(1, 3)` composite -- the multi-panel layout with no
+            single owning glyph -- is stamped; the returned frameless inset
+            axes is added on top, so the figure gains exactly one axes.
+        """
+        composite, _ = plt.subplots(1, 3, figsize=(9.0, 3.0))
+        logo = np.full((40, 80, 4), 255, dtype=np.uint8)
+        before = len(composite.axes)
+        try:
+            ax = stamp_mark_on(composite, logo, shadow=False)
+            assert ax in composite.axes, "the mark's axes must be added to the figure"
+            assert len(composite.axes) == before + 1, "exactly one axes is added"
+            assert not ax.get_frame_on(), "the mark axes is frameless"
+        finally:
+            plt.close(composite)
+
+    def test_delegates_to_private_stamp(self, fig, logo):
+        """A faithful wrapper: same placement as `_stamp_mark` for the same input.
+
+        Test scenario:
+            For one figure size and set of options, the public wrapper and the
+            private function place the mark at identical figure-fraction bounds.
+        """
+        public = stamp_mark_on(fig, logo, frac=0.2, corner="upper left", shadow=False)
+        public_bounds = [round(float(v), 6) for v in public.get_position().bounds]
+        fig2 = plt.figure(figsize=(8.0, 6.0))
+        try:
+            private = _stamp_mark(
+                fig2, logo, frac=0.2, corner="upper left", shadow=False
+            )
+            private_bounds = [round(float(v), 6) for v in private.get_position().bounds]
+        finally:
+            plt.close(fig2)
+        assert public_bounds == private_bounds, (
+            f"wrapper must match _stamp_mark: {public_bounds} != {private_bounds}"
+        )
+
+    def test_forwards_kwargs_and_raises_like_the_stamp(self, fig, logo):
+        """Options forward through, and the stamp's validation still applies.
+
+        Test scenario:
+            An unknown `corner` reaches `_stamp_mark`'s guard and raises
+            `ValueError`, proving kwargs are forwarded verbatim.
+        """
+        with pytest.raises(ValueError, match="corner must be one of"):
+            stamp_mark_on(fig, logo, corner="middle")
 
 
 def _share_of_figure(fig, artist):

@@ -19,10 +19,15 @@ glyph.stamp_mark(LOGO, frac=0.18, corner="lower left")
 glyph.stamp_watermark("earthlens", credit="github.com/serapeum-org/earthlens")
 ```
 
-Both stamp the glyph's own figure, and both are **the** way in: the functions underneath
-(`_stamp_mark`, `_stamp_watermark`) are private, so there is one supported route rather than two
-equivalent ones. A stamp lands on the whole **figure**, so on a figure carrying several glyphs it
-does not matter which one you call it through.
+Both stamp the glyph's own figure, and both are **the** way in for the common case: the functions
+underneath (`_stamp_mark`, `_stamp_watermark`) are private, so there is one supported route rather
+than two equivalent ones. A stamp lands on the whole **figure**, so on a figure carrying several
+glyphs it does not matter which one you call it through.
+
+The one sanctioned exception is a **composite figure no single glyph owns** — several glyphs' panels
+laid out in one `plt.figure` (the documented multi-panel pattern), or a figure built entirely
+outside cleopatra. For that, the module-level **`stamp_mark_on(fig, path, ...)`** is a supported,
+public escape hatch onto the same image stamp — see the `stamp_mark_on` section below.
 
 ## `stamp_mark` — a logo image
 
@@ -55,6 +60,30 @@ provenance semantics are out of scope.
 RGBA) or as an in-memory `(H, W, 3)` / `(H, W, 4)` NumPy array (`uint8` `0-255` or float
 `0-1`; RGB gains an opaque alpha). It returns the frameless inset `Axes` it drew on, so you
 can adjust it further.
+
+## `stamp_mark_on` — a figure no glyph owns
+
+`stamp_mark_on(fig, path, *, frac=0.11, corner="lower right", margin=0.025, shadow=True,
+blur=0.065)` is the module-level counterpart of `glyph.stamp_mark`, for a **composite figure no
+single glyph owns**: several glyphs' panels laid out in one `plt.figure` (the sanctioned
+multi-panel pattern — each panel drawn with `plot(fig=fig, ax=ax, ...)`), or a figure built
+entirely outside cleopatra. There is no one glyph whose `stamp_mark` covers the shared figure, so
+this takes the `Figure` directly. It draws the same corner mark with the same options and returns
+the same frameless inset `Axes`.
+
+```python
+import matplotlib.pyplot as plt
+from cleopatra.styling.watermark import stamp_mark_on
+
+fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+for ax, arr in zip(axes, arrays):
+    Dataset.from_array(arr).plot(fig=fig, ax=ax)   # each glyph owns only its own ax
+stamp_mark_on(fig, "brand/logo.png", corner="lower right")
+```
+
+Reach for the glyph method `glyph.stamp_mark` for the common single-glyph case — it stays the
+primary API. `stamp_mark_on` is the explicit, supported escape hatch so a composite layout never
+has to import the private `_stamp_mark`.
 
 ## `stamp_watermark` — brand text
 
