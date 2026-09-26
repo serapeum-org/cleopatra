@@ -147,6 +147,16 @@ def rapid_intensification_mask(
             [False, False, True]
 
             ```
+        - A gain under the threshold over the window is not flagged:
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.glyphs.gridded.cyclone import rapid_intensification_mask
+            >>> t = np.array([0.0, 24.0])
+            >>> v = np.array([40.0, 60.0])  # +20 kt < 30 kt
+            >>> rapid_intensification_mask(t, v).tolist()
+            [False, False]
+
+            ```
     """
     time_hours = np.asarray(time_hours, dtype=float)
     vmax_kt = np.asarray(vmax_kt, dtype=float)
@@ -538,6 +548,19 @@ def add_intensity_key(
             >>> artists = add_intensity_key(ax)
             >>> len(artists)
             15
+            >>> plt.close(fig)
+
+            ```
+        - The title text is the heading given:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.glyphs.gridded.cyclone import add_intensity_key
+            >>> fig, ax = plt.subplots()
+            >>> artists = add_intensity_key(ax, title="Category")
+            >>> artists[0].get_text()
+            'Category'
             >>> plt.close(fig)
 
             ```
