@@ -144,7 +144,8 @@ class TestCycloneOverlay:
         assert isinstance(art.track, LineCollection), "track is a LineCollection"
         assert isinstance(art.glow, Circle), "glow is a Circle"
         assert len(art.wedges) == 1, "one r34_ne wind-radius wedge"
-        assert art.track in out and art.glow in out, "artists returned for blitting"
+        assert art.track in out, "track artist returned for blitting"
+        assert art.glow in out, "glow artist returned for blitting"
 
     def test_track_segments_and_category_colour(self):
         """The track shows one segment per shown gap, coloured by category."""
@@ -182,7 +183,8 @@ class TestCycloneOverlay:
         anim._func(5)  # data_index 2, phase 0.5
         r1, a1 = ripple.get_radius(), ripple.get_alpha()
         assert r0 != r1, f"RI ripple must expand at sub_frames=2, got {r0} then {r1}"
-        assert a0 > 0 and a1 > 0, f"RI ripple must stay visible, alphas {a0}, {a1}"
+        assert a0 > 0, f"RI ripple must be visible at phase 0.0, alpha {a0}"
+        assert a1 > 0, f"RI ripple must be visible at phase 0.5, alpha {a1}"
 
     def test_dissipation_hides_glow_and_dims_track(self):
         """Past the storm's last fix the glow is hidden and the track dims."""
