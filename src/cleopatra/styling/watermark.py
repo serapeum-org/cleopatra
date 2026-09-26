@@ -786,6 +786,8 @@ def stamp_mark_on(
             >>> import matplotlib.pyplot as plt
             >>> from cleopatra.styling.watermark import stamp_mark_on
             >>> fig, axes = plt.subplots(1, 3, figsize=(8, 6))
+            >>> for panel in axes:  # three glyph panels no single glyph owns
+            ...     _ = panel.imshow(np.zeros((4, 4)))
             >>> logo = np.full((40, 80, 4), 255, dtype=np.uint8)
             >>> ax = stamp_mark_on(fig, logo, frac=0.2, shadow=False)
             >>> [round(float(v), 3) for v in ax.get_position().bounds]

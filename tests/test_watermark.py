@@ -16,6 +16,8 @@ have to import them and pass the figure by hand.
 
 from __future__ import annotations
 
+import inspect
+
 import matplotlib
 
 matplotlib.use("Agg")
@@ -663,6 +665,24 @@ class TestStampMarkOn:
         """
         with pytest.raises(ValueError, match="corner must be one of"):
             stamp_mark_on(fig, logo, corner="middle")
+
+    @pytest.mark.parametrize("name", ["frac", "corner", "margin", "shadow", "blur"])
+    def test_signature_defaults_match_private_stamp(self, name):
+        """`stamp_mark_on`'s keyword defaults mirror `_stamp_mark`'s (drift guard).
+
+        Args:
+            name: The keyword-only option whose default is compared.
+
+        Test scenario:
+            The explicit signature restates `_stamp_mark`'s option defaults, so
+            pin them: a future change to `_stamp_mark`'s default that is not
+            mirrored here fails this test instead of silently diverging.
+        """
+        public = inspect.signature(stamp_mark_on).parameters[name].default
+        private = inspect.signature(_stamp_mark).parameters[name].default
+        assert public == private, (
+            f"{name} default drifted from _stamp_mark: {public!r} != {private!r}"
+        )
 
 
 def _share_of_figure(fig, artist):
