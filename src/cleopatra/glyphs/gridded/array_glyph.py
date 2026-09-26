@@ -25,16 +25,17 @@ The `Array` class has the following methods:
 from __future__ import annotations
 
 import warnings
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from math import ceil
-from typing import Any, Literal, TypedDict, Unpack, cast
+from typing import Any, Literal, Protocol, TypedDict, Unpack, cast, runtime_checkable
 
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.ma as ma
 from hpc.indexing import get_indices2
 from matplotlib.animation import FuncAnimation
+from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.cm import ScalarMappable
 from matplotlib.collections import PathCollection
@@ -46,6 +47,7 @@ from matplotlib.gridspec import (
     GridSpecFromSubplotSpec,
     SubplotSpec,
 )
+from matplotlib.patheffects import withStroke
 from matplotlib.ticker import MaxNLocator
 from PIL import Image
 
@@ -493,6 +495,14 @@ class FrameLabel:
             the label inherits the colorbar label size
             (`cbar_label_size`, `12` by default); pass a number to size
             the frame label independently of the colorbar.
+        text: How each frame's label is worded, by default `None` (the
+            historical ``"Date = " + str(time[i])[:10]``). A format string is
+            filled with ``{label}`` / ``{index}``; a callable receives the raw
+            `time` entry. See `format`.
+        stroke: Outline colour drawn around the label so it stays legible over
+            busy imagery, by default `None` (no outline).
+        stroke_width: Outline width in points when `stroke` is set, by default
+            `3.0`.
 
     Examples:
         - Build a frame label and pass it to `animate`:
@@ -521,6 +531,9 @@ class FrameLabel:
         location: list[float] | None = None,
         color: str = "black",
         size: float | None = None,
+        text: str | Callable[[Any], str] | None = None,
+        stroke: str | None = None,
+        stroke_width: float = 3.0,
     ) -> None:
         """Initialise a `FrameLabel`.
 
@@ -530,10 +543,57 @@ class FrameLabel:
             color: Label text colour, by default `"black"`.
             size: Label font size in points, by default `None` (inherit
                 the colorbar label size -- see the class docstring).
+            text: How to word each frame's label, by default `None` (the
+                historical ``"Date = " + str(time[i])[:10]``). A format string
+                is filled with ``{label}`` (the `time` entry) and ``{index}``
+                (the frame number), e.g. ``"{label:%d %b %Y %H:%M} UTC"`` for a
+                `datetime` label; a callable is passed the raw `time` entry and
+                returns the string.
+            stroke: Outline colour drawn around the label so it stays legible
+                over busy imagery, by default `None` (no outline).
+            stroke_width: Outline width in points when `stroke` is set, by
+                default `3.0`.
         """
         self.location = location
         self.color = color
         self.size = size
+        self.text = text
+        self.stroke = stroke
+        self.stroke_width = stroke_width
+
+    def format(self, label: Any, index: int) -> str:
+        """Word the frame label for one frame from this label's `text` policy.
+
+        Args:
+            label: The `animate` `time` entry for the current frame.
+            index: The zero-based data-frame index.
+
+        Returns:
+            The label string: the historical ``"Date = " + str(label)[:10]``
+            when `text` is `None`; ``text(label)`` when `text` is callable;
+            otherwise ``text.format(label=label, index=index)``.
+
+        Examples:
+            - The default wording matches the historical label:
+                ```python
+                >>> from cleopatra.glyphs.gridded.array_glyph import FrameLabel
+                >>> FrameLabel().format("2026-09-02T20:00:00", 0)
+                'Date = 2026-09-02'
+
+                ```
+            - A callable takes full control of the wording:
+                ```python
+                >>> from cleopatra.glyphs.gridded.array_glyph import FrameLabel
+                >>> FrameLabel(text=lambda t: f"{t} UTC").format("20:00", 3)
+                '20:00 UTC'
+
+                ```
+        """
+        if self.text is None:
+            return "Date = " + str(label)[0:10]
+        if callable(self.text):
+            return str(self.text(label))
+        return self.text.format(label=label, index=index)
 
     def resolve_location(self) -> tuple[list[float], bool]:
         """Resolve the label anchor and whether it is the auto default.
@@ -592,7 +652,7 @@ class FrameLabel:
                 ```
         """
         location, is_default = self.resolve_location()
-        return ax.text(
+        artist = ax.text(
             location[0],
             location[1],
             " ",
@@ -601,6 +661,69 @@ class FrameLabel:
             transform=ax.transAxes if is_default else ax.transData,
             va="top" if is_default else "baseline",
         )
+        if self.stroke is not None:
+            artist.set_path_effects(
+                [withStroke(linewidth=self.stroke_width, foreground=self.stroke)]
+            )
+        return artist
+
+
+@runtime_checkable
+class FrameOverlay(Protocol):
+    """Protocol for a per-frame overlay drawn on top of `ArrayGlyph.animate`.
+
+    An overlay owns extra artists that change every animation frame -- a storm
+    track, a glow, expanding rings, adaptive name tags -- while cleopatra keeps
+    ownership of the blitting bookkeeping. Pass a sequence of overlays as
+    `animate(playback=Animation(overlays=[...]))`: each is asked to create its
+    artists once through `init`, then to refresh them each frame through
+    `update`, and every artist returned is handed to matplotlib's blitter so it
+    is redrawn. The overlay only declares its artists; it never touches the
+    `FuncAnimation`.
+
+    Any object providing these two methods satisfies the protocol -- it need not
+    subclass `FrameOverlay`. `init`/`update` may each return a single `Artist`,
+    an iterable of artists, or `None`.
+    """
+
+    def init(self, ax: Axes) -> Iterable[Artist] | Artist | None:
+        """Create the overlay's artists on `ax` and return them (called once)."""
+        ...
+
+    def update(
+        self, frame_index: int, phase: float
+    ) -> Iterable[Artist] | Artist | None:
+        """Refresh the overlay's artists for one animation frame and return them.
+
+        Args:
+            frame_index: Zero-based index of the current *data* frame
+                (`0 <= frame_index < len(time)`), identical across every
+                sub-frame of a held data frame.
+            phase: Sub-frame phase in `[0.0, 1.0)` -- `0.0` on a data frame's
+                first animation frame, advancing toward `1.0` across the
+                `sub_frames` it is held for (always `0.0` when
+                `sub_frames == 1`). Lets time-varying effects animate while the
+                raster is held.
+        """
+        ...
+
+
+def _as_artists(result: Iterable[Artist] | Artist | None) -> list[Artist]:
+    """Normalise an overlay hook's return value to a list of artists.
+
+    Args:
+        result: What an overlay's `init` / `update` returned -- `None`, a single
+            `Artist`, or any iterable of artists.
+
+    Returns:
+        The artists as a list (empty for `None`), so `animate` can extend its
+        per-frame blit list uniformly.
+    """
+    if result is None:
+        return []
+    if isinstance(result, Artist):
+        return [result]
+    return list(result)
 
 
 @dataclass(frozen=True)
@@ -623,6 +746,15 @@ class Animation:
         data_getter: Optional callable `f(i) -> ndarray` supplying frame `i`
             lazily (e.g. a NetCDF time slab), instead of holding the whole
             stack in memory. `None` iterates `self.arr`.
+        overlays: A sequence of per-frame overlays (each a `FrameOverlay`) drawn
+            on top of every frame and refreshed by `animate`'s blitter. Empty by
+            default. Lets a caller add track lines, glows, rings or adaptive tags
+            without reaching into the `FuncAnimation`.
+        sub_frames: How many animation frames each data frame is held for, by
+            default `1` (one animation frame per `time` entry, the historical
+            behaviour). With `N > 1` the raster and label are held while overlays
+            are told a `phase` in `[0, 1)`, so time-varying effects can animate
+            over still imagery -- without duplicating the frame arrays.
 
     Examples:
         - Bundle a slower interval and a white-on-dark frame label:
@@ -641,6 +773,8 @@ class Animation:
     frame_label: FrameLabel | None = None
     cell_value_text_colors: tuple[str, str] = ("white", "black")
     data_getter: Callable[[int], np.ndarray] | None = None
+    overlays: Sequence[FrameOverlay] = ()
+    sub_frames: int = 1
 
 
 class PanelLabels:
@@ -5094,8 +5228,12 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `None` (all defaults). Bundles `interval` (frame delay, ms),
                 `frame_label` (a `FrameLabel` for the per-frame time label),
                 `cell_value_text_colors` (the low/high cell-value text colours),
-                and `data_getter` (a lazy `f(i) -> ndarray` frame source). The
-                render / colour options below stay their own arguments.
+                `data_getter` (a lazy `f(i) -> ndarray` frame source),
+                `overlays` (a sequence of `FrameOverlay` objects drawn and
+                blitted on top of every frame), and `sub_frames` (hold each data
+                frame for N animation frames, giving overlays a `phase` in
+                `[0, 1)` to animate over still imagery). The render / colour
+                options below stay their own arguments.
             color: Colour-scale group object
                 (`cleopatra.styling.scaling.ColorScaling`), e.g.
                 `ColorScaling.power(gamma=0.7)`. Replaces the loose
@@ -5409,6 +5547,12 @@ class ArrayGlyph(GeoMixin, Glyph):
         interval = playback.interval
         data_getter = playback.data_getter
         frame_label = playback.frame_label or FrameLabel()
+        overlays = tuple(playback.overlays)
+        sub_frames = playback.sub_frames
+        if not isinstance(sub_frames, int) or sub_frames < 1:
+            raise ValueError(
+                f"sub_frames must be a positive integer, got {sub_frames!r}."
+            )
 
         self._warn_norm_shadows_scale(color, kwargs.get("norm"))
         pre_group_opts = self._snapshot_group_options(
@@ -5697,6 +5841,19 @@ class ArrayGlyph(GeoMixin, Glyph):
         day_text = frame_label.draw(ax, self.default_options["cbar_label_size"])
         self._day_text = day_text
 
+        # Create each overlay's artists once (like day_text / the point scatter),
+        # so a FuncAnimation init_func replay on save never duplicates them; the
+        # per-frame refresh happens in `animate_a` via `overlay.update`.
+        overlay_init_artists: list[Artist] = []
+        for overlay in overlays:
+            overlay_init_artists += _as_artists(overlay.init(ax))
+
+        # Sub-frame bookkeeping: hold each data frame for `sub_frames` animation
+        # frames, re-fetching the raster only when the data index actually
+        # changes (so a lazy `data_getter` is not called once per sub-frame).
+        n_anim_frames = n_frames * sub_frames
+        frame_state: dict[str, Any] = {"index": -1, "frame": None}
+
         def _fetch_frame(i: int) -> np.ndarray:
             """Resolve frame `i` for the animation step.
 
@@ -5767,6 +5924,10 @@ class ArrayGlyph(GeoMixin, Glyph):
             """initialize the plot with the cached first frame"""
             im.set_data(_display_frame(frame_0))
             day_text.set_text("")
+            # Force the first `animate_a` call to re-fetch, so a save-time
+            # init_func replay does not leave the sub-frame cache stale.
+            frame_state["index"] = -1
+            frame_state["frame"] = None
             output = [im, day_text]
 
             if points is not None:
@@ -5784,13 +5945,22 @@ class ArrayGlyph(GeoMixin, Glyph):
                 list(map(update_cell_value, range(len(cell_text_value))))
                 output += cell_text_value
 
+            output += overlay_init_artists
+
             return output
 
-        def animate_a(i):
-            """plot for each element in the iterable."""
-            frame = _fetch_frame(i)
-            im.set_data(_display_frame(frame))
-            day_text.set_text("Date = " + str(time[i])[0:10])
+        def animate_a(k):
+            """Plot animation frame `k`, holding each data frame for `sub_frames`."""
+            data_index = k // sub_frames
+            phase = (k % sub_frames) / sub_frames
+            # Re-fetch (and re-draw) the raster only when the data frame changes;
+            # sub-frames of the same data frame reuse the cached array.
+            if data_index != frame_state["index"]:
+                frame_state["index"] = data_index
+                frame_state["frame"] = _fetch_frame(data_index)
+                im.set_data(_display_frame(frame_state["frame"]))
+            frame = frame_state["frame"]
+            day_text.set_text(frame_label.format(time[data_index], data_index))
             output = [im, day_text]
 
             if points is not None:
@@ -5821,6 +5991,9 @@ class ArrayGlyph(GeoMixin, Glyph):
 
                 output += cell_text_value
 
+            for overlay in overlays:
+                output += _as_artists(overlay.update(data_index, phase))
+
             return output
 
         if basemap is not None:
@@ -5837,7 +6010,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             fig,
             animate_a,
             init_func=init,
-            frames=n_frames,
+            frames=n_anim_frames,
             interval=interval,
             blit=True,
         )
