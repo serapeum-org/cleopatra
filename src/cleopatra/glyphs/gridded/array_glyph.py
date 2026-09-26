@@ -588,6 +588,13 @@ class FrameLabel:
                 '20:00 UTC'
 
                 ```
+            - A format string is filled with the `{label}` and `{index}` fields:
+                ```python
+                >>> from cleopatra.glyphs.gridded.array_glyph import FrameLabel
+                >>> FrameLabel(text="{index:02d}: {label}").format("frame", 7)
+                '07: frame'
+
+                ```
         """
         if self.text is None:
             return "Date = " + str(label)[0:10]
@@ -765,6 +772,16 @@ class Animation:
             500
             >>> play.frame_label.color
             'white'
+
+            ```
+        - Hold each data frame for three animation frames; overlays default empty:
+            ```python
+            >>> from cleopatra.glyphs.gridded.array_glyph import Animation
+            >>> play = Animation(sub_frames=3)
+            >>> play.sub_frames
+            3
+            >>> play.overlays
+            ()
 
             ```
     """
