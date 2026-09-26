@@ -257,6 +257,17 @@ class TestCycloneOverlay:
         overlay = CycloneOverlay({"K": track})
         assert overlay.storms["K"]["hours"].tolist() == [0.0, 24.0, 48.0]
 
+    def test_object_datetime_strings_time_parsed_to_hours(self):
+        """An object-dtype array of ISO date strings is parsed to hours."""
+        track = _track(
+            time=np.array(["2026-09-02", "2026-09-03"], dtype=object),
+            lon=np.array([-120.0, -121.0]),
+            lat=np.array([15.0, 16.0]),
+            vmax_kt=np.array([35.0, 60.0]),
+        )
+        overlay = CycloneOverlay({"K": track})
+        assert overlay.storms["K"]["hours"].tolist() == [0.0, 24.0]
+
 
 class TestAddIntensityKey:
     """Tests for the line-swatch intensity-key helper."""
