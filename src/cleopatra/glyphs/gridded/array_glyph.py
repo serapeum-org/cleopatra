@@ -750,11 +750,21 @@ def _as_artists(result: Iterable[Artist] | Artist | None) -> list[Artist]:
     Returns:
         The artists as a list (empty for `None`), so `animate` can extend its
         per-frame blit list uniformly.
+
+    Raises:
+        TypeError: If `result` is a `str`/`bytes` -- iterable, but a misuse that
+            would otherwise be split into single-character items and fail
+            obscurely in the blitter.
     """
     if result is None:
         return []
     if isinstance(result, Artist):
         return [result]
+    if isinstance(result, (str, bytes)):
+        raise TypeError(
+            "a frame overlay's init/update must return None, an Artist, or an "
+            f"iterable of Artists, not {type(result).__name__!r}."
+        )
     return list(result)
 
 

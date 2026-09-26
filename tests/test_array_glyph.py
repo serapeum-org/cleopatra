@@ -948,6 +948,13 @@ class TestFrameOverlayUnit:
         a, b = Circle((0, 0)), Circle((1, 1))
         assert _as_artists([a, b]) == [a, b]
 
+    def test_as_artists_rejects_str(self):
+        """A `str`/`bytes` return is a misuse and raises rather than splitting to chars."""
+        with pytest.raises(TypeError, match="must return None, an Artist"):
+            _as_artists("ab")
+        with pytest.raises(TypeError, match="must return None, an Artist"):
+            _as_artists(b"ab")
+
     def test_animation_overlay_defaults(self):
         """`Animation` defaults to no overlays and one animation frame per step."""
         play = Animation()
