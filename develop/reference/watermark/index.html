@@ -1427,6 +1427,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#stamp_mark_on-a-figure-no-glyph-owns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        stamp_mark_on — a figure no glyph owns
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#stamp_watermark-brand-text" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2602,6 +2613,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#stamp_mark_on-a-figure-no-glyph-owns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        stamp_mark_on — a figure no glyph owns
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#stamp_watermark-brand-text" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2728,10 +2750,14 @@ proportions across the several dpis a figure is exported at.</p>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">glyph</span><span class="o">.</span><span class="n">stamp_mark</span><span class="p">(</span><span class="n">LOGO</span><span class="p">,</span> <span class="n">frac</span><span class="o">=</span><span class="mf">0.18</span><span class="p">,</span> <span class="n">corner</span><span class="o">=</span><span class="s2">"lower left"</span><span class="p">)</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">glyph</span><span class="o">.</span><span class="n">stamp_watermark</span><span class="p">(</span><span class="s2">"earthlens"</span><span class="p">,</span> <span class="n">credit</span><span class="o">=</span><span class="s2">"github.com/serapeum-org/earthlens"</span><span class="p">)</span>
 </code></pre></div>
-<p>Both stamp the glyph's own figure, and both are <strong>the</strong> way in: the functions underneath
-(<code>_stamp_mark</code>, <code>_stamp_watermark</code>) are private, so there is one supported route rather than two
-equivalent ones. A stamp lands on the whole <strong>figure</strong>, so on a figure carrying several glyphs it
-does not matter which one you call it through.</p>
+<p>Both stamp the glyph's own figure, and both are <strong>the</strong> way in for the common case: the functions
+underneath (<code>_stamp_mark</code>, <code>_stamp_watermark</code>) are private, so there is one supported route rather
+than two equivalent ones. A stamp lands on the whole <strong>figure</strong>, so on a figure carrying several
+glyphs it does not matter which one you call it through.</p>
+<p>The one sanctioned exception is a <strong>composite figure no single glyph owns</strong> — several glyphs' panels
+laid out in one <code>plt.figure</code> (the documented multi-panel pattern), or a figure built entirely
+outside cleopatra. For that, the module-level <strong><code>stamp_mark_on(fig, path, ...)</code></strong> is a supported,
+public escape hatch onto the same image stamp — see the <code>stamp_mark_on</code> section below.</p>
 <h2 id="stamp_mark-a-logo-image"><a class="toclink" href="#stamp_mark-a-logo-image"><code>stamp_mark</code> — a logo image</a><a class="headerlink" href="#stamp_mark-a-logo-image" title="Permanent link">#</a></h2>
 <p><code>glyph.stamp_mark(path, *, frac=0.11, corner="lower right", margin=0.025, shadow=True,
 blur=0.065)</code>. Two things make it more than a one-liner over <code>imshow</code>:</p>
@@ -2759,6 +2785,25 @@ provenance semantics are out of scope.</p>
 RGBA) or as an in-memory <code>(H, W, 3)</code> / <code>(H, W, 4)</code> NumPy array (<code>uint8</code> <code>0-255</code> or float
 <code>0-1</code>; RGB gains an opaque alpha). It returns the frameless inset <code>Axes</code> it drew on, so you
 can adjust it further.</p>
+<h2 id="stamp_mark_on-a-figure-no-glyph-owns"><a class="toclink" href="#stamp_mark_on-a-figure-no-glyph-owns"><code>stamp_mark_on</code> — a figure no glyph owns</a><a class="headerlink" href="#stamp_mark_on-a-figure-no-glyph-owns" title="Permanent link">#</a></h2>
+<p><code>stamp_mark_on(fig, path, *, frac=0.11, corner="lower right", margin=0.025, shadow=True,
+blur=0.065)</code> is the module-level counterpart of <code>glyph.stamp_mark</code>, for a <strong>composite figure no
+single glyph owns</strong>: several glyphs' panels laid out in one <code>plt.figure</code> (the sanctioned
+multi-panel pattern — each panel drawn with <code>plot(fig=fig, ax=ax, ...)</code>), or a figure built
+entirely outside cleopatra. There is no one glyph whose <code>stamp_mark</code> covers the shared figure, so
+this takes the <code>Figure</code> directly. It draws the same corner mark with the same options and returns
+the same frameless inset <code>Axes</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styling.watermark</span><span class="w"> </span><span class="kn">import</span> <span class="n">stamp_mark_on</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">arr</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">arrays</span><span class="p">):</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">Dataset</span><span class="o">.</span><span class="n">from_array</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fig</span><span class="o">=</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>   <span class="c1"># each glyph owns only its own ax</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">stamp_mark_on</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="s2">"brand/logo.png"</span><span class="p">,</span> <span class="n">corner</span><span class="o">=</span><span class="s2">"lower right"</span><span class="p">)</span>
+</code></pre></div>
+<p>Reach for the glyph method <code>glyph.stamp_mark</code> for the common single-glyph case — it stays the
+primary API. <code>stamp_mark_on</code> is the explicit, supported escape hatch so a composite layout never
+has to import the private <code>_stamp_mark</code>.</p>
 <h2 id="stamp_watermark-brand-text"><a class="toclink" href="#stamp_watermark-brand-text"><code>stamp_watermark</code> — brand text</a><a class="headerlink" href="#stamp_watermark-brand-text" title="Permanent link">#</a></h2>
 <p><code>glyph.stamp_watermark(text, *, frac=0.55, angle=30.0, alpha=0.65, color="white", credit=None,
 credit_frac=0.28, credit_alpha=1.0, margin=0.014)</code> stamps translucent brand text across the middle
@@ -2777,8 +2822,8 @@ of the figure, and optionally a credit line along the bottom.</p>
   small enough that it needs the stroke to stay legible against whatever the frame contains.</li>
 </ul>
 <p>It returns <code>(brand_text, credit_text)</code> — the second is <code>None</code> when no <code>credit</code> was given.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">glyph</span><span class="o">.</span><span class="n">stamp_mark</span><span class="p">(</span><span class="n">LOGO</span><span class="p">,</span> <span class="n">frac</span><span class="o">=</span><span class="mf">0.18</span><span class="p">,</span> <span class="n">corner</span><span class="o">=</span><span class="s2">"lower left"</span><span class="p">)</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">glyph</span><span class="o">.</span><span class="n">stamp_watermark</span><span class="p">(</span><span class="s2">"earthlens"</span><span class="p">,</span> <span class="n">credit</span><span class="o">=</span><span class="s2">"github.com/serapeum-org/earthlens"</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">glyph</span><span class="o">.</span><span class="n">stamp_mark</span><span class="p">(</span><span class="n">LOGO</span><span class="p">,</span> <span class="n">frac</span><span class="o">=</span><span class="mf">0.18</span><span class="p">,</span> <span class="n">corner</span><span class="o">=</span><span class="s2">"lower left"</span><span class="p">)</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">glyph</span><span class="o">.</span><span class="n">stamp_watermark</span><span class="p">(</span><span class="s2">"earthlens"</span><span class="p">,</span> <span class="n">credit</span><span class="o">=</span><span class="s2">"github.com/serapeum-org/earthlens"</span><span class="p">)</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Call both last</p>
@@ -2790,32 +2835,32 @@ proportionally afterwards, whereas text is measured in points and keeps its <em>
 halving its share when the figure doubles.</p>
 </div>
 <h2 id="usage"><a class="toclink" href="#usage">Usage</a><a class="headerlink" href="#usage" title="Permanent link">#</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">60.0</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="mi">60</span><span class="p">,</span> <span class="mi">90</span><span class="p">)),</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"magma"</span><span class="p">)</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="c1"># a file on disk...</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">glyph</span><span class="o">.</span><span class="n">stamp_mark</span><span class="p">(</span><span class="s2">"brand/logo.png"</span><span class="p">,</span> <span class="n">frac</span><span class="o">=</span><span class="mf">0.12</span><span class="p">,</span> <span class="n">corner</span><span class="o">=</span><span class="s2">"lower right"</span><span class="p">)</span>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="c1"># ...or an in-memory RGBA array, in a different corner, without the shadow</span>
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="n">logo</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">80</span><span class="p">,</span> <span class="mi">160</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="n">logo</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="mi">255</span>
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="n">logo</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="mi">255</span>
-<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="n">glyph</span><span class="o">.</span><span class="n">stamp_mark</span><span class="p">(</span><span class="n">logo</span><span class="p">,</span> <span class="n">frac</span><span class="o">=</span><span class="mf">0.09</span><span class="p">,</span> <span class="n">corner</span><span class="o">=</span><span class="s2">"upper left"</span><span class="p">,</span> <span class="n">shadow</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>
-<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">"figure.png"</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>  <span class="c1"># the mark keeps its proportion at any dpi</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">glyph</span> <span class="o">=</span> <span class="n">ArrayGlyph</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">60.0</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">glyph</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="mi">60</span><span class="p">,</span> <span class="mi">90</span><span class="p">)),</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"magma"</span><span class="p">)</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="c1"># a file on disk...</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">glyph</span><span class="o">.</span><span class="n">stamp_mark</span><span class="p">(</span><span class="s2">"brand/logo.png"</span><span class="p">,</span> <span class="n">frac</span><span class="o">=</span><span class="mf">0.12</span><span class="p">,</span> <span class="n">corner</span><span class="o">=</span><span class="s2">"lower right"</span><span class="p">)</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="c1"># ...or an in-memory RGBA array, in a different corner, without the shadow</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="n">logo</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">80</span><span class="p">,</span> <span class="mi">160</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="n">logo</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="mi">255</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="n">logo</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="mi">255</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="n">glyph</span><span class="o">.</span><span class="n">stamp_mark</span><span class="p">(</span><span class="n">logo</span><span class="p">,</span> <span class="n">frac</span><span class="o">=</span><span class="mf">0.09</span><span class="p">,</span> <span class="n">corner</span><span class="o">=</span><span class="s2">"upper left"</span><span class="p">,</span> <span class="n">shadow</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">"figure.png"</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>  <span class="c1"># the mark keeps its proportion at any dpi</span>
 </code></pre></div>
 <p><code>corner</code> is one of <code>"lower right"</code> (default), <code>"lower left"</code>, <code>"upper right"</code>, or
 <code>"upper left"</code>; anything else raises a <code>ValueError</code> naming the bad value. <code>margin</code> is the gap
 between the <strong>mark</strong> and the figure edges as a fraction of the figure — either a scalar for
 both axes or an <code>(x, y)</code> pair. The pair matters when a mark has to tuck hard into a corner on
 one axis while keeping a gap on the other:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">glyph</span><span class="o">.</span><span class="n">stamp_mark</span><span class="p">(</span><span class="s2">"brand/logo.png"</span><span class="p">,</span> <span class="n">margin</span><span class="o">=</span><span class="p">(</span><span class="mf">0.025</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>  <span class="c1"># flush with the bottom, inset from the right</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">glyph</span><span class="o">.</span><span class="n">stamp_mark</span><span class="p">(</span><span class="s2">"brand/logo.png"</span><span class="p">,</span> <span class="n">margin</span><span class="o">=</span><span class="p">(</span><span class="mf">0.025</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>  <span class="c1"># flush with the bottom, inset from the right</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Stamp last, and save the whole figure</p>
@@ -2880,70 +2925,7 @@ figure, not on the glyph's own axes, whichever glyph it was called through.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>src/cleopatra/styling/watermark.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-720">720</a></span>
-<span class="normal"><a href="#__codelineno-0-721">721</a></span>
-<span class="normal"><a href="#__codelineno-0-722">722</a></span>
-<span class="normal"><a href="#__codelineno-0-723">723</a></span>
-<span class="normal"><a href="#__codelineno-0-724">724</a></span>
-<span class="normal"><a href="#__codelineno-0-725">725</a></span>
-<span class="normal"><a href="#__codelineno-0-726">726</a></span>
-<span class="normal"><a href="#__codelineno-0-727">727</a></span>
-<span class="normal"><a href="#__codelineno-0-728">728</a></span>
-<span class="normal"><a href="#__codelineno-0-729">729</a></span>
-<span class="normal"><a href="#__codelineno-0-730">730</a></span>
-<span class="normal"><a href="#__codelineno-0-731">731</a></span>
-<span class="normal"><a href="#__codelineno-0-732">732</a></span>
-<span class="normal"><a href="#__codelineno-0-733">733</a></span>
-<span class="normal"><a href="#__codelineno-0-734">734</a></span>
-<span class="normal"><a href="#__codelineno-0-735">735</a></span>
-<span class="normal"><a href="#__codelineno-0-736">736</a></span>
-<span class="normal"><a href="#__codelineno-0-737">737</a></span>
-<span class="normal"><a href="#__codelineno-0-738">738</a></span>
-<span class="normal"><a href="#__codelineno-0-739">739</a></span>
-<span class="normal"><a href="#__codelineno-0-740">740</a></span>
-<span class="normal"><a href="#__codelineno-0-741">741</a></span>
-<span class="normal"><a href="#__codelineno-0-742">742</a></span>
-<span class="normal"><a href="#__codelineno-0-743">743</a></span>
-<span class="normal"><a href="#__codelineno-0-744">744</a></span>
-<span class="normal"><a href="#__codelineno-0-745">745</a></span>
-<span class="normal"><a href="#__codelineno-0-746">746</a></span>
-<span class="normal"><a href="#__codelineno-0-747">747</a></span>
-<span class="normal"><a href="#__codelineno-0-748">748</a></span>
-<span class="normal"><a href="#__codelineno-0-749">749</a></span>
-<span class="normal"><a href="#__codelineno-0-750">750</a></span>
-<span class="normal"><a href="#__codelineno-0-751">751</a></span>
-<span class="normal"><a href="#__codelineno-0-752">752</a></span>
-<span class="normal"><a href="#__codelineno-0-753">753</a></span>
-<span class="normal"><a href="#__codelineno-0-754">754</a></span>
-<span class="normal"><a href="#__codelineno-0-755">755</a></span>
-<span class="normal"><a href="#__codelineno-0-756">756</a></span>
-<span class="normal"><a href="#__codelineno-0-757">757</a></span>
-<span class="normal"><a href="#__codelineno-0-758">758</a></span>
-<span class="normal"><a href="#__codelineno-0-759">759</a></span>
-<span class="normal"><a href="#__codelineno-0-760">760</a></span>
-<span class="normal"><a href="#__codelineno-0-761">761</a></span>
-<span class="normal"><a href="#__codelineno-0-762">762</a></span>
-<span class="normal"><a href="#__codelineno-0-763">763</a></span>
-<span class="normal"><a href="#__codelineno-0-764">764</a></span>
-<span class="normal"><a href="#__codelineno-0-765">765</a></span>
-<span class="normal"><a href="#__codelineno-0-766">766</a></span>
-<span class="normal"><a href="#__codelineno-0-767">767</a></span>
-<span class="normal"><a href="#__codelineno-0-768">768</a></span>
-<span class="normal"><a href="#__codelineno-0-769">769</a></span>
-<span class="normal"><a href="#__codelineno-0-770">770</a></span>
-<span class="normal"><a href="#__codelineno-0-771">771</a></span>
-<span class="normal"><a href="#__codelineno-0-772">772</a></span>
-<span class="normal"><a href="#__codelineno-0-773">773</a></span>
-<span class="normal"><a href="#__codelineno-0-774">774</a></span>
-<span class="normal"><a href="#__codelineno-0-775">775</a></span>
-<span class="normal"><a href="#__codelineno-0-776">776</a></span>
-<span class="normal"><a href="#__codelineno-0-777">777</a></span>
-<span class="normal"><a href="#__codelineno-0-778">778</a></span>
-<span class="normal"><a href="#__codelineno-0-779">779</a></span>
-<span class="normal"><a href="#__codelineno-0-780">780</a></span>
-<span class="normal"><a href="#__codelineno-0-781">781</a></span>
-<span class="normal"><a href="#__codelineno-0-782">782</a></span>
-<span class="normal"><a href="#__codelineno-0-783">783</a></span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-783">783</a></span>
 <span class="normal"><a href="#__codelineno-0-784">784</a></span>
 <span class="normal"><a href="#__codelineno-0-785">785</a></span>
 <span class="normal"><a href="#__codelineno-0-786">786</a></span>
@@ -2993,120 +2975,187 @@ figure, not on the glyph's own axes, whichever glyph it was called through.</p>
 <span class="normal"><a href="#__codelineno-0-830">830</a></span>
 <span class="normal"><a href="#__codelineno-0-831">831</a></span>
 <span class="normal"><a href="#__codelineno-0-832">832</a></span>
-<span class="normal"><a href="#__codelineno-0-833">833</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-720" name="__codelineno-0-720"></a><span class="k">class</span><span class="w"> </span><span class="nc">WatermarkMixin</span><span class="p">:</span>
-<a id="__codelineno-0-721" name="__codelineno-0-721"></a><span class="w">    </span><span class="sd">"""The glyph-side entry point for both figure stamps.</span>
-<a id="__codelineno-0-722" name="__codelineno-0-722"></a>
-<a id="__codelineno-0-723" name="__codelineno-0-723"></a><span class="sd">    Both stamps act on a whole `Figure`, and every glyph knows its own, so the</span>
-<a id="__codelineno-0-724" name="__codelineno-0-724"></a><span class="sd">    glyph is where they are offered: `glyph.stamp_mark(logo)`. The functions</span>
-<a id="__codelineno-0-725" name="__codelineno-0-725"></a><span class="sd">    underneath are private, which makes this the one supported way in rather</span>
-<a id="__codelineno-0-726" name="__codelineno-0-726"></a><span class="sd">    than a convenience beside an equally public free function.</span>
-<a id="__codelineno-0-727" name="__codelineno-0-727"></a>
-<a id="__codelineno-0-728" name="__codelineno-0-728"></a><span class="sd">    A figure is what these need, and glyphs spell it differently. `Glyph` keeps</span>
-<a id="__codelineno-0-729" name="__codelineno-0-729"></a><span class="sd">    the one it rendered on in `fig`. `HistogramGlyph` and `TexturedGlobeGlyph`</span>
-<a id="__codelineno-0-730" name="__codelineno-0-730"></a><span class="sd">    do not inherit `Glyph` and use `_fig` for something else -- the figure bound</span>
-<a id="__codelineno-0-731" name="__codelineno-0-731"></a><span class="sd">    at *construction*, consulted on every render to decide where to draw -- so</span>
-<a id="__codelineno-0-732" name="__codelineno-0-732"></a><span class="sd">    they record the figure actually drawn on as `_rendered_fig`.</span>
-<a id="__codelineno-0-733" name="__codelineno-0-733"></a><span class="sd">    `_watermark_figure` prefers that, then `fig`, then `_fig`, then the axes'</span>
-<a id="__codelineno-0-734" name="__codelineno-0-734"></a><span class="sd">    own figure, so the mixin works on any of them without first making them</span>
-<a id="__codelineno-0-735" name="__codelineno-0-735"></a><span class="sd">    agree on a name.</span>
-<a id="__codelineno-0-736" name="__codelineno-0-736"></a>
-<a id="__codelineno-0-737" name="__codelineno-0-737"></a><span class="sd">    Note that a figure may carry several glyphs. The stamp lands on the whole</span>
-<a id="__codelineno-0-738" name="__codelineno-0-738"></a><span class="sd">    figure, not on the glyph's own axes, whichever glyph it was called through.</span>
-<a id="__codelineno-0-739" name="__codelineno-0-739"></a><span class="sd">    """</span>
-<a id="__codelineno-0-740" name="__codelineno-0-740"></a>
-<a id="__codelineno-0-741" name="__codelineno-0-741"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_watermark_figure</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Figure</span><span class="p">:</span>
-<a id="__codelineno-0-742" name="__codelineno-0-742"></a><span class="w">        </span><span class="sd">"""Resolve the figure to stamp.</span>
-<a id="__codelineno-0-743" name="__codelineno-0-743"></a>
-<a id="__codelineno-0-744" name="__codelineno-0-744"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-745" name="__codelineno-0-745"></a><span class="sd">            Figure: The glyph's figure.</span>
-<a id="__codelineno-0-746" name="__codelineno-0-746"></a>
-<a id="__codelineno-0-747" name="__codelineno-0-747"></a><span class="sd">        Raises:</span>
-<a id="__codelineno-0-748" name="__codelineno-0-748"></a><span class="sd">            ValueError: If the glyph has no figure yet, which means it has not</span>
-<a id="__codelineno-0-749" name="__codelineno-0-749"></a><span class="sd">                been rendered.</span>
-<a id="__codelineno-0-750" name="__codelineno-0-750"></a><span class="sd">        """</span>
-<a id="__codelineno-0-751" name="__codelineno-0-751"></a>        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"fig"</span><span class="p">,</span> <span class="s2">"_rendered_fig"</span><span class="p">,</span> <span class="s2">"_fig"</span><span class="p">):</span>
-<a id="__codelineno-0-752" name="__codelineno-0-752"></a>            <span class="n">figure</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-<a id="__codelineno-0-753" name="__codelineno-0-753"></a>            <span class="k">if</span> <span class="n">figure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-754" name="__codelineno-0-754"></a>                <span class="k">return</span> <span class="n">figure</span>
-<a id="__codelineno-0-755" name="__codelineno-0-755"></a>        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"ax"</span><span class="p">,</span> <span class="s2">"_ax"</span><span class="p">):</span>
-<a id="__codelineno-0-756" name="__codelineno-0-756"></a>            <span class="n">axes</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-<a id="__codelineno-0-757" name="__codelineno-0-757"></a>            <span class="k">if</span> <span class="n">axes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-758" name="__codelineno-0-758"></a>                <span class="n">figure</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">get_figure</span><span class="p">()</span>
-<a id="__codelineno-0-759" name="__codelineno-0-759"></a>                <span class="k">if</span> <span class="n">figure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-760" name="__codelineno-0-760"></a>                    <span class="k">return</span> <span class="n">figure</span>
-<a id="__codelineno-0-761" name="__codelineno-0-761"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-762" name="__codelineno-0-762"></a>            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> has no figure to stamp yet -- render it "</span>
-<a id="__codelineno-0-763" name="__codelineno-0-763"></a>            <span class="sa">f</span><span class="s2">"first (e.g. plot()), then stamp."</span>
-<a id="__codelineno-0-764" name="__codelineno-0-764"></a>        <span class="p">)</span>
-<a id="__codelineno-0-765" name="__codelineno-0-765"></a>
-<a id="__codelineno-0-766" name="__codelineno-0-766"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">stamp_mark</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
-<a id="__codelineno-0-767" name="__codelineno-0-767"></a><span class="w">        </span><span class="sd">"""Stamp a logo image on this glyph's figure.</span>
-<a id="__codelineno-0-768" name="__codelineno-0-768"></a>
-<a id="__codelineno-0-769" name="__codelineno-0-769"></a><span class="sd">        The supported way to stamp a logo. `_stamp_mark` underneath takes a</span>
-<a id="__codelineno-0-770" name="__codelineno-0-770"></a><span class="sd">        bare `Figure` and is private: a figure no glyph owns is out of scope.</span>
-<a id="__codelineno-0-771" name="__codelineno-0-771"></a>
-<a id="__codelineno-0-772" name="__codelineno-0-772"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-773" name="__codelineno-0-773"></a><span class="sd">            path: The mark image, as `_stamp_mark` accepts it.</span>
-<a id="__codelineno-0-774" name="__codelineno-0-774"></a><span class="sd">            **kwargs: Forwarded verbatim (`frac`, `corner`, `margin`, `shadow`,</span>
-<a id="__codelineno-0-775" name="__codelineno-0-775"></a><span class="sd">                `blur`).</span>
-<a id="__codelineno-0-776" name="__codelineno-0-776"></a>
-<a id="__codelineno-0-777" name="__codelineno-0-777"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-778" name="__codelineno-0-778"></a><span class="sd">            Axes: The frameless inset axes the mark was drawn on.</span>
-<a id="__codelineno-0-779" name="__codelineno-0-779"></a>
-<a id="__codelineno-0-780" name="__codelineno-0-780"></a><span class="sd">        Raises:</span>
-<a id="__codelineno-0-781" name="__codelineno-0-781"></a><span class="sd">            ValueError: If the glyph has not been rendered yet, or as</span>
-<a id="__codelineno-0-782" name="__codelineno-0-782"></a><span class="sd">                `_stamp_mark` raises.</span>
-<a id="__codelineno-0-783" name="__codelineno-0-783"></a>
-<a id="__codelineno-0-784" name="__codelineno-0-784"></a><span class="sd">        See Also:</span>
-<a id="__codelineno-0-785" name="__codelineno-0-785"></a><span class="sd">            cleopatra.styling.watermark._stamp_mark: The private function</span>
-<a id="__codelineno-0-786" name="__codelineno-0-786"></a><span class="sd">                underneath.</span>
-<a id="__codelineno-0-787" name="__codelineno-0-787"></a><span class="sd">        """</span>
-<a id="__codelineno-0-788" name="__codelineno-0-788"></a>        <span class="c1"># The bare name is the module-level function, not this method: a method</span>
-<a id="__codelineno-0-789" name="__codelineno-0-789"></a>        <span class="c1"># name never enters the enclosing scope its body is resolved in.</span>
-<a id="__codelineno-0-790" name="__codelineno-0-790"></a>        <span class="k">return</span> <span class="n">_stamp_mark</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_watermark_figure</span><span class="p">(),</span> <span class="n">path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-<a id="__codelineno-0-791" name="__codelineno-0-791"></a>
-<a id="__codelineno-0-792" name="__codelineno-0-792"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">stamp_watermark</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Text</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
-<a id="__codelineno-0-793" name="__codelineno-0-793"></a><span class="w">        </span><span class="sd">"""Stamp diagonal brand text on this glyph's figure.</span>
-<a id="__codelineno-0-794" name="__codelineno-0-794"></a>
-<a id="__codelineno-0-795" name="__codelineno-0-795"></a><span class="sd">        The supported way to stamp brand text. `_stamp_watermark` underneath</span>
-<a id="__codelineno-0-796" name="__codelineno-0-796"></a><span class="sd">        takes a bare `Figure` and is private: a figure no glyph owns is out of</span>
-<a id="__codelineno-0-797" name="__codelineno-0-797"></a><span class="sd">        scope.</span>
-<a id="__codelineno-0-798" name="__codelineno-0-798"></a>
-<a id="__codelineno-0-799" name="__codelineno-0-799"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-800" name="__codelineno-0-800"></a><span class="sd">            text: The brand text.</span>
-<a id="__codelineno-0-801" name="__codelineno-0-801"></a><span class="sd">            **kwargs: Forwarded verbatim (`frac`, `angle`, `alpha`, `color`,</span>
-<a id="__codelineno-0-802" name="__codelineno-0-802"></a><span class="sd">                `credit`, `credit_frac`, `credit_alpha`, `margin`).</span>
+<span class="normal"><a href="#__codelineno-0-833">833</a></span>
+<span class="normal"><a href="#__codelineno-0-834">834</a></span>
+<span class="normal"><a href="#__codelineno-0-835">835</a></span>
+<span class="normal"><a href="#__codelineno-0-836">836</a></span>
+<span class="normal"><a href="#__codelineno-0-837">837</a></span>
+<span class="normal"><a href="#__codelineno-0-838">838</a></span>
+<span class="normal"><a href="#__codelineno-0-839">839</a></span>
+<span class="normal"><a href="#__codelineno-0-840">840</a></span>
+<span class="normal"><a href="#__codelineno-0-841">841</a></span>
+<span class="normal"><a href="#__codelineno-0-842">842</a></span>
+<span class="normal"><a href="#__codelineno-0-843">843</a></span>
+<span class="normal"><a href="#__codelineno-0-844">844</a></span>
+<span class="normal"><a href="#__codelineno-0-845">845</a></span>
+<span class="normal"><a href="#__codelineno-0-846">846</a></span>
+<span class="normal"><a href="#__codelineno-0-847">847</a></span>
+<span class="normal"><a href="#__codelineno-0-848">848</a></span>
+<span class="normal"><a href="#__codelineno-0-849">849</a></span>
+<span class="normal"><a href="#__codelineno-0-850">850</a></span>
+<span class="normal"><a href="#__codelineno-0-851">851</a></span>
+<span class="normal"><a href="#__codelineno-0-852">852</a></span>
+<span class="normal"><a href="#__codelineno-0-853">853</a></span>
+<span class="normal"><a href="#__codelineno-0-854">854</a></span>
+<span class="normal"><a href="#__codelineno-0-855">855</a></span>
+<span class="normal"><a href="#__codelineno-0-856">856</a></span>
+<span class="normal"><a href="#__codelineno-0-857">857</a></span>
+<span class="normal"><a href="#__codelineno-0-858">858</a></span>
+<span class="normal"><a href="#__codelineno-0-859">859</a></span>
+<span class="normal"><a href="#__codelineno-0-860">860</a></span>
+<span class="normal"><a href="#__codelineno-0-861">861</a></span>
+<span class="normal"><a href="#__codelineno-0-862">862</a></span>
+<span class="normal"><a href="#__codelineno-0-863">863</a></span>
+<span class="normal"><a href="#__codelineno-0-864">864</a></span>
+<span class="normal"><a href="#__codelineno-0-865">865</a></span>
+<span class="normal"><a href="#__codelineno-0-866">866</a></span>
+<span class="normal"><a href="#__codelineno-0-867">867</a></span>
+<span class="normal"><a href="#__codelineno-0-868">868</a></span>
+<span class="normal"><a href="#__codelineno-0-869">869</a></span>
+<span class="normal"><a href="#__codelineno-0-870">870</a></span>
+<span class="normal"><a href="#__codelineno-0-871">871</a></span>
+<span class="normal"><a href="#__codelineno-0-872">872</a></span>
+<span class="normal"><a href="#__codelineno-0-873">873</a></span>
+<span class="normal"><a href="#__codelineno-0-874">874</a></span>
+<span class="normal"><a href="#__codelineno-0-875">875</a></span>
+<span class="normal"><a href="#__codelineno-0-876">876</a></span>
+<span class="normal"><a href="#__codelineno-0-877">877</a></span>
+<span class="normal"><a href="#__codelineno-0-878">878</a></span>
+<span class="normal"><a href="#__codelineno-0-879">879</a></span>
+<span class="normal"><a href="#__codelineno-0-880">880</a></span>
+<span class="normal"><a href="#__codelineno-0-881">881</a></span>
+<span class="normal"><a href="#__codelineno-0-882">882</a></span>
+<span class="normal"><a href="#__codelineno-0-883">883</a></span>
+<span class="normal"><a href="#__codelineno-0-884">884</a></span>
+<span class="normal"><a href="#__codelineno-0-885">885</a></span>
+<span class="normal"><a href="#__codelineno-0-886">886</a></span>
+<span class="normal"><a href="#__codelineno-0-887">887</a></span>
+<span class="normal"><a href="#__codelineno-0-888">888</a></span>
+<span class="normal"><a href="#__codelineno-0-889">889</a></span>
+<span class="normal"><a href="#__codelineno-0-890">890</a></span>
+<span class="normal"><a href="#__codelineno-0-891">891</a></span>
+<span class="normal"><a href="#__codelineno-0-892">892</a></span>
+<span class="normal"><a href="#__codelineno-0-893">893</a></span>
+<span class="normal"><a href="#__codelineno-0-894">894</a></span>
+<span class="normal"><a href="#__codelineno-0-895">895</a></span>
+<span class="normal"><a href="#__codelineno-0-896">896</a></span>
+<span class="normal"><a href="#__codelineno-0-897">897</a></span>
+<span class="normal"><a href="#__codelineno-0-898">898</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-783" name="__codelineno-0-783"></a><span class="k">class</span><span class="w"> </span><span class="nc">WatermarkMixin</span><span class="p">:</span>
+<a id="__codelineno-0-784" name="__codelineno-0-784"></a><span class="w">    </span><span class="sd">"""The glyph-side entry point for both figure stamps.</span>
+<a id="__codelineno-0-785" name="__codelineno-0-785"></a>
+<a id="__codelineno-0-786" name="__codelineno-0-786"></a><span class="sd">    Both stamps act on a whole `Figure`, and every glyph knows its own, so the</span>
+<a id="__codelineno-0-787" name="__codelineno-0-787"></a><span class="sd">    glyph is where they are offered: `glyph.stamp_mark(logo)`. The functions</span>
+<a id="__codelineno-0-788" name="__codelineno-0-788"></a><span class="sd">    underneath are private, which makes this the one supported way in rather</span>
+<a id="__codelineno-0-789" name="__codelineno-0-789"></a><span class="sd">    than a convenience beside an equally public free function.</span>
+<a id="__codelineno-0-790" name="__codelineno-0-790"></a>
+<a id="__codelineno-0-791" name="__codelineno-0-791"></a><span class="sd">    A figure is what these need, and glyphs spell it differently. `Glyph` keeps</span>
+<a id="__codelineno-0-792" name="__codelineno-0-792"></a><span class="sd">    the one it rendered on in `fig`. `HistogramGlyph` and `TexturedGlobeGlyph`</span>
+<a id="__codelineno-0-793" name="__codelineno-0-793"></a><span class="sd">    do not inherit `Glyph` and use `_fig` for something else -- the figure bound</span>
+<a id="__codelineno-0-794" name="__codelineno-0-794"></a><span class="sd">    at *construction*, consulted on every render to decide where to draw -- so</span>
+<a id="__codelineno-0-795" name="__codelineno-0-795"></a><span class="sd">    they record the figure actually drawn on as `_rendered_fig`.</span>
+<a id="__codelineno-0-796" name="__codelineno-0-796"></a><span class="sd">    `_watermark_figure` prefers that, then `fig`, then `_fig`, then the axes'</span>
+<a id="__codelineno-0-797" name="__codelineno-0-797"></a><span class="sd">    own figure, so the mixin works on any of them without first making them</span>
+<a id="__codelineno-0-798" name="__codelineno-0-798"></a><span class="sd">    agree on a name.</span>
+<a id="__codelineno-0-799" name="__codelineno-0-799"></a>
+<a id="__codelineno-0-800" name="__codelineno-0-800"></a><span class="sd">    Note that a figure may carry several glyphs. The stamp lands on the whole</span>
+<a id="__codelineno-0-801" name="__codelineno-0-801"></a><span class="sd">    figure, not on the glyph's own axes, whichever glyph it was called through.</span>
+<a id="__codelineno-0-802" name="__codelineno-0-802"></a><span class="sd">    """</span>
 <a id="__codelineno-0-803" name="__codelineno-0-803"></a>
-<a id="__codelineno-0-804" name="__codelineno-0-804"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-805" name="__codelineno-0-805"></a><span class="sd">            tuple[Text, Text | None]: The brand-text artist and the credit-line</span>
-<a id="__codelineno-0-806" name="__codelineno-0-806"></a><span class="sd">            artist, the second being `None` when no `credit` was given.</span>
-<a id="__codelineno-0-807" name="__codelineno-0-807"></a>
-<a id="__codelineno-0-808" name="__codelineno-0-808"></a><span class="sd">        Raises:</span>
-<a id="__codelineno-0-809" name="__codelineno-0-809"></a><span class="sd">            ValueError: If the glyph has not been rendered yet, or as</span>
-<a id="__codelineno-0-810" name="__codelineno-0-810"></a><span class="sd">                `_stamp_watermark` raises.</span>
-<a id="__codelineno-0-811" name="__codelineno-0-811"></a>
-<a id="__codelineno-0-812" name="__codelineno-0-812"></a><span class="sd">        See Also:</span>
-<a id="__codelineno-0-813" name="__codelineno-0-813"></a><span class="sd">            cleopatra.styling.watermark._stamp_watermark: The private</span>
-<a id="__codelineno-0-814" name="__codelineno-0-814"></a><span class="sd">                function underneath.</span>
-<a id="__codelineno-0-815" name="__codelineno-0-815"></a>
-<a id="__codelineno-0-816" name="__codelineno-0-816"></a><span class="sd">        Examples:</span>
-<a id="__codelineno-0-817" name="__codelineno-0-817"></a><span class="sd">            - Stamp a logo and brand text without importing either:</span>
-<a id="__codelineno-0-818" name="__codelineno-0-818"></a><span class="sd">                ```python</span>
-<a id="__codelineno-0-819" name="__codelineno-0-819"></a><span class="sd">                &gt;&gt;&gt; import matplotlib</span>
-<a id="__codelineno-0-820" name="__codelineno-0-820"></a><span class="sd">                &gt;&gt;&gt; matplotlib.use("Agg")</span>
-<a id="__codelineno-0-821" name="__codelineno-0-821"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-822" name="__codelineno-0-822"></a><span class="sd">                &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-823" name="__codelineno-0-823"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph</span>
-<a id="__codelineno-0-824" name="__codelineno-0-824"></a><span class="sd">                &gt;&gt;&gt; glyph = ArrayGlyph(np.arange(60.0).reshape(6, 10))</span>
-<a id="__codelineno-0-825" name="__codelineno-0-825"></a><span class="sd">                &gt;&gt;&gt; _ = glyph.plot()</span>
-<a id="__codelineno-0-826" name="__codelineno-0-826"></a><span class="sd">                &gt;&gt;&gt; brand, credit = glyph.stamp_watermark("cleopatra")</span>
-<a id="__codelineno-0-827" name="__codelineno-0-827"></a><span class="sd">                &gt;&gt;&gt; brand.get_text()</span>
-<a id="__codelineno-0-828" name="__codelineno-0-828"></a><span class="sd">                'cleopatra'</span>
-<a id="__codelineno-0-829" name="__codelineno-0-829"></a><span class="sd">                &gt;&gt;&gt; plt.close("all")</span>
-<a id="__codelineno-0-830" name="__codelineno-0-830"></a>
-<a id="__codelineno-0-831" name="__codelineno-0-831"></a><span class="sd">                ```</span>
-<a id="__codelineno-0-832" name="__codelineno-0-832"></a><span class="sd">        """</span>
-<a id="__codelineno-0-833" name="__codelineno-0-833"></a>        <span class="k">return</span> <span class="n">_stamp_watermark</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_watermark_figure</span><span class="p">(),</span> <span class="n">text</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-804" name="__codelineno-0-804"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_watermark_figure</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Figure</span><span class="p">:</span>
+<a id="__codelineno-0-805" name="__codelineno-0-805"></a><span class="w">        </span><span class="sd">"""Resolve the figure to stamp.</span>
+<a id="__codelineno-0-806" name="__codelineno-0-806"></a>
+<a id="__codelineno-0-807" name="__codelineno-0-807"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-808" name="__codelineno-0-808"></a><span class="sd">            Figure: The glyph's figure.</span>
+<a id="__codelineno-0-809" name="__codelineno-0-809"></a>
+<a id="__codelineno-0-810" name="__codelineno-0-810"></a><span class="sd">        Raises:</span>
+<a id="__codelineno-0-811" name="__codelineno-0-811"></a><span class="sd">            ValueError: If the glyph has no figure yet, which means it has not</span>
+<a id="__codelineno-0-812" name="__codelineno-0-812"></a><span class="sd">                been rendered.</span>
+<a id="__codelineno-0-813" name="__codelineno-0-813"></a><span class="sd">        """</span>
+<a id="__codelineno-0-814" name="__codelineno-0-814"></a>        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"fig"</span><span class="p">,</span> <span class="s2">"_rendered_fig"</span><span class="p">,</span> <span class="s2">"_fig"</span><span class="p">):</span>
+<a id="__codelineno-0-815" name="__codelineno-0-815"></a>            <span class="n">figure</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<a id="__codelineno-0-816" name="__codelineno-0-816"></a>            <span class="k">if</span> <span class="n">figure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-817" name="__codelineno-0-817"></a>                <span class="k">return</span> <span class="n">figure</span>
+<a id="__codelineno-0-818" name="__codelineno-0-818"></a>        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"ax"</span><span class="p">,</span> <span class="s2">"_ax"</span><span class="p">):</span>
+<a id="__codelineno-0-819" name="__codelineno-0-819"></a>            <span class="n">axes</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<a id="__codelineno-0-820" name="__codelineno-0-820"></a>            <span class="k">if</span> <span class="n">axes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-821" name="__codelineno-0-821"></a>                <span class="n">figure</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">get_figure</span><span class="p">()</span>
+<a id="__codelineno-0-822" name="__codelineno-0-822"></a>                <span class="k">if</span> <span class="n">figure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-823" name="__codelineno-0-823"></a>                    <span class="k">return</span> <span class="n">figure</span>
+<a id="__codelineno-0-824" name="__codelineno-0-824"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-825" name="__codelineno-0-825"></a>            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> has no figure to stamp yet -- render it "</span>
+<a id="__codelineno-0-826" name="__codelineno-0-826"></a>            <span class="sa">f</span><span class="s2">"first (e.g. plot()), then stamp."</span>
+<a id="__codelineno-0-827" name="__codelineno-0-827"></a>        <span class="p">)</span>
+<a id="__codelineno-0-828" name="__codelineno-0-828"></a>
+<a id="__codelineno-0-829" name="__codelineno-0-829"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">stamp_mark</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+<a id="__codelineno-0-830" name="__codelineno-0-830"></a><span class="w">        </span><span class="sd">"""Stamp a logo image on this glyph's figure.</span>
+<a id="__codelineno-0-831" name="__codelineno-0-831"></a>
+<a id="__codelineno-0-832" name="__codelineno-0-832"></a><span class="sd">        The primary way to stamp a logo, for the common single-glyph case.</span>
+<a id="__codelineno-0-833" name="__codelineno-0-833"></a><span class="sd">        `_stamp_mark` underneath takes a bare `Figure` and is private; a</span>
+<a id="__codelineno-0-834" name="__codelineno-0-834"></a><span class="sd">        *composite* figure no single glyph owns has its own supported entry</span>
+<a id="__codelineno-0-835" name="__codelineno-0-835"></a><span class="sd">        point, `stamp_mark_on`.</span>
+<a id="__codelineno-0-836" name="__codelineno-0-836"></a>
+<a id="__codelineno-0-837" name="__codelineno-0-837"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-838" name="__codelineno-0-838"></a><span class="sd">            path: The mark image, as `_stamp_mark` accepts it.</span>
+<a id="__codelineno-0-839" name="__codelineno-0-839"></a><span class="sd">            **kwargs: Forwarded verbatim (`frac`, `corner`, `margin`, `shadow`,</span>
+<a id="__codelineno-0-840" name="__codelineno-0-840"></a><span class="sd">                `blur`).</span>
+<a id="__codelineno-0-841" name="__codelineno-0-841"></a>
+<a id="__codelineno-0-842" name="__codelineno-0-842"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-843" name="__codelineno-0-843"></a><span class="sd">            Axes: The frameless inset axes the mark was drawn on.</span>
+<a id="__codelineno-0-844" name="__codelineno-0-844"></a>
+<a id="__codelineno-0-845" name="__codelineno-0-845"></a><span class="sd">        Raises:</span>
+<a id="__codelineno-0-846" name="__codelineno-0-846"></a><span class="sd">            ValueError: If the glyph has not been rendered yet, or as</span>
+<a id="__codelineno-0-847" name="__codelineno-0-847"></a><span class="sd">                `_stamp_mark` raises.</span>
+<a id="__codelineno-0-848" name="__codelineno-0-848"></a>
+<a id="__codelineno-0-849" name="__codelineno-0-849"></a><span class="sd">        See Also:</span>
+<a id="__codelineno-0-850" name="__codelineno-0-850"></a><span class="sd">            cleopatra.styling.watermark.stamp_mark_on: The figure-taking</span>
+<a id="__codelineno-0-851" name="__codelineno-0-851"></a><span class="sd">                counterpart, for a composite figure no single glyph owns.</span>
+<a id="__codelineno-0-852" name="__codelineno-0-852"></a><span class="sd">        """</span>
+<a id="__codelineno-0-853" name="__codelineno-0-853"></a>        <span class="c1"># The bare name is the module-level function, not this method: a method</span>
+<a id="__codelineno-0-854" name="__codelineno-0-854"></a>        <span class="c1"># name never enters the enclosing scope its body is resolved in.</span>
+<a id="__codelineno-0-855" name="__codelineno-0-855"></a>        <span class="k">return</span> <span class="n">_stamp_mark</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_watermark_figure</span><span class="p">(),</span> <span class="n">path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-856" name="__codelineno-0-856"></a>
+<a id="__codelineno-0-857" name="__codelineno-0-857"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">stamp_watermark</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Text</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<a id="__codelineno-0-858" name="__codelineno-0-858"></a><span class="w">        </span><span class="sd">"""Stamp diagonal brand text on this glyph's figure.</span>
+<a id="__codelineno-0-859" name="__codelineno-0-859"></a>
+<a id="__codelineno-0-860" name="__codelineno-0-860"></a><span class="sd">        The supported way to stamp brand text. `_stamp_watermark` underneath</span>
+<a id="__codelineno-0-861" name="__codelineno-0-861"></a><span class="sd">        takes a bare `Figure` and is private: a figure no glyph owns is out of</span>
+<a id="__codelineno-0-862" name="__codelineno-0-862"></a><span class="sd">        scope.</span>
+<a id="__codelineno-0-863" name="__codelineno-0-863"></a>
+<a id="__codelineno-0-864" name="__codelineno-0-864"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-865" name="__codelineno-0-865"></a><span class="sd">            text: The brand text.</span>
+<a id="__codelineno-0-866" name="__codelineno-0-866"></a><span class="sd">            **kwargs: Forwarded verbatim (`frac`, `angle`, `alpha`, `color`,</span>
+<a id="__codelineno-0-867" name="__codelineno-0-867"></a><span class="sd">                `credit`, `credit_frac`, `credit_alpha`, `margin`).</span>
+<a id="__codelineno-0-868" name="__codelineno-0-868"></a>
+<a id="__codelineno-0-869" name="__codelineno-0-869"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-870" name="__codelineno-0-870"></a><span class="sd">            tuple[Text, Text | None]: The brand-text artist and the credit-line</span>
+<a id="__codelineno-0-871" name="__codelineno-0-871"></a><span class="sd">            artist, the second being `None` when no `credit` was given.</span>
+<a id="__codelineno-0-872" name="__codelineno-0-872"></a>
+<a id="__codelineno-0-873" name="__codelineno-0-873"></a><span class="sd">        Raises:</span>
+<a id="__codelineno-0-874" name="__codelineno-0-874"></a><span class="sd">            ValueError: If the glyph has not been rendered yet, or as</span>
+<a id="__codelineno-0-875" name="__codelineno-0-875"></a><span class="sd">                `_stamp_watermark` raises.</span>
+<a id="__codelineno-0-876" name="__codelineno-0-876"></a>
+<a id="__codelineno-0-877" name="__codelineno-0-877"></a><span class="sd">        See Also:</span>
+<a id="__codelineno-0-878" name="__codelineno-0-878"></a><span class="sd">            cleopatra.styling.watermark._stamp_watermark: The private</span>
+<a id="__codelineno-0-879" name="__codelineno-0-879"></a><span class="sd">                function underneath.</span>
+<a id="__codelineno-0-880" name="__codelineno-0-880"></a>
+<a id="__codelineno-0-881" name="__codelineno-0-881"></a><span class="sd">        Examples:</span>
+<a id="__codelineno-0-882" name="__codelineno-0-882"></a><span class="sd">            - Stamp a logo and brand text without importing either:</span>
+<a id="__codelineno-0-883" name="__codelineno-0-883"></a><span class="sd">                ```python</span>
+<a id="__codelineno-0-884" name="__codelineno-0-884"></a><span class="sd">                &gt;&gt;&gt; import matplotlib</span>
+<a id="__codelineno-0-885" name="__codelineno-0-885"></a><span class="sd">                &gt;&gt;&gt; matplotlib.use("Agg")</span>
+<a id="__codelineno-0-886" name="__codelineno-0-886"></a><span class="sd">                &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-887" name="__codelineno-0-887"></a><span class="sd">                &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-888" name="__codelineno-0-888"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph</span>
+<a id="__codelineno-0-889" name="__codelineno-0-889"></a><span class="sd">                &gt;&gt;&gt; glyph = ArrayGlyph(np.arange(60.0).reshape(6, 10))</span>
+<a id="__codelineno-0-890" name="__codelineno-0-890"></a><span class="sd">                &gt;&gt;&gt; _ = glyph.plot()</span>
+<a id="__codelineno-0-891" name="__codelineno-0-891"></a><span class="sd">                &gt;&gt;&gt; brand, credit = glyph.stamp_watermark("cleopatra")</span>
+<a id="__codelineno-0-892" name="__codelineno-0-892"></a><span class="sd">                &gt;&gt;&gt; brand.get_text()</span>
+<a id="__codelineno-0-893" name="__codelineno-0-893"></a><span class="sd">                'cleopatra'</span>
+<a id="__codelineno-0-894" name="__codelineno-0-894"></a><span class="sd">                &gt;&gt;&gt; plt.close("all")</span>
+<a id="__codelineno-0-895" name="__codelineno-0-895"></a>
+<a id="__codelineno-0-896" name="__codelineno-0-896"></a><span class="sd">                ```</span>
+<a id="__codelineno-0-897" name="__codelineno-0-897"></a><span class="sd">        """</span>
+<a id="__codelineno-0-898" name="__codelineno-0-898"></a>        <span class="k">return</span> <span class="n">_stamp_watermark</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_watermark_figure</span><span class="p">(),</span> <span class="n">text</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -3135,8 +3184,10 @@ figure, not on the glyph's own axes, whichever glyph it was called through.</p>
     <div class="doc doc-contents ">
 
         <p>Stamp a logo image on this glyph's figure.</p>
-<p>The supported way to stamp a logo. <code>_stamp_mark</code> underneath takes a
-bare <code>Figure</code> and is private: a figure no glyph owns is out of scope.</p>
+<p>The primary way to stamp a logo, for the common single-glyph case.
+<code>_stamp_mark</code> underneath takes a bare <code>Figure</code> and is private; a
+<em>composite</em> figure no single glyph owns has its own supported entry
+point, <code>stamp_mark_on</code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3236,61 +3287,65 @@ bare <code>Figure</code> and is private: a figure no glyph owns is out of scope.
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p>cleopatra.styling.watermark._stamp_mark: The private function
-    underneath.</p>
+  <p>cleopatra.styling.watermark.stamp_mark_on: The figure-taking
+    counterpart, for a composite figure no single glyph owns.</p>
 </details>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/cleopatra/styling/watermark.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-766">766</a></span>
-<span class="normal"><a href="#__codelineno-0-767">767</a></span>
-<span class="normal"><a href="#__codelineno-0-768">768</a></span>
-<span class="normal"><a href="#__codelineno-0-769">769</a></span>
-<span class="normal"><a href="#__codelineno-0-770">770</a></span>
-<span class="normal"><a href="#__codelineno-0-771">771</a></span>
-<span class="normal"><a href="#__codelineno-0-772">772</a></span>
-<span class="normal"><a href="#__codelineno-0-773">773</a></span>
-<span class="normal"><a href="#__codelineno-0-774">774</a></span>
-<span class="normal"><a href="#__codelineno-0-775">775</a></span>
-<span class="normal"><a href="#__codelineno-0-776">776</a></span>
-<span class="normal"><a href="#__codelineno-0-777">777</a></span>
-<span class="normal"><a href="#__codelineno-0-778">778</a></span>
-<span class="normal"><a href="#__codelineno-0-779">779</a></span>
-<span class="normal"><a href="#__codelineno-0-780">780</a></span>
-<span class="normal"><a href="#__codelineno-0-781">781</a></span>
-<span class="normal"><a href="#__codelineno-0-782">782</a></span>
-<span class="normal"><a href="#__codelineno-0-783">783</a></span>
-<span class="normal"><a href="#__codelineno-0-784">784</a></span>
-<span class="normal"><a href="#__codelineno-0-785">785</a></span>
-<span class="normal"><a href="#__codelineno-0-786">786</a></span>
-<span class="normal"><a href="#__codelineno-0-787">787</a></span>
-<span class="normal"><a href="#__codelineno-0-788">788</a></span>
-<span class="normal"><a href="#__codelineno-0-789">789</a></span>
-<span class="normal"><a href="#__codelineno-0-790">790</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-766" name="__codelineno-0-766"></a><span class="k">def</span><span class="w"> </span><span class="nf">stamp_mark</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
-<a id="__codelineno-0-767" name="__codelineno-0-767"></a><span class="w">    </span><span class="sd">"""Stamp a logo image on this glyph's figure.</span>
-<a id="__codelineno-0-768" name="__codelineno-0-768"></a>
-<a id="__codelineno-0-769" name="__codelineno-0-769"></a><span class="sd">    The supported way to stamp a logo. `_stamp_mark` underneath takes a</span>
-<a id="__codelineno-0-770" name="__codelineno-0-770"></a><span class="sd">    bare `Figure` and is private: a figure no glyph owns is out of scope.</span>
-<a id="__codelineno-0-771" name="__codelineno-0-771"></a>
-<a id="__codelineno-0-772" name="__codelineno-0-772"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-773" name="__codelineno-0-773"></a><span class="sd">        path: The mark image, as `_stamp_mark` accepts it.</span>
-<a id="__codelineno-0-774" name="__codelineno-0-774"></a><span class="sd">        **kwargs: Forwarded verbatim (`frac`, `corner`, `margin`, `shadow`,</span>
-<a id="__codelineno-0-775" name="__codelineno-0-775"></a><span class="sd">            `blur`).</span>
-<a id="__codelineno-0-776" name="__codelineno-0-776"></a>
-<a id="__codelineno-0-777" name="__codelineno-0-777"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-778" name="__codelineno-0-778"></a><span class="sd">        Axes: The frameless inset axes the mark was drawn on.</span>
-<a id="__codelineno-0-779" name="__codelineno-0-779"></a>
-<a id="__codelineno-0-780" name="__codelineno-0-780"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-781" name="__codelineno-0-781"></a><span class="sd">        ValueError: If the glyph has not been rendered yet, or as</span>
-<a id="__codelineno-0-782" name="__codelineno-0-782"></a><span class="sd">            `_stamp_mark` raises.</span>
-<a id="__codelineno-0-783" name="__codelineno-0-783"></a>
-<a id="__codelineno-0-784" name="__codelineno-0-784"></a><span class="sd">    See Also:</span>
-<a id="__codelineno-0-785" name="__codelineno-0-785"></a><span class="sd">        cleopatra.styling.watermark._stamp_mark: The private function</span>
-<a id="__codelineno-0-786" name="__codelineno-0-786"></a><span class="sd">            underneath.</span>
-<a id="__codelineno-0-787" name="__codelineno-0-787"></a><span class="sd">    """</span>
-<a id="__codelineno-0-788" name="__codelineno-0-788"></a>    <span class="c1"># The bare name is the module-level function, not this method: a method</span>
-<a id="__codelineno-0-789" name="__codelineno-0-789"></a>    <span class="c1"># name never enters the enclosing scope its body is resolved in.</span>
-<a id="__codelineno-0-790" name="__codelineno-0-790"></a>    <span class="k">return</span> <span class="n">_stamp_mark</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_watermark_figure</span><span class="p">(),</span> <span class="n">path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-829">829</a></span>
+<span class="normal"><a href="#__codelineno-0-830">830</a></span>
+<span class="normal"><a href="#__codelineno-0-831">831</a></span>
+<span class="normal"><a href="#__codelineno-0-832">832</a></span>
+<span class="normal"><a href="#__codelineno-0-833">833</a></span>
+<span class="normal"><a href="#__codelineno-0-834">834</a></span>
+<span class="normal"><a href="#__codelineno-0-835">835</a></span>
+<span class="normal"><a href="#__codelineno-0-836">836</a></span>
+<span class="normal"><a href="#__codelineno-0-837">837</a></span>
+<span class="normal"><a href="#__codelineno-0-838">838</a></span>
+<span class="normal"><a href="#__codelineno-0-839">839</a></span>
+<span class="normal"><a href="#__codelineno-0-840">840</a></span>
+<span class="normal"><a href="#__codelineno-0-841">841</a></span>
+<span class="normal"><a href="#__codelineno-0-842">842</a></span>
+<span class="normal"><a href="#__codelineno-0-843">843</a></span>
+<span class="normal"><a href="#__codelineno-0-844">844</a></span>
+<span class="normal"><a href="#__codelineno-0-845">845</a></span>
+<span class="normal"><a href="#__codelineno-0-846">846</a></span>
+<span class="normal"><a href="#__codelineno-0-847">847</a></span>
+<span class="normal"><a href="#__codelineno-0-848">848</a></span>
+<span class="normal"><a href="#__codelineno-0-849">849</a></span>
+<span class="normal"><a href="#__codelineno-0-850">850</a></span>
+<span class="normal"><a href="#__codelineno-0-851">851</a></span>
+<span class="normal"><a href="#__codelineno-0-852">852</a></span>
+<span class="normal"><a href="#__codelineno-0-853">853</a></span>
+<span class="normal"><a href="#__codelineno-0-854">854</a></span>
+<span class="normal"><a href="#__codelineno-0-855">855</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-829" name="__codelineno-0-829"></a><span class="k">def</span><span class="w"> </span><span class="nf">stamp_mark</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+<a id="__codelineno-0-830" name="__codelineno-0-830"></a><span class="w">    </span><span class="sd">"""Stamp a logo image on this glyph's figure.</span>
+<a id="__codelineno-0-831" name="__codelineno-0-831"></a>
+<a id="__codelineno-0-832" name="__codelineno-0-832"></a><span class="sd">    The primary way to stamp a logo, for the common single-glyph case.</span>
+<a id="__codelineno-0-833" name="__codelineno-0-833"></a><span class="sd">    `_stamp_mark` underneath takes a bare `Figure` and is private; a</span>
+<a id="__codelineno-0-834" name="__codelineno-0-834"></a><span class="sd">    *composite* figure no single glyph owns has its own supported entry</span>
+<a id="__codelineno-0-835" name="__codelineno-0-835"></a><span class="sd">    point, `stamp_mark_on`.</span>
+<a id="__codelineno-0-836" name="__codelineno-0-836"></a>
+<a id="__codelineno-0-837" name="__codelineno-0-837"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-838" name="__codelineno-0-838"></a><span class="sd">        path: The mark image, as `_stamp_mark` accepts it.</span>
+<a id="__codelineno-0-839" name="__codelineno-0-839"></a><span class="sd">        **kwargs: Forwarded verbatim (`frac`, `corner`, `margin`, `shadow`,</span>
+<a id="__codelineno-0-840" name="__codelineno-0-840"></a><span class="sd">            `blur`).</span>
+<a id="__codelineno-0-841" name="__codelineno-0-841"></a>
+<a id="__codelineno-0-842" name="__codelineno-0-842"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-843" name="__codelineno-0-843"></a><span class="sd">        Axes: The frameless inset axes the mark was drawn on.</span>
+<a id="__codelineno-0-844" name="__codelineno-0-844"></a>
+<a id="__codelineno-0-845" name="__codelineno-0-845"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-0-846" name="__codelineno-0-846"></a><span class="sd">        ValueError: If the glyph has not been rendered yet, or as</span>
+<a id="__codelineno-0-847" name="__codelineno-0-847"></a><span class="sd">            `_stamp_mark` raises.</span>
+<a id="__codelineno-0-848" name="__codelineno-0-848"></a>
+<a id="__codelineno-0-849" name="__codelineno-0-849"></a><span class="sd">    See Also:</span>
+<a id="__codelineno-0-850" name="__codelineno-0-850"></a><span class="sd">        cleopatra.styling.watermark.stamp_mark_on: The figure-taking</span>
+<a id="__codelineno-0-851" name="__codelineno-0-851"></a><span class="sd">            counterpart, for a composite figure no single glyph owns.</span>
+<a id="__codelineno-0-852" name="__codelineno-0-852"></a><span class="sd">    """</span>
+<a id="__codelineno-0-853" name="__codelineno-0-853"></a>    <span class="c1"># The bare name is the module-level function, not this method: a method</span>
+<a id="__codelineno-0-854" name="__codelineno-0-854"></a>    <span class="c1"># name never enters the enclosing scope its body is resolved in.</span>
+<a id="__codelineno-0-855" name="__codelineno-0-855"></a>    <span class="k">return</span> <span class="n">_stamp_mark</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_watermark_figure</span><span class="p">(),</span> <span class="n">path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3445,89 +3500,89 @@ scope.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/cleopatra/styling/watermark.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-792">792</a></span>
-<span class="normal"><a href="#__codelineno-0-793">793</a></span>
-<span class="normal"><a href="#__codelineno-0-794">794</a></span>
-<span class="normal"><a href="#__codelineno-0-795">795</a></span>
-<span class="normal"><a href="#__codelineno-0-796">796</a></span>
-<span class="normal"><a href="#__codelineno-0-797">797</a></span>
-<span class="normal"><a href="#__codelineno-0-798">798</a></span>
-<span class="normal"><a href="#__codelineno-0-799">799</a></span>
-<span class="normal"><a href="#__codelineno-0-800">800</a></span>
-<span class="normal"><a href="#__codelineno-0-801">801</a></span>
-<span class="normal"><a href="#__codelineno-0-802">802</a></span>
-<span class="normal"><a href="#__codelineno-0-803">803</a></span>
-<span class="normal"><a href="#__codelineno-0-804">804</a></span>
-<span class="normal"><a href="#__codelineno-0-805">805</a></span>
-<span class="normal"><a href="#__codelineno-0-806">806</a></span>
-<span class="normal"><a href="#__codelineno-0-807">807</a></span>
-<span class="normal"><a href="#__codelineno-0-808">808</a></span>
-<span class="normal"><a href="#__codelineno-0-809">809</a></span>
-<span class="normal"><a href="#__codelineno-0-810">810</a></span>
-<span class="normal"><a href="#__codelineno-0-811">811</a></span>
-<span class="normal"><a href="#__codelineno-0-812">812</a></span>
-<span class="normal"><a href="#__codelineno-0-813">813</a></span>
-<span class="normal"><a href="#__codelineno-0-814">814</a></span>
-<span class="normal"><a href="#__codelineno-0-815">815</a></span>
-<span class="normal"><a href="#__codelineno-0-816">816</a></span>
-<span class="normal"><a href="#__codelineno-0-817">817</a></span>
-<span class="normal"><a href="#__codelineno-0-818">818</a></span>
-<span class="normal"><a href="#__codelineno-0-819">819</a></span>
-<span class="normal"><a href="#__codelineno-0-820">820</a></span>
-<span class="normal"><a href="#__codelineno-0-821">821</a></span>
-<span class="normal"><a href="#__codelineno-0-822">822</a></span>
-<span class="normal"><a href="#__codelineno-0-823">823</a></span>
-<span class="normal"><a href="#__codelineno-0-824">824</a></span>
-<span class="normal"><a href="#__codelineno-0-825">825</a></span>
-<span class="normal"><a href="#__codelineno-0-826">826</a></span>
-<span class="normal"><a href="#__codelineno-0-827">827</a></span>
-<span class="normal"><a href="#__codelineno-0-828">828</a></span>
-<span class="normal"><a href="#__codelineno-0-829">829</a></span>
-<span class="normal"><a href="#__codelineno-0-830">830</a></span>
-<span class="normal"><a href="#__codelineno-0-831">831</a></span>
-<span class="normal"><a href="#__codelineno-0-832">832</a></span>
-<span class="normal"><a href="#__codelineno-0-833">833</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-792" name="__codelineno-0-792"></a><span class="k">def</span><span class="w"> </span><span class="nf">stamp_watermark</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Text</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
-<a id="__codelineno-0-793" name="__codelineno-0-793"></a><span class="w">    </span><span class="sd">"""Stamp diagonal brand text on this glyph's figure.</span>
-<a id="__codelineno-0-794" name="__codelineno-0-794"></a>
-<a id="__codelineno-0-795" name="__codelineno-0-795"></a><span class="sd">    The supported way to stamp brand text. `_stamp_watermark` underneath</span>
-<a id="__codelineno-0-796" name="__codelineno-0-796"></a><span class="sd">    takes a bare `Figure` and is private: a figure no glyph owns is out of</span>
-<a id="__codelineno-0-797" name="__codelineno-0-797"></a><span class="sd">    scope.</span>
-<a id="__codelineno-0-798" name="__codelineno-0-798"></a>
-<a id="__codelineno-0-799" name="__codelineno-0-799"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-800" name="__codelineno-0-800"></a><span class="sd">        text: The brand text.</span>
-<a id="__codelineno-0-801" name="__codelineno-0-801"></a><span class="sd">        **kwargs: Forwarded verbatim (`frac`, `angle`, `alpha`, `color`,</span>
-<a id="__codelineno-0-802" name="__codelineno-0-802"></a><span class="sd">            `credit`, `credit_frac`, `credit_alpha`, `margin`).</span>
-<a id="__codelineno-0-803" name="__codelineno-0-803"></a>
-<a id="__codelineno-0-804" name="__codelineno-0-804"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-805" name="__codelineno-0-805"></a><span class="sd">        tuple[Text, Text | None]: The brand-text artist and the credit-line</span>
-<a id="__codelineno-0-806" name="__codelineno-0-806"></a><span class="sd">        artist, the second being `None` when no `credit` was given.</span>
-<a id="__codelineno-0-807" name="__codelineno-0-807"></a>
-<a id="__codelineno-0-808" name="__codelineno-0-808"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-809" name="__codelineno-0-809"></a><span class="sd">        ValueError: If the glyph has not been rendered yet, or as</span>
-<a id="__codelineno-0-810" name="__codelineno-0-810"></a><span class="sd">            `_stamp_watermark` raises.</span>
-<a id="__codelineno-0-811" name="__codelineno-0-811"></a>
-<a id="__codelineno-0-812" name="__codelineno-0-812"></a><span class="sd">    See Also:</span>
-<a id="__codelineno-0-813" name="__codelineno-0-813"></a><span class="sd">        cleopatra.styling.watermark._stamp_watermark: The private</span>
-<a id="__codelineno-0-814" name="__codelineno-0-814"></a><span class="sd">            function underneath.</span>
-<a id="__codelineno-0-815" name="__codelineno-0-815"></a>
-<a id="__codelineno-0-816" name="__codelineno-0-816"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-817" name="__codelineno-0-817"></a><span class="sd">        - Stamp a logo and brand text without importing either:</span>
-<a id="__codelineno-0-818" name="__codelineno-0-818"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-819" name="__codelineno-0-819"></a><span class="sd">            &gt;&gt;&gt; import matplotlib</span>
-<a id="__codelineno-0-820" name="__codelineno-0-820"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use("Agg")</span>
-<a id="__codelineno-0-821" name="__codelineno-0-821"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-822" name="__codelineno-0-822"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-823" name="__codelineno-0-823"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph</span>
-<a id="__codelineno-0-824" name="__codelineno-0-824"></a><span class="sd">            &gt;&gt;&gt; glyph = ArrayGlyph(np.arange(60.0).reshape(6, 10))</span>
-<a id="__codelineno-0-825" name="__codelineno-0-825"></a><span class="sd">            &gt;&gt;&gt; _ = glyph.plot()</span>
-<a id="__codelineno-0-826" name="__codelineno-0-826"></a><span class="sd">            &gt;&gt;&gt; brand, credit = glyph.stamp_watermark("cleopatra")</span>
-<a id="__codelineno-0-827" name="__codelineno-0-827"></a><span class="sd">            &gt;&gt;&gt; brand.get_text()</span>
-<a id="__codelineno-0-828" name="__codelineno-0-828"></a><span class="sd">            'cleopatra'</span>
-<a id="__codelineno-0-829" name="__codelineno-0-829"></a><span class="sd">            &gt;&gt;&gt; plt.close("all")</span>
-<a id="__codelineno-0-830" name="__codelineno-0-830"></a>
-<a id="__codelineno-0-831" name="__codelineno-0-831"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-832" name="__codelineno-0-832"></a><span class="sd">    """</span>
-<a id="__codelineno-0-833" name="__codelineno-0-833"></a>    <span class="k">return</span> <span class="n">_stamp_watermark</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_watermark_figure</span><span class="p">(),</span> <span class="n">text</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-857">857</a></span>
+<span class="normal"><a href="#__codelineno-0-858">858</a></span>
+<span class="normal"><a href="#__codelineno-0-859">859</a></span>
+<span class="normal"><a href="#__codelineno-0-860">860</a></span>
+<span class="normal"><a href="#__codelineno-0-861">861</a></span>
+<span class="normal"><a href="#__codelineno-0-862">862</a></span>
+<span class="normal"><a href="#__codelineno-0-863">863</a></span>
+<span class="normal"><a href="#__codelineno-0-864">864</a></span>
+<span class="normal"><a href="#__codelineno-0-865">865</a></span>
+<span class="normal"><a href="#__codelineno-0-866">866</a></span>
+<span class="normal"><a href="#__codelineno-0-867">867</a></span>
+<span class="normal"><a href="#__codelineno-0-868">868</a></span>
+<span class="normal"><a href="#__codelineno-0-869">869</a></span>
+<span class="normal"><a href="#__codelineno-0-870">870</a></span>
+<span class="normal"><a href="#__codelineno-0-871">871</a></span>
+<span class="normal"><a href="#__codelineno-0-872">872</a></span>
+<span class="normal"><a href="#__codelineno-0-873">873</a></span>
+<span class="normal"><a href="#__codelineno-0-874">874</a></span>
+<span class="normal"><a href="#__codelineno-0-875">875</a></span>
+<span class="normal"><a href="#__codelineno-0-876">876</a></span>
+<span class="normal"><a href="#__codelineno-0-877">877</a></span>
+<span class="normal"><a href="#__codelineno-0-878">878</a></span>
+<span class="normal"><a href="#__codelineno-0-879">879</a></span>
+<span class="normal"><a href="#__codelineno-0-880">880</a></span>
+<span class="normal"><a href="#__codelineno-0-881">881</a></span>
+<span class="normal"><a href="#__codelineno-0-882">882</a></span>
+<span class="normal"><a href="#__codelineno-0-883">883</a></span>
+<span class="normal"><a href="#__codelineno-0-884">884</a></span>
+<span class="normal"><a href="#__codelineno-0-885">885</a></span>
+<span class="normal"><a href="#__codelineno-0-886">886</a></span>
+<span class="normal"><a href="#__codelineno-0-887">887</a></span>
+<span class="normal"><a href="#__codelineno-0-888">888</a></span>
+<span class="normal"><a href="#__codelineno-0-889">889</a></span>
+<span class="normal"><a href="#__codelineno-0-890">890</a></span>
+<span class="normal"><a href="#__codelineno-0-891">891</a></span>
+<span class="normal"><a href="#__codelineno-0-892">892</a></span>
+<span class="normal"><a href="#__codelineno-0-893">893</a></span>
+<span class="normal"><a href="#__codelineno-0-894">894</a></span>
+<span class="normal"><a href="#__codelineno-0-895">895</a></span>
+<span class="normal"><a href="#__codelineno-0-896">896</a></span>
+<span class="normal"><a href="#__codelineno-0-897">897</a></span>
+<span class="normal"><a href="#__codelineno-0-898">898</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-857" name="__codelineno-0-857"></a><span class="k">def</span><span class="w"> </span><span class="nf">stamp_watermark</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Text</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<a id="__codelineno-0-858" name="__codelineno-0-858"></a><span class="w">    </span><span class="sd">"""Stamp diagonal brand text on this glyph's figure.</span>
+<a id="__codelineno-0-859" name="__codelineno-0-859"></a>
+<a id="__codelineno-0-860" name="__codelineno-0-860"></a><span class="sd">    The supported way to stamp brand text. `_stamp_watermark` underneath</span>
+<a id="__codelineno-0-861" name="__codelineno-0-861"></a><span class="sd">    takes a bare `Figure` and is private: a figure no glyph owns is out of</span>
+<a id="__codelineno-0-862" name="__codelineno-0-862"></a><span class="sd">    scope.</span>
+<a id="__codelineno-0-863" name="__codelineno-0-863"></a>
+<a id="__codelineno-0-864" name="__codelineno-0-864"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-865" name="__codelineno-0-865"></a><span class="sd">        text: The brand text.</span>
+<a id="__codelineno-0-866" name="__codelineno-0-866"></a><span class="sd">        **kwargs: Forwarded verbatim (`frac`, `angle`, `alpha`, `color`,</span>
+<a id="__codelineno-0-867" name="__codelineno-0-867"></a><span class="sd">            `credit`, `credit_frac`, `credit_alpha`, `margin`).</span>
+<a id="__codelineno-0-868" name="__codelineno-0-868"></a>
+<a id="__codelineno-0-869" name="__codelineno-0-869"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-870" name="__codelineno-0-870"></a><span class="sd">        tuple[Text, Text | None]: The brand-text artist and the credit-line</span>
+<a id="__codelineno-0-871" name="__codelineno-0-871"></a><span class="sd">        artist, the second being `None` when no `credit` was given.</span>
+<a id="__codelineno-0-872" name="__codelineno-0-872"></a>
+<a id="__codelineno-0-873" name="__codelineno-0-873"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-0-874" name="__codelineno-0-874"></a><span class="sd">        ValueError: If the glyph has not been rendered yet, or as</span>
+<a id="__codelineno-0-875" name="__codelineno-0-875"></a><span class="sd">            `_stamp_watermark` raises.</span>
+<a id="__codelineno-0-876" name="__codelineno-0-876"></a>
+<a id="__codelineno-0-877" name="__codelineno-0-877"></a><span class="sd">    See Also:</span>
+<a id="__codelineno-0-878" name="__codelineno-0-878"></a><span class="sd">        cleopatra.styling.watermark._stamp_watermark: The private</span>
+<a id="__codelineno-0-879" name="__codelineno-0-879"></a><span class="sd">            function underneath.</span>
+<a id="__codelineno-0-880" name="__codelineno-0-880"></a>
+<a id="__codelineno-0-881" name="__codelineno-0-881"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-882" name="__codelineno-0-882"></a><span class="sd">        - Stamp a logo and brand text without importing either:</span>
+<a id="__codelineno-0-883" name="__codelineno-0-883"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-884" name="__codelineno-0-884"></a><span class="sd">            &gt;&gt;&gt; import matplotlib</span>
+<a id="__codelineno-0-885" name="__codelineno-0-885"></a><span class="sd">            &gt;&gt;&gt; matplotlib.use("Agg")</span>
+<a id="__codelineno-0-886" name="__codelineno-0-886"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-887" name="__codelineno-0-887"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-888" name="__codelineno-0-888"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph</span>
+<a id="__codelineno-0-889" name="__codelineno-0-889"></a><span class="sd">            &gt;&gt;&gt; glyph = ArrayGlyph(np.arange(60.0).reshape(6, 10))</span>
+<a id="__codelineno-0-890" name="__codelineno-0-890"></a><span class="sd">            &gt;&gt;&gt; _ = glyph.plot()</span>
+<a id="__codelineno-0-891" name="__codelineno-0-891"></a><span class="sd">            &gt;&gt;&gt; brand, credit = glyph.stamp_watermark("cleopatra")</span>
+<a id="__codelineno-0-892" name="__codelineno-0-892"></a><span class="sd">            &gt;&gt;&gt; brand.get_text()</span>
+<a id="__codelineno-0-893" name="__codelineno-0-893"></a><span class="sd">            'cleopatra'</span>
+<a id="__codelineno-0-894" name="__codelineno-0-894"></a><span class="sd">            &gt;&gt;&gt; plt.close("all")</span>
+<a id="__codelineno-0-895" name="__codelineno-0-895"></a>
+<a id="__codelineno-0-896" name="__codelineno-0-896"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-897" name="__codelineno-0-897"></a><span class="sd">    """</span>
+<a id="__codelineno-0-898" name="__codelineno-0-898"></a>    <span class="k">return</span> <span class="n">_stamp_watermark</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_watermark_figure</span><span class="p">(),</span> <span class="n">text</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
