@@ -1050,6 +1050,27 @@ class TestFrameOverlayHook:
         assert calls == [], f"a held sub-frame must not re-fetch: {calls}"
         assert np.array_equal(glyph.im.get_array(), base[0]), "held raster changed"
 
+    def test_reanimate_clears_previous_overlay_artists(self):
+        """A non-compose re-animate clears the prior overlay's artists (no #210 leak).
+
+        Test scenario:
+            Overlay artists must be registered like the raster and point scatter,
+            so a second `animate` on the same glyph clears the first overlay's
+            patch instead of leaving it as an orphaned axes child.
+        """
+        stack = np.arange(2 * 3 * 3, dtype=float).reshape(2, 3, 3)
+        glyph = ArrayGlyph(stack)
+        glyph.animate(["a", "b"], playback=Animation(overlays=[_RecordingOverlay()]))
+        first = [p for p in glyph.ax.patches if isinstance(p, Circle)]
+        glyph.animate(["a", "b"], playback=Animation(overlays=[_RecordingOverlay()]))
+        second = [p for p in glyph.ax.patches if isinstance(p, Circle)]
+        assert len(first) == 1, (
+            f"first animate should leave one overlay patch: {len(first)}"
+        )
+        assert len(second) == 1, (
+            f"re-animate must clear the prior overlay patch (#210 class): {len(second)}"
+        )
+
 
 class TestPanelLabels:
     """Direct unit tests for `PanelLabels.__init__`'s defaults, attribute

@@ -6076,5 +6076,6 @@ class ArrayGlyph(GeoMixin, Glyph):
             points_scatter,
             *points_id,
             *cell_text_value,
+            *overlay_init_artists,
         )
         return anim
