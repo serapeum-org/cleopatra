@@ -157,10 +157,12 @@ class TestCycloneOverlay:
         anim = _driven(overlay, sub_frames=2)
         anim._init_func()
         anim._func(4)  # data_index 2, phase 0.0
-        r0 = overlay._artists["K"].ripple.get_radius()
+        ripple = overlay._artists["K"].ripple
+        r0, a0 = ripple.get_radius(), ripple.get_alpha()
         anim._func(5)  # data_index 2, phase 0.5
-        r1 = overlay._artists["K"].ripple.get_radius()
-        assert r0 != r1, f"RI ripple must animate at sub_frames=2, got {r0} then {r1}"
+        r1, a1 = ripple.get_radius(), ripple.get_alpha()
+        assert r0 != r1, f"RI ripple must expand at sub_frames=2, got {r0} then {r1}"
+        assert a0 > 0 and a1 > 0, f"RI ripple must stay visible, alphas {a0}, {a1}"
 
     def test_dissipation_hides_glow_and_dims_track(self):
         """Past the storm's last fix the glow is hidden and the track dims."""

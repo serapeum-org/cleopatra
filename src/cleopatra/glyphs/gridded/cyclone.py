@@ -488,15 +488,17 @@ class CycloneOverlay:
             art.ripple.set_edgecolor("none")
             return
         _, colour = category_of(vmax, self.palette)
-        # A rapidly-intensifying storm's ripple reaches full expansion twice as
-        # fast (then holds). Clamp rather than wrap (`% 1`), which aliased to a
-        # frozen ring at sub_frames == 2 (phases {0, 0.5} * 2 -> {0, 0}).
+        # A rapidly-intensifying storm's ripple reaches full radius twice as fast
+        # (clamped, not wrapped with `% 1`, which aliased to a frozen ring at
+        # sub_frames == 2). The alpha fades on the *raw* phase, not the clamped
+        # growth, so the fast-expanded ring stays visible through the back half of
+        # the hold instead of blinking to nothing at phase 0.5.
         rapid = self._ri[name][i]
         grow = min(1.0, phase * 2.0) if rapid else phase
         art.ripple.set_radius((0.3 + 0.014 * max(vmax, 0.0)) * (0.4 + grow))
         art.ripple.set_edgecolor(colour)
         art.ripple.set_linewidth(1.6 if rapid else 1.0)
-        art.ripple.set_alpha(max(0.0, 0.7 * (1.0 - grow)))
+        art.ripple.set_alpha(max(0.0, 0.7 * (1.0 - phase)))
 
     def _update_wedges(self, storm, art, i, dissipated) -> None:
         """Point each wind-radius wedge at the eye with the fix's radius."""
