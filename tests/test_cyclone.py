@@ -144,6 +144,18 @@ class TestCycloneOverlay:
         r1 = overlay._artists["K"].ripple.get_radius()
         assert r0 != r1, f"ripple should expand with phase, got {r0} then {r1}"
 
+    def test_ri_ripple_animates_at_sub_frames_two(self):
+        """A rapidly-intensifying storm's ripple still moves at sub_frames=2."""
+        overlay = CycloneOverlay({"K": _track()})  # fix 2 is rapidly intensifying
+        assert overlay._ri["K"][2], "fixture fix 2 must be rapidly intensifying"
+        anim = _driven(overlay, sub_frames=2)
+        anim._init_func()
+        anim._func(4)  # data_index 2, phase 0.0
+        r0 = overlay._artists["K"].ripple.get_radius()
+        anim._func(5)  # data_index 2, phase 0.5
+        r1 = overlay._artists["K"].ripple.get_radius()
+        assert r0 != r1, f"RI ripple must animate at sub_frames=2, got {r0} then {r1}"
+
     def test_dissipation_hides_glow_and_dims_track(self):
         """Past the storm's last fix the glow is hidden and the track dims."""
         overlay = CycloneOverlay({"K": _track()})
