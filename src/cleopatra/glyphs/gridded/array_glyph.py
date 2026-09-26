@@ -24,6 +24,7 @@ The `Array` class has the following methods:
 
 from __future__ import annotations
 
+import numbers
 import warnings
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
@@ -5607,10 +5608,17 @@ class ArrayGlyph(GeoMixin, Glyph):
         frame_label = playback.frame_label or FrameLabel()
         overlays = tuple(playback.overlays)
         sub_frames = playback.sub_frames
-        if not isinstance(sub_frames, int) or sub_frames < 1:
+        # Accept any integer (incl. numpy ints from array shapes); reject bool,
+        # which is an `int` subclass but never a meaningful frame count.
+        if (
+            isinstance(sub_frames, bool)
+            or not isinstance(sub_frames, numbers.Integral)
+            or sub_frames < 1
+        ):
             raise ValueError(
                 f"sub_frames must be a positive integer, got {sub_frames!r}."
             )
+        sub_frames = int(sub_frames)
 
         self._warn_norm_shadows_scale(color, kwargs.get("norm"))
         pre_group_opts = self._snapshot_group_options(

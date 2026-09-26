@@ -976,6 +976,15 @@ class TestFrameOverlayUnit:
         with pytest.raises(ValueError, match="sub_frames must be a positive integer"):
             glyph.animate(animate_time_list, playback=Animation(sub_frames=0))
 
+    def test_sub_frames_accepts_numpy_int_and_rejects_bool(self):
+        """A numpy integer is a valid count; `bool` is rejected despite subclassing int."""
+        stack = np.arange(2 * 2 * 2, dtype=float).reshape(2, 2, 2)
+        glyph = ArrayGlyph(stack)
+        anim = glyph.animate(["a", "b"], playback=Animation(sub_frames=np.int64(2)))
+        assert anim is not None, "a numpy-int sub_frames must be accepted"
+        with pytest.raises(ValueError, match="sub_frames must be a positive integer"):
+            glyph.animate(["a", "b"], playback=Animation(sub_frames=True))
+
 
 @pytest.mark.plot
 class TestFrameOverlayHook:
