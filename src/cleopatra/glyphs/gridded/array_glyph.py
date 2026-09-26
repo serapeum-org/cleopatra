@@ -691,10 +691,29 @@ class FrameOverlay(Protocol):
     Any object providing these two methods satisfies the protocol -- it need not
     subclass `FrameOverlay`. `init`/`update` may each return a single `Artist`,
     an iterable of artists, or `None`.
+
+    Blit contract: under interactive playback (`blit=True`) matplotlib removes
+    the artists `init` returns from the captured background and redraws only the
+    artists `update` returns each frame. `update` must therefore return **every**
+    artist that should stay visible on that frame, including ones created in
+    `init` that do not otherwise change -- an artist returned by `init` but not by
+    `update` is excluded from the background yet never redrawn, so it disappears
+    after the first frame. (Saving with `save`/`to_gif` uses `blit=False` and
+    draws every axes child regardless, so the trap only bites interactive
+    playback.)
     """
 
     def init(self, ax: Axes) -> Iterable[Artist] | Artist | None:
-        """Create the overlay's artists on `ax` and return them (called once)."""
+        """Create the overlay's artists on `ax` and return them (called once).
+
+        Args:
+            ax: The animation axes to add the overlay's artists to.
+
+        Returns:
+            The artist(s) created, or `None`. They seed the blit background;
+            `update` is still responsible for returning every artist that should
+            remain visible on each frame (see the class blit contract).
+        """
         ...
 
     def update(
@@ -711,6 +730,12 @@ class FrameOverlay(Protocol):
                 `sub_frames` it is held for (always `0.0` when
                 `sub_frames == 1`). Lets time-varying effects animate while the
                 raster is held.
+
+        Returns:
+            Every artist that should be visible on this frame, or `None` for no
+            artists. Under `blit=True` only the returned artists are redrawn, so
+            include even static artists created in `init` (see the class blit
+            contract) -- one omitted here vanishes after the first frame.
         """
         ...
 
