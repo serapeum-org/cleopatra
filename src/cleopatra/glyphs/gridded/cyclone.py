@@ -172,16 +172,21 @@ def rapid_intensification_mask(
 def _as_hours(time: Any) -> np.ndarray:
     """Coerce a `time` column to hours from its first entry.
 
-    Accepts datetime-like values (parsed via `datetime64`) or values already
-    numeric (treated as hours). Falls back to a plain float cast.
+    A `datetime64` column is parsed to hours since its first fix. Numeric values
+    (including an object-dtype array of Python ints/floats) are already hours and
+    taken as-is; only when a float cast fails is an object column parsed as
+    datetime objects / ISO strings.
     """
     arr = np.asarray(time)
-    if np.issubdtype(arr.dtype, np.datetime64) or arr.dtype == object:
+    if np.issubdtype(arr.dtype, np.datetime64):
+        dt = arr.astype("datetime64[s]")
+        return (dt - dt[0]) / np.timedelta64(1, "h")
+    if arr.dtype == object:
         try:
-            dt = arr.astype("datetime64[s]")
-            return (dt - dt[0]) / np.timedelta64(1, "h")
+            return np.asarray(arr, dtype=float)  # numeric objects are hours
         except (ValueError, TypeError):
-            pass
+            dt = arr.astype("datetime64[s]")  # datetime objects / ISO strings
+            return (dt - dt[0]) / np.timedelta64(1, "h")
     return np.asarray(arr, dtype=float)
 
 

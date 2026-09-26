@@ -228,6 +228,17 @@ class TestCycloneOverlay:
         overlay = CycloneOverlay({"K": track})
         assert overlay.storms["K"]["hours"].tolist() == [0.0, 24.0]
 
+    def test_object_int_time_read_as_hours_not_seconds(self):
+        """An object-dtype integer `time` is read as hours, not seconds-since-epoch."""
+        track = _track(
+            time=np.array([0, 24, 48], dtype=object),
+            lon=np.array([-120.0, -121.0, -122.0]),
+            lat=np.array([15.0, 16.0, 17.0]),
+            vmax_kt=np.array([35.0, 60.0, 90.0]),
+        )
+        overlay = CycloneOverlay({"K": track})
+        assert overlay.storms["K"]["hours"].tolist() == [0.0, 24.0, 48.0]
+
 
 class TestAddIntensityKey:
     """Tests for the line-swatch intensity-key helper."""
