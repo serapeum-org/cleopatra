@@ -66,6 +66,10 @@ __all__ = ["WatermarkMixin", "stamp_mark_on"]
 #: The four corner anchors `_stamp_mark` accepts.
 _CORNERS = ("lower right", "lower left", "upper right", "upper left")
 
+#: The default corner anchor, shared by both stamp signatures so the literal is
+#: defined once rather than duplicated across them.
+_DEFAULT_CORNER = _CORNERS[0]
+
 #: Default halo blur sigma, as a fraction of the mark's own (unpadded) width.
 DEFAULT_BLUR = 0.065
 
@@ -110,7 +114,7 @@ def _stamp_mark(
     path: str | os.PathLike | np.ndarray,
     *,
     frac: float = 0.11,
-    corner: str = "lower right",
+    corner: str = _DEFAULT_CORNER,
     margin: float | tuple[float, float] = 0.025,
     shadow: bool = True,
     blur: float = DEFAULT_BLUR,
@@ -730,7 +734,7 @@ def stamp_mark_on(
     path: str | os.PathLike | np.ndarray,
     *,
     frac: float = 0.11,
-    corner: str = "lower right",
+    corner: str = _DEFAULT_CORNER,
     margin: float | tuple[float, float] = 0.025,
     shadow: bool = True,
     blur: float = DEFAULT_BLUR,
