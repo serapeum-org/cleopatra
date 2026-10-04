@@ -3531,7 +3531,11 @@ class ArrayGlyph(GeoMixin, Glyph):
 
     @staticmethod
     def _plot_text(
-        ax: Axes, arr: np.ndarray, indices, default_options_dict: dict
+        ax: Axes,
+        arr: np.ndarray,
+        indices,
+        default_options_dict: dict,
+        extent: list | tuple | None = None,
     ) -> list:
         """plot values as a text in each cell.
 
@@ -3540,19 +3544,42 @@ class ArrayGlyph(GeoMixin, Glyph):
             arr: numpy array.
             indices: array with columns, (row, col).
             default_options_dict: default options dictionary after updating the options.
+            extent: the glyph's `[left, right, bottom, top]` extent (matplotlib
+                order, as stored on `self.extent`) when the raster is
+                georeferenced, else `None`. When given, each `(row, col)` index is
+                mapped to its cell-centre *data* coordinate so the label lands on
+                its cell; the raster is drawn with `origin="upper"`, so row 0 is
+                the top cell. Without an extent the axes are index space, so the
+                raw `(col, row)` indices are used unchanged.
 
         Returns:
             list: list of the text object.
         """
-        add_text = lambda elem: ax.text(
-            elem[1],
-            elem[0],
-            np.round(arr[elem[0], elem[1]], 2),
-            ha="center",
-            va="center",
-            color="w",
-            fontsize=default_options_dict["num_size"],
-        )
+        nrows, ncols = arr.shape[0], arr.shape[1]
+        if extent is not None:
+            left, right, bottom, top = extent
+            dx = (right - left) / ncols
+            dy = (top - bottom) / nrows
+
+            def _xy(row: int, col: int) -> tuple[float, float]:
+                return left + (col + 0.5) * dx, top - (row + 0.5) * dy
+        else:
+
+            def _xy(row: int, col: int) -> tuple[float, float]:
+                return col, row
+
+        def add_text(elem):
+            x, y = _xy(elem[0], elem[1])
+            return ax.text(
+                x,
+                y,
+                np.round(arr[elem[0], elem[1]], 2),
+                ha="center",
+                va="center",
+                color="w",
+                fontsize=default_options_dict["num_size"],
+            )
+
         return list(map(add_text, indices))
 
     def _apply_kwargs_and_colorbar(
@@ -4558,7 +4585,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         if self.default_options["display_cell_value"] and supports_overlay:
             indices = get_indices2(arr, [np.nan])
             optional_display["cell_text_value"] = self._plot_text(
-                ax, arr, indices, self.default_options
+                ax, arr, indices, self.default_options, self.extent
             )
 
         if points is not None and supports_overlay:
@@ -5885,7 +5912,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         if show_cell_value:
             indices = get_indices2(frame_0, [np.nan])
             cell_text_value = self._plot_text(
-                ax, frame_0, indices, self.default_options
+                ax, frame_0, indices, self.default_options, self.extent
             )
             indices = np.array(indices)
 

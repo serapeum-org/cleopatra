@@ -1698,6 +1698,31 @@ class TestPlotKindDispatch:
         cell_texts = [t for t in ax.texts]
         assert len(cell_texts) >= 25
 
+    def test_cell_values_land_inside_a_georeferenced_extent(self):
+        """Cell labels map to data coordinates, not raw indices, under an extent."""
+        extent = [-8416244.4, 471959.4, -8359879.0, 524298.7]
+        glyph = ArrayGlyph(self._sample_arr(), extent=extent)
+        fig, ax = glyph.plot(cells=CellValues(show=True))
+        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        positions = [t.get_position() for t in ax.texts if t.get_text()]
+        assert len(positions) == 25, "every cell of the 5x5 grid should be labelled"
+        inside = [
+            min(xlim) <= x <= max(xlim) and min(ylim) <= y <= max(ylim)
+            for x, y in positions
+        ]
+        assert all(inside), (
+            f"labels must sit inside the georeferenced frame, {sum(inside)}/25 did"
+        )
+
+    def test_cell_values_use_raw_indices_without_extent(self):
+        """Without an extent the axes are index space, so labels stay at (col, row)."""
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(cells=CellValues(show=True))
+        positions = {(int(x), int(y)) for x, y in (t.get_position() for t in ax.texts)}
+        assert {(0, 0), (4, 4)} <= positions, (
+            "index-space labels should sit at integer (col, row) positions"
+        )
+
     def test_contour_skips_cell_value_silently(self):
         """`display_cell_value=True` is skipped for `kind="contour"`."""
         glyph = ArrayGlyph(self._sample_arr())
