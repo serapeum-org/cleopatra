@@ -321,15 +321,30 @@ class TestSolarAltitude:
         assert np.all(np.abs(altitude) <= 90.0 + 1e-9), "altitude stays in [-90, 90]"
 
     def test_broadcasts_scalar_against_array(self):
-        """Test a scalar lon broadcasts against an array lat.
+        """Test a scalar lon broadcasts against an array lat, element for element.
 
         Test scenario:
-            A single longitude paired with a column of latitudes should broadcast
-            to the array's shape.
+            A single longitude paired with a column of latitudes broadcasts to
+            the array's shape, and each value must equal the per-element altitude
+            of the manually broadcast pair (not merely have the right shape).
         """
-        lat = np.linspace(-90.0, 90.0, 7)
-        altitude = solar_altitude(0.0, lat, JUN_SOLSTICE)
+        when = JUN_SOLSTICE
+        lon, lat = 0.0, np.linspace(-90.0, 90.0, 7)
+        altitude = solar_altitude(lon, lat, when)
+        lon_b, lat_b = np.broadcast_arrays(np.asarray(lon), lat)
+        sun_lon, sun_lat = (np.radians(v) for v in subsolar_point(when))
+        expected = np.degrees(
+            np.arcsin(
+                np.sin(np.radians(lat_b)) * np.sin(sun_lat)
+                + np.cos(np.radians(lat_b))
+                * np.cos(sun_lat)
+                * np.cos(np.radians(lon_b) - sun_lon)
+            )
+        )
         assert altitude.shape == (7,), "scalar lon broadcasts against the lat array"
+        assert np.allclose(altitude, expected), (
+            "each broadcast value equals the per-element altitude"
+        )
 
     def test_non_finite_input_yields_nan(self):
         """Test a non-finite lon/lat propagates to nan without warning.
