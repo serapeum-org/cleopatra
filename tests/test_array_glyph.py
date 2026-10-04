@@ -1829,21 +1829,53 @@ class TestPlotKindDispatch:
                 f"label {value} is not on its (x[c], y[r]) cell centre"
             )
 
-    def test_cell_values_pcolormesh_2d_coords_inside_mesh(self):
-        """Curvilinear 2-D coords also place labels on their cells (not raw indices)."""
+    def test_cell_values_pcolormesh_2d_coords_sit_on_cell_centres(self):
+        """Curvilinear 2-D coords place each label at its exact (x[r,c], y[r,c]) centre."""
         arr = np.arange(12.0).reshape(3, 4)
         xc = np.linspace(100.0, 400.0, 4)
         yc = np.linspace(500.0, 700.0, 3)
         xx, yy = np.meshgrid(xc, yc)  # both (3, 4)
         glyph = ArrayGlyph(arr, coords=(xx, yy))
         fig, ax = glyph.plot(kind="pcolormesh", cells=CellValues(show=True))
-        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        by_value = {
+            int(round(float(t.get_text()))): t.get_position()
+            for t in ax.texts
+            if t.get_text()
+        }
+        assert len(by_value) == 12, "every cell should be labelled"
+        for value, (px, py) in by_value.items():
+            r, c = divmod(value, 4)
+            assert abs(px - xx[r, c]) < 1e-6 and abs(py - yy[r, c]) < 1e-6, (
+                f"label {value} is not on its 2-D cell centre"
+            )
+
+    def test_cell_values_pcolormesh_1x1_coords(self):
+        """A 1x1 coords grid labels the single cell at its centre."""
+        glyph = ArrayGlyph(np.array([[7.0]]), coords=(np.array([3.0]), np.array([9.0])))
+        fig, ax = glyph.plot(kind="pcolormesh", cells=CellValues(show=True))
         positions = [t.get_position() for t in ax.texts if t.get_text()]
-        assert len(positions) == 12, "every cell should be labelled"
-        assert all(
-            min(xlim) <= px <= max(xlim) and min(ylim) <= py <= max(ylim)
-            for px, py in positions
-        ), "2-D-coords labels must sit inside the mesh"
+        assert len(positions) == 1, "the single cell should be labelled"
+        px, py = positions[0]
+        assert abs(px - 3.0) < 1e-6 and abs(py - 9.0) < 1e-6, "label at the cell centre"
+
+    def test_cell_values_pcolormesh_descending_coords(self):
+        """Descending coords still map each label to its own cell (no sign assumptions)."""
+        arr = np.arange(12.0).reshape(3, 4)
+        xc = np.linspace(400.0, 100.0, 4)  # descending x
+        yc = np.linspace(700.0, 500.0, 3)  # descending y
+        glyph = ArrayGlyph(arr, coords=(xc, yc))
+        fig, ax = glyph.plot(kind="pcolormesh", cells=CellValues(show=True))
+        by_value = {
+            int(round(float(t.get_text()))): t.get_position()
+            for t in ax.texts
+            if t.get_text()
+        }
+        assert len(by_value) == 12, "every cell should be labelled"
+        for value, (px, py) in by_value.items():
+            r, c = divmod(value, 4)
+            assert abs(px - xc[c]) < 1e-6 and abs(py - yc[r]) < 1e-6, (
+                f"label {value} is not on its (xc[c], yc[r]) centre"
+            )
 
     def test_cell_values_pcolormesh_mixed_dim_coords_no_crash(self):
         """Mixed-rank coords (one axis 2-D, one 1-D) label without crashing."""
