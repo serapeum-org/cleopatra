@@ -240,7 +240,8 @@ def solar_altitude(lon: Any, lat: Any, when: datetime) -> np.ndarray:
         sin_altitude = np.sin(lat_r) * np.sin(sun_lat) + np.cos(lat_r) * np.cos(
             sun_lat
         ) * np.cos(lon_r - sun_lon)
-        return np.degrees(np.arcsin(np.clip(sin_altitude, -1.0, 1.0)))
+        altitude: np.ndarray = np.degrees(np.arcsin(np.clip(sin_altitude, -1.0, 1.0)))
+    return altitude
 
 
 def night_mask(
