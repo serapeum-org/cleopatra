@@ -427,22 +427,24 @@ class TestNightMask:
         assert not bool(night_mask(sub_lon, sub_lat, when)), "subsolar point is day"
         assert bool(night_mask(sub_lon + 180.0, -sub_lat, when)), "antipode is night"
 
-    def test_mask_agrees_with_the_altitude_threshold(self):
-        """Test the mask is exactly ``solar_altitude < refraction``.
+    def test_classifies_rings_of_known_altitude(self):
+        """Test night_mask against an independently-built ring of known altitude.
 
         Test scenario:
-            Over a grid, the boolean mask must equal the direct comparison of the
-            solar altitude against the refraction threshold.
+            A `terminator` ring built at -30 deg altitude (via `_small_circle`'s
+            bearing geometry, not the solar_altitude dot-product) must be all
+            night for a -6 deg threshold and all day for a -45 deg threshold --
+            an oracle that does not restate night_mask's own implementation.
         """
         when = JUN_SOLSTICE
-        lon, lat = np.meshgrid(
-            np.linspace(-180.0, 180.0, 13), np.linspace(-85.0, 85.0, 11)
+        ring = terminator(when, refraction=-30.0, n=120)
+        lon, lat = ring[:, 0], ring[:, 1]
+        assert np.all(night_mask(lon, lat, when, refraction=-6.0)), (
+            "-30 deg altitude is below a -6 deg threshold -> night"
         )
-        refraction = -6.0
-        expected = solar_altitude(lon, lat, when) < refraction
-        assert np.array_equal(
-            night_mask(lon, lat, when, refraction=refraction), expected
-        ), "mask should be the altitude-below-refraction field"
+        assert not np.any(night_mask(lon, lat, when, refraction=-45.0)), (
+            "-30 deg altitude is above a -45 deg threshold -> day"
+        )
 
     def test_mask_fills_about_half_the_grid(self):
         """Test roughly half of an equal-area-ish grid is in night.
