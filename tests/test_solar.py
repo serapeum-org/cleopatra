@@ -11,6 +11,7 @@ subsolar point tracks apparent solar time (~15 deg/hour westward), and the night
 region always covers ~half the sphere.
 """
 
+import warnings
 from datetime import UTC, datetime, timedelta, timezone
 
 import matplotlib.pyplot as plt
@@ -339,7 +340,9 @@ class TestSolarAltitude:
         """
         lon = np.array([0.0, np.inf, np.nan])
         lat = np.array([0.0, 10.0, 10.0])
-        altitude = solar_altitude(lon, lat, JUN_SOLSTICE)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            altitude = solar_altitude(lon, lat, JUN_SOLSTICE)
         assert np.isfinite(altitude[0]), "a finite input keeps a real altitude"
         assert np.all(np.isnan(altitude[1:])), "non-finite inputs become nan"
 
@@ -452,7 +455,9 @@ class TestNightMask:
         """
         lon = np.array([0.0, np.inf, np.nan])
         lat = np.array([0.0, 0.0, 0.0])
-        mask = night_mask(lon + 180.0, lat, JUN_SOLSTICE)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            mask = night_mask(lon + 180.0, lat, JUN_SOLSTICE)
         assert not np.any(mask[1:]), "non-finite samples are never night"
 
     def test_result_is_boolean(self):
