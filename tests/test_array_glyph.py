@@ -1825,9 +1825,8 @@ class TestPlotKindDispatch:
         ), "all labels must sit inside the mesh"
         for value, (px, py) in by_value.items():
             r, c = divmod(value, 5)  # arr == arange, so value encodes (row, col)
-            assert abs(px - x[c]) < 1e-6 and abs(py - y[r]) < 1e-6, (
-                f"label {value} is not on its (x[c], y[r]) cell centre"
-            )
+            assert abs(px - x[c]) < 1e-6, f"label {value} x off its cell centre"
+            assert abs(py - y[r]) < 1e-6, f"label {value} y off its cell centre"
 
     def test_cell_values_pcolormesh_2d_coords_sit_on_cell_centres(self):
         """Curvilinear 2-D coords place each label at its exact (x[r,c], y[r,c]) centre."""
@@ -1845,9 +1844,8 @@ class TestPlotKindDispatch:
         assert len(by_value) == 12, "every cell should be labelled"
         for value, (px, py) in by_value.items():
             r, c = divmod(value, 4)
-            assert abs(px - xx[r, c]) < 1e-6 and abs(py - yy[r, c]) < 1e-6, (
-                f"label {value} is not on its 2-D cell centre"
-            )
+            assert abs(px - xx[r, c]) < 1e-6, f"label {value} x off its 2-D centre"
+            assert abs(py - yy[r, c]) < 1e-6, f"label {value} y off its 2-D centre"
 
     def test_cell_values_pcolormesh_1x1_coords(self):
         """A 1x1 coords grid labels the single cell at its centre."""
@@ -1856,7 +1854,8 @@ class TestPlotKindDispatch:
         positions = [t.get_position() for t in ax.texts if t.get_text()]
         assert len(positions) == 1, "the single cell should be labelled"
         px, py = positions[0]
-        assert abs(px - 3.0) < 1e-6 and abs(py - 9.0) < 1e-6, "label at the cell centre"
+        assert abs(px - 3.0) < 1e-6, "label x at the cell centre"
+        assert abs(py - 9.0) < 1e-6, "label y at the cell centre"
 
     def test_cell_values_pcolormesh_descending_coords(self):
         """Descending coords still map each label to its own cell (no sign assumptions)."""
@@ -1873,9 +1872,8 @@ class TestPlotKindDispatch:
         assert len(by_value) == 12, "every cell should be labelled"
         for value, (px, py) in by_value.items():
             r, c = divmod(value, 4)
-            assert abs(px - xc[c]) < 1e-6 and abs(py - yc[r]) < 1e-6, (
-                f"label {value} is not on its (xc[c], yc[r]) centre"
-            )
+            assert abs(px - xc[c]) < 1e-6, f"label {value} x off its centre"
+            assert abs(py - yc[r]) < 1e-6, f"label {value} y off its centre"
 
     def test_cell_values_pcolormesh_mixed_dim_coords_no_crash(self):
         """Mixed-rank coords (one axis 2-D, one 1-D) label without crashing."""
@@ -1895,9 +1893,8 @@ class TestPlotKindDispatch:
             assert len(by_value) == 12, "every cell should be labelled"
             for value, (px, py) in by_value.items():
                 r, c = divmod(value, 4)
-                assert abs(px - xc[c]) < 1e-6 and abs(py - yc[r]) < 1e-6, (
-                    f"label {value} is not on its (xc[c], yc[r]) cell centre"
-                )
+                assert abs(px - xc[c]) < 1e-6, f"label {value} x off its cell centre"
+                assert abs(py - yc[r]) < 1e-6, f"label {value} y off its cell centre"
 
     def test_cell_values_under_projection_stay_at_raw_indices(self):
         """A projected render draws at reprojected coords; labels keep raw-index placement."""
@@ -1905,8 +1902,9 @@ class TestPlotKindDispatch:
         lon = np.linspace(-60.0, 60.0, 4)
         lat = np.linspace(-30.0, 30.0, 3)
         glyph = ArrayGlyph(arr, coords=(lon, lat))
+        cells = CellValues(show=True)
         with pytest.warns(UserWarning, match="raw grid indices"):
-            fig, ax = glyph.plot(projection="flat", cells=CellValues(show=True))
+            fig, ax = glyph.plot(projection="flat", cells=cells)
         positions = {
             (int(x), int(y))
             for x, y in (t.get_position() for t in ax.texts if t.get_text())
