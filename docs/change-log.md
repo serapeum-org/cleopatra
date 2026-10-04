@@ -1,5 +1,52 @@
 # Changelog
 
+## 0.41.0 (2026-10-04)
+
+
+- fix(array): place cell-value labels in the drawn coordinate system (#381)
+- ArrayGlyph._plot_text positioned each cell-value label at the raw                                                 
+  (col, row) array index and ignored the glyph's coordinate system, so                                              
+  whenever the data was drawn in a real coordinate system the labels fell                                           
+  outside the frame (invisible, and savefig(bbox_inches="tight") expanded                                           
+  the saved canvas).                                                                                                
+                                                                                                                    
+  - imshow + extent: map each (row, col) to its cell centre (origin upper)                                          
+  - pcolormesh + coords: centre at (x[col], y[row]); each axis is resolved                                          
+    independently, so 1-D, 2-D curvilinear and mixed-rank coord pairs work                                          
+  - pcolormesh without coords, no extent, or under a projection: keep raw                                           
+    index space (a projected render draws at reprojected coords, so the                                             
+    existing "omit labels under a projection" warning stays accurate)                                               
+  - route the extent/coords through both the plot and animate call sites;                                           
+    the RGB + cell-value path no longer raises                                                                      
+                                                                                                                    
+  Covered by new tests: exact cell centres (extent and 1-D/2-D coords),                                             
+  non-square, 1x1, descending and mixed-rank coords, pcolormesh index                                               
+  space, projection raw indices, and the RGB render.                                                                
+                                                                                                                    
+  Closes #378, #382
+- feat(basemap.solar): add solar_altitude and night_mask (#380)
+- Expose solar altitude as a reusable CRS-free primitive and a boolean night
+field built on it, so a consumer no longer has to re-derive the terminator
+formula to shade a night side it cannot take as a polygon (a clipped or
+orthographic globe, where half the night polygon is on the far side).
+- - solar_altitude(lon, lat, when): the sun's altitude in degrees (+90 at the
+  subsolar point, 0 on the geometric horizon, negative at night). Broadcasts
+  over numpy arrays, returns a 0-D ndarray for scalar inputs, and carries
+  non-finite inputs through to nan with no warning, so an off-globe pixel from
+  an inverse projection stays nan.
+- night_mask(lon, lat, when, *, refraction=...): the field form of
+  night_polygon, True where the altitude is strictly below the terminator
+  threshold, False off-globe, with the same (-90, 0] validation as terminator.
+- Both sit beside subsolar_point/terminator, which already carry the precision
+model and the refraction threshold they share, and stay inside the module's
+CRS-free scope: no projection, no matplotlib, no new dependency.
+- Covered to 100% line and branch with independent oracles (a haversine
+great-circle altitude and known-altitude terminator rings), a sweep that
+exercises the arcsin clip guard across a year of subsolar instants, and a
+warning-free non-finite assertion. Tolerances near +/-90 deg are set to 1e-4
+to clear the arcsin-amplified floating-point noise floor.
+- Closes #379
+
 ## 0.40.0 (2026-09-26)
 
 
