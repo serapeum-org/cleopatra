@@ -240,8 +240,10 @@ def solar_altitude(lon: Any, lat: Any, when: datetime) -> np.ndarray:
         sin_altitude = np.sin(lat_r) * np.sin(sun_lat) + np.cos(lat_r) * np.cos(
             sun_lat
         ) * np.cos(lon_r - sun_lon)
-        altitude: np.ndarray = np.degrees(np.arcsin(np.clip(sin_altitude, -1.0, 1.0)))
-    return altitude
+        altitude = np.degrees(np.arcsin(np.clip(sin_altitude, -1.0, 1.0)))
+    # np.asarray keeps the documented ndarray contract for scalar inputs too: a
+    # scalar call collapses to a numpy scalar otherwise, so wrap it to a 0-D array.
+    return np.asarray(altitude)
 
 
 def night_mask(
@@ -317,8 +319,10 @@ def night_mask(
             f"terminator; -6/-12/-18 are the twilight lines); got {refraction}."
         )
     # ``nan < refraction`` is False (a quiet numpy comparison), so off-globe
-    # samples fall out of the mask rather than masking spuriously.
-    return solar_altitude(lon, lat, when) < refraction
+    # samples fall out of the mask rather than masking spuriously. np.asarray
+    # keeps the ndarray contract for scalar inputs (the comparison would collapse
+    # to a numpy scalar otherwise).
+    return np.asarray(solar_altitude(lon, lat, when) < refraction)
 
 
 def terminator(

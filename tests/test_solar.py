@@ -365,6 +365,19 @@ class TestSolarAltitude:
             "altitude should match the spherical law-of-cosines evaluation"
         )
 
+    def test_returns_ndarray_for_scalar_inputs(self):
+        """Test a scalar call returns a 0-D ndarray, matching the annotation.
+
+        Test scenario:
+            The declared return type is np.ndarray; a scalar lon/lat must give a
+            genuine 0-D ndarray (not a bare numpy scalar) while staying usable as
+            a float.
+        """
+        result = solar_altitude(0.0, 0.0, JUN_SOLSTICE)
+        assert isinstance(result, np.ndarray), f"expected ndarray, got {type(result)}"
+        assert result.ndim == 0, f"a scalar call is 0-D, got ndim {result.ndim}"
+        assert np.isfinite(float(result)), "the 0-D result is still usable as a float"
+
 
 class TestNightMask:
     """Tests for night_mask."""
@@ -476,6 +489,19 @@ class TestNightMask:
         assert bool(night_mask(sub_lon + 180.0, -sub_lat, when, refraction=0.0)), (
             "refraction=0 is accepted and the nadir is below the horizon"
         )
+
+    def test_returns_ndarray_for_scalar_inputs(self):
+        """Test a scalar call returns a 0-D boolean ndarray, matching the annotation.
+
+        Test scenario:
+            night_mask is annotated np.ndarray; a scalar lon/lat must give a
+            genuine 0-D bool ndarray (not a bare numpy scalar) while staying
+            usable as a bool.
+        """
+        result = night_mask(0.0, 0.0, JUN_SOLSTICE)
+        assert isinstance(result, np.ndarray), f"expected ndarray, got {type(result)}"
+        assert result.ndim == 0, f"a scalar call is 0-D, got ndim {result.ndim}"
+        assert result.dtype == bool, f"the mask is boolean, got {result.dtype}"
 
 
 class TestTerminator:
