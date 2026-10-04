@@ -3531,7 +3531,12 @@ class ArrayGlyph(GeoMixin, Glyph):
 
     @staticmethod
     def _plot_text(
-        ax: Axes, arr: np.ndarray, indices, default_options_dict: dict
+        ax: Axes,
+        arr: np.ndarray,
+        indices,
+        default_options_dict: dict,
+        extent: list | tuple | None = None,
+        coords: tuple[np.ndarray, np.ndarray] | None = None,
     ) -> list:
         """plot values as a text in each cell.
 
@@ -3540,19 +3545,62 @@ class ArrayGlyph(GeoMixin, Glyph):
             arr: numpy array.
             indices: array with columns, (row, col).
             default_options_dict: default options dictionary after updating the options.
+            extent: the glyph's `[left, right, bottom, top]` extent (matplotlib
+                order, as stored on `self.extent`) when the raster is drawn by
+                `imshow`/`matshow`, else `None`. When given, each `(row, col)`
+                index is mapped to its cell-centre *data* coordinate; the raster
+                uses `origin="upper"`, so row 0 is the top cell.
+            coords: the glyph's `(x, y)` cell-centre coordinate arrays (as stored
+                on `self._coords`) when the data is drawn by `pcolormesh`, else
+                `None`. Each axis is resolved independently -- a 1-D `x` is
+                indexed per column (`x[col]`) and a 1-D `y` per row (`y[row]`),
+                while a 2-D `(nrows, ncols)` array (curvilinear mesh) is indexed
+                `[row, col]` -- so a mixed-rank pair (one axis 1-D, the other
+                2-D) is handled too. No row flip (unlike `extent`). Mutually
+                exclusive with `extent`.
+
+            With neither `extent` nor `coords` the axes are index space, so the
+            raw `(col, row)` indices are used unchanged.
 
         Returns:
             list: list of the text object.
         """
-        add_text = lambda elem: ax.text(
-            elem[1],
-            elem[0],
-            np.round(arr[elem[0], elem[1]], 2),
-            ha="center",
-            va="center",
-            color="w",
-            fontsize=default_options_dict["num_size"],
-        )
+        nrows, ncols = arr.shape[0], arr.shape[1]
+        if coords is not None:
+            xs = np.asarray(coords[0])
+            ys = np.asarray(coords[1])
+
+            def _xy(row: int, col: int) -> tuple[float, float]:
+                # Decide each axis independently: `_validate_coords` checks x and
+                # y shapes separately, so one may be 2-D (curvilinear) while the
+                # other is 1-D. x is indexed by column, y by row.
+                x = float(xs[row, col]) if xs.ndim == 2 else float(xs[col])
+                y = float(ys[row, col]) if ys.ndim == 2 else float(ys[row])
+                return x, y
+        elif extent is not None:
+            left, right, bottom, top = extent
+            dx = (right - left) / ncols
+            dy = (top - bottom) / nrows
+
+            def _xy(row: int, col: int) -> tuple[float, float]:
+                return left + (col + 0.5) * dx, top - (row + 0.5) * dy
+        else:
+
+            def _xy(row: int, col: int) -> tuple[int, int]:
+                return col, row
+
+        def add_text(elem):
+            x, y = _xy(elem[0], elem[1])
+            return ax.text(
+                x,
+                y,
+                np.round(arr[elem[0], elem[1]], 2),
+                ha="center",
+                va="center",
+                color="w",
+                fontsize=default_options_dict["num_size"],
+            )
+
         return list(map(add_text, indices))
 
     def _apply_kwargs_and_colorbar(
@@ -4557,8 +4605,23 @@ class ArrayGlyph(GeoMixin, Glyph):
         optional_display: dict[str, Any] = {}
         if self.default_options["display_cell_value"] and supports_overlay:
             indices = get_indices2(arr, [np.nan])
+            # Hand _plot_text whichever coordinate system the render actually
+            # uses: imshow honours `extent`, pcolormesh honours `coords`; neither
+            # (plain index space) falls back to raw indices. Read `projection`
+            # from default_options, not the branch-local name, which is only bound
+            # on the non-RGB path.
+            if self.default_options.get("projection"):
+                # A projected render draws the mesh at *reprojected* coordinates,
+                # which neither the raw extent nor the unprojected `coords` match.
+                # The warning above tells the caller to omit labels here; keep the
+                # historical raw-index placement so that warning stays accurate.
+                label_extent, label_coords = None, None
+            elif effective_kind == "imshow":
+                label_extent, label_coords = self.extent, None
+            else:
+                label_extent, label_coords = None, self._coords
             optional_display["cell_text_value"] = self._plot_text(
-                ax, arr, indices, self.default_options
+                ax, arr, indices, self.default_options, label_extent, label_coords
             )
 
         if points is not None and supports_overlay:
@@ -5885,7 +5948,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         if show_cell_value:
             indices = get_indices2(frame_0, [np.nan])
             cell_text_value = self._plot_text(
-                ax, frame_0, indices, self.default_options
+                ax, frame_0, indices, self.default_options, self.extent
             )
             indices = np.array(indices)
 

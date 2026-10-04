@@ -1698,6 +1698,233 @@ class TestPlotKindDispatch:
         cell_texts = [t for t in ax.texts]
         assert len(cell_texts) >= 25
 
+    def test_cell_values_land_inside_a_georeferenced_extent(self):
+        """Cell labels map to data coordinates, not raw indices, under an extent."""
+        extent = [-8416244.4, 471959.4, -8359879.0, 524298.7]
+        glyph = ArrayGlyph(self._sample_arr(), extent=extent)
+        fig, ax = glyph.plot(cells=CellValues(show=True))
+        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        positions = [t.get_position() for t in ax.texts if t.get_text()]
+        assert len(positions) == 25, "every cell of the 5x5 grid should be labelled"
+        inside = [
+            min(xlim) <= x <= max(xlim) and min(ylim) <= y <= max(ylim)
+            for x, y in positions
+        ]
+        assert all(inside), (
+            f"labels must sit inside the georeferenced frame, {sum(inside)}/25 did"
+        )
+
+    def test_cell_values_sit_at_exact_cell_centres_under_extent(self):
+        """Each label sits at its analytic cell centre (origin='upper'), not just inside.
+
+        Guards the half-cell `+0.5` term and the `dx`/`dy` scaling, which an
+        inside-the-frame check cannot catch.
+        """
+        arr = self._sample_arr()  # 5x5
+        extent = [
+            -8416244.4,
+            471959.4,
+            -8359879.0,
+            524298.7,
+        ]  # [minx, miny, maxx, maxy]
+        left, right, bottom, top = extent[0], extent[2], extent[1], extent[3]
+        nrows, ncols = arr.shape
+        dx, dy = (right - left) / ncols, (top - bottom) / nrows
+        expected = {
+            (left + (c + 0.5) * dx, top - (r + 0.5) * dy)
+            for r in range(nrows)
+            for c in range(ncols)
+        }
+        glyph = ArrayGlyph(arr, extent=extent)
+        fig, ax = glyph.plot(cells=CellValues(show=True))
+        actual = [t.get_position() for t in ax.texts if t.get_text()]
+        assert len(actual) == 25, "every cell should be labelled"
+        for x, y in actual:
+            assert any(
+                abs(x - ex) < 1e-6 and abs(y - ey) < 1e-6 for ex, ey in expected
+            ), f"label at ({x}, {y}) is not on an analytic cell centre"
+
+    def test_cell_values_use_raw_indices_without_extent(self):
+        """Without an extent the axes are index space, so labels stay at (col, row)."""
+        glyph = ArrayGlyph(self._sample_arr())
+        fig, ax = glyph.plot(cells=CellValues(show=True))
+        positions = {(int(x), int(y)) for x, y in (t.get_position() for t in ax.texts)}
+        assert {(0, 0), (4, 4)} <= positions, (
+            "index-space labels should sit at integer (col, row) positions"
+        )
+
+    def test_cell_values_pcolormesh_extent_stay_in_index_space(self):
+        """pcolormesh ignores extent, so its labels stay in the visible index frame."""
+        extent = [-8416244.4, 471959.4, -8359879.0, 524298.7]
+        glyph = ArrayGlyph(self._sample_arr(), extent=extent)
+        fig, ax = glyph.plot(kind="pcolormesh", cells=CellValues(show=True))
+        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        positions = [t.get_position() for t in ax.texts if t.get_text()]
+        assert len(positions) == 25, "every cell should be labelled"
+        inside = sum(
+            min(xlim) <= x <= max(xlim) and min(ylim) <= y <= max(ylim)
+            for x, y in positions
+        )
+        assert inside == 25, (
+            f"pcolormesh ignores extent; labels must stay in the index frame, {inside}/25 did"
+        )
+
+    def test_cell_values_non_square_extent_not_row_col_swapped(self):
+        """A non-square array labels every cell inside the frame without swapping axes."""
+        arr = np.arange(21, dtype=float).reshape(3, 7)  # 3 rows, 7 cols
+        extent = [1000.0, 2000.0, 8000.0, 6000.0]  # [minx, miny, maxx, maxy]
+        glyph = ArrayGlyph(arr, extent=extent)
+        fig, ax = glyph.plot(cells=CellValues(show=True))
+        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        by_value = {
+            float(t.get_text()): t.get_position() for t in ax.texts if t.get_text()
+        }
+        assert len(by_value) == 21, "every cell of the 3x7 grid should be labelled"
+        assert all(
+            min(xlim) <= x <= max(xlim) and min(ylim) <= y <= max(ylim)
+            for x, y in by_value.values()
+        ), "all labels must sit inside the frame"
+        # value 6 is row 0, col 6 (top-right); value 14 is row 2, col 0 (bottom-left)
+        assert by_value[6.0][0] > by_value[0.0][0], "col 6 must be right of col 0"
+        assert by_value[14.0][1] < by_value[0.0][1], (
+            "row 2 must be below row 0 (origin upper)"
+        )
+
+    def test_cell_values_animate_extent_inside_frame(self):
+        """animate() renders via imshow, so its cell labels honour the extent too."""
+        extent = [-8416244.4, 471959.4, -8359879.0, 524298.7]
+        arr = self._sample_arr()
+        glyph = ArrayGlyph([arr, arr + 1.0], extent=extent)
+        glyph.animate([0, 1], cells=CellValues(show=True))
+        ax = glyph.ax
+        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        positions = [t.get_position() for t in ax.texts if t.get_text()]
+        assert len(positions) == 25, "every cell should be labelled in the first frame"
+        assert all(
+            min(xlim) <= x <= max(xlim) and min(ylim) <= y <= max(ylim)
+            for x, y in positions
+        ), "animate labels must sit inside the georeferenced frame"
+
+    def test_cell_values_pcolormesh_1d_coords_sit_on_cell_centres(self):
+        """pcolormesh labels follow 1-D coords and sit at cell centres (x[c], y[r])."""
+        arr = np.arange(15.0).reshape(3, 5)  # 3 rows, 5 cols
+        x = np.linspace(1000.0, 5000.0, 5)  # ncols centres
+        y = np.linspace(2000.0, 4000.0, 3)  # nrows centres
+        glyph = ArrayGlyph(arr, coords=(x, y))
+        fig, ax = glyph.plot(kind="pcolormesh", cells=CellValues(show=True))
+        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        by_value = {
+            int(round(float(t.get_text()))): t.get_position()
+            for t in ax.texts
+            if t.get_text()
+        }
+        assert len(by_value) == 15, "every cell should be labelled"
+        assert all(
+            min(xlim) <= px <= max(xlim) and min(ylim) <= py <= max(ylim)
+            for px, py in by_value.values()
+        ), "all labels must sit inside the mesh"
+        for value, (px, py) in by_value.items():
+            r, c = divmod(value, 5)  # arr == arange, so value encodes (row, col)
+            assert abs(px - x[c]) < 1e-6, f"label {value} x off its cell centre"
+            assert abs(py - y[r]) < 1e-6, f"label {value} y off its cell centre"
+
+    def test_cell_values_pcolormesh_2d_coords_sit_on_cell_centres(self):
+        """Curvilinear 2-D coords place each label at its exact (x[r,c], y[r,c]) centre."""
+        arr = np.arange(12.0).reshape(3, 4)
+        xc = np.linspace(100.0, 400.0, 4)
+        yc = np.linspace(500.0, 700.0, 3)
+        xx, yy = np.meshgrid(xc, yc)  # both (3, 4)
+        glyph = ArrayGlyph(arr, coords=(xx, yy))
+        fig, ax = glyph.plot(kind="pcolormesh", cells=CellValues(show=True))
+        by_value = {
+            int(round(float(t.get_text()))): t.get_position()
+            for t in ax.texts
+            if t.get_text()
+        }
+        assert len(by_value) == 12, "every cell should be labelled"
+        for value, (px, py) in by_value.items():
+            r, c = divmod(value, 4)
+            assert abs(px - xx[r, c]) < 1e-6, f"label {value} x off its 2-D centre"
+            assert abs(py - yy[r, c]) < 1e-6, f"label {value} y off its 2-D centre"
+
+    def test_cell_values_pcolormesh_1x1_coords(self):
+        """A 1x1 coords grid labels the single cell at its centre."""
+        glyph = ArrayGlyph(np.array([[7.0]]), coords=(np.array([3.0]), np.array([9.0])))
+        fig, ax = glyph.plot(kind="pcolormesh", cells=CellValues(show=True))
+        positions = [t.get_position() for t in ax.texts if t.get_text()]
+        assert len(positions) == 1, "the single cell should be labelled"
+        px, py = positions[0]
+        assert abs(px - 3.0) < 1e-6, "label x at the cell centre"
+        assert abs(py - 9.0) < 1e-6, "label y at the cell centre"
+
+    def test_cell_values_pcolormesh_descending_coords(self):
+        """Descending coords still map each label to its own cell (no sign assumptions)."""
+        arr = np.arange(12.0).reshape(3, 4)
+        xc = np.linspace(400.0, 100.0, 4)  # descending x
+        yc = np.linspace(700.0, 500.0, 3)  # descending y
+        glyph = ArrayGlyph(arr, coords=(xc, yc))
+        fig, ax = glyph.plot(kind="pcolormesh", cells=CellValues(show=True))
+        by_value = {
+            int(round(float(t.get_text()))): t.get_position()
+            for t in ax.texts
+            if t.get_text()
+        }
+        assert len(by_value) == 12, "every cell should be labelled"
+        for value, (px, py) in by_value.items():
+            r, c = divmod(value, 4)
+            assert abs(px - xc[c]) < 1e-6, f"label {value} x off its centre"
+            assert abs(py - yc[r]) < 1e-6, f"label {value} y off its centre"
+
+    def test_cell_values_pcolormesh_mixed_dim_coords_no_crash(self):
+        """Mixed-rank coords (one axis 2-D, one 1-D) label without crashing."""
+        arr = np.arange(12.0).reshape(3, 4)
+        xc = np.linspace(100.0, 400.0, 4)
+        yc = np.linspace(500.0, 700.0, 3)
+        xx, yy = np.meshgrid(xc, yc)  # both (3, 4)
+        for coords in ((xx, yc), (xc, yy)):  # x 2-D + y 1-D, then x 1-D + y 2-D
+            glyph = ArrayGlyph(arr, coords=coords)
+            fig, ax = glyph.plot(kind="pcolormesh", cells=CellValues(show=True))
+            xlim, ylim = ax.get_xlim(), ax.get_ylim()
+            by_value = {
+                int(round(float(t.get_text()))): t.get_position()
+                for t in ax.texts
+                if t.get_text()
+            }
+            assert len(by_value) == 12, "every cell should be labelled"
+            for value, (px, py) in by_value.items():
+                r, c = divmod(value, 4)
+                assert abs(px - xc[c]) < 1e-6, f"label {value} x off its cell centre"
+                assert abs(py - yc[r]) < 1e-6, f"label {value} y off its cell centre"
+
+    def test_cell_values_under_projection_stay_at_raw_indices(self):
+        """A projected render draws at reprojected coords; labels keep raw-index placement."""
+        arr = np.arange(12.0).reshape(3, 4)
+        lon = np.linspace(-60.0, 60.0, 4)
+        lat = np.linspace(-30.0, 30.0, 3)
+        glyph = ArrayGlyph(arr, coords=(lon, lat))
+        cells = CellValues(show=True)
+        with pytest.warns(UserWarning, match="raw grid indices"):
+            fig, ax = glyph.plot(projection="flat", cells=cells)
+        positions = {
+            (int(x), int(y))
+            for x, y in (t.get_position() for t in ax.texts if t.get_text())
+        }
+        assert {(0, 0), (3, 2)} <= positions, (
+            "under a projection labels stay at raw (col, row) indices (the warning says so)"
+        )
+
+    def test_cell_values_on_rgb_glyph_does_not_crash(self):
+        """Cell labels on an RGB glyph render without raising (no unbound projection)."""
+        rgb_arr = (
+            np.random.default_rng(0).integers(0, 255, size=(3, 4, 5)).astype(np.float32)
+        )
+        glyph = ArrayGlyph(rgb_arr, rgb_bands=RgbBands([0, 1, 2]))
+        fig, ax = glyph.plot(cells=CellValues(show=True))
+        assert isinstance(fig, Figure), (
+            "an RGB glyph with cell values should still render"
+        )
+        assert len(ax.texts) >= 1, "the cell-value label path should have run"
+
     def test_contour_skips_cell_value_silently(self):
         """`display_cell_value=True` is skipped for `kind="contour"`."""
         glyph = ArrayGlyph(self._sample_arr())
