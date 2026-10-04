@@ -1714,6 +1714,36 @@ class TestPlotKindDispatch:
             f"labels must sit inside the georeferenced frame, {sum(inside)}/25 did"
         )
 
+    def test_cell_values_sit_at_exact_cell_centres_under_extent(self):
+        """Each label sits at its analytic cell centre (origin='upper'), not just inside.
+
+        Guards the half-cell `+0.5` term and the `dx`/`dy` scaling, which an
+        inside-the-frame check cannot catch.
+        """
+        arr = self._sample_arr()  # 5x5
+        extent = [
+            -8416244.4,
+            471959.4,
+            -8359879.0,
+            524298.7,
+        ]  # [minx, miny, maxx, maxy]
+        left, right, bottom, top = extent[0], extent[2], extent[1], extent[3]
+        nrows, ncols = arr.shape
+        dx, dy = (right - left) / ncols, (top - bottom) / nrows
+        expected = {
+            (left + (c + 0.5) * dx, top - (r + 0.5) * dy)
+            for r in range(nrows)
+            for c in range(ncols)
+        }
+        glyph = ArrayGlyph(arr, extent=extent)
+        fig, ax = glyph.plot(cells=CellValues(show=True))
+        actual = [t.get_position() for t in ax.texts if t.get_text()]
+        assert len(actual) == 25, "every cell should be labelled"
+        for x, y in actual:
+            assert any(
+                abs(x - ex) < 1e-6 and abs(y - ey) < 1e-6 for ex, ey in expected
+            ), f"label at ({x}, {y}) is not on an analytic cell centre"
+
     def test_cell_values_use_raw_indices_without_extent(self):
         """Without an extent the axes are index space, so labels stay at (col, row)."""
         glyph = ArrayGlyph(self._sample_arr())
