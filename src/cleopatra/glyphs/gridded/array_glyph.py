@@ -3552,10 +3552,11 @@ class ArrayGlyph(GeoMixin, Glyph):
                 uses `origin="upper"`, so row 0 is the top cell.
             coords: the glyph's `(x, y)` cell-centre coordinate arrays (as stored
                 on `self._coords`) when the data is drawn by `pcolormesh`, else
-                `None`. Each is either 1-D (`x` per column, `y` per row) or 2-D
-                `(nrows, ncols)` for a curvilinear mesh; cell `(row, col)` is
-                centred at `(x[col], y[row])` (1-D) or `(x[row, col], y[row,
-                col])` (2-D), with no row flip (unlike `extent`). Mutually
+                `None`. Each axis is resolved independently -- a 1-D `x` is
+                indexed per column (`x[col]`) and a 1-D `y` per row (`y[row]`),
+                while a 2-D `(nrows, ncols)` array (curvilinear mesh) is indexed
+                `[row, col]` -- so a mixed-rank pair (one axis 1-D, the other
+                2-D) is handled too. No row flip (unlike `extent`). Mutually
                 exclusive with `extent`.
 
             With neither `extent` nor `coords` the axes are index space, so the
