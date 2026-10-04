@@ -302,8 +302,10 @@ class TestSolarAltitude:
         """
         when = JUN_SOLSTICE
         sub_lon, sub_lat = subsolar_point(when)
+        # arcsin has near-infinite slope at 1, so the ~1e-16 roundoff in
+        # sin^2+cos^2 amplifies to ~1e-6 deg (platform-dependent); 1e-4 clears it.
         assert float(solar_altitude(sub_lon, sub_lat, when)) == pytest.approx(
-            90.0, abs=1e-6
+            90.0, abs=1e-4
         ), "the sun is overhead at the subsolar point"
 
     def test_is_minus_90_at_the_antipode(self):
@@ -315,8 +317,10 @@ class TestSolarAltitude:
         """
         when = JUN_SOLSTICE
         sub_lon, sub_lat = subsolar_point(when)
+        # arcsin has near-infinite slope at -1; the sin^2+cos^2 roundoff amplifies
+        # to ~1e-6 deg (platform-dependent), so allow 1e-4 as at the subsolar peak.
         assert float(solar_altitude(sub_lon + 180.0, -sub_lat, when)) == pytest.approx(
-            -90.0, abs=1e-6
+            -90.0, abs=1e-4
         ), "the solar nadir is at the subsolar point's antipode"
 
     def test_is_zero_on_the_geometric_terminator(self):
@@ -415,7 +419,10 @@ class TestSolarAltitude:
                 sub_lon, sub_lat = subsolar_point(when)
                 altitude = solar_altitude(sub_lon, sub_lat, when)
                 assert np.isfinite(altitude), f"finite subsolar altitude at {when}"
-                assert float(altitude) == pytest.approx(90.0, abs=1e-6), (
+                # arcsin has near-infinite slope at 1, so the ~1e-16 roundoff in
+                # sin^2+cos^2 amplifies to ~1e-6 deg here; 1e-4 stays well clear of
+                # that platform-dependent noise while still catching a gross error.
+                assert float(altitude) == pytest.approx(90.0, abs=1e-4), (
                     f"subsolar altitude is ~90 deg at {when}"
                 )
 
