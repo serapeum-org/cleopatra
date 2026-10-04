@@ -74,6 +74,34 @@ def _angular_distance_deg(lon0, lat0, lon, lat):
     return np.degrees(np.arccos(np.clip(cos_d, -1.0, 1.0)))
 
 
+def _great_circle_altitude(lon, lat, when):
+    """Return the solar altitude (deg) via an independent haversine oracle.
+
+    Oracle for `solar_altitude`: the altitude equals 90 deg minus the
+    great-circle distance from the subsolar point, with the distance computed by
+    the haversine formula -- a structurally different expression from the
+    production law-of-cosines, so a swapped term or sign error is not mirrored.
+
+    Args:
+        lon: Longitude(s) in degrees (scalar or array).
+        lat: Latitude(s) in degrees (scalar or array).
+        when: The instant whose subsolar point anchors the distance.
+
+    Returns:
+        numpy.ndarray: Solar altitude(s) in degrees.
+    """
+    sub_lon, sub_lat = subsolar_point(when)
+    lat_r = np.radians(np.asarray(lat, dtype=float))
+    sub_lat_r = np.radians(sub_lat)
+    half_dlat = (lat_r - sub_lat_r) / 2.0
+    half_dlon = np.radians(np.asarray(lon, dtype=float) - sub_lon) / 2.0
+    hav = (
+        np.sin(half_dlat) ** 2
+        + np.cos(lat_r) * np.cos(sub_lat_r) * np.sin(half_dlon) ** 2
+    )
+    return 90.0 - np.degrees(2.0 * np.arcsin(np.sqrt(hav)))
+
+
 def _sphere_fraction(rings):
     """Return the fraction of the sphere enclosed by lon/lat ``rings``.
 
@@ -332,18 +360,10 @@ class TestSolarAltitude:
         lon, lat = 0.0, np.linspace(-90.0, 90.0, 7)
         altitude = solar_altitude(lon, lat, when)
         lon_b, lat_b = np.broadcast_arrays(np.asarray(lon), lat)
-        sun_lon, sun_lat = (np.radians(v) for v in subsolar_point(when))
-        expected = np.degrees(
-            np.arcsin(
-                np.sin(np.radians(lat_b)) * np.sin(sun_lat)
-                + np.cos(np.radians(lat_b))
-                * np.cos(sun_lat)
-                * np.cos(np.radians(lon_b) - sun_lon)
-            )
-        )
+        expected = _great_circle_altitude(lon_b, lat_b, when)
         assert altitude.shape == (7,), "scalar lon broadcasts against the lat array"
-        assert np.allclose(altitude, expected), (
-            "each broadcast value equals the per-element altitude"
+        assert np.allclose(altitude, expected, atol=1e-9), (
+            "each broadcast value equals the independent great-circle altitude"
         )
 
     def test_non_finite_input_yields_nan(self):
@@ -361,26 +381,21 @@ class TestSolarAltitude:
         assert np.isfinite(altitude[0]), "a finite input keeps a real altitude"
         assert np.all(np.isnan(altitude[1:])), "non-finite inputs become nan"
 
-    def test_matches_a_direct_formula_evaluation(self):
-        """Test the altitude equals a hand-rolled spherical evaluation.
+    def test_matches_the_great_circle_altitude(self):
+        """Test the altitude equals 90 deg minus the great-circle distance to the sun.
 
         Test scenario:
-            For a spread of points the altitude must equal arcsin of the
-            sun/point dot product built directly from the subsolar point.
+            For a spread of points the altitude must equal the independent
+            haversine oracle (90 deg minus the angular distance to the subsolar
+            point), which does not reuse the production law-of-cosines, so a
+            swapped term or sign error would be caught.
         """
         when = JUN_SOLSTICE
         lon = np.array([-120.0, -30.0, 45.0, 170.0])
         lat = np.array([-60.0, -10.0, 25.0, 80.0])
-        sun_lon, sun_lat = (np.radians(v) for v in subsolar_point(when))
-        lon_r, lat_r = np.radians(lon), np.radians(lat)
-        expected = np.degrees(
-            np.arcsin(
-                np.sin(lat_r) * np.sin(sun_lat)
-                + np.cos(lat_r) * np.cos(sun_lat) * np.cos(lon_r - sun_lon)
-            )
-        )
-        assert np.allclose(solar_altitude(lon, lat, when), expected), (
-            "altitude should match the spherical law-of-cosines evaluation"
+        expected = _great_circle_altitude(lon, lat, when)
+        assert np.allclose(solar_altitude(lon, lat, when), expected, atol=1e-9), (
+            "altitude should be 90 deg minus the haversine distance to the subsolar point"
         )
 
     def test_returns_ndarray_for_scalar_inputs(self):
