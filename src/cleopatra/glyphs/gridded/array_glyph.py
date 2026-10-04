@@ -3565,7 +3565,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 return left + (col + 0.5) * dx, top - (row + 0.5) * dy
         else:
 
-            def _xy(row: int, col: int) -> tuple[float, float]:
+            def _xy(row: int, col: int) -> tuple[int, int]:
                 return col, row
 
         def add_text(elem):
@@ -4584,8 +4584,12 @@ class ArrayGlyph(GeoMixin, Glyph):
         optional_display: dict[str, Any] = {}
         if self.default_options["display_cell_value"] and supports_overlay:
             indices = get_indices2(arr, [np.nan])
+            # Only imshow honours `extent`; pcolormesh draws in index (or
+            # `coords`) space and ignores it, so its labels must stay in index
+            # space -- pass extent=None there to avoid shoving them off-screen.
+            label_extent = self.extent if effective_kind == "imshow" else None
             optional_display["cell_text_value"] = self._plot_text(
-                ax, arr, indices, self.default_options, self.extent
+                ax, arr, indices, self.default_options, label_extent
             )
 
         if points is not None and supports_overlay:

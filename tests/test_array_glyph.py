@@ -1723,6 +1723,58 @@ class TestPlotKindDispatch:
             "index-space labels should sit at integer (col, row) positions"
         )
 
+    def test_cell_values_pcolormesh_extent_stay_in_index_space(self):
+        """pcolormesh ignores extent, so its labels stay in the visible index frame."""
+        extent = [-8416244.4, 471959.4, -8359879.0, 524298.7]
+        glyph = ArrayGlyph(self._sample_arr(), extent=extent)
+        fig, ax = glyph.plot(kind="pcolormesh", cells=CellValues(show=True))
+        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        positions = [t.get_position() for t in ax.texts if t.get_text()]
+        assert len(positions) == 25, "every cell should be labelled"
+        inside = sum(
+            min(xlim) <= x <= max(xlim) and min(ylim) <= y <= max(ylim)
+            for x, y in positions
+        )
+        assert inside == 25, (
+            f"pcolormesh ignores extent; labels must stay in the index frame, {inside}/25 did"
+        )
+
+    def test_cell_values_non_square_extent_not_row_col_swapped(self):
+        """A non-square array labels every cell inside the frame without swapping axes."""
+        arr = np.arange(21, dtype=float).reshape(3, 7)  # 3 rows, 7 cols
+        extent = [1000.0, 2000.0, 8000.0, 6000.0]  # [minx, miny, maxx, maxy]
+        glyph = ArrayGlyph(arr, extent=extent)
+        fig, ax = glyph.plot(cells=CellValues(show=True))
+        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        by_value = {
+            float(t.get_text()): t.get_position() for t in ax.texts if t.get_text()
+        }
+        assert len(by_value) == 21, "every cell of the 3x7 grid should be labelled"
+        assert all(
+            min(xlim) <= x <= max(xlim) and min(ylim) <= y <= max(ylim)
+            for x, y in by_value.values()
+        ), "all labels must sit inside the frame"
+        # value 6 is row 0, col 6 (top-right); value 14 is row 2, col 0 (bottom-left)
+        assert by_value[6.0][0] > by_value[0.0][0], "col 6 must be right of col 0"
+        assert by_value[14.0][1] < by_value[0.0][1], (
+            "row 2 must be below row 0 (origin upper)"
+        )
+
+    def test_cell_values_animate_extent_inside_frame(self):
+        """animate() renders via imshow, so its cell labels honour the extent too."""
+        extent = [-8416244.4, 471959.4, -8359879.0, 524298.7]
+        arr = self._sample_arr()
+        glyph = ArrayGlyph([arr, arr + 1.0], extent=extent)
+        glyph.animate([0, 1], cells=CellValues(show=True))
+        ax = glyph.ax
+        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        positions = [t.get_position() for t in ax.texts if t.get_text()]
+        assert len(positions) == 25, "every cell should be labelled in the first frame"
+        assert all(
+            min(xlim) <= x <= max(xlim) and min(ylim) <= y <= max(ylim)
+            for x, y in positions
+        ), "animate labels must sit inside the georeferenced frame"
+
     def test_contour_skips_cell_value_silently(self):
         """`display_cell_value=True` is skipped for `kind="contour"`."""
         glyph = ArrayGlyph(self._sample_arr())
