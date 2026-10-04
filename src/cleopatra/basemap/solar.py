@@ -258,10 +258,11 @@ def night_mask(
     A position is in night when its `solar_altitude` is below ``refraction`` --
     the same threshold that defines the `terminator` and `night_polygon`. The
     comparison is strict (``<``): a sample counts as night only when its altitude
-    is strictly below ``refraction``, so the boundary itself is excluded (a value
-    lands day or night by floating-point rounding, which for a shaded overlay is
-    immaterial). This is the field form of the night region: where `night_polygon`
-    gives the night
+    is strictly below ``refraction``, so the boundary is excluded. Whether a
+    computed altitude lands exactly on the boundary is a matter of floating-point
+    rounding; when it does, the strict ``<`` puts it on the day side, which for a
+    shaded overlay is immaterial. This is the field form of the night region:
+    where `night_polygon` gives the night
     side as a ring (which a clipped or orthographic display cannot fill, because
     half of it is on the far side), the mask gives it per sample, so a consumer
     that has already inverted its own display grid to lon/lat can shade the night
