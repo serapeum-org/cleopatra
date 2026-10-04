@@ -165,6 +165,161 @@ def subsolar_point(when: datetime) -> tuple[float, float]:
     return float(_wrap_longitude(lon)), float(declination)
 
 
+def solar_altitude(lon: Any, lat: Any, when: datetime) -> np.ndarray:
+    """Return the sun's altitude angle (degrees) at ``lon``/``lat`` for ``when``.
+
+    The altitude is the angle between the sun and the local horizontal: ``+90``
+    at the subsolar point, ``0`` on the geometric horizon, and negative at night.
+    It is pure spherical geometry about the subsolar point (`subsolar_point`) --
+    the very quantity whose ``refraction`` threshold defines the `terminator` --
+    with no CRS, projection, or atmospheric-refraction correction applied.
+
+    The inputs broadcast against each other with numpy's rules, so a scalar, a
+    1-D track, or a 2-D grid all work and the result takes the broadcast shape.
+    Non-finite inputs propagate: a ``nan``/``inf`` longitude or latitude yields
+    ``nan`` at that position. That lets a caller feed the inverse of a clipped or
+    orthographic projection -- where off-globe pixels come back non-finite -- and
+    get ``nan`` there rather than a spurious value or an error.
+
+    Args:
+        lon: Longitude(s) in degrees; scalar or array-like, broadcast with
+            ``lat``.
+        lat: Latitude(s) in degrees; scalar or array-like, broadcast with
+            ``lon``.
+        when: An aware `datetime.datetime` (naive is treated as UTC).
+
+    Returns:
+        numpy.ndarray: The solar altitude in degrees, in ``[-90, 90]``, with the
+        broadcast shape of ``lon`` and ``lat`` (0-D for scalar inputs). Positions
+        with a non-finite ``lon``/``lat`` are ``nan``.
+
+    Examples:
+        - The altitude peaks at ``+90`` directly under the sun (the subsolar
+          point):
+            ```python
+            >>> import numpy as np
+            >>> from datetime import UTC, datetime
+            >>> when = datetime(2026, 6, 21, 12, 0, tzinfo=UTC)
+            >>> sub_lon, sub_lat = subsolar_point(when)
+            >>> float(np.round(solar_altitude(sub_lon, sub_lat, when), 3))
+            90.0
+
+            ```
+        - It is negative on the night side and broadcasts over arrays, so a whole
+          grid can be classified at once:
+            ```python
+            >>> import numpy as np
+            >>> from datetime import UTC, datetime
+            >>> when = datetime(2026, 6, 21, 12, 0, tzinfo=UTC)
+            >>> alt = solar_altitude(np.array([0.0, 180.0]), np.array([0.0, 0.0]), when)
+            >>> alt.shape
+            (2,)
+            >>> bool(alt[1] < 0.0)  # the antipode of the ~noon meridian is in night
+            True
+
+            ```
+        - A non-finite input comes back as ``nan`` at that position, so an
+          off-globe pixel from an inverse projection stays untouched:
+            ```python
+            >>> import numpy as np
+            >>> from datetime import UTC, datetime
+            >>> when = datetime(2026, 6, 21, 12, 0, tzinfo=UTC)
+            >>> bool(np.isnan(solar_altitude(np.inf, 10.0, when)))
+            True
+
+            ```
+    """
+    lon_r = np.radians(np.asarray(lon, dtype=float))
+    lat_r = np.radians(np.asarray(lat, dtype=float))
+    sun_lon, sun_lat = (np.radians(value) for value in subsolar_point(when))
+    with np.errstate(invalid="ignore"):
+        # A non-finite input is +/-inf here, and its sine/cosine are nan; the
+        # errstate keeps that quiet and carries it through to a nan altitude
+        # rather than raising. Clip guards a 1-ULP overshoot of +/-1 at the
+        # subsolar point / its antipode (which would make arcsin return nan).
+        sin_altitude = np.sin(lat_r) * np.sin(sun_lat) + np.cos(lat_r) * np.cos(
+            sun_lat
+        ) * np.cos(lon_r - sun_lon)
+        return np.degrees(np.arcsin(np.clip(sin_altitude, -1.0, 1.0)))
+
+
+def night_mask(
+    lon: Any,
+    lat: Any,
+    when: datetime,
+    *,
+    refraction: float = DEFAULT_REFRACTION,
+) -> np.ndarray:
+    """Return a boolean field that is ``True`` where ``lon``/``lat`` is in night.
+
+    A position is in night when its `solar_altitude` is below ``refraction`` --
+    the same threshold that defines the `terminator` and `night_polygon`. This is
+    the field form of the night region: where `night_polygon` gives the night
+    side as a ring (which a clipped or orthographic display cannot fill, because
+    half of it is on the far side), the mask gives it per sample, so a consumer
+    that has already inverted its own display grid to lon/lat can shade the night
+    by testing each pixel. cleopatra owns the solar geometry; the projection and
+    the fill stay with the caller.
+
+    Non-finite inputs are not in night: a ``nan`` altitude (an off-globe pixel)
+    yields ``False``, so an inverse-projection grid's off-disc positions are
+    simply left unmasked.
+
+    Args:
+        lon: Longitude(s) in degrees; scalar or array-like, broadcast with
+            ``lat``.
+        lat: Latitude(s) in degrees; scalar or array-like, broadcast with
+            ``lon``.
+        when: An aware `datetime.datetime` (naive is treated as UTC).
+        refraction: Solar altitude in degrees defining the terminator; see
+            `DEFAULT_REFRACTION`. Use ``-6`` / ``-12`` / ``-18`` for the civil /
+            nautical / astronomical twilight boundaries.
+
+    Returns:
+        numpy.ndarray: A boolean array with the broadcast shape of ``lon`` and
+        ``lat`` (0-D for scalar inputs), ``True`` where the sun is below
+        ``refraction`` and ``False`` elsewhere, including where the altitude is
+        non-finite.
+
+    Raises:
+        ValueError: If ``refraction`` is outside ``(-90, 0]`` -- 0 is the
+            geometric terminator, a positive value is not a terminator, and -90
+            or below is degenerate (matching `terminator`).
+
+    Examples:
+        - The subsolar point is in full day and its antipode is in night:
+            ```python
+            >>> from datetime import UTC, datetime
+            >>> when = datetime(2026, 6, 21, 12, 0, tzinfo=UTC)
+            >>> sub_lon, sub_lat = subsolar_point(when)
+            >>> bool(night_mask(sub_lon, sub_lat, when))
+            False
+            >>> bool(night_mask(sub_lon + 180.0, -sub_lat, when))
+            True
+
+            ```
+        - It broadcasts over a grid and leaves off-globe (non-finite) samples out
+          of the mask:
+            ```python
+            >>> import numpy as np
+            >>> from datetime import UTC, datetime
+            >>> when = datetime(2026, 6, 21, 12, 0, tzinfo=UTC)
+            >>> mask = night_mask(np.array([0.0, np.inf]), np.array([0.0, 0.0]), when)
+            >>> mask.tolist()
+            [False, False]
+
+            ```
+    """
+    if not -90.0 < refraction <= 0.0:
+        raise ValueError(
+            "refraction must be in (-90, 0] degrees (0 is the geometric "
+            f"terminator; -6/-12/-18 are the twilight lines); got {refraction}."
+        )
+    # ``nan < refraction`` is False (a quiet numpy comparison), so off-globe
+    # samples fall out of the mask rather than masking spuriously.
+    return solar_altitude(lon, lat, when) < refraction
+
+
 def terminator(
     when: datetime,
     *,

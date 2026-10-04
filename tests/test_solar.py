@@ -28,7 +28,9 @@ from cleopatra.basemap.solar import (
     MEAN_EARTH_RADIUS_M,
     add_nightshade,
     add_tissot,
+    night_mask,
     night_polygon,
+    solar_altitude,
     subsolar_point,
     terminator,
     tissot_circles,
@@ -256,6 +258,223 @@ class TestSubsolarPoint:
         utc = datetime(2026, 6, 21, 12, 0, tzinfo=UTC)
         assert subsolar_point(plus_two) == pytest.approx(subsolar_point(utc)), (
             "non-UTC datetime should convert to UTC"
+        )
+
+
+class TestSolarAltitude:
+    """Tests for solar_altitude."""
+
+    def test_peaks_at_the_subsolar_point(self):
+        """Test the altitude is +90 degrees directly under the sun.
+
+        Test scenario:
+            At the subsolar point the sun is overhead, so its altitude must be
+            +90 degrees.
+        """
+        when = JUN_SOLSTICE
+        sub_lon, sub_lat = subsolar_point(when)
+        assert float(solar_altitude(sub_lon, sub_lat, when)) == pytest.approx(
+            90.0, abs=1e-6
+        ), "the sun is overhead at the subsolar point"
+
+    def test_is_minus_90_at_the_antipode(self):
+        """Test the altitude is -90 degrees at the antipode of the sun.
+
+        Test scenario:
+            The point opposite the subsolar point is the solar nadir, where the
+            altitude is -90 degrees.
+        """
+        when = JUN_SOLSTICE
+        sub_lon, sub_lat = subsolar_point(when)
+        assert float(solar_altitude(sub_lon + 180.0, -sub_lat, when)) == pytest.approx(
+            -90.0, abs=1e-6
+        ), "the solar nadir is at the subsolar point's antipode"
+
+    def test_is_zero_on_the_geometric_terminator(self):
+        """Test the altitude is ~0 along the refraction=0 terminator.
+
+        Test scenario:
+            The geometric terminator (refraction 0) is the locus where the sun is
+            exactly on the horizon, so the altitude there must be ~0 everywhere.
+        """
+        when = MAR_EQUINOX
+        ring = terminator(when, refraction=0.0, n=180)
+        altitudes = solar_altitude(ring[:, 0], ring[:, 1], when)
+        assert np.allclose(altitudes, 0.0, atol=1e-6), (
+            "the geometric terminator is where the sun sits on the horizon"
+        )
+
+    @pytest.mark.parametrize("shape", [(), (5,), (4, 3)])
+    def test_broadcasts_to_the_input_shape(self, shape):
+        """Test the result takes the broadcast shape of lon and lat.
+
+        Test scenario:
+            Scalar, 1-D, and 2-D lon/lat inputs should each yield a result of the
+            matching broadcast shape.
+        """
+        rng = np.random.default_rng(0)
+        lon = rng.uniform(-180.0, 180.0, size=shape)
+        lat = rng.uniform(-90.0, 90.0, size=shape)
+        altitude = solar_altitude(lon, lat, JUN_SOLSTICE)
+        assert altitude.shape == shape, "result should take the broadcast shape"
+        assert np.all(np.abs(altitude) <= 90.0 + 1e-9), "altitude stays in [-90, 90]"
+
+    def test_broadcasts_scalar_against_array(self):
+        """Test a scalar lon broadcasts against an array lat.
+
+        Test scenario:
+            A single longitude paired with a column of latitudes should broadcast
+            to the array's shape.
+        """
+        lat = np.linspace(-90.0, 90.0, 7)
+        altitude = solar_altitude(0.0, lat, JUN_SOLSTICE)
+        assert altitude.shape == (7,), "scalar lon broadcasts against the lat array"
+
+    def test_non_finite_input_yields_nan(self):
+        """Test a non-finite lon/lat propagates to nan without warning.
+
+        Test scenario:
+            An off-globe pixel (inf/nan coordinate) should come back as nan at
+            that position while finite neighbours keep real altitudes.
+        """
+        lon = np.array([0.0, np.inf, np.nan])
+        lat = np.array([0.0, 10.0, 10.0])
+        altitude = solar_altitude(lon, lat, JUN_SOLSTICE)
+        assert np.isfinite(altitude[0]), "a finite input keeps a real altitude"
+        assert np.all(np.isnan(altitude[1:])), "non-finite inputs become nan"
+
+    def test_matches_a_direct_formula_evaluation(self):
+        """Test the altitude equals a hand-rolled spherical evaluation.
+
+        Test scenario:
+            For a spread of points the altitude must equal arcsin of the
+            sun/point dot product built directly from the subsolar point.
+        """
+        when = JUN_SOLSTICE
+        lon = np.array([-120.0, -30.0, 45.0, 170.0])
+        lat = np.array([-60.0, -10.0, 25.0, 80.0])
+        sun_lon, sun_lat = (np.radians(v) for v in subsolar_point(when))
+        lon_r, lat_r = np.radians(lon), np.radians(lat)
+        expected = np.degrees(
+            np.arcsin(
+                np.sin(lat_r) * np.sin(sun_lat)
+                + np.cos(lat_r) * np.cos(sun_lat) * np.cos(lon_r - sun_lon)
+            )
+        )
+        assert np.allclose(solar_altitude(lon, lat, when), expected), (
+            "altitude should match the spherical law-of-cosines evaluation"
+        )
+
+
+class TestNightMask:
+    """Tests for night_mask."""
+
+    def test_day_at_subsolar_night_at_antipode(self):
+        """Test the subsolar point is day and its antipode is night.
+
+        Test scenario:
+            The sun is overhead at the subsolar point (not night) and at the
+            nadir at the antipode (night).
+        """
+        when = JUN_SOLSTICE
+        sub_lon, sub_lat = subsolar_point(when)
+        assert not bool(night_mask(sub_lon, sub_lat, when)), "subsolar point is day"
+        assert bool(night_mask(sub_lon + 180.0, -sub_lat, when)), "antipode is night"
+
+    def test_mask_agrees_with_the_altitude_threshold(self):
+        """Test the mask is exactly ``solar_altitude < refraction``.
+
+        Test scenario:
+            Over a grid, the boolean mask must equal the direct comparison of the
+            solar altitude against the refraction threshold.
+        """
+        when = JUN_SOLSTICE
+        lon, lat = np.meshgrid(
+            np.linspace(-180.0, 180.0, 13), np.linspace(-85.0, 85.0, 11)
+        )
+        refraction = -6.0
+        expected = solar_altitude(lon, lat, when) < refraction
+        assert np.array_equal(
+            night_mask(lon, lat, when, refraction=refraction), expected
+        ), "mask should be the altitude-below-refraction field"
+
+    def test_mask_fills_about_half_the_grid(self):
+        """Test roughly half of an equal-area-ish grid is in night.
+
+        Test scenario:
+            On a dense lon/lat grid near the equator the terminator splits day
+            from night, so the night fraction should be about one half.
+        """
+        when = MAR_EQUINOX
+        lon, lat = np.meshgrid(
+            np.linspace(-180.0, 180.0, 361), np.linspace(-10.0, 10.0, 21)
+        )
+        fraction = float(np.mean(night_mask(lon, lat, when)))
+        assert 0.4 < fraction < 0.6, "about half of the near-equator grid is in night"
+
+    @pytest.mark.parametrize("refraction", [-0.83, -6.0, -12.0, -18.0])
+    def test_lower_refraction_shrinks_the_night(self, refraction):
+        """Test a deeper twilight threshold never grows the night region.
+
+        Test scenario:
+            As refraction drops (civil -> nautical -> astronomical) fewer points
+            count as night, so the night count is monotonically non-increasing.
+        """
+        when = JUN_SOLSTICE
+        lon, lat = np.meshgrid(
+            np.linspace(-180.0, 180.0, 73), np.linspace(-85.0, 85.0, 37)
+        )
+        count_default = int(np.sum(night_mask(lon, lat, when, refraction=-0.83)))
+        count_here = int(np.sum(night_mask(lon, lat, when, refraction=refraction)))
+        assert count_here <= count_default, (
+            "a deeper terminator threshold cannot enlarge the night region"
+        )
+
+    def test_non_finite_input_is_not_night(self):
+        """Test an off-globe (non-finite) sample is left out of the mask.
+
+        Test scenario:
+            A nan/inf coordinate has a nan altitude, and ``nan < refraction`` is
+            False, so it must not be masked as night.
+        """
+        lon = np.array([0.0, np.inf, np.nan])
+        lat = np.array([0.0, 0.0, 0.0])
+        mask = night_mask(lon + 180.0, lat, JUN_SOLSTICE)
+        assert not np.any(mask[1:]), "non-finite samples are never night"
+
+    def test_result_is_boolean(self):
+        """Test the mask dtype is boolean.
+
+        Test scenario:
+            The returned field is a mask, so its dtype must be bool for scalar
+            and array inputs alike.
+        """
+        assert night_mask(0.0, 0.0, JUN_SOLSTICE).dtype == bool, "scalar mask is bool"
+        grid = night_mask(np.zeros(3), np.zeros(3), JUN_SOLSTICE)
+        assert grid.dtype == bool, "array mask is bool"
+
+    @pytest.mark.parametrize("refraction", [0.5, 1.0, -90.0, -120.0])
+    def test_invalid_refraction_raises(self, refraction):
+        """Test an out-of-range refraction is rejected.
+
+        Test scenario:
+            refraction must be in (-90, 0]; a positive value or <= -90 raises
+            ValueError, matching terminator.
+        """
+        with pytest.raises(ValueError, match="refraction must be in"):
+            night_mask(0.0, 0.0, JUN_SOLSTICE, refraction=refraction)
+
+    def test_zero_refraction_is_accepted(self):
+        """Test refraction=0 (the geometric terminator) is a valid threshold.
+
+        Test scenario:
+            0 is the inclusive upper bound of the valid range, so it must not
+            raise and must classify the sub-horizon side as night.
+        """
+        when = JUN_SOLSTICE
+        sub_lon, sub_lat = subsolar_point(when)
+        assert bool(night_mask(sub_lon + 180.0, -sub_lat, when, refraction=0.0)), (
+            "refraction=0 is accepted and the nadir is below the horizon"
         )
 
 
