@@ -1805,6 +1805,46 @@ class TestPlotKindDispatch:
             for x, y in positions
         ), "animate labels must sit inside the georeferenced frame"
 
+    def test_cell_values_pcolormesh_1d_coords_sit_on_cell_centres(self):
+        """pcolormesh labels follow 1-D coords and sit at cell centres (x[c], y[r])."""
+        arr = np.arange(15.0).reshape(3, 5)  # 3 rows, 5 cols
+        x = np.linspace(1000.0, 5000.0, 5)  # ncols centres
+        y = np.linspace(2000.0, 4000.0, 3)  # nrows centres
+        glyph = ArrayGlyph(arr, coords=(x, y))
+        fig, ax = glyph.plot(kind="pcolormesh", cells=CellValues(show=True))
+        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        by_value = {
+            int(round(float(t.get_text()))): t.get_position()
+            for t in ax.texts
+            if t.get_text()
+        }
+        assert len(by_value) == 15, "every cell should be labelled"
+        assert all(
+            min(xlim) <= px <= max(xlim) and min(ylim) <= py <= max(ylim)
+            for px, py in by_value.values()
+        ), "all labels must sit inside the mesh"
+        for value, (px, py) in by_value.items():
+            r, c = divmod(value, 5)  # arr == arange, so value encodes (row, col)
+            assert abs(px - x[c]) < 1e-6 and abs(py - y[r]) < 1e-6, (
+                f"label {value} is not on its (x[c], y[r]) cell centre"
+            )
+
+    def test_cell_values_pcolormesh_2d_coords_inside_mesh(self):
+        """Curvilinear 2-D coords also place labels on their cells (not raw indices)."""
+        arr = np.arange(12.0).reshape(3, 4)
+        xc = np.linspace(100.0, 400.0, 4)
+        yc = np.linspace(500.0, 700.0, 3)
+        xx, yy = np.meshgrid(xc, yc)  # both (3, 4)
+        glyph = ArrayGlyph(arr, coords=(xx, yy))
+        fig, ax = glyph.plot(kind="pcolormesh", cells=CellValues(show=True))
+        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        positions = [t.get_position() for t in ax.texts if t.get_text()]
+        assert len(positions) == 12, "every cell should be labelled"
+        assert all(
+            min(xlim) <= px <= max(xlim) and min(ylim) <= py <= max(ylim)
+            for px, py in positions
+        ), "2-D-coords labels must sit inside the mesh"
+
     def test_contour_skips_cell_value_silently(self):
         """`display_cell_value=True` is skipped for `kind="contour"`."""
         glyph = ArrayGlyph(self._sample_arr())
