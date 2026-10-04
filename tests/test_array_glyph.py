@@ -1915,6 +1915,18 @@ class TestPlotKindDispatch:
             "under a projection labels stay at raw (col, row) indices (the warning says so)"
         )
 
+    def test_cell_values_on_rgb_glyph_does_not_crash(self):
+        """Cell labels on an RGB glyph render without raising (no unbound projection)."""
+        rgb_arr = (
+            np.random.default_rng(0).integers(0, 255, size=(3, 4, 5)).astype(np.float32)
+        )
+        glyph = ArrayGlyph(rgb_arr, rgb_bands=RgbBands([0, 1, 2]))
+        fig, ax = glyph.plot(cells=CellValues(show=True))
+        assert isinstance(fig, Figure), (
+            "an RGB glyph with cell values should still render"
+        )
+        assert len(ax.texts) >= 1, "the cell-value label path should have run"
+
     def test_contour_skips_cell_value_silently(self):
         """`display_cell_value=True` is skipped for `kind="contour"`."""
         glyph = ArrayGlyph(self._sample_arr())

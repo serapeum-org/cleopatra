@@ -4605,14 +4605,12 @@ class ArrayGlyph(GeoMixin, Glyph):
         optional_display: dict[str, Any] = {}
         if self.default_options["display_cell_value"] and supports_overlay:
             indices = get_indices2(arr, [np.nan])
-            # Only imshow honours `extent`; pcolormesh draws in index (or
-            # `coords`) space and ignores it, so its labels must stay in index
-            # space -- pass extent=None there to avoid shoving them off-screen.
-            # imshow honours `extent`; pcolormesh honours `coords` (and ignores
-            # extent). Hand _plot_text whichever the render actually uses so the
-            # labels follow the drawn coordinate system; neither (plain index
-            # space) falls back to raw indices.
-            if projection:
+            # Hand _plot_text whichever coordinate system the render actually
+            # uses: imshow honours `extent`, pcolormesh honours `coords`; neither
+            # (plain index space) falls back to raw indices. Read `projection`
+            # from default_options, not the branch-local name, which is only bound
+            # on the non-RGB path.
+            if self.default_options.get("projection"):
                 # A projected render draws the mesh at *reprojected* coordinates,
                 # which neither the raw extent nor the unprojected `coords` match.
                 # The warning above tells the caller to omit labels here; keep the
