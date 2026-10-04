@@ -3568,14 +3568,14 @@ class ArrayGlyph(GeoMixin, Glyph):
         if coords is not None:
             xs = np.asarray(coords[0])
             ys = np.asarray(coords[1])
-            if xs.ndim == 2:
 
-                def _xy(row: int, col: int) -> tuple[float, float]:
-                    return float(xs[row, col]), float(ys[row, col])
-            else:
-
-                def _xy(row: int, col: int) -> tuple[float, float]:
-                    return float(xs[col]), float(ys[row])
+            def _xy(row: int, col: int) -> tuple[float, float]:
+                # Decide each axis independently: `_validate_coords` checks x and
+                # y shapes separately, so one may be 2-D (curvilinear) while the
+                # other is 1-D. x is indexed by column, y by row.
+                x = float(xs[row, col]) if xs.ndim == 2 else float(xs[col])
+                y = float(ys[row, col]) if ys.ndim == 2 else float(ys[row])
+                return x, y
         elif extent is not None:
             left, right, bottom, top = extent
             dx = (right - left) / ncols

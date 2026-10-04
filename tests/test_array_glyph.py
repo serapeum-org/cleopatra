@@ -1845,6 +1845,28 @@ class TestPlotKindDispatch:
             for px, py in positions
         ), "2-D-coords labels must sit inside the mesh"
 
+    def test_cell_values_pcolormesh_mixed_dim_coords_no_crash(self):
+        """Mixed-rank coords (one axis 2-D, one 1-D) label without crashing."""
+        arr = np.arange(12.0).reshape(3, 4)
+        xc = np.linspace(100.0, 400.0, 4)
+        yc = np.linspace(500.0, 700.0, 3)
+        xx, yy = np.meshgrid(xc, yc)  # both (3, 4)
+        for coords in ((xx, yc), (xc, yy)):  # x 2-D + y 1-D, then x 1-D + y 2-D
+            glyph = ArrayGlyph(arr, coords=coords)
+            fig, ax = glyph.plot(kind="pcolormesh", cells=CellValues(show=True))
+            xlim, ylim = ax.get_xlim(), ax.get_ylim()
+            by_value = {
+                int(round(float(t.get_text()))): t.get_position()
+                for t in ax.texts
+                if t.get_text()
+            }
+            assert len(by_value) == 12, "every cell should be labelled"
+            for value, (px, py) in by_value.items():
+                r, c = divmod(value, 4)
+                assert abs(px - xc[c]) < 1e-6 and abs(py - yc[r]) < 1e-6, (
+                    f"label {value} is not on its (xc[c], yc[r]) cell centre"
+                )
+
     def test_contour_skips_cell_value_silently(self):
         """`display_cell_value=True` is skipped for `kind="contour"`."""
         glyph = ArrayGlyph(self._sample_arr())
