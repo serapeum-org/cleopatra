@@ -2463,6 +2463,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0410-2026-10-04" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.41.0 (2026-10-04)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0400-2026-09-26" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3328,6 +3339,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0410-2026-10-04" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.41.0 (2026-10-04)
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#0400-2026-09-26" class="md-nav__link">
@@ -4196,6 +4218,53 @@
 
 
 <h1 id="changelog"><a class="toclink" href="#changelog">Changelog</a><a class="headerlink" href="#changelog" title="Permanent link">#</a></h1>
+<h2 id="0410-2026-10-04"><a class="toclink" href="#0410-2026-10-04">0.41.0 (2026-10-04)</a><a class="headerlink" href="#0410-2026-10-04" title="Permanent link">#</a></h2>
+<ul>
+<li>fix(array): place cell-value labels in the drawn coordinate system (#381)</li>
+<li>
+<p>ArrayGlyph._plot_text positioned each cell-value label at the raw                                               <br />
+  (col, row) array index and ignored the glyph's coordinate system, so                                            <br />
+  whenever the data was drawn in a real coordinate system the labels fell                                         <br />
+  outside the frame (invisible, and savefig(bbox_inches="tight") expanded                                         <br />
+  the saved canvas).                                                                                                </p>
+</li>
+<li>
+<p>imshow + extent: map each (row, col) to its cell centre (origin upper)                                          </p>
+</li>
+<li>pcolormesh + coords: centre at (x[col], y[row]); each axis is resolved                                        <br />
+    independently, so 1-D, 2-D curvilinear and mixed-rank coord pairs work                                          </li>
+<li>pcolormesh without coords, no extent, or under a projection: keep raw                                         <br />
+    index space (a projected render draws at reprojected coords, so the                                           <br />
+    existing "omit labels under a projection" warning stays accurate)                                               </li>
+<li>route the extent/coords through both the plot and animate call sites;                                         <br />
+    the RGB + cell-value path no longer raises                                                                      </li>
+</ul>
+<p>Covered by new tests: exact cell centres (extent and 1-D/2-D coords),                                           <br />
+  non-square, 1x1, descending and mixed-rank coords, pcolormesh index                                             <br />
+  space, projection raw indices, and the RGB render.                                                                </p>
+<p>Closes #378, #382
+- feat(basemap.solar): add solar_altitude and night_mask (#380)
+- Expose solar altitude as a reusable CRS-free primitive and a boolean night
+field built on it, so a consumer no longer has to re-derive the terminator
+formula to shade a night side it cannot take as a polygon (a clipped or
+orthographic globe, where half the night polygon is on the far side).
+- - solar_altitude(lon, lat, when): the sun's altitude in degrees (+90 at the
+  subsolar point, 0 on the geometric horizon, negative at night). Broadcasts
+  over numpy arrays, returns a 0-D ndarray for scalar inputs, and carries
+  non-finite inputs through to nan with no warning, so an off-globe pixel from
+  an inverse projection stays nan.
+- night_mask(lon, lat, when, *, refraction=...): the field form of
+  night_polygon, True where the altitude is strictly below the terminator
+  threshold, False off-globe, with the same (-90, 0] validation as terminator.
+- Both sit beside subsolar_point/terminator, which already carry the precision
+model and the refraction threshold they share, and stay inside the module's
+CRS-free scope: no projection, no matplotlib, no new dependency.
+- Covered to 100% line and branch with independent oracles (a haversine
+great-circle altitude and known-altitude terminator rings), a sweep that
+exercises the arcsin clip guard across a year of subsolar instants, and a
+warning-free non-finite assertion. Tolerances near +/-90 deg are set to 1e-4
+to clear the arcsin-amplified floating-point noise floor.
+- Closes #379</p>
 <h2 id="0400-2026-09-26"><a class="toclink" href="#0400-2026-09-26">0.40.0 (2026-09-26)</a><a class="headerlink" href="#0400-2026-09-26" title="Permanent link">#</a></h2>
 <ul>
 <li>feat(glyphs): per-frame overlay hook and a tropical-cyclone overlay for animate() (#376)</li>
