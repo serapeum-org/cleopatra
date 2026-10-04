@@ -398,6 +398,27 @@ class TestSolarAltitude:
             "altitude should be 90 deg minus the haversine distance to the subsolar point"
         )
 
+    def test_subsolar_altitude_stays_finite_across_instants(self):
+        """Test the subsolar altitude is a finite +90 across many instants.
+
+        Test scenario:
+            The clip(-1, 1) guard exists so a 1-ULP overshoot of the dot product
+            at the subsolar point cannot turn arcsin into nan; across a year of
+            instants the altitude at each instant's own subsolar point must be a
+            finite ~90 deg, with no warning.
+        """
+        base = datetime(2026, 1, 1, tzinfo=UTC)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            for days in range(0, 366):
+                when = base + timedelta(days=days, hours=(days * 7) % 24)
+                sub_lon, sub_lat = subsolar_point(when)
+                altitude = solar_altitude(sub_lon, sub_lat, when)
+                assert np.isfinite(altitude), f"finite subsolar altitude at {when}"
+                assert float(altitude) == pytest.approx(90.0, abs=1e-6), (
+                    f"subsolar altitude is ~90 deg at {when}"
+                )
+
     def test_returns_ndarray_for_scalar_inputs(self):
         """Test a scalar call returns a 0-D ndarray, matching the annotation.
 
