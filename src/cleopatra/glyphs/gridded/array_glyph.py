@@ -4611,7 +4611,13 @@ class ArrayGlyph(GeoMixin, Glyph):
             # extent). Hand _plot_text whichever the render actually uses so the
             # labels follow the drawn coordinate system; neither (plain index
             # space) falls back to raw indices.
-            if effective_kind == "imshow":
+            if projection:
+                # A projected render draws the mesh at *reprojected* coordinates,
+                # which neither the raw extent nor the unprojected `coords` match.
+                # The warning above tells the caller to omit labels here; keep the
+                # historical raw-index placement so that warning stays accurate.
+                label_extent, label_coords = None, None
+            elif effective_kind == "imshow":
                 label_extent, label_coords = self.extent, None
             else:
                 label_extent, label_coords = None, self._coords

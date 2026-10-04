@@ -1867,6 +1867,22 @@ class TestPlotKindDispatch:
                     f"label {value} is not on its (xc[c], yc[r]) cell centre"
                 )
 
+    def test_cell_values_under_projection_stay_at_raw_indices(self):
+        """A projected render draws at reprojected coords; labels keep raw-index placement."""
+        arr = np.arange(12.0).reshape(3, 4)
+        lon = np.linspace(-60.0, 60.0, 4)
+        lat = np.linspace(-30.0, 30.0, 3)
+        glyph = ArrayGlyph(arr, coords=(lon, lat))
+        with pytest.warns(UserWarning, match="raw grid indices"):
+            fig, ax = glyph.plot(projection="flat", cells=CellValues(show=True))
+        positions = {
+            (int(x), int(y))
+            for x, y in (t.get_position() for t in ax.texts if t.get_text())
+        }
+        assert {(0, 0), (3, 2)} <= positions, (
+            "under a projection labels stay at raw (col, row) indices (the warning says so)"
+        )
+
     def test_contour_skips_cell_value_silently(self):
         """`display_cell_value=True` is skipped for `kind="contour"`."""
         glyph = ArrayGlyph(self._sample_arr())
