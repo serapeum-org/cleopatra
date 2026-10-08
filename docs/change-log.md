@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.42.0 (2026-10-08)
+
+
+- feat(basemap.reference): add natural_earth_polygons for hole-aware fills (#385)
+- natural_earth returns Natural Earth polygon layers as exterior rings only, so a
+non-matplotlib consumer (a web/MapLibre tier, a 3-D tier, a GeoJSON builder)
+could not build a correct land/ocean fill: ocean polygons carry
+continent-shaped holes and land polygons carry lake-shaped holes, which an
+exterior-only fill paints over. The hole-aware geometry already existed
+internally (_polygons -> [exterior, *holes]) but was private.
+- - Add natural_earth_polygons(layer, resolution="110m") -> list[list[np.ndarray]],
+  the engine-neutral data analogue of add_features: one [exterior_ring,
+  *hole_rings] group per polygon part, EPSG:4326 lon/lat, source winding.
+- Accept only the polygon layers (land, ocean, lakes); line layers raise a
+  ValueError that points at natural_earth and lists the valid polygon layers.
+- Cross-reference the new function from natural_earth's docstring and the
+  reference-data narrative docs.
+- Publishes what _polygons already computes: no new logic, no new dependency, no
+GDAL/geopandas, reusing the same cached Natural Earth asset. Covered offline to
+100% line and branch (holes kept vs natural_earth's exterior-only, hole-free
+single ring, MultiPolygon one group per part, multi-feature aggregation, line
+layers rejected, unknown layer, unknown resolution).
+- Closes #384
+
 ## 0.41.0 (2026-10-04)
 
 
