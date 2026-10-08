@@ -2919,10 +2919,18 @@ to match (requires <code>pyproj</code>):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">add_features</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="s2">"coastline"</span><span class="p">,</span> <span class="s2">"50m"</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="mi">3857</span><span class="p">)</span>   <span class="c1"># Web Mercator axes</span>
 </code></pre></div>
 <p>The raw data is also available without drawing:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.basemap.reference</span><span class="w"> </span><span class="kn">import</span> <span class="n">natural_earth</span><span class="p">,</span> <span class="n">relief</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.basemap.reference</span><span class="w"> </span><span class="kn">import</span> <span class="n">natural_earth</span><span class="p">,</span> <span class="n">natural_earth_polygons</span><span class="p">,</span> <span class="n">relief</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">parts</span> <span class="o">=</span> <span class="n">natural_earth</span><span class="p">(</span><span class="s2">"coastline"</span><span class="p">,</span> <span class="s2">"110m"</span><span class="p">)</span>   <span class="c1"># list of (N, 2) lon/lat arrays</span>
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">rgb</span> <span class="o">=</span> <span class="n">relief</span><span class="p">(</span><span class="s2">"low"</span><span class="p">)</span>                          <span class="c1"># (H, W, 3) uint8 RGB array</span>
+</code></pre></div>
+<p><code>natural_earth</code> returns exterior rings only, which is right for line layers and
+polygon outlines. For a correct filled polygon on a non-matplotlib tier, use
+<code>natural_earth_polygons(layer, resolution)</code> on the polygon layers (<code>land</code>,
+<code>ocean</code>, <code>lakes</code>): it returns each polygon as <code>[exterior_ring, *hole_rings]</code>, so
+ocean's continent-shaped holes and land's lake-shaped holes are preserved rather
+than filled over.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">polys</span> <span class="o">=</span> <span class="n">natural_earth_polygons</span><span class="p">(</span><span class="s2">"ocean"</span><span class="p">,</span> <span class="s2">"110m"</span><span class="p">)</span>   <span class="c1"># list of [exterior, *holes]</span>
 </code></pre></div>
 <p>To discover the valid arguments, call <code>available_layers()</code> and
 <code>available_resolutions()</code> for the vector layers, and
