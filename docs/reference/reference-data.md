@@ -91,10 +91,21 @@ add_features(ax, "coastline", "50m", crs=3857)   # Web Mercator axes
 The raw data is also available without drawing:
 
 ```python
-from cleopatra.basemap.reference import natural_earth, relief
+from cleopatra.basemap.reference import natural_earth, natural_earth_polygons, relief
 
 parts = natural_earth("coastline", "110m")   # list of (N, 2) lon/lat arrays
 rgb = relief("low")                          # (H, W, 3) uint8 RGB array
+```
+
+`natural_earth` returns exterior rings only, which is right for line layers and
+polygon outlines. For a correct filled polygon on a non-matplotlib tier, use
+`natural_earth_polygons(layer, resolution)` on the polygon layers (`land`,
+`ocean`, `lakes`): it returns each polygon as `[exterior_ring, *hole_rings]`, so
+ocean's continent-shaped holes and land's lake-shaped holes are preserved rather
+than filled over.
+
+```python
+polys = natural_earth_polygons("ocean", "110m")   # list of [exterior, *holes]
 ```
 
 To discover the valid arguments, call `available_layers()` and
