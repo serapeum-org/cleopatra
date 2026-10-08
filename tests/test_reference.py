@@ -212,8 +212,11 @@ def test_natural_earth_polygons_keeps_holes(cache: Path):
     _write_layer(cache, "ocean", "110m", geom)
     polys = natural_earth_polygons("ocean", "110m")
     assert len(polys) == 1, "one ring-group for the single polygon part"
-    assert [r.shape for r in polys[0]] == [(5, 2), (5, 2)], (
-        "the ring-group is [exterior, hole], both kept"
+    assert polys[0][0].tolist() == [[0, 0], [4, 0], [4, 4], [0, 4], [0, 0]], (
+        "the exterior ring comes first, with its coordinates preserved"
+    )
+    assert polys[0][1].tolist() == [[1, 1], [2, 1], [2, 2], [1, 2], [1, 1]], (
+        "the hole ring follows the exterior, with its coordinates preserved"
     )
     exterior_only = natural_earth("ocean", "110m")
     assert len(exterior_only) == 1 and exterior_only[0].shape == (5, 2), (
