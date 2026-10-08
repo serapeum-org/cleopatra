@@ -254,6 +254,38 @@ def test_natural_earth_polygons_multipolygon_one_group_per_part(cache: Path):
     )
 
 
+def test_natural_earth_polygons_aggregates_across_features(cache: Path):
+    """Separate features in one layer are concatenated into one result list."""
+    collection = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 0]]],
+                },
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [[5, 5], [8, 5], [8, 8], [5, 5]],
+                        [[6, 6], [7, 6], [7, 7], [6, 6]],
+                    ],
+                },
+            },
+        ],
+    }
+    with gzip.open(cache / "ne_110m_land.geojson.gz", "wt", encoding="utf-8") as fh:
+        json.dump(collection, fh)
+    polys = natural_earth_polygons("land", "110m")
+    assert [len(group) for group in polys] == [1, 2], (
+        "two features aggregate to two ring-groups (second feature carries a hole)"
+    )
+
+
 @pytest.mark.parametrize("layer", ["coastline", "rivers", "borders"])
 def test_natural_earth_polygons_rejects_line_layers(cache: Path, layer: str):
     """Line layers have no fillable interior and are rejected before download."""
