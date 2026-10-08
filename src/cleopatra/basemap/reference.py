@@ -820,8 +820,9 @@ def natural_earth_polygons(
 
     Examples:
         - Fetch ocean polygons hole-aware (downloads on first use, then reads
-            from the cache); the single ocean part carries one exterior ring
-            plus a hole per landmass:
+            from the cache); the 110m ocean comes back as two parts -- a small
+            hole-free polygon and the main ocean, which carries one exterior
+            ring plus a hole per landmass:
             ```python
             >>> from cleopatra.basemap.reference import natural_earth_polygons
             >>> polys = natural_earth_polygons("ocean", "110m")  # doctest: +SKIP
