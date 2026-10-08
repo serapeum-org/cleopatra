@@ -38,6 +38,7 @@ from cleopatra.basemap.reference import (  # noqa: E402
     available_relief_resolutions,
     available_resolutions,
     natural_earth,
+    natural_earth_polygons,
     relief,
 )
 
@@ -194,6 +195,118 @@ def test_natural_earth_unknown_layer():
 def test_natural_earth_unknown_resolution():
     with pytest.raises(ValueError, match="Unknown resolution"):
         natural_earth("coastline", "1m")
+
+
+# --- natural_earth_polygons -------------------------------------------------
+
+
+def test_natural_earth_polygons_keeps_holes(cache: Path):
+    """A polygon layer returns `[exterior, *holes]`, unlike `natural_earth`."""
+    geom = {
+        "type": "Polygon",
+        "coordinates": [
+            [[0, 0], [4, 0], [4, 4], [0, 4], [0, 0]],
+            [[1, 1], [2, 1], [2, 2], [1, 2], [1, 1]],
+        ],
+    }
+    _write_layer(cache, "ocean", "110m", geom)
+    polys = natural_earth_polygons("ocean", "110m")
+    assert len(polys) == 1, "one ring-group for the single polygon part"
+    assert polys[0][0].tolist() == [[0, 0], [4, 0], [4, 4], [0, 4], [0, 0]], (
+        "the exterior ring comes first, with its coordinates preserved"
+    )
+    assert polys[0][1].tolist() == [[1, 1], [2, 1], [2, 2], [1, 2], [1, 1]], (
+        "the hole ring follows the exterior, with its coordinates preserved"
+    )
+    exterior_only = natural_earth("ocean", "110m")
+    assert len(exterior_only) == 1, "natural_earth yields one part for the polygon"
+    assert exterior_only[0].shape == (5, 2), (
+        "natural_earth returns the exterior ring only (no hole) for the same geometry"
+    )
+
+
+def test_natural_earth_polygons_no_holes_is_single_ring(cache: Path):
+    """A hole-free polygon yields a one-element `[exterior]` group."""
+    geom = {
+        "type": "Polygon",
+        "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]],
+    }
+    _write_layer(cache, "land", "110m", geom)
+    polys = natural_earth_polygons("land", "110m")
+    assert [len(group) for group in polys] == [1], "no holes -> single exterior ring"
+
+
+def test_natural_earth_polygons_multipolygon_one_group_per_part(cache: Path):
+    """A MultiPolygon returns one `[exterior, *holes]` group per sub-polygon."""
+    geom = {
+        "type": "MultiPolygon",
+        "coordinates": [
+            [
+                [[0, 0], [4, 0], [4, 4], [0, 4], [0, 0]],
+                [[1, 1], [2, 1], [2, 2], [1, 2], [1, 1]],
+            ],
+            [[[6, 6], [7, 6], [7, 7], [6, 7], [6, 6]]],
+        ],
+    }
+    _write_layer(cache, "ocean", "110m", geom)
+    polys = natural_earth_polygons("ocean", "110m")
+    assert [len(group) for group in polys] == [2, 1], (
+        "first part has one hole, second part none"
+    )
+
+
+def test_natural_earth_polygons_aggregates_across_features(cache: Path):
+    """Separate features in one layer are concatenated into one result list."""
+    collection = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 0]]],
+                },
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [[5, 5], [8, 5], [8, 8], [5, 5]],
+                        [[6, 6], [7, 6], [7, 7], [6, 6]],
+                    ],
+                },
+            },
+        ],
+    }
+    with gzip.open(cache / "ne_110m_land.geojson.gz", "wt", encoding="utf-8") as fh:
+        json.dump(collection, fh)
+    polys = natural_earth_polygons("land", "110m")
+    assert [len(group) for group in polys] == [1, 2], (
+        "two features aggregate to two ring-groups (second feature carries a hole)"
+    )
+
+
+@pytest.mark.parametrize("layer", ["coastline", "rivers", "borders"])
+def test_natural_earth_polygons_rejects_line_layers(cache: Path, layer: str):
+    """Line layers have no fillable interior and are rejected before download."""
+    with pytest.raises(ValueError, match="not a polygon layer") as exc:
+        natural_earth_polygons(layer)
+    assert "['land', 'ocean', 'lakes']" in str(exc.value), (
+        "the error lists the valid polygon layers"
+    )
+
+
+def test_natural_earth_polygons_unknown_layer(cache: Path):
+    """An unknown layer is rejected with the shared 'Unknown layer' message."""
+    with pytest.raises(ValueError, match="Unknown layer"):
+        natural_earth_polygons("continents", "110m")
+
+
+def test_natural_earth_polygons_unknown_resolution(cache: Path):
+    """A known polygon layer with a bad resolution is rejected."""
+    with pytest.raises(ValueError, match="Unknown resolution"):
+        natural_earth_polygons("ocean", "1m")
 
 
 # --- add_features -----------------------------------------------------------

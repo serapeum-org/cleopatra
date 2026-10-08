@@ -740,7 +740,8 @@ def natural_earth(
     The layer is downloaded as preprocessed gzipped GeoJSON and parsed
     with the standard library only -- no GDAL/geopandas. Coordinates are
     EPSG:4326 lon/lat. Polygon layers return exterior rings only; use
-    `add_features` for hole-aware filled rendering.
+    `natural_earth_polygons` for hole-aware coordinate data, or `add_features`
+    for hole-aware filled rendering.
 
     Args:
         layer: One of `available_layers()`.
@@ -780,6 +781,77 @@ def natural_earth(
     for geometry in _load_features(layer, resolution):
         parts.extend(_paths(geometry))
     return parts
+
+
+def natural_earth_polygons(
+    layer: str, resolution: str = "110m"
+) -> list[list[np.ndarray]]:
+    """Fetch (and cache) a Natural Earth polygon layer as hole-aware rings.
+
+    The engine-neutral data analogue of `add_features`: where `natural_earth`
+    returns one flat `(N, 2)` array per part and keeps exterior rings only, this
+    returns each polygon as `[exterior_ring, *hole_rings]`, so a consumer that is
+    not matplotlib (a web/MapLibre tier, a 3-D tier, a GeoJSON builder) can draw
+    a correct filled polygon. The holes matter: ocean polygons carry
+    continent-shaped holes and land polygons carry lake-shaped holes, so a fill
+    built from exterior rings alone paints over them.
+
+    Only the polygon layers (`land`, `ocean`, `lakes`) are accepted; the line
+    layers (`coastline`, `rivers`, `borders`) have no fillable interior, so use
+    `natural_earth` for those. Coordinates are EPSG:4326 lon/lat and the ring
+    winding is the source GeoJSON's (not normalised); a renderer that needs a
+    specific winding should orient the rings itself, as `add_features` does.
+
+    Args:
+        layer: One of the polygon layers in `available_layers()` -- `"land"`,
+            `"ocean"`, or `"lakes"`.
+        resolution: One of `available_resolutions()`
+            (`"110m"`/`"50m"`/`"10m"`).
+
+    Returns:
+        list[list[numpy.ndarray]]: One entry per polygon part; each entry is
+            `[exterior_ring, *hole_rings]` of `(N, 2)` lon/lat arrays. A
+            polygon with no holes is a single-element list `[exterior_ring]`.
+
+    Raises:
+        ValueError: If `layer` is unknown, or is a line layer rather than a
+            polygon layer; or if `resolution` is unknown.
+        ConnectionError: If the asset must be downloaded and the fetch fails.
+
+    Examples:
+        - Fetch ocean polygons hole-aware (downloads on first use, then reads
+            from the cache); the 110m ocean comes back as two parts -- a small
+            hole-free polygon and the main ocean, which carries one exterior
+            ring plus a hole per landmass:
+            ```python
+            >>> from cleopatra.basemap.reference import natural_earth_polygons
+            >>> polys = natural_earth_polygons("ocean", "110m")  # doctest: +SKIP
+            >>> [len(rings) for rings in polys]  # [exterior, *holes] per part  # doctest: +SKIP
+            [1, 121]
+
+            ```
+        - Line layers have no fillable interior and are rejected before any
+            download:
+            ```python
+            >>> from cleopatra.basemap.reference import natural_earth_polygons
+            >>> natural_earth_polygons("coastline")
+            Traceback (most recent call last):
+                ...
+            ValueError: Layer 'coastline' is a line layer, not a polygon layer; use natural_earth for it. Polygon layers: ['land', 'ocean', 'lakes'].
+
+            ```
+    """
+    kind = _LAYERS.get(layer, (None, None))[1]
+    if kind is not None and kind != "polygon":
+        polygon_layers = [name for name, (_, k) in _LAYERS.items() if k == "polygon"]
+        raise ValueError(
+            f"Layer {layer!r} is a {kind} layer, not a polygon layer; use "
+            f"natural_earth for it. Polygon layers: {polygon_layers}."
+        )
+    polygons: list[list[np.ndarray]] = []
+    for geometry in _load_features(layer, resolution):
+        polygons.extend(_polygons(geometry))
+    return polygons
 
 
 def _is_4326(crs: int | str | None) -> bool:
