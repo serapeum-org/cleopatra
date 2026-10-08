@@ -219,8 +219,9 @@ def test_natural_earth_polygons_keeps_holes(cache: Path):
         "the hole ring follows the exterior, with its coordinates preserved"
     )
     exterior_only = natural_earth("ocean", "110m")
-    assert len(exterior_only) == 1 and exterior_only[0].shape == (5, 2), (
-        "natural_earth returns the exterior ring only for the same geometry"
+    assert len(exterior_only) == 1, "natural_earth yields one part for the polygon"
+    assert exterior_only[0].shape == (5, 2), (
+        "natural_earth returns the exterior ring only (no hole) for the same geometry"
     )
 
 
