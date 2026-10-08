@@ -255,7 +255,7 @@ def test_natural_earth_polygons_multipolygon_one_group_per_part(cache: Path):
 
 
 @pytest.mark.parametrize("layer", ["coastline", "rivers", "borders"])
-def test_natural_earth_polygons_rejects_line_layers(layer: str):
+def test_natural_earth_polygons_rejects_line_layers(cache: Path, layer: str):
     """Line layers have no fillable interior and are rejected before download."""
     with pytest.raises(ValueError, match="not a polygon layer") as exc:
         natural_earth_polygons(layer)
@@ -264,13 +264,13 @@ def test_natural_earth_polygons_rejects_line_layers(layer: str):
     )
 
 
-def test_natural_earth_polygons_unknown_layer():
+def test_natural_earth_polygons_unknown_layer(cache: Path):
     """An unknown layer is rejected with the shared 'Unknown layer' message."""
     with pytest.raises(ValueError, match="Unknown layer"):
         natural_earth_polygons("continents", "110m")
 
 
-def test_natural_earth_polygons_unknown_resolution():
+def test_natural_earth_polygons_unknown_resolution(cache: Path):
     """A known polygon layer with a bad resolution is rejected."""
     with pytest.raises(ValueError, match="Unknown resolution"):
         natural_earth_polygons("ocean", "1m")
