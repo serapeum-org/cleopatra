@@ -5913,15 +5913,16 @@ class ArrayGlyph(GeoMixin, Glyph):
         overlays = tuple(playback.overlays)
         sub_frames = playback.sub_frames
         # Resolve the progress-bar spec: `True` -> defaults, `False` -> none,
-        # a `ProgressBar` instance -> used as given. Anything else is out of the
-        # declared `bool | ProgressBar` contract and fails fast here (mirroring
-        # the `sub_frames` validation) rather than later inside rendering.
+        # a `ProgressBar` instance -> used as given. A bool-like flag (incl. a
+        # numpy bool, as `sub_frames` accepts numpy ints) picks defaults / none;
+        # anything else is out of the declared `bool | ProgressBar` contract and
+        # fails fast here rather than later inside rendering.
         progress_bar = playback.progress_bar
-        if progress_bar is True:
-            progress_bar = ProgressBar()
-        elif progress_bar is False:
-            progress_bar = None
-        elif not isinstance(progress_bar, ProgressBar):
+        if isinstance(progress_bar, ProgressBar):
+            pass
+        elif isinstance(progress_bar, (bool, np.bool_)):
+            progress_bar = ProgressBar() if bool(progress_bar) else None
+        else:
             raise TypeError(
                 "playback.progress_bar must be a bool or a ProgressBar, got "
                 f"{type(progress_bar).__name__!r}."
