@@ -109,7 +109,8 @@ class TestPieGlyphPlot:
         """By default each wedge gets an autopct percentage text."""
         _, ax, _ = PieGlyph(["a", "b"], [1.0, 3.0]).plot()
         texts = {t.get_text() for t in ax.texts}
-        assert "25.0%" in texts and "75.0%" in texts, "default autopct shows percents"
+        assert "25.0%" in texts, "the 1/4 wedge shows its percent"
+        assert "75.0%" in texts, "the 3/4 wedge shows its percent"
 
     def test_autopct_none_hides_percentages(self):
         """autopct=None draws no percentage labels."""
@@ -143,7 +144,8 @@ class TestPieGlyphPlot:
         """A caller-supplied axes is drawn on and returned."""
         fig, ax = plt.subplots()
         out_fig, out_ax, _ = PieGlyph(["a", "b"], [1.0, 1.0]).plot(ax=ax)
-        assert out_ax is ax and out_fig is fig
+        assert out_ax is ax, "the supplied axes should be used"
+        assert out_fig is fig, "its figure should be returned"
 
     def test_replot_on_same_axes_replaces_not_stacks(self):
         """Re-plotting the same glyph clears its prior wedges instead of stacking."""

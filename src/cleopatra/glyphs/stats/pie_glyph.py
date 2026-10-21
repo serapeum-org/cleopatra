@@ -109,7 +109,9 @@ class PieGlyph(Glyph):
         self.categories, self.values = resolve_categories(categories, values)
         if (self.values < 0).any():
             raise ValueError("pie values must be non-negative.")
-        if float(self.values.sum()) == 0.0:
+        # Values are finite (resolve_categories) and non-negative (above), so a
+        # sum of 0 means every value is 0; test with <= to avoid a float ==.
+        if float(self.values.sum()) <= 0.0:
             raise ValueError("pie values must not sum to zero.")
         self._colors = colors
         #: The list of wedge `Patch`es from the most recent `plot`; `None` before.

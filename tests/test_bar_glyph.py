@@ -84,7 +84,8 @@ class TestBarGlyphPlot:
     def test_single_category(self):
         """A single category draws a single bar."""
         _, _, bars = BarGlyph(["only"], [5.0]).plot()
-        assert len(bars) == 1 and float(bars[0].get_height()) == 5.0
+        assert len(bars) == 1, "one bar for one category"
+        assert float(bars[0].get_height()) == 5.0, "its height is the value"
 
     def test_default_palette_colours_distinct_categories(self):
         """With no explicit colours, bars take the palette swatches in order."""
@@ -112,13 +113,15 @@ class TestBarGlyphPlot:
 
     def test_explicit_colours_length_mismatch_raises(self):
         """A colours list whose length differs from the categories raises."""
+        glyph = BarGlyph(["a", "b"], [1.0, 2.0])
         with pytest.raises(ValueError, match="must match the number of categories"):
-            BarGlyph(["a", "b"], [1.0, 2.0]).plot(colors=["#f00"])
+            glyph.plot(colors=["#f00"])
 
     def test_unknown_palette_raises_valueerror(self):
         """An unknown palette name raises ValueError, not a bare KeyError."""
+        glyph = BarGlyph(["a", "b"], [1.0, 2.0], palette="does_not_exist")
         with pytest.raises(ValueError, match="unknown palette"):
-            BarGlyph(["a", "b"], [1.0, 2.0], palette="does_not_exist").plot()
+            glyph.plot()
 
     def test_horizontal_draws_barh(self):
         """horizontal=True draws bars whose widths (not heights) carry the values."""
