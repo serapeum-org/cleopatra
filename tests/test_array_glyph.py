@@ -3823,35 +3823,36 @@ class TestFacetColorbar:
             f"shared cbar label should be 'mm', got {result.cbar.ax.get_ylabel()!r}"
         )
 
-    def test_facet_colorbar_spec_applies_to_every_panel(self):
-        """A `ColorBar` spec labels the colorbar on *every* panel, not just the first.
+    def test_facet_colorbar_spec_labels_the_shared_bar(self):
+        """A `ColorBar` spec labels the single shared bar spanning the grid.
 
         Test scenario:
-            `facet` merges the resolved spec into each panel's options, so all
-            three panels' colorbars carry the label.
+            `facet` draws one shared bar (not one per panel), so there is a
+            single colorbar axis and it carries the spec's label.
         """
         result = ArrayGlyph(self._stack_3d()).facet(
             FacetLayout(col="time", labels=PanelLabels(col=[0, 1, 2])),
             colorbar=ColorBar(label="mm"),
         )
         labels = [ax.get_ylabel() for ax in self._colorbar_axes(result)]
-        assert labels == ["mm", "mm", "mm"], (
-            f"every panel cbar should read 'mm', got {labels}"
+        assert labels == ["mm"], (
+            f"the single shared cbar should read 'mm', got {labels}"
         )
 
-    def test_facet_colorbar_true_draws_default_bars(self):
-        """`facet(colorbar=True)` draws a colorbar per panel and returns a shared `cbar`.
+    def test_facet_colorbar_true_draws_one_shared_bar(self):
+        """`facet(colorbar=True)` draws one shared bar spanning the grid.
 
         Test scenario:
-            `True` requests default colorbars; the faceted figure gains one
-            colorbar axis per panel and `result.cbar` is not `None`.
+            `True` requests a default colorbar; the faceted figure gains a
+            single colorbar axis spanning all panels (not one per panel) and
+            `result.cbar` is not `None`.
         """
         result = ArrayGlyph(self._stack_3d()).facet(
             FacetLayout(col="time", labels=PanelLabels(col=[0, 1, 2])), colorbar=True
         )
         assert result.cbar is not None, "colorbar=True should draw a shared cbar"
-        assert len(self._colorbar_axes(result)) == 3, (
-            f"expected 3 colorbar axes, got {len(self._colorbar_axes(result))}"
+        assert len(self._colorbar_axes(result)) == 1, (
+            f"expected 1 shared colorbar axis, got {len(self._colorbar_axes(result))}"
         )
 
     def test_facet_colorbar_true_resets_loose_cbar_kwargs(self):
@@ -3873,13 +3874,12 @@ class TestFacetColorbar:
         )
 
     def test_facet_colorbar_none_honors_loose_cbar_label(self):
-        """The default `colorbar=None` leaves a loose `cbar_label` in force per panel.
+        """The default `colorbar=None` leaves a loose `cbar_label` in force on the shared bar.
 
         Test scenario:
-            Complements the `True`-resets and typed-wins tests: with `None`
-            (which resolves to an empty update), a loose `cbar_label="loose"`
-            folded in by the constructor survives on every panel's bar -- the
-            prior behaviour the docstring promises.
+            With `None` (which resolves to an empty update), a loose
+            `cbar_label="loose"` folded in by the constructor survives on the
+            single shared bar.
         """
         result = ArrayGlyph(self._stack_3d()).facet(
             FacetLayout(col="time", labels=PanelLabels(col=[0, 1, 2])),
@@ -3887,11 +3887,9 @@ class TestFacetColorbar:
             cbar_label="loose",
         )
         labels = [ax.get_ylabel() for ax in self._colorbar_axes(result)]
-        assert labels == [
-            "loose",
-            "loose",
-            "loose",
-        ], f"colorbar=None should keep the loose label on every panel, got {labels}"
+        assert labels == ["loose"], (
+            f"colorbar=None should keep the loose label on the shared bar, got {labels}"
+        )
 
     def test_facet_colorbar_spec_shares_stack_vmin_vmax(self):
         """A `colorbar=` spec does not disturb the shared stack-wide `vmin`/`vmax`.
@@ -3929,31 +3927,30 @@ class TestFacetColorbar:
         )
         assert result.cbar is None, "result.cbar should be None when colorbar=False"
 
-    def test_facet_colorbar_none_preserves_default_behaviour(self):
-        """`facet()` with no `colorbar` keeps the prior per-panel colorbars.
+    def test_facet_colorbar_none_draws_one_shared_bar(self):
+        """`facet()` with no `colorbar` draws one shared bar spanning the grid.
 
         Test scenario:
-            The default `colorbar=None` resolves to an empty update, so behaviour
-            is unchanged: one colorbar per panel and a non-None shared `cbar`.
+            The default `colorbar=None` draws a single colour bar spanning all
+            panels (xarray-style), not one per panel, and exposes it as the
+            shared `cbar`.
         """
         result = ArrayGlyph(self._stack_3d()).facet(
             FacetLayout(col="time", labels=PanelLabels(col=[0, 1, 2]))
         )
-        assert len(self._colorbar_axes(result)) == 3, (
-            "default facet should keep one colorbar per panel"
+        assert len(self._colorbar_axes(result)) == 1, (
+            "default facet should draw one shared colorbar spanning the grid"
         )
-        assert result.cbar is not None, (
-            "default facet should still expose a shared cbar"
-        )
+        assert result.cbar is not None, "default facet should expose the shared cbar"
 
     def test_facet_colorbar_orientation_applied(self):
-        """A horizontal `ColorBar` orientation reaches every panel's colorbar.
+        """A horizontal `ColorBar` orientation applies to the single shared bar.
 
         Test scenario:
-            `ColorBar(orientation="horizontal")` routes through `_resolve_colorbar`
-            into every panel, so the shared colorbar renders horizontally and,
-            since a horizontal bar carries its label on the x-axis, each panel's
-            colorbar shows the label there.
+            `ColorBar(orientation="horizontal")` routes through `_resolve_colorbar`,
+            so the one shared colorbar renders horizontally and, since a
+            horizontal bar carries its label on the x-axis, that bar's x-axis
+            shows the label.
         """
         result = ArrayGlyph(self._stack_3d()).facet(
             FacetLayout(col="time", labels=PanelLabels(col=[0, 1, 2])),
@@ -3963,11 +3960,9 @@ class TestFacetColorbar:
             f"expected horizontal cbar, got {result.cbar.orientation!r}"
         )
         xlabels = [ax.get_xlabel() for ax in self._colorbar_axes(result)]
-        assert xlabels == [
-            "mm",
-            "mm",
-            "mm",
-        ], f"every panel's horizontal cbar should label the x-axis 'mm', got {xlabels}"
+        assert xlabels == ["mm"], (
+            f"the shared horizontal cbar should label the x-axis 'mm', got {xlabels}"
+        )
 
     def test_facet_colorbar_spec_wins_over_loose_kwargs(self):
         """A `ColorBar` spec overrides a conflicting loose `cbar_*`, mirroring `plot`.

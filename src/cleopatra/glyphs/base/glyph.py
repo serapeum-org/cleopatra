@@ -12,7 +12,7 @@ import itertools
 import os
 import warnings
 import weakref
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Sequence
 from contextlib import contextmanager
 from numbers import Real
 from typing import Any, cast
@@ -2194,8 +2194,18 @@ class Glyph(WatermarkMixin):
                 ax, im, cbar_kw, inset_location, orientation, user_kwargs
             )
         else:
+            # `cbar_span_axes`, when set, makes the bar span those axes instead
+            # of just `ax` (a facet grid's shared bar across its panels); the
+            # single-axes default is `ax` itself. Only the outside bar spans --
+            # an inset bar lives inside one axes.
+            span_axes = self.default_options.get("cbar_span_axes")
             cbar = self._outside_colorbar(
-                ax, im, cbar_kw, location, orientation, user_kwargs
+                span_axes if span_axes is not None else ax,
+                im,
+                cbar_kw,
+                location,
+                orientation,
+                user_kwargs,
             )
 
         self._apply_cbar_styling(cbar, user_label)
@@ -2227,15 +2237,22 @@ class Glyph(WatermarkMixin):
 
     def _outside_colorbar(
         self,
-        ax: Axes,
+        ax: Axes | Sequence[Axes],
         im: Any,
         cbar_kw: dict,
         location: str | None,
         orientation: str,
         user_kwargs: dict,
     ) -> Colorbar:
-        """Draw a normal (outside-gutter) colorbar via `fig.colorbar`."""
-        fig = ax.figure
+        """Draw a normal (outside-gutter) colorbar via `fig.colorbar`.
+
+        `ax` may be a single `Axes` or a sequence of axes for a bar that
+        **spans** them all -- `Figure.colorbar` steals space from each and
+        accepts the list directly. For a sequence the figure is taken from the
+        first element; the single-`Axes` path is unchanged.
+        """
+        anchor = ax if isinstance(ax, Axes) else ax[0]
+        fig = anchor.figure
         merged_kw = {
             "shrink": self.default_options["cbar_length"],
             "pad": 0.02,
