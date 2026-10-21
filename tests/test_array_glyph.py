@@ -1205,6 +1205,44 @@ class TestProgressBar:
         loc[0] = 0.5
         assert bar.location == [0.2, 0.9], f"spec location was mutated: {bar.location}"
 
+    def test_sub_frames_hold_the_fill_per_data_frame(self):
+        """`sub_frames>1` steps the fill once per data frame and holds across sub-frames."""
+        stack = np.arange(3 * 3 * 3, dtype=float).reshape(3, 3, 3)
+        anim = ArrayGlyph(stack).animate(
+            ["t0", "t1", "t2"], playback=Animation(progress_bar=True, sub_frames=2)
+        )
+        widths = [round(self._bars(anim._func(k))[1].get_width(), 4) for k in range(6)]
+        assert widths == [0.0, 0.0, 0.45, 0.45, 0.9, 0.9], (
+            f"fill must step per data frame and hold across sub-frames: {widths}"
+        )
+
+    def test_init_path_draws_the_bar_empty(self):
+        """The init blit output carries the full-length track and an empty fill."""
+        stack = np.arange(3 * 3 * 3, dtype=float).reshape(3, 3, 3)
+        anim = ArrayGlyph(stack).animate(
+            ["t0", "t1", "t2"], playback=Animation(progress_bar=True)
+        )
+        track, fill = self._bars(anim._init_func())
+        assert round(track.get_width(), 4) == 0.9, (
+            "init must draw the full-length track"
+        )
+        assert fill.get_width() == 0.0, "init must start the fill empty"
+
+    def test_custom_spec_styling_reaches_the_artists(self):
+        """`track_color`, `alpha`, and the border reach the drawn track/fill artists."""
+        stack = np.arange(3 * 3 * 3, dtype=float).reshape(3, 3, 3)
+        bar = ProgressBar(
+            track_color="black", alpha=0.5, border_color="red", border_width=2.0
+        )
+        anim = ArrayGlyph(stack).animate(
+            ["t0", "t1", "t2"], playback=Animation(progress_bar=bar)
+        )
+        track, fill = self._bars(anim._func(1))
+        assert track.get_facecolor() == to_rgba("black", 0.5), "track colour + alpha"
+        assert track.get_edgecolor() == to_rgba("red", 0.5), "border colour applied"
+        assert track.get_linewidth() == 2.0, "border width applied"
+        assert fill.get_alpha() == 0.5, "fill alpha applied"
+
 
 class TestPanelLabels:
     """Direct unit tests for `PanelLabels.__init__`'s defaults, attribute
