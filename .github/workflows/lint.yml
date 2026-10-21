@@ -1,0 +1,103 @@
+name: Lint
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      # The three `language: system` hooks (pytest-check, doctest, notebook-check)
+      # and mypy shell back into the project, so the uv dev env is set up here
+      # even though those hooks are skipped below. Formatters/linters run in
+      # pre-commit's own isolated environments and read their config from
+      # pyproject.toml.
+      - name: Set up uv dev env
+        uses: serapeum-org/github-actions/actions/python-setup/uv@38c111084f99d5ff5f4a1e63bedce48fe33a10c0  # uv/v1.2.1
+        with:
+          version: '0.12.1'
+          python-version: "3.12"
+          install-groups: "groups: dev"
+          verify-lock: true
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: pre-commit-
+
+      - run: python -m pip install pre-commit==4.5.1
+
+      - name: Run pre-commit hooks
+        run: pre-commit run --all-files --show-diff-on-failure --color=always
+        env:
+          # pytest-check, doctest, notebook-check and mypy are `language: system`
+          # hooks that would run against the runner's bare Python without the
+          # project installed; the suite proper is `tests.yml`, and the doctest
+          # job below covers src doctests. no-commit-to-branch is skipped so
+          # running pre-commit on main does not fail the hook.
+          SKIP: no-commit-to-branch,pytest-check,doctest,notebook-check,mypy
+
+  # Src doctests. Need the full `dev` uv env (an importable package) but are not
+  # platform- or Python-version-sensitive, so one runner covers them.
+  static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        # serapeum-org/github-actions is a monorepo: one commit carries the release tag for
+        # every action in it, so 38c11108 is the dereferenced commit for mkdocs/v1.3.1,
+        # github-release/v1.5.0, pypi-release/v1.0.3 and uv/v1.2.1 alike. Three different
+        # actions pinned to one SHA reads like a copy-paste error and is not; verify with
+        #   git ls-remote --tags https://github.com/serapeum-org/github-actions
+        uses: serapeum-org/github-actions/actions/python-setup/uv@38c111084f99d5ff5f4a1e63bedce48fe33a10c0  # uv/v1.2.1
+        with:
+          version: '0.12.1'
+          python-version: "3.12"
+          install-groups: "groups: dev"
+          verify-lock: true
+
+      - name: Doctests (src)
+        # MPLBACKEND=Agg forces the headless matplotlib backend so no example opens
+        # a GUI window; -p no:cacheprovider disables the pytest cache plugin.
+        env:
+          MPLBACKEND: Agg
+        run: uv run --active --extra tiles --extra science-colors pytest --doctest-modules src/cleopatra -p no:cacheprovider
+
+  # The repo's secret gate. gitleaks is the single secret scanner. There is a
+  # local gitleaks pre-commit hook, but that only scans staged diffs; this job
+  # scans the whole working tree — every tracked file, notebooks included —
+  # with the ci/gitleaks.toml allowlist.
+  gitleaks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Scan for secrets (gitleaks)
+        # Pinned binary + SHA256 verification (avoids the gitleaks-action org-license
+        # requirement). `gitleaks dir` exits non-zero on a leak, which fails the job.
+        run: |
+          VER=8.30.0
+          SHA=79a3ab579b53f71efd634f3aaf7e04a0fa0cf206b7ed434638d1547a2470a66e
+          curl -sSL --proto '=https' --proto-redir '=https' -o gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${VER}/gitleaks_${VER}_linux_x64.tar.gz"
+          echo "${SHA}  gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf gitleaks.tar.gz gitleaks
+          ./gitleaks dir . -c ci/gitleaks.toml --redact --no-banner
