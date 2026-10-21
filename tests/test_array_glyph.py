@@ -1243,6 +1243,48 @@ class TestProgressBar:
         assert track.get_linewidth() == 2.0, "border width applied"
         assert fill.get_alpha() == 0.5, "fill alpha applied"
 
+    def test_numpy_boolean_progress_bar_is_accepted(self):
+        """A numpy bool is honoured like a Python bool (`np.True_` -> bar, `np.False_` -> none)."""
+        stack = np.arange(3 * 3 * 3, dtype=float).reshape(3, 3, 3)
+        on = ArrayGlyph(stack).animate(
+            ["t0", "t1", "t2"], playback=Animation(progress_bar=np.True_)
+        )
+        assert len(self._bars(on._func(1))) == 2, "np.True_ must draw the bar"
+        off = ArrayGlyph(stack).animate(
+            ["t0", "t1", "t2"], playback=Animation(progress_bar=np.False_)
+        )
+        assert self._bars(off._func(1)) == [], "np.False_ must draw no bar"
+
+    def test_bar_is_baked_into_the_saved_mp4(self, tmp_path):
+        """The FFmpeg/MP4 writer path runs with the overlay and writes a non-empty file.
+
+        Test scenario:
+            Saving a progress-bar animation to `.mp4` exercises the FFmpeg writer
+            (bundled via imageio-ffmpeg) end to end with the overlay present,
+            backing the docstring's "survives ... the FFmpeg (MP4) writer" claim.
+        """
+        stack = np.zeros((3, 8, 8), dtype=float)
+        glyph = ArrayGlyph(stack)
+        glyph.animate(["t0", "t1", "t2"], playback=Animation(progress_bar=True))
+        out = tmp_path / "pb.mp4"
+        glyph.save_animation(str(out), fps=6)
+        assert out.stat().st_size > 0, "progress-bar MP4 must be written"
+
+    def test_bar_sits_above_the_raster(self):
+        """The bar artists keep a higher z-order than the data image, so a basemap
+        or raster drawn beneath the image cannot occlude the overlay."""
+        stack = np.zeros((3, 8, 8), dtype=float)
+        glyph = ArrayGlyph(stack, extent=[-10, 10, -10, 10])
+        anim = glyph.animate(["t0", "t1", "t2"], playback=Animation(progress_bar=True))
+        track, fill = self._bars(anim._func(1))
+        im_z = glyph.im.get_zorder()
+        assert track.get_zorder() > im_z, (
+            f"track {track.get_zorder()} must top im {im_z}"
+        )
+        assert fill.get_zorder() > track.get_zorder(), (
+            f"fill {fill.get_zorder()} must sit above track {track.get_zorder()}"
+        )
+
 
 class TestPanelLabels:
     """Direct unit tests for `PanelLabels.__init__`'s defaults, attribute
