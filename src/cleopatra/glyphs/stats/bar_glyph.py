@@ -194,7 +194,10 @@ class BarGlyph(Glyph):
             self.bars = ax.barh(self.categories, self.values, color=palette_colors)
         else:
             self.bars = ax.bar(self.categories, self.values, color=palette_colors)
-        _mark_render_artists(ax, self, *self.bars)
+        # Mark the BarContainer itself (not its unpacked Rectangles): its
+        # remove() both detaches the child patches and deregisters the container
+        # from ax.containers, so a re-plot leaves no stale/detached containers.
+        _mark_render_artists(ax, self, self.bars)
 
         if opts["title"]:
             ax.set_title(opts["title"], fontsize=opts["title_size"])

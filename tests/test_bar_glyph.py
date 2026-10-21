@@ -175,6 +175,14 @@ class TestBarGlyphPlot:
         BarGlyph(["c", "d"], [3.0, 4.0]).plot(ax=ax, compose=True)
         assert len(ax.patches) == 4, "compose should overlay, keeping both glyphs' bars"
 
+    def test_replot_does_not_accumulate_stale_containers(self):
+        """Re-plotting leaves no detached BarContainers in ax.containers."""
+        fig, ax = plt.subplots()
+        glyph = BarGlyph(["a", "b", "c"], [1.0, 2.0, 3.0])
+        for _ in range(3):
+            glyph.plot(ax=ax)
+        assert len(ax.containers) == 1, "exactly one live bar container after re-plots"
+
     def test_uses_construction_axes_when_plot_ax_omitted(self):
         """An axes given at construction is used when plot() gets no ax."""
         fig, ax = plt.subplots()
