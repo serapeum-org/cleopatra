@@ -130,3 +130,9 @@ class TestPieGlyphPlot:
         fig, ax = plt.subplots()
         out_fig, out_ax, _ = PieGlyph(["a", "b"], [1.0, 1.0]).plot(ax=ax)
         assert out_ax is ax and out_fig is fig
+
+    def test_uses_construction_axes_when_plot_ax_omitted(self):
+        """An axes given at construction is used when plot() gets no ax."""
+        fig, ax = plt.subplots()
+        _, out_ax, _ = PieGlyph(["a", "b"], [1.0, 1.0], ax=ax).plot()
+        assert out_ax is ax, "the construction-time axes should be reused"

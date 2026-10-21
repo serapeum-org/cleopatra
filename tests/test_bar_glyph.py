@@ -130,3 +130,9 @@ class TestBarGlyphPlot:
         out_fig, out_ax, _ = BarGlyph(["a", "b"], [1.0, 2.0]).plot(ax=ax)
         assert out_ax is ax, "the supplied axes should be used"
         assert out_fig is fig, "its figure should be returned"
+
+    def test_uses_construction_axes_when_plot_ax_omitted(self):
+        """An axes given at construction is used when plot() gets no ax."""
+        fig, ax = plt.subplots()
+        _, out_ax, _ = BarGlyph(["a", "b"], [1.0, 2.0], ax=ax).plot()
+        assert out_ax is ax, "the construction-time axes should be reused"
