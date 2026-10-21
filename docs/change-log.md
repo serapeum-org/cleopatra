@@ -1,5 +1,106 @@
 # Changelog
 
+## 0.43.0 (2026-10-21)
+
+
+- fix(ci): repair lint and pure-wheel-test workflows after (#394)
+- - Quote `--only-binary :all:` in lint.yml so the colons
+  do not break YAML parsing
+- Exclude `tiles` and `science_colors` marked tests from
+  the pure-wheel core job (no extras installed)
+- Register `tiles` and `science_colors` pytest markers in
+  pyproject.toml
+- Mark four tests that need pyproj with @pytest.mark.tiles
+- Remove no-op `-o pythonpath=` from pure-wheel-test jobs
+- Delete six redundant in-file doctest runners superseded
+  by the lint.yml static job's --doctest-modules pass
+- Closes #395
+- ci: adopt lint, pip-audit, and pure-wheel-test workflows (#393)
+- Port the three missing CI workflows from pyramids-mesh and fix every
+issue they surfaced on the existing codebase:
+- - Add lint.yml (pre-commit + doctests + gitleaks secret scan),
+  pip-audit.yml (weekly + PR dependency audit), and
+  pure-wheel-test.yml (build wheel, install, test on 3x3 matrix)
+- Relocate gitleaks.toml from ci/ to .github/
+- Fix ~65 mypy errors across 20 source files (cast guards,
+  assert-not-None narrowing, missing type annotations)
+- Fix bandit B110 (bare except:pass in renderer-unavailable fallback)
+- Resolve all 14 SonarCloud findings (S1192 duplicated strings,
+  S5779 assert inside try/except, S3776 cognitive complexity,
+  S8541/S8544 CI security)
+- Bump pillow floor 12.1.1 -> 13.0.0 (CVE-2025-27607), certifi,
+  urllib3, tornado, virtualenv for pip-audit CVEs
+- Add __all__ to colors.py for clean palette re-exports
+- Add dev dependencies (pip, build, twine, pytest-mock, coverage)
+- Pre-commit formatting pass (ruff-format + ruff-check)
+- Closes #393
+- feat(colorbar): let colorbar helpers span a sequence of axes (#392)
+- cleopatra's colorbar wrappers only attached a bar to a single axes, so a
+multi-panel figure could not carry one bar spanning a subset of panels --
+though Figure.colorbar already accepts a sequence. Widen the wrappers,
+keeping the single-Axes path byte-for-byte unchanged:
+- - colorbar_legend(mappable, ax=...) accepts ax: Axes | Sequence[Axes];
+  for a sequence it infers the figure (flattening any ndarray shape) and
+  passes the list to Figure.colorbar, which steals space from each. An
+  empty sequence raises the same clear ValueError.
+- Glyph._outside_colorbar / create_color_bar accept a sequence the same
+  way, via an internal cbar_span_axes option.
+- ArrayGlyph.facet draws ONE shared bar across the whole panel grid for a
+  continuous scale (like xarray's FacetGrid) instead of one per panel; the
+  bar sits in a gutter and the figure stays re-layoutable. A data_style
+  preset keeps its own per-panel legend.
+- Unblocks serapeum-org/Digital-Earth#219, whose spanning primitive must
+live in cleopatra.
+- Closes #389
+- feat(glyphs): add an opt-in progress-bar overlay to animate() (#391)
+- Add a per-frame progress bar to `ArrayGlyph.animate` that fills across the
+sequence, so a viewer of a long timelapse can see how far through each frame
+sits. Opt-in via the existing `playback=Animation(...)` spec and off by
+default, so current output is unchanged.
+- - New `ProgressBar` spec (location / length / height / color / track_color /
+  alpha / border) with `draw(ax) -> (track, fill)` and
+  `advance(fill, fraction)`, mirroring the FrameLabel / ColorBar style and
+  documented in the API reference.
+- `Animation.progress_bar: bool | ProgressBar = False`; `True` or a numpy
+  bool uses the defaults, an instance customises placement / size / colour,
+  and any other value raises a clear TypeError.
+- animate advances the fill each frame to `frame_index / (n_frames - 1)` (a
+  single-frame animation shows a full bar; with `sub_frames > 1` the fill
+  tracks the data-frame index and holds across its sub-frames), drawn in
+  axes-fraction coordinates via `add_artist` so the overlay never perturbs
+  the data limits, and blitted + registered like the time label so a
+  re-animate clears it.
+- Baked into each rendered frame, so it survives both the Pillow (GIF / WebP)
+  and FFmpeg (MP4) writers.
+- Closes #388
+- feat(glyphs): add categorical BarGlyph and PieGlyph (#390)
+- Add two thin categorical glyphs over matplotlib bar/pie, each taking a
+(categories, values) pair and colouring one artist per category from the
+shared palette system. Both subclass Glyph and reuse its pipeline:
+construction/ax handling, title/axis-label/tick styling, the disjoint
+swatch legend, and the clear-prior-artists + compose= contract the other
+glyphs expose.
+- - BarGlyph(categories, values).plot(...) -> (fig, ax, BarContainer);
+  vertical or horizontal (horizontal=True -> barh); optional
+  category->colour legend; plot-time title/xlabel/ylabel honoured without
+  leaking across calls.
+- PieGlyph(categories, values).plot(...) -> (fig, ax, [Wedge]); equal
+  aspect, autopct percentages (on by default, autopct=None hides them),
+  and an optional legend that replaces the inline wedge labels.
+- Colours come from a named qualitative palette (default category12,
+  cycled) or an explicit colors= list; shared resolve_categories /
+  resolve_category_colors validate the inputs (rejecting length
+  mismatches, empties and non-finite values) and map them (an unknown
+  palette raises ValueError). PieGlyph also rejects negative or zero-sum
+  values.
+- compose=False (default) clears prior render artists so a re-plot or a
+  second glyph on a shared axes replaces rather than stacks; compose=True
+  overlays.
+- Imported from the submodule per the stats-package convention
+(from cleopatra.glyphs.stats.bar_glyph import BarGlyph); nothing is
+re-exported from the package __init__.
+- Closes #387
+
 ## 0.42.0 (2026-10-08)
 
 

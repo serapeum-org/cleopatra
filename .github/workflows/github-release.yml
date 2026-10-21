@@ -1,7 +1,7 @@
 name: github-release
 
 permissions:
-  contents: write
+  contents: read
 
 on:
   workflow_dispatch:
@@ -36,8 +36,14 @@ on:
         default: false
 
 jobs:
+  pure-wheel-test:
+    uses: ./.github/workflows/pure-wheel-test.yml
+
   release:
+    needs: pure-wheel-test
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
