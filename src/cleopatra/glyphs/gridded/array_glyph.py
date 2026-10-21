@@ -800,7 +800,7 @@ class ProgressBar:
         """
         if self.location is None:
             return [0.05, 0.05]
-        return self.location
+        return list(self.location)
 
     def draw(self, ax: Axes) -> tuple[Rectangle, Rectangle]:
         """Draw the (empty) progress bar's track and fill on `ax`.
@@ -5907,12 +5907,19 @@ class ArrayGlyph(GeoMixin, Glyph):
         overlays = tuple(playback.overlays)
         sub_frames = playback.sub_frames
         # Resolve the progress-bar spec: `True` -> defaults, `False` -> none,
-        # a `ProgressBar` instance -> used as given.
+        # a `ProgressBar` instance -> used as given. Anything else is out of the
+        # declared `bool | ProgressBar` contract and fails fast here (mirroring
+        # the `sub_frames` validation) rather than later inside rendering.
         progress_bar = playback.progress_bar
         if progress_bar is True:
             progress_bar = ProgressBar()
         elif progress_bar is False:
             progress_bar = None
+        elif not isinstance(progress_bar, ProgressBar):
+            raise TypeError(
+                "playback.progress_bar must be a bool or a ProgressBar, got "
+                f"{type(progress_bar).__name__!r}."
+            )
         # Accept any integer (incl. numpy ints from array shapes); reject bool,
         # which is an `int` subclass but never a meaningful frame count.
         if (

@@ -1170,6 +1170,20 @@ class TestProgressBar:
         anim.save(str(out), writer="pillow", fps=6)
         assert out.stat().st_size > 0, "progress-bar GIF must be written"
 
+    def test_invalid_progress_bar_value_raises_typeerror(self):
+        """A non-bool, non-`ProgressBar` `progress_bar` fails fast with a `TypeError`."""
+        stack = np.arange(2 * 3 * 3, dtype=float).reshape(2, 3, 3)
+        with pytest.raises(TypeError, match="bool or a ProgressBar") as exc:
+            ArrayGlyph(stack).animate(["t0", "t1"], playback=Animation(progress_bar=1))
+        assert "int" in str(exc.value), f"message should name the bad type: {exc.value}"
+
+    def test_resolve_location_returns_a_copy(self):
+        """Mutating the returned anchor must not change the spec's stored location."""
+        bar = ProgressBar(location=[0.2, 0.9])
+        loc = bar.resolve_location()
+        loc[0] = 0.5
+        assert bar.location == [0.2, 0.9], f"spec location was mutated: {bar.location}"
+
 
 class TestPanelLabels:
     """Direct unit tests for `PanelLabels.__init__`'s defaults, attribute
