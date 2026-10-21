@@ -5918,11 +5918,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         # anything else is out of the declared `bool | ProgressBar` contract and
         # fails fast here rather than later inside rendering.
         progress_bar = playback.progress_bar
-        if isinstance(progress_bar, ProgressBar):
-            pass
-        elif isinstance(progress_bar, (bool, np.bool_)):
+        if isinstance(progress_bar, (bool, np.bool_)):
             progress_bar = ProgressBar() if bool(progress_bar) else None
-        else:
+        elif not isinstance(progress_bar, ProgressBar):
             raise TypeError(
                 "playback.progress_bar must be a bool or a ProgressBar, got "
                 f"{type(progress_bar).__name__!r}."
