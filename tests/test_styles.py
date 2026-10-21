@@ -394,6 +394,35 @@ class TestColorbarLegend:
         finally:
             plt.close(fig)
 
+    def test_two_dimensional_ndarray_of_axes_spans(self):
+        """A 2-D ndarray of axes (from `plt.subplots(2, 2)`) spans correctly (#389).
+
+        Test scenario:
+            The natural grid handle is a 2-D ndarray; the figure is inferred by
+            flattening it (not indexing a row), so one shared colorbar is drawn
+            with the label forwarded.
+        """
+        fig, axes = plt.subplots(2, 2)
+        try:
+            sc = axes[0, 0].imshow([[1.0, 2.0], [3.0, 4.0]])
+            cbar = colorbar_legend(sc, axes, label="q")
+            assert isinstance(cbar, Colorbar), f"expected Colorbar, got {type(cbar)}"
+            assert cbar.ax.get_ylabel() == "q", (
+                f"label should forward, got {cbar.ax.get_ylabel()!r}"
+            )
+        finally:
+            plt.close(fig)
+
+    def test_empty_sequence_raises_valueerror(self):
+        """An empty axes sequence raises the clear `ValueError`, not `IndexError` (#389)."""
+        fig, ax = plt.subplots()
+        try:
+            sc = ax.imshow([[1.0, 2.0], [3.0, 4.0]])
+            with pytest.raises(ValueError, match="empty sequence"):
+                colorbar_legend(sc, [])
+        finally:
+            plt.close(fig)
+
 
 class TestHistogramLegend:
     """Tests for cleopatra.styling.styles.histogram_legend (T5.3c)."""

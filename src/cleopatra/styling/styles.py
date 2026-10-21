@@ -1325,9 +1325,19 @@ def colorbar_legend(
             "mappable already attached to an axes."
         )
     # A sequence of axes makes the bar span all of them -- `Figure.colorbar`
-    # steals space from each and accepts the list directly. The single-`Axes`
-    # path is unchanged; for a sequence the figure is taken from the first.
-    anchor = parent_ax if isinstance(parent_ax, Axes) else parent_ax[0]
+    # steals space from each and accepts the sequence directly (a list or a 1-D
+    # or 2-D ndarray, e.g. from `plt.subplots(2, 2)`). The single-`Axes` path is
+    # unchanged; for a sequence the figure is taken from the first axes,
+    # flattening any ndarray shape.
+    if isinstance(parent_ax, Axes):
+        anchor = parent_ax
+    else:
+        flat = np.asarray(parent_ax, dtype=object).ravel()
+        if flat.size == 0:
+            raise ValueError(
+                "Cannot determine an axes for the colorbar: `ax` is an empty sequence."
+            )
+        anchor = flat[0]
     fig = anchor.figure
     return fig.colorbar(mappable, ax=parent_ax, **kwargs)
 

@@ -2251,7 +2251,7 @@ class Glyph(WatermarkMixin):
         accepts the list directly. For a sequence the figure is taken from the
         first element; the single-`Axes` path is unchanged.
         """
-        anchor = ax if isinstance(ax, Axes) else ax[0]
+        anchor = ax if isinstance(ax, Axes) else np.asarray(ax, dtype=object).ravel()[0]
         fig = anchor.figure
         merged_kw = {
             "shrink": self.default_options["cbar_length"],
