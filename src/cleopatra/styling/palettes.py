@@ -553,7 +553,12 @@ for _prefix, _anchor_map, _src in [
 ]:
     for _key, _anchors in _anchor_map.items():
         register(
-            Palette(f"{_prefix}_{_key}", PaletteKind.SEQUENTIAL, tuple(_anchors), source=_src)
+            Palette(
+                f"{_prefix}_{_key}",
+                PaletteKind.SEQUENTIAL,
+                tuple(_anchors),
+                source=_src,
+            )
         )
 del _prefix, _anchor_map, _src, _key, _anchors
 

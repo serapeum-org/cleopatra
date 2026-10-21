@@ -313,7 +313,9 @@ class HexbinGlyph(GeoMixin, Glyph):
         # `.filled(np.nan)` guards older matplotlib that masked empty /
         # `mincnt`-dropped cells; current matplotlib returns an unmasked array
         # (dropped cells are absent), so this is a no-op there.
-        aggregate = cast(np.ma.MaskedArray, np.ma.asarray(pc.get_array()).astype(float)).filled(np.nan)
+        aggregate = cast(
+            np.ma.MaskedArray, np.ma.asarray(pc.get_array()).astype(float)
+        ).filled(np.nan)
         return offsets[:, 0], offsets[:, 1], aggregate
 
     def plot(

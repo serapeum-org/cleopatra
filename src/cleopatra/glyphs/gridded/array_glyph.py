@@ -2827,7 +2827,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         if log_floor is None or log_floor <= vmin:
             return vmin
         if not ticks_spacing_pinned:
-            self.default_options["ticks_spacing"] = (cast(float, self._vmax) - log_floor) / 10 or 1.0
+            self.default_options["ticks_spacing"] = (
+                cast(float, self._vmax) - log_floor
+            ) / 10 or 1.0
         return log_floor
 
     @staticmethod
