@@ -1160,15 +1160,36 @@ class TestProgressBar:
         _, fill = self._bars(anim._func(0))
         assert round(fill.get_width(), 6) == 0.9, "single frame -> full bar"
 
-    def test_survives_pillow_writer(self, tmp_path):
-        """The bar is baked into frames, so a saved GIF is written non-empty."""
-        stack = np.arange(3 * 3 * 3, dtype=float).reshape(3, 3, 3)
-        anim = ArrayGlyph(stack).animate(
-            ["t0", "t1", "t2"], playback=Animation(progress_bar=True)
+    def test_bar_is_baked_into_the_saved_gif(self, tmp_path):
+        """The bar survives the Pillow writer: the saved last frame differs from no-bar.
+
+        Test scenario:
+            A flat field is animated with and without the progress bar and saved
+            through the Pillow GIF writer. Comparing the last frame of each saved
+            GIF, the bar must change pixels -- an assertion a mere `size > 0` check
+            (which passes even if the overlay were dropped) cannot make.
+        """
+        stack = np.zeros((3, 8, 8), dtype=float)
+
+        def saved_last_frame(progress_bar):
+            glyph = ArrayGlyph(stack)
+            anim = glyph.animate(
+                ["t0", "t1", "t2"], playback=Animation(progress_bar=progress_bar)
+            )
+            out = tmp_path / f"pb_{progress_bar}.gif"
+            anim.save(str(out), writer="pillow", fps=6)
+            with Image.open(out) as im:
+                im.seek(im.n_frames - 1)
+                return np.asarray(im.convert("RGB"))
+
+        with_bar = saved_last_frame(True)
+        without_bar = saved_last_frame(False)
+        assert with_bar.shape == without_bar.shape, (
+            f"frames must be comparable: {with_bar.shape} vs {without_bar.shape}"
         )
-        out = tmp_path / "pb.gif"
-        anim.save(str(out), writer="pillow", fps=6)
-        assert out.stat().st_size > 0, "progress-bar GIF must be written"
+        assert not np.array_equal(with_bar, without_bar), (
+            "the saved last frame must show the progress bar"
+        )
 
     def test_invalid_progress_bar_value_raises_typeerror(self):
         """A non-bool, non-`ProgressBar` `progress_bar` fails fast with a `TypeError`."""
