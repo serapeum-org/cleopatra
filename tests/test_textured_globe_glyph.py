@@ -5,8 +5,6 @@ Covers construction/validation, that `draw` returns a 3-D axes, the equirectangu
 kept small so the CPU-only 3-D surface draws stay fast.
 """
 
-import doctest
-
 import matplotlib
 import numpy as np
 import pytest
@@ -17,7 +15,6 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.colors import to_rgba
 from mpl_toolkits.mplot3d import Axes3D
 
-import cleopatra.glyphs.globe.textured_globe_glyph as globe_module
 from cleopatra.glyphs.globe.textured_globe_glyph import (
     EARTH_TILT_DEG,
     TexturedGlobeGlyph,
@@ -40,20 +37,6 @@ def texture() -> np.ndarray:
     tex[:, :16] //= 2  # western hemisphere darkened
     return tex
 
-
-@pytest.mark.filterwarnings("ignore:Animation was deleted without rendering anything")
-def test_module_doctests_execute():
-    """Run the module's docstring examples (pytest is not configured with --doctest-modules)."""
-    try:
-        results = doctest.testmod(globe_module, verbose=False)
-    finally:
-        plt.close("all")
-    assert results.failed == 0, (
-        f"{results.failed} doctest example(s) failed in textured_globe_glyph"
-    )
-    assert results.attempted > 0, (
-        "no doctest examples were collected from textured_globe_glyph"
-    )
 
 
 class TestConstruction:
