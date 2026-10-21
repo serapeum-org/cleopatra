@@ -4924,24 +4924,7 @@ cleopatra.glyphs.gridded.mesh_glyph.MeshGlyph: Glyph subclass for
 <span class="normal"><a href="#__codelineno-0-2557">2557</a></span>
 <span class="normal"><a href="#__codelineno-0-2558">2558</a></span>
 <span class="normal"><a href="#__codelineno-0-2559">2559</a></span>
-<span class="normal"><a href="#__codelineno-0-2560">2560</a></span>
-<span class="normal"><a href="#__codelineno-0-2561">2561</a></span>
-<span class="normal"><a href="#__codelineno-0-2562">2562</a></span>
-<span class="normal"><a href="#__codelineno-0-2563">2563</a></span>
-<span class="normal"><a href="#__codelineno-0-2564">2564</a></span>
-<span class="normal"><a href="#__codelineno-0-2565">2565</a></span>
-<span class="normal"><a href="#__codelineno-0-2566">2566</a></span>
-<span class="normal"><a href="#__codelineno-0-2567">2567</a></span>
-<span class="normal"><a href="#__codelineno-0-2568">2568</a></span>
-<span class="normal"><a href="#__codelineno-0-2569">2569</a></span>
-<span class="normal"><a href="#__codelineno-0-2570">2570</a></span>
-<span class="normal"><a href="#__codelineno-0-2571">2571</a></span>
-<span class="normal"><a href="#__codelineno-0-2572">2572</a></span>
-<span class="normal"><a href="#__codelineno-0-2573">2573</a></span>
-<span class="normal"><a href="#__codelineno-0-2574">2574</a></span>
-<span class="normal"><a href="#__codelineno-0-2575">2575</a></span>
-<span class="normal"><a href="#__codelineno-0-2576">2576</a></span>
-<span class="normal"><a href="#__codelineno-0-2577">2577</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-794" name="__codelineno-0-794"></a><span class="k">class</span><span class="w"> </span><span class="nc">Glyph</span><span class="p">(</span><span class="n">WatermarkMixin</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-2560">2560</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-794" name="__codelineno-0-794"></a><span class="k">class</span><span class="w"> </span><span class="nc">Glyph</span><span class="p">(</span><span class="n">WatermarkMixin</span><span class="p">):</span>
 <a id="__codelineno-0-795" name="__codelineno-0-795"></a><span class="w">    </span><span class="sd">"""Base class for cleopatra visualization glyphs.</span>
 <a id="__codelineno-0-796" name="__codelineno-0-796"></a>
 <a id="__codelineno-0-797" name="__codelineno-0-797"></a><span class="sd">    Handles figure/axes management, default options, color scale</span>
@@ -6344,387 +6327,370 @@ cleopatra.glyphs.gridded.mesh_glyph.MeshGlyph: Glyph subclass for
 <a id="__codelineno-0-2194" name="__codelineno-0-2194"></a>                <span class="n">ax</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">,</span> <span class="n">inset_location</span><span class="p">,</span> <span class="n">orientation</span><span class="p">,</span> <span class="n">user_kwargs</span>
 <a id="__codelineno-0-2195" name="__codelineno-0-2195"></a>            <span class="p">)</span>
 <a id="__codelineno-0-2196" name="__codelineno-0-2196"></a>        <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-2197" name="__codelineno-0-2197"></a>            <span class="c1"># `cbar_span_axes`, when set, makes the bar span those axes instead</span>
-<a id="__codelineno-0-2198" name="__codelineno-0-2198"></a>            <span class="c1"># of just `ax` (a facet grid's shared bar across its panels); the</span>
-<a id="__codelineno-0-2199" name="__codelineno-0-2199"></a>            <span class="c1"># single-axes default is `ax` itself. Only the outside bar spans --</span>
-<a id="__codelineno-0-2200" name="__codelineno-0-2200"></a>            <span class="c1"># an inset bar lives inside one axes.</span>
-<a id="__codelineno-0-2201" name="__codelineno-0-2201"></a>            <span class="n">span_axes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cbar_span_axes"</span><span class="p">)</span>
-<a id="__codelineno-0-2202" name="__codelineno-0-2202"></a>            <span class="n">cbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outside_colorbar</span><span class="p">(</span>
-<a id="__codelineno-0-2203" name="__codelineno-0-2203"></a>                <span class="n">span_axes</span> <span class="k">if</span> <span class="n">span_axes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ax</span><span class="p">,</span>
-<a id="__codelineno-0-2204" name="__codelineno-0-2204"></a>                <span class="n">im</span><span class="p">,</span>
-<a id="__codelineno-0-2205" name="__codelineno-0-2205"></a>                <span class="n">cbar_kw</span><span class="p">,</span>
-<a id="__codelineno-0-2206" name="__codelineno-0-2206"></a>                <span class="n">location</span><span class="p">,</span>
-<a id="__codelineno-0-2207" name="__codelineno-0-2207"></a>                <span class="n">orientation</span><span class="p">,</span>
-<a id="__codelineno-0-2208" name="__codelineno-0-2208"></a>                <span class="n">user_kwargs</span><span class="p">,</span>
-<a id="__codelineno-0-2209" name="__codelineno-0-2209"></a>            <span class="p">)</span>
-<a id="__codelineno-0-2210" name="__codelineno-0-2210"></a>
-<a id="__codelineno-0-2211" name="__codelineno-0-2211"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_apply_cbar_styling</span><span class="p">(</span><span class="n">cbar</span><span class="p">,</span> <span class="n">user_label</span><span class="p">)</span>
-<a id="__codelineno-0-2212" name="__codelineno-0-2212"></a>        <span class="n">box</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cbar_box"</span><span class="p">)</span>
-<a id="__codelineno-0-2213" name="__codelineno-0-2213"></a>        <span class="k">if</span> <span class="n">inside</span> <span class="ow">and</span> <span class="n">box</span> <span class="ow">and</span> <span class="n">box_info</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-2214" name="__codelineno-0-2214"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_draw_cbar_box</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">box_info</span><span class="p">,</span> <span class="n">box</span><span class="p">)</span>
-<a id="__codelineno-0-2215" name="__codelineno-0-2215"></a>        <span class="k">return</span> <span class="n">cbar</span>
+<a id="__codelineno-0-2197" name="__codelineno-0-2197"></a>            <span class="n">cbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outside_colorbar</span><span class="p">(</span>
+<a id="__codelineno-0-2198" name="__codelineno-0-2198"></a>                <span class="n">ax</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">orientation</span><span class="p">,</span> <span class="n">user_kwargs</span>
+<a id="__codelineno-0-2199" name="__codelineno-0-2199"></a>            <span class="p">)</span>
+<a id="__codelineno-0-2200" name="__codelineno-0-2200"></a>
+<a id="__codelineno-0-2201" name="__codelineno-0-2201"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_apply_cbar_styling</span><span class="p">(</span><span class="n">cbar</span><span class="p">,</span> <span class="n">user_label</span><span class="p">)</span>
+<a id="__codelineno-0-2202" name="__codelineno-0-2202"></a>        <span class="n">box</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cbar_box"</span><span class="p">)</span>
+<a id="__codelineno-0-2203" name="__codelineno-0-2203"></a>        <span class="k">if</span> <span class="n">inside</span> <span class="ow">and</span> <span class="n">box</span> <span class="ow">and</span> <span class="n">box_info</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-2204" name="__codelineno-0-2204"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_draw_cbar_box</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">box_info</span><span class="p">,</span> <span class="n">box</span><span class="p">)</span>
+<a id="__codelineno-0-2205" name="__codelineno-0-2205"></a>        <span class="k">return</span> <span class="n">cbar</span>
+<a id="__codelineno-0-2206" name="__codelineno-0-2206"></a>
+<a id="__codelineno-0-2207" name="__codelineno-0-2207"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_cbar_orientation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">location</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-0-2208" name="__codelineno-0-2208"></a><span class="w">        </span><span class="sd">"""Orientation implied by `cbar_location` (else `cbar_orientation`)."""</span>
+<a id="__codelineno-0-2209" name="__codelineno-0-2209"></a>        <span class="k">if</span> <span class="n">location</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"left"</span><span class="p">,</span> <span class="s2">"right"</span><span class="p">):</span>
+<a id="__codelineno-0-2210" name="__codelineno-0-2210"></a>            <span class="n">orientation</span> <span class="o">=</span> <span class="s2">"vertical"</span>
+<a id="__codelineno-0-2211" name="__codelineno-0-2211"></a>        <span class="k">elif</span> <span class="n">location</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"top"</span><span class="p">,</span> <span class="s2">"bottom"</span><span class="p">):</span>
+<a id="__codelineno-0-2212" name="__codelineno-0-2212"></a>            <span class="n">orientation</span> <span class="o">=</span> <span class="s2">"horizontal"</span>
+<a id="__codelineno-0-2213" name="__codelineno-0-2213"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-2214" name="__codelineno-0-2214"></a>            <span class="n">orientation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">"cbar_orientation"</span><span class="p">]</span>
+<a id="__codelineno-0-2215" name="__codelineno-0-2215"></a>        <span class="k">return</span> <span class="n">orientation</span>
 <a id="__codelineno-0-2216" name="__codelineno-0-2216"></a>
-<a id="__codelineno-0-2217" name="__codelineno-0-2217"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_cbar_orientation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">location</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<a id="__codelineno-0-2218" name="__codelineno-0-2218"></a><span class="w">        </span><span class="sd">"""Orientation implied by `cbar_location` (else `cbar_orientation`)."""</span>
-<a id="__codelineno-0-2219" name="__codelineno-0-2219"></a>        <span class="k">if</span> <span class="n">location</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"left"</span><span class="p">,</span> <span class="s2">"right"</span><span class="p">):</span>
-<a id="__codelineno-0-2220" name="__codelineno-0-2220"></a>            <span class="n">orientation</span> <span class="o">=</span> <span class="s2">"vertical"</span>
-<a id="__codelineno-0-2221" name="__codelineno-0-2221"></a>        <span class="k">elif</span> <span class="n">location</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"top"</span><span class="p">,</span> <span class="s2">"bottom"</span><span class="p">):</span>
-<a id="__codelineno-0-2222" name="__codelineno-0-2222"></a>            <span class="n">orientation</span> <span class="o">=</span> <span class="s2">"horizontal"</span>
-<a id="__codelineno-0-2223" name="__codelineno-0-2223"></a>        <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-2224" name="__codelineno-0-2224"></a>            <span class="n">orientation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">"cbar_orientation"</span><span class="p">]</span>
-<a id="__codelineno-0-2225" name="__codelineno-0-2225"></a>        <span class="k">return</span> <span class="n">orientation</span>
-<a id="__codelineno-0-2226" name="__codelineno-0-2226"></a>
-<a id="__codelineno-0-2227" name="__codelineno-0-2227"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_cbar_user_kwargs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<a id="__codelineno-0-2228" name="__codelineno-0-2228"></a><span class="w">        </span><span class="sd">"""A validated copy of `cbar_kwargs` with `label` split out for set_label."""</span>
-<a id="__codelineno-0-2229" name="__codelineno-0-2229"></a>        <span class="n">user_kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cbar_kwargs"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
-<a id="__codelineno-0-2230" name="__codelineno-0-2230"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-<a id="__codelineno-0-2231" name="__codelineno-0-2231"></a>            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
-<a id="__codelineno-0-2232" name="__codelineno-0-2232"></a>                <span class="s2">"cbar_kwargs must be a dict of colorbar keyword "</span>
-<a id="__codelineno-0-2233" name="__codelineno-0-2233"></a>                <span class="sa">f</span><span class="s2">"arguments, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span>
-<a id="__codelineno-0-2234" name="__codelineno-0-2234"></a>            <span class="p">)</span>
-<a id="__codelineno-0-2235" name="__codelineno-0-2235"></a>        <span class="n">user_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">)</span>
-<a id="__codelineno-0-2236" name="__codelineno-0-2236"></a>        <span class="k">return</span> <span class="n">user_kwargs</span><span class="p">,</span> <span class="n">user_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"label"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-<a id="__codelineno-0-2237" name="__codelineno-0-2237"></a>
-<a id="__codelineno-0-2238" name="__codelineno-0-2238"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_outside_colorbar</span><span class="p">(</span>
-<a id="__codelineno-0-2239" name="__codelineno-0-2239"></a>        <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-2240" name="__codelineno-0-2240"></a>        <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Axes</span><span class="p">],</span>
-<a id="__codelineno-0-2241" name="__codelineno-0-2241"></a>        <span class="n">im</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-<a id="__codelineno-0-2242" name="__codelineno-0-2242"></a>        <span class="n">cbar_kw</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
-<a id="__codelineno-0-2243" name="__codelineno-0-2243"></a>        <span class="n">location</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-2244" name="__codelineno-0-2244"></a>        <span class="n">orientation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-0-2245" name="__codelineno-0-2245"></a>        <span class="n">user_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
-<a id="__codelineno-0-2246" name="__codelineno-0-2246"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Colorbar</span><span class="p">:</span>
-<a id="__codelineno-0-2247" name="__codelineno-0-2247"></a><span class="w">        </span><span class="sd">"""Draw a normal (outside-gutter) colorbar via `fig.colorbar`.</span>
-<a id="__codelineno-0-2248" name="__codelineno-0-2248"></a>
-<a id="__codelineno-0-2249" name="__codelineno-0-2249"></a><span class="sd">        `ax` may be a single `Axes` or a sequence of axes for a bar that</span>
-<a id="__codelineno-0-2250" name="__codelineno-0-2250"></a><span class="sd">        **spans** them all -- `Figure.colorbar` steals space from each and</span>
-<a id="__codelineno-0-2251" name="__codelineno-0-2251"></a><span class="sd">        accepts the list directly. For a sequence the figure is taken from the</span>
-<a id="__codelineno-0-2252" name="__codelineno-0-2252"></a><span class="sd">        first element; the single-`Axes` path is unchanged.</span>
-<a id="__codelineno-0-2253" name="__codelineno-0-2253"></a><span class="sd">        """</span>
-<a id="__codelineno-0-2254" name="__codelineno-0-2254"></a>        <span class="n">anchor</span> <span class="o">=</span> <span class="n">ax</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">Axes</span><span class="p">)</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
-<a id="__codelineno-0-2255" name="__codelineno-0-2255"></a>        <span class="n">fig</span> <span class="o">=</span> <span class="n">anchor</span><span class="o">.</span><span class="n">figure</span>
-<a id="__codelineno-0-2256" name="__codelineno-0-2256"></a>        <span class="n">merged_kw</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-2257" name="__codelineno-0-2257"></a>            <span class="s2">"shrink"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">"cbar_length"</span><span class="p">],</span>
-<a id="__codelineno-0-2258" name="__codelineno-0-2258"></a>            <span class="s2">"pad"</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">,</span>
-<a id="__codelineno-0-2259" name="__codelineno-0-2259"></a>            <span class="s2">"use_gridspec"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">fig</span><span class="o">.</span><span class="n">axes</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-2260" name="__codelineno-0-2260"></a>        <span class="p">}</span>
-<a id="__codelineno-0-2261" name="__codelineno-0-2261"></a>        <span class="k">if</span> <span class="n">location</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-2262" name="__codelineno-0-2262"></a>            <span class="c1"># matplotlib places the bar on that side and sets orientation.</span>
-<a id="__codelineno-0-2263" name="__codelineno-0-2263"></a>            <span class="n">merged_kw</span><span class="p">[</span><span class="s2">"location"</span><span class="p">]</span> <span class="o">=</span> <span class="n">location</span>
-<a id="__codelineno-0-2264" name="__codelineno-0-2264"></a>        <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-2265" name="__codelineno-0-2265"></a>            <span class="n">merged_kw</span><span class="p">[</span><span class="s2">"orientation"</span><span class="p">]</span> <span class="o">=</span> <span class="n">orientation</span>
-<a id="__codelineno-0-2266" name="__codelineno-0-2266"></a>        <span class="n">merged_kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">cbar_kw</span><span class="p">)</span>
-<a id="__codelineno-0-2267" name="__codelineno-0-2267"></a>        <span class="n">merged_kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">)</span>
-<a id="__codelineno-0-2268" name="__codelineno-0-2268"></a>        <span class="k">if</span> <span class="s2">"location"</span> <span class="ow">in</span> <span class="n">merged_kw</span><span class="p">:</span>
-<a id="__codelineno-0-2269" name="__codelineno-0-2269"></a>            <span class="n">merged_kw</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"orientation"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-<a id="__codelineno-0-2270" name="__codelineno-0-2270"></a>        <span class="k">return</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">merged_kw</span><span class="p">)</span>
-<a id="__codelineno-0-2271" name="__codelineno-0-2271"></a>
-<a id="__codelineno-0-2272" name="__codelineno-0-2272"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_apply_cbar_styling</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cbar</span><span class="p">:</span> <span class="n">Colorbar</span><span class="p">,</span> <span class="n">user_label</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-2273" name="__codelineno-0-2273"></a><span class="w">        </span><span class="sd">"""Apply tick/label colours, size, location, and text to `cbar`."""</span>
-<a id="__codelineno-0-2274" name="__codelineno-0-2274"></a>        <span class="n">tick_color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cbar_tick_color"</span><span class="p">)</span>
-<a id="__codelineno-0-2275" name="__codelineno-0-2275"></a>        <span class="n">label_color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cbar_label_color"</span><span class="p">)</span>
-<a id="__codelineno-0-2276" name="__codelineno-0-2276"></a>        <span class="n">cbar</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span>
-<a id="__codelineno-0-2277" name="__codelineno-0-2277"></a>            <span class="n">labelsize</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="o">**</span><span class="p">({</span><span class="s2">"colors"</span><span class="p">:</span> <span class="n">tick_color</span><span class="p">}</span> <span class="k">if</span> <span class="n">tick_color</span> <span class="k">else</span> <span class="p">{})</span>
-<a id="__codelineno-0-2278" name="__codelineno-0-2278"></a>        <span class="p">)</span>
-<a id="__codelineno-0-2279" name="__codelineno-0-2279"></a>        <span class="n">label_text</span> <span class="o">=</span> <span class="p">(</span>
-<a id="__codelineno-0-2280" name="__codelineno-0-2280"></a>            <span class="n">user_label</span> <span class="k">if</span> <span class="n">user_label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">"cbar_label"</span><span class="p">]</span>
-<a id="__codelineno-0-2281" name="__codelineno-0-2281"></a>        <span class="p">)</span>
-<a id="__codelineno-0-2282" name="__codelineno-0-2282"></a>        <span class="n">label_rotation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cbar_label_rotation"</span><span class="p">)</span>
-<a id="__codelineno-0-2283" name="__codelineno-0-2283"></a>        <span class="n">label_location</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">"cbar_label_location"</span><span class="p">]</span>
-<a id="__codelineno-0-2284" name="__codelineno-0-2284"></a>        <span class="k">if</span> <span class="n">label_location</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-2285" name="__codelineno-0-2285"></a>            <span class="n">valid</span> <span class="o">=</span> <span class="p">(</span>
-<a id="__codelineno-0-2286" name="__codelineno-0-2286"></a>                <span class="p">(</span><span class="s2">"bottom"</span><span class="p">,</span> <span class="s2">"center"</span><span class="p">,</span> <span class="s2">"top"</span><span class="p">)</span>
-<a id="__codelineno-0-2287" name="__codelineno-0-2287"></a>                <span class="k">if</span> <span class="n">cbar</span><span class="o">.</span><span class="n">orientation</span> <span class="o">==</span> <span class="s2">"vertical"</span>
-<a id="__codelineno-0-2288" name="__codelineno-0-2288"></a>                <span class="k">else</span> <span class="p">(</span><span class="s2">"left"</span><span class="p">,</span> <span class="s2">"center"</span><span class="p">,</span> <span class="s2">"right"</span><span class="p">)</span>
-<a id="__codelineno-0-2289" name="__codelineno-0-2289"></a>            <span class="p">)</span>
-<a id="__codelineno-0-2290" name="__codelineno-0-2290"></a>            <span class="k">if</span> <span class="n">label_location</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">valid</span><span class="p">:</span>
-<a id="__codelineno-0-2291" name="__codelineno-0-2291"></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-2292" name="__codelineno-0-2292"></a>                    <span class="sa">f</span><span class="s2">"cbar_label_location=</span><span class="si">{</span><span class="n">label_location</span><span class="si">!r}</span><span class="s2"> is not valid for a "</span>
-<a id="__codelineno-0-2293" name="__codelineno-0-2293"></a>                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">cbar</span><span class="o">.</span><span class="n">orientation</span><span class="si">}</span><span class="s2"> colorbar; use one of </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">valid</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span>
-<a id="__codelineno-0-2294" name="__codelineno-0-2294"></a>                <span class="p">)</span>
-<a id="__codelineno-0-2295" name="__codelineno-0-2295"></a>        <span class="n">cbar</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span>
-<a id="__codelineno-0-2296" name="__codelineno-0-2296"></a>            <span class="n">label_text</span><span class="p">,</span>
-<a id="__codelineno-0-2297" name="__codelineno-0-2297"></a>            <span class="n">fontsize</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">"cbar_label_size"</span><span class="p">],</span>
-<a id="__codelineno-0-2298" name="__codelineno-0-2298"></a>            <span class="n">loc</span><span class="o">=</span><span class="n">label_location</span><span class="p">,</span>
-<a id="__codelineno-0-2299" name="__codelineno-0-2299"></a>            <span class="o">**</span><span class="p">({</span><span class="s2">"color"</span><span class="p">:</span> <span class="n">label_color</span><span class="p">}</span> <span class="k">if</span> <span class="n">label_color</span> <span class="k">else</span> <span class="p">{}),</span>
-<a id="__codelineno-0-2300" name="__codelineno-0-2300"></a>            <span class="o">**</span><span class="p">({</span><span class="s2">"rotation"</span><span class="p">:</span> <span class="n">label_rotation</span><span class="p">}</span> <span class="k">if</span> <span class="n">label_rotation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{}),</span>
-<a id="__codelineno-0-2301" name="__codelineno-0-2301"></a>        <span class="p">)</span>
-<a id="__codelineno-0-2302" name="__codelineno-0-2302"></a>
-<a id="__codelineno-0-2303" name="__codelineno-0-2303"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_inside_colorbar_axes</span><span class="p">(</span>
-<a id="__codelineno-0-2304" name="__codelineno-0-2304"></a>        <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-2305" name="__codelineno-0-2305"></a>        <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span><span class="p">,</span>
-<a id="__codelineno-0-2306" name="__codelineno-0-2306"></a>        <span class="n">im</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-<a id="__codelineno-0-2307" name="__codelineno-0-2307"></a>        <span class="n">cbar_kw</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
-<a id="__codelineno-0-2308" name="__codelineno-0-2308"></a>        <span class="n">location</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-0-2309" name="__codelineno-0-2309"></a>        <span class="n">orientation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-0-2310" name="__codelineno-0-2310"></a>        <span class="n">user_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
-<a id="__codelineno-0-2311" name="__codelineno-0-2311"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Colorbar</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">]:</span>
-<a id="__codelineno-0-2312" name="__codelineno-0-2312"></a><span class="w">        </span><span class="sd">"""Draw the colorbar as an inset *inside* `ax` at `location`.</span>
-<a id="__codelineno-0-2313" name="__codelineno-0-2313"></a>
-<a id="__codelineno-0-2314" name="__codelineno-0-2314"></a><span class="sd">        The colorbar is placed in an inset axes (a child of `ax`), so it</span>
-<a id="__codelineno-0-2315" name="__codelineno-0-2315"></a><span class="sd">        tracks the data axes through `full_bleed` instead of floating. Its</span>
-<a id="__codelineno-0-2316" name="__codelineno-0-2316"></a><span class="sd">        tick labels are turned to face into the frame, so a backing box can</span>
-<a id="__codelineno-0-2317" name="__codelineno-0-2317"></a><span class="sd">        enclose them.</span>
-<a id="__codelineno-0-2318" name="__codelineno-0-2318"></a>
-<a id="__codelineno-0-2319" name="__codelineno-0-2319"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-2320" name="__codelineno-0-2320"></a><span class="sd">            ax: The data axes to inset the colorbar into.</span>
-<a id="__codelineno-0-2321" name="__codelineno-0-2321"></a><span class="sd">            im: The mappable to attach the colorbar to.</span>
-<a id="__codelineno-0-2322" name="__codelineno-0-2322"></a><span class="sd">            cbar_kw: Colorbar keyword arguments from `_create_norm_and_cbar_kw`.</span>
-<a id="__codelineno-0-2323" name="__codelineno-0-2323"></a><span class="sd">            location: Edge to sit on -- `'left'`, `'right'`, `'top'`, `'bottom'`.</span>
-<a id="__codelineno-0-2324" name="__codelineno-0-2324"></a><span class="sd">            orientation: `'vertical'` or `'horizontal'`.</span>
-<a id="__codelineno-0-2325" name="__codelineno-0-2325"></a><span class="sd">            user_kwargs: Extra `fig.colorbar` kwargs (user `cbar_kwargs`).</span>
-<a id="__codelineno-0-2326" name="__codelineno-0-2326"></a>
-<a id="__codelineno-0-2327" name="__codelineno-0-2327"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-2328" name="__codelineno-0-2328"></a><span class="sd">            tuple: `(cbar, box_info)` where `box_info` is</span>
-<a id="__codelineno-0-2329" name="__codelineno-0-2329"></a><span class="sd">                `(cax, inset_bounds, label_side)` for `_draw_cbar_box`.</span>
-<a id="__codelineno-0-2330" name="__codelineno-0-2330"></a><span class="sd">        """</span>
-<a id="__codelineno-0-2331" name="__codelineno-0-2331"></a>        <span class="n">fig</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">figure</span>
-<a id="__codelineno-0-2332" name="__codelineno-0-2332"></a>        <span class="n">default_length</span> <span class="o">=</span> <span class="n">STYLE_DEFAULTS</span><span class="p">[</span><span class="s2">"cbar_length"</span><span class="p">]</span>
-<a id="__codelineno-0-2333" name="__codelineno-0-2333"></a>        <span class="n">length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cbar_length"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">default_length</span>
-<a id="__codelineno-0-2334" name="__codelineno-0-2334"></a>        <span class="n">long_frac</span> <span class="o">=</span> <span class="mf">0.72</span> <span class="o">*</span> <span class="p">(</span><span class="n">length</span> <span class="o">/</span> <span class="n">default_length</span><span class="p">)</span>
-<a id="__codelineno-0-2335" name="__codelineno-0-2335"></a>        <span class="n">long_start</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">-</span> <span class="n">long_frac</span> <span class="o">/</span> <span class="mi">2</span>
-<a id="__codelineno-0-2336" name="__codelineno-0-2336"></a>        <span class="n">bounds</span><span class="p">,</span> <span class="n">label_side</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-2337" name="__codelineno-0-2337"></a>            <span class="s2">"right"</span><span class="p">:</span> <span class="p">((</span><span class="mf">0.905</span><span class="p">,</span> <span class="n">long_start</span><span class="p">,</span> <span class="mf">0.022</span><span class="p">,</span> <span class="n">long_frac</span><span class="p">),</span> <span class="s2">"left"</span><span class="p">),</span>
-<a id="__codelineno-0-2338" name="__codelineno-0-2338"></a>            <span class="s2">"left"</span><span class="p">:</span> <span class="p">((</span><span class="mf">0.073</span><span class="p">,</span> <span class="n">long_start</span><span class="p">,</span> <span class="mf">0.022</span><span class="p">,</span> <span class="n">long_frac</span><span class="p">),</span> <span class="s2">"right"</span><span class="p">),</span>
-<a id="__codelineno-0-2339" name="__codelineno-0-2339"></a>            <span class="s2">"top"</span><span class="p">:</span> <span class="p">((</span><span class="n">long_start</span><span class="p">,</span> <span class="mf">0.905</span><span class="p">,</span> <span class="n">long_frac</span><span class="p">,</span> <span class="mf">0.022</span><span class="p">),</span> <span class="s2">"bottom"</span><span class="p">),</span>
-<a id="__codelineno-0-2340" name="__codelineno-0-2340"></a>            <span class="s2">"bottom"</span><span class="p">:</span> <span class="p">((</span><span class="n">long_start</span><span class="p">,</span> <span class="mf">0.073</span><span class="p">,</span> <span class="n">long_frac</span><span class="p">,</span> <span class="mf">0.022</span><span class="p">),</span> <span class="s2">"top"</span><span class="p">),</span>
-<a id="__codelineno-0-2341" name="__codelineno-0-2341"></a>        <span class="p">}[</span><span class="n">location</span><span class="p">]</span>
-<a id="__codelineno-0-2342" name="__codelineno-0-2342"></a>        <span class="n">cax</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">inset_axes</span><span class="p">(</span><span class="n">bounds</span><span class="p">)</span>
-<a id="__codelineno-0-2343" name="__codelineno-0-2343"></a>        <span class="n">cax</span><span class="o">.</span><span class="n">set_zorder</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>
-<a id="__codelineno-0-2344" name="__codelineno-0-2344"></a>        <span class="n">merged_kw</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"orientation"</span><span class="p">:</span> <span class="n">orientation</span><span class="p">,</span> <span class="s2">"ticklocation"</span><span class="p">:</span> <span class="n">label_side</span><span class="p">}</span>
-<a id="__codelineno-0-2345" name="__codelineno-0-2345"></a>        <span class="n">merged_kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">cbar_kw</span><span class="p">)</span>
-<a id="__codelineno-0-2346" name="__codelineno-0-2346"></a>        <span class="n">merged_kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">)</span>
-<a id="__codelineno-0-2347" name="__codelineno-0-2347"></a>        <span class="n">cbar</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">cax</span><span class="o">=</span><span class="n">cax</span><span class="p">,</span> <span class="o">**</span><span class="n">merged_kw</span><span class="p">)</span>
-<a id="__codelineno-0-2348" name="__codelineno-0-2348"></a>        <span class="k">return</span> <span class="n">cbar</span><span class="p">,</span> <span class="p">(</span><span class="n">cax</span><span class="p">,</span> <span class="n">bounds</span><span class="p">,</span> <span class="n">label_side</span><span class="p">)</span>
-<a id="__codelineno-0-2349" name="__codelineno-0-2349"></a>
-<a id="__codelineno-0-2350" name="__codelineno-0-2350"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_draw_cbar_box</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span><span class="p">,</span> <span class="n">box_info</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">box</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-2351" name="__codelineno-0-2351"></a><span class="w">        </span><span class="sd">"""Draw a backing panel behind an inset colorbar (its bar + tick labels).</span>
-<a id="__codelineno-0-2352" name="__codelineno-0-2352"></a>
-<a id="__codelineno-0-2353" name="__codelineno-0-2353"></a><span class="sd">        Sized to the colorbar's tight bounding box (labels included) with an</span>
-<a id="__codelineno-0-2354" name="__codelineno-0-2354"></a><span class="sd">        analytic fallback on the label side, and drawn above the data but</span>
-<a id="__codelineno-0-2355" name="__codelineno-0-2355"></a><span class="sd">        below the bar so the animating field can't show through the labels.</span>
-<a id="__codelineno-0-2356" name="__codelineno-0-2356"></a>
-<a id="__codelineno-0-2357" name="__codelineno-0-2357"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-2358" name="__codelineno-0-2358"></a><span class="sd">            ax: The data axes the colorbar is inset into.</span>
-<a id="__codelineno-0-2359" name="__codelineno-0-2359"></a><span class="sd">            box_info: `(cax, inset_bounds, label_side)` from</span>
-<a id="__codelineno-0-2360" name="__codelineno-0-2360"></a><span class="sd">                `_inside_colorbar_axes`.</span>
-<a id="__codelineno-0-2361" name="__codelineno-0-2361"></a><span class="sd">            box: `True` for a translucent white panel, a colour string for a</span>
-<a id="__codelineno-0-2362" name="__codelineno-0-2362"></a><span class="sd">                panel of that colour, or a dict of `Rectangle` kwargs.</span>
-<a id="__codelineno-0-2363" name="__codelineno-0-2363"></a><span class="sd">        """</span>
-<a id="__codelineno-0-2364" name="__codelineno-0-2364"></a>        <span class="n">cax</span><span class="p">,</span> <span class="n">bounds</span><span class="p">,</span> <span class="n">label_side</span> <span class="o">=</span> <span class="n">box_info</span>
-<a id="__codelineno-0-2365" name="__codelineno-0-2365"></a>        <span class="n">kw</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-2366" name="__codelineno-0-2366"></a>            <span class="s2">"facecolor"</span><span class="p">:</span> <span class="s2">"white"</span><span class="p">,</span>
-<a id="__codelineno-0-2367" name="__codelineno-0-2367"></a>            <span class="s2">"edgecolor"</span><span class="p">:</span> <span class="s2">"0.6"</span><span class="p">,</span>
-<a id="__codelineno-0-2368" name="__codelineno-0-2368"></a>            <span class="s2">"linewidth"</span><span class="p">:</span> <span class="mf">0.6</span><span class="p">,</span>
-<a id="__codelineno-0-2369" name="__codelineno-0-2369"></a>        <span class="p">}</span>
-<a id="__codelineno-0-2370" name="__codelineno-0-2370"></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-<a id="__codelineno-0-2371" name="__codelineno-0-2371"></a>            <span class="n">kw</span><span class="p">[</span><span class="s2">"facecolor"</span><span class="p">]</span> <span class="o">=</span> <span class="n">box</span>
-<a id="__codelineno-0-2372" name="__codelineno-0-2372"></a>        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-<a id="__codelineno-0-2373" name="__codelineno-0-2373"></a>            <span class="n">kw</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">kw</span><span class="p">,</span> <span class="o">**</span><span class="n">box</span><span class="p">}</span>
-<a id="__codelineno-0-2374" name="__codelineno-0-2374"></a>        <span class="n">fig</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">figure</span>
-<a id="__codelineno-0-2375" name="__codelineno-0-2375"></a>        <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-2376" name="__codelineno-0-2376"></a>            <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
-<a id="__codelineno-0-2377" name="__codelineno-0-2377"></a>            <span class="n">bb</span> <span class="o">=</span> <span class="n">cax</span><span class="o">.</span><span class="n">get_tightbbox</span><span class="p">(</span><span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">get_renderer</span><span class="p">())</span>
-<a id="__codelineno-0-2378" name="__codelineno-0-2378"></a>            <span class="n">inv</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="o">.</span><span class="n">inverted</span><span class="p">()</span>
-<a id="__codelineno-0-2379" name="__codelineno-0-2379"></a>            <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="n">inv</span><span class="o">.</span><span class="n">transform</span><span class="p">((</span><span class="n">bb</span><span class="o">.</span><span class="n">x0</span><span class="p">,</span> <span class="n">bb</span><span class="o">.</span><span class="n">y0</span><span class="p">))</span>
-<a id="__codelineno-0-2380" name="__codelineno-0-2380"></a>            <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="n">inv</span><span class="o">.</span><span class="n">transform</span><span class="p">((</span><span class="n">bb</span><span class="o">.</span><span class="n">x1</span><span class="p">,</span> <span class="n">bb</span><span class="o">.</span><span class="n">y1</span><span class="p">))</span>
-<a id="__codelineno-0-2381" name="__codelineno-0-2381"></a>        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># pragma: no cover - renderer unavailable on some backends</span>
-<a id="__codelineno-0-2382" name="__codelineno-0-2382"></a>            <span class="c1"># Fallback: the inset bounds, grown on the side the labels face.</span>
-<a id="__codelineno-0-2383" name="__codelineno-0-2383"></a>            <span class="n">bx0</span><span class="p">,</span> <span class="n">by0</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span> <span class="n">bh</span> <span class="o">=</span> <span class="n">bounds</span>
-<a id="__codelineno-0-2384" name="__codelineno-0-2384"></a>            <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="n">bx0</span><span class="p">,</span> <span class="n">by0</span><span class="p">,</span> <span class="n">bx0</span> <span class="o">+</span> <span class="n">bw</span><span class="p">,</span> <span class="n">by0</span> <span class="o">+</span> <span class="n">bh</span>
-<a id="__codelineno-0-2385" name="__codelineno-0-2385"></a>            <span class="n">allow</span> <span class="o">=</span> <span class="mf">0.11</span> <span class="k">if</span> <span class="n">bw</span> <span class="o">&lt;</span> <span class="n">bh</span> <span class="k">else</span> <span class="mf">0.06</span>
-<a id="__codelineno-0-2386" name="__codelineno-0-2386"></a>            <span class="k">if</span> <span class="n">label_side</span> <span class="o">==</span> <span class="s2">"left"</span><span class="p">:</span>
-<a id="__codelineno-0-2387" name="__codelineno-0-2387"></a>                <span class="n">x0</span> <span class="o">-=</span> <span class="n">allow</span>
-<a id="__codelineno-0-2388" name="__codelineno-0-2388"></a>            <span class="k">elif</span> <span class="n">label_side</span> <span class="o">==</span> <span class="s2">"right"</span><span class="p">:</span>
-<a id="__codelineno-0-2389" name="__codelineno-0-2389"></a>                <span class="n">x1</span> <span class="o">+=</span> <span class="n">allow</span>
-<a id="__codelineno-0-2390" name="__codelineno-0-2390"></a>            <span class="k">elif</span> <span class="n">label_side</span> <span class="o">==</span> <span class="s2">"bottom"</span><span class="p">:</span>
-<a id="__codelineno-0-2391" name="__codelineno-0-2391"></a>                <span class="n">y0</span> <span class="o">-=</span> <span class="n">allow</span>
-<a id="__codelineno-0-2392" name="__codelineno-0-2392"></a>            <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-2393" name="__codelineno-0-2393"></a>                <span class="n">y1</span> <span class="o">+=</span> <span class="n">allow</span>
-<a id="__codelineno-0-2394" name="__codelineno-0-2394"></a>        <span class="n">pad</span> <span class="o">=</span> <span class="mf">0.014</span>
-<a id="__codelineno-0-2395" name="__codelineno-0-2395"></a>        <span class="n">rect</span> <span class="o">=</span> <span class="n">Rectangle</span><span class="p">(</span>
-<a id="__codelineno-0-2396" name="__codelineno-0-2396"></a>            <span class="p">(</span><span class="n">x0</span> <span class="o">-</span> <span class="n">pad</span><span class="p">,</span> <span class="n">y0</span> <span class="o">-</span> <span class="n">pad</span><span class="p">),</span>
-<a id="__codelineno-0-2397" name="__codelineno-0-2397"></a>            <span class="p">(</span><span class="n">x1</span> <span class="o">-</span> <span class="n">x0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">pad</span><span class="p">,</span>
-<a id="__codelineno-0-2398" name="__codelineno-0-2398"></a>            <span class="p">(</span><span class="n">y1</span> <span class="o">-</span> <span class="n">y0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">pad</span><span class="p">,</span>
-<a id="__codelineno-0-2399" name="__codelineno-0-2399"></a>            <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span>
-<a id="__codelineno-0-2400" name="__codelineno-0-2400"></a>            <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-<a id="__codelineno-0-2401" name="__codelineno-0-2401"></a>            <span class="n">clip_on</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-2402" name="__codelineno-0-2402"></a>            <span class="o">**</span><span class="n">kw</span><span class="p">,</span>
-<a id="__codelineno-0-2403" name="__codelineno-0-2403"></a>        <span class="p">)</span>
-<a id="__codelineno-0-2404" name="__codelineno-0-2404"></a>        <span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">rect</span><span class="p">)</span>
-<a id="__codelineno-0-2405" name="__codelineno-0-2405"></a>
-<a id="__codelineno-0-2406" name="__codelineno-0-2406"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_draws_own_colorbar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">compose</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">colorbar</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<a id="__codelineno-0-2407" name="__codelineno-0-2407"></a><span class="w">        </span><span class="sd">"""Whether this render should draw a colorbar of its own.</span>
-<a id="__codelineno-0-2408" name="__codelineno-0-2408"></a>
-<a id="__codelineno-0-2409" name="__codelineno-0-2409"></a><span class="sd">        `fig.colorbar()` takes its space from the axes the mappable is on, so an</span>
-<a id="__codelineno-0-2410" name="__codelineno-0-2410"></a><span class="sd">        overlay that adds one re-lays-out the host -- on every overlay, since</span>
-<a id="__codelineno-0-2411" name="__codelineno-0-2411"></a><span class="sd">        composing is the case where the axes already belongs to someone else.</span>
-<a id="__codelineno-0-2412" name="__codelineno-0-2412"></a><span class="sd">        Composing therefore defaults the colorbar off. Only the default: a</span>
-<a id="__codelineno-0-2413" name="__codelineno-0-2413"></a><span class="sd">        caller who asks for one, at construction or on the call, still gets it.</span>
-<a id="__codelineno-0-2414" name="__codelineno-0-2414"></a>
-<a id="__codelineno-0-2415" name="__codelineno-0-2415"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-2416" name="__codelineno-0-2416"></a><span class="sd">            compose: Whether this render is composing onto an existing axes.</span>
-<a id="__codelineno-0-2417" name="__codelineno-0-2417"></a><span class="sd">            colorbar: The render's `colorbar=` argument, if it has one. Anything</span>
-<a id="__codelineno-0-2418" name="__codelineno-0-2418"></a><span class="sd">                but `None` counts as asking.</span>
-<a id="__codelineno-0-2419" name="__codelineno-0-2419"></a>
-<a id="__codelineno-0-2420" name="__codelineno-0-2420"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-2421" name="__codelineno-0-2421"></a><span class="sd">            bool: `True` when a colorbar should be drawn.</span>
-<a id="__codelineno-0-2422" name="__codelineno-0-2422"></a><span class="sd">        """</span>
-<a id="__codelineno-0-2423" name="__codelineno-0-2423"></a>        <span class="n">wanted</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"add_colorbar"</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
-<a id="__codelineno-0-2424" name="__codelineno-0-2424"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">compose</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">wanted</span><span class="p">:</span>
-<a id="__codelineno-0-2425" name="__codelineno-0-2425"></a>            <span class="k">return</span> <span class="n">wanted</span>
-<a id="__codelineno-0-2426" name="__codelineno-0-2426"></a>        <span class="k">return</span> <span class="n">colorbar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="s2">"add_colorbar"</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span>
-<a id="__codelineno-0-2427" name="__codelineno-0-2427"></a>            <span class="bp">self</span><span class="p">,</span> <span class="s2">"_render_explicit_options"</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"_explicit_options"</span><span class="p">,</span> <span class="nb">set</span><span class="p">())</span>
-<a id="__codelineno-0-2428" name="__codelineno-0-2428"></a>        <span class="p">)</span>
-<a id="__codelineno-0-2429" name="__codelineno-0-2429"></a>
-<a id="__codelineno-0-2430" name="__codelineno-0-2430"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_restore_construction_axis_style</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">call_keys</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-2431" name="__codelineno-0-2431"></a><span class="w">        </span><span class="sd">"""Carry construction-time axis options across a `default_options` reset.</span>
+<a id="__codelineno-0-2217" name="__codelineno-0-2217"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_cbar_user_kwargs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<a id="__codelineno-0-2218" name="__codelineno-0-2218"></a><span class="w">        </span><span class="sd">"""A validated copy of `cbar_kwargs` with `label` split out for set_label."""</span>
+<a id="__codelineno-0-2219" name="__codelineno-0-2219"></a>        <span class="n">user_kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cbar_kwargs"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+<a id="__codelineno-0-2220" name="__codelineno-0-2220"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+<a id="__codelineno-0-2221" name="__codelineno-0-2221"></a>            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+<a id="__codelineno-0-2222" name="__codelineno-0-2222"></a>                <span class="s2">"cbar_kwargs must be a dict of colorbar keyword "</span>
+<a id="__codelineno-0-2223" name="__codelineno-0-2223"></a>                <span class="sa">f</span><span class="s2">"arguments, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">."</span>
+<a id="__codelineno-0-2224" name="__codelineno-0-2224"></a>            <span class="p">)</span>
+<a id="__codelineno-0-2225" name="__codelineno-0-2225"></a>        <span class="n">user_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-2226" name="__codelineno-0-2226"></a>        <span class="k">return</span> <span class="n">user_kwargs</span><span class="p">,</span> <span class="n">user_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"label"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<a id="__codelineno-0-2227" name="__codelineno-0-2227"></a>
+<a id="__codelineno-0-2228" name="__codelineno-0-2228"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_outside_colorbar</span><span class="p">(</span>
+<a id="__codelineno-0-2229" name="__codelineno-0-2229"></a>        <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-2230" name="__codelineno-0-2230"></a>        <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span><span class="p">,</span>
+<a id="__codelineno-0-2231" name="__codelineno-0-2231"></a>        <span class="n">im</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<a id="__codelineno-0-2232" name="__codelineno-0-2232"></a>        <span class="n">cbar_kw</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+<a id="__codelineno-0-2233" name="__codelineno-0-2233"></a>        <span class="n">location</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-2234" name="__codelineno-0-2234"></a>        <span class="n">orientation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-0-2235" name="__codelineno-0-2235"></a>        <span class="n">user_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+<a id="__codelineno-0-2236" name="__codelineno-0-2236"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Colorbar</span><span class="p">:</span>
+<a id="__codelineno-0-2237" name="__codelineno-0-2237"></a><span class="w">        </span><span class="sd">"""Draw a normal (outside-gutter) colorbar via `fig.colorbar`."""</span>
+<a id="__codelineno-0-2238" name="__codelineno-0-2238"></a>        <span class="n">fig</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">figure</span>
+<a id="__codelineno-0-2239" name="__codelineno-0-2239"></a>        <span class="n">merged_kw</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-2240" name="__codelineno-0-2240"></a>            <span class="s2">"shrink"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">"cbar_length"</span><span class="p">],</span>
+<a id="__codelineno-0-2241" name="__codelineno-0-2241"></a>            <span class="s2">"pad"</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">,</span>
+<a id="__codelineno-0-2242" name="__codelineno-0-2242"></a>            <span class="s2">"use_gridspec"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">fig</span><span class="o">.</span><span class="n">axes</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-2243" name="__codelineno-0-2243"></a>        <span class="p">}</span>
+<a id="__codelineno-0-2244" name="__codelineno-0-2244"></a>        <span class="k">if</span> <span class="n">location</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-2245" name="__codelineno-0-2245"></a>            <span class="c1"># matplotlib places the bar on that side and sets orientation.</span>
+<a id="__codelineno-0-2246" name="__codelineno-0-2246"></a>            <span class="n">merged_kw</span><span class="p">[</span><span class="s2">"location"</span><span class="p">]</span> <span class="o">=</span> <span class="n">location</span>
+<a id="__codelineno-0-2247" name="__codelineno-0-2247"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-2248" name="__codelineno-0-2248"></a>            <span class="n">merged_kw</span><span class="p">[</span><span class="s2">"orientation"</span><span class="p">]</span> <span class="o">=</span> <span class="n">orientation</span>
+<a id="__codelineno-0-2249" name="__codelineno-0-2249"></a>        <span class="n">merged_kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">cbar_kw</span><span class="p">)</span>
+<a id="__codelineno-0-2250" name="__codelineno-0-2250"></a>        <span class="n">merged_kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-2251" name="__codelineno-0-2251"></a>        <span class="k">if</span> <span class="s2">"location"</span> <span class="ow">in</span> <span class="n">merged_kw</span><span class="p">:</span>
+<a id="__codelineno-0-2252" name="__codelineno-0-2252"></a>            <span class="n">merged_kw</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"orientation"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<a id="__codelineno-0-2253" name="__codelineno-0-2253"></a>        <span class="k">return</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">merged_kw</span><span class="p">)</span>
+<a id="__codelineno-0-2254" name="__codelineno-0-2254"></a>
+<a id="__codelineno-0-2255" name="__codelineno-0-2255"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_apply_cbar_styling</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cbar</span><span class="p">:</span> <span class="n">Colorbar</span><span class="p">,</span> <span class="n">user_label</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-2256" name="__codelineno-0-2256"></a><span class="w">        </span><span class="sd">"""Apply tick/label colours, size, location, and text to `cbar`."""</span>
+<a id="__codelineno-0-2257" name="__codelineno-0-2257"></a>        <span class="n">tick_color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cbar_tick_color"</span><span class="p">)</span>
+<a id="__codelineno-0-2258" name="__codelineno-0-2258"></a>        <span class="n">label_color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cbar_label_color"</span><span class="p">)</span>
+<a id="__codelineno-0-2259" name="__codelineno-0-2259"></a>        <span class="n">cbar</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span>
+<a id="__codelineno-0-2260" name="__codelineno-0-2260"></a>            <span class="n">labelsize</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="o">**</span><span class="p">({</span><span class="s2">"colors"</span><span class="p">:</span> <span class="n">tick_color</span><span class="p">}</span> <span class="k">if</span> <span class="n">tick_color</span> <span class="k">else</span> <span class="p">{})</span>
+<a id="__codelineno-0-2261" name="__codelineno-0-2261"></a>        <span class="p">)</span>
+<a id="__codelineno-0-2262" name="__codelineno-0-2262"></a>        <span class="n">label_text</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-0-2263" name="__codelineno-0-2263"></a>            <span class="n">user_label</span> <span class="k">if</span> <span class="n">user_label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">"cbar_label"</span><span class="p">]</span>
+<a id="__codelineno-0-2264" name="__codelineno-0-2264"></a>        <span class="p">)</span>
+<a id="__codelineno-0-2265" name="__codelineno-0-2265"></a>        <span class="n">label_rotation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cbar_label_rotation"</span><span class="p">)</span>
+<a id="__codelineno-0-2266" name="__codelineno-0-2266"></a>        <span class="n">label_location</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">"cbar_label_location"</span><span class="p">]</span>
+<a id="__codelineno-0-2267" name="__codelineno-0-2267"></a>        <span class="k">if</span> <span class="n">label_location</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-2268" name="__codelineno-0-2268"></a>            <span class="n">valid</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-0-2269" name="__codelineno-0-2269"></a>                <span class="p">(</span><span class="s2">"bottom"</span><span class="p">,</span> <span class="s2">"center"</span><span class="p">,</span> <span class="s2">"top"</span><span class="p">)</span>
+<a id="__codelineno-0-2270" name="__codelineno-0-2270"></a>                <span class="k">if</span> <span class="n">cbar</span><span class="o">.</span><span class="n">orientation</span> <span class="o">==</span> <span class="s2">"vertical"</span>
+<a id="__codelineno-0-2271" name="__codelineno-0-2271"></a>                <span class="k">else</span> <span class="p">(</span><span class="s2">"left"</span><span class="p">,</span> <span class="s2">"center"</span><span class="p">,</span> <span class="s2">"right"</span><span class="p">)</span>
+<a id="__codelineno-0-2272" name="__codelineno-0-2272"></a>            <span class="p">)</span>
+<a id="__codelineno-0-2273" name="__codelineno-0-2273"></a>            <span class="k">if</span> <span class="n">label_location</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">valid</span><span class="p">:</span>
+<a id="__codelineno-0-2274" name="__codelineno-0-2274"></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-2275" name="__codelineno-0-2275"></a>                    <span class="sa">f</span><span class="s2">"cbar_label_location=</span><span class="si">{</span><span class="n">label_location</span><span class="si">!r}</span><span class="s2"> is not valid for a "</span>
+<a id="__codelineno-0-2276" name="__codelineno-0-2276"></a>                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">cbar</span><span class="o">.</span><span class="n">orientation</span><span class="si">}</span><span class="s2"> colorbar; use one of </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">valid</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span>
+<a id="__codelineno-0-2277" name="__codelineno-0-2277"></a>                <span class="p">)</span>
+<a id="__codelineno-0-2278" name="__codelineno-0-2278"></a>        <span class="n">cbar</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span>
+<a id="__codelineno-0-2279" name="__codelineno-0-2279"></a>            <span class="n">label_text</span><span class="p">,</span>
+<a id="__codelineno-0-2280" name="__codelineno-0-2280"></a>            <span class="n">fontsize</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">[</span><span class="s2">"cbar_label_size"</span><span class="p">],</span>
+<a id="__codelineno-0-2281" name="__codelineno-0-2281"></a>            <span class="n">loc</span><span class="o">=</span><span class="n">label_location</span><span class="p">,</span>
+<a id="__codelineno-0-2282" name="__codelineno-0-2282"></a>            <span class="o">**</span><span class="p">({</span><span class="s2">"color"</span><span class="p">:</span> <span class="n">label_color</span><span class="p">}</span> <span class="k">if</span> <span class="n">label_color</span> <span class="k">else</span> <span class="p">{}),</span>
+<a id="__codelineno-0-2283" name="__codelineno-0-2283"></a>            <span class="o">**</span><span class="p">({</span><span class="s2">"rotation"</span><span class="p">:</span> <span class="n">label_rotation</span><span class="p">}</span> <span class="k">if</span> <span class="n">label_rotation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{}),</span>
+<a id="__codelineno-0-2284" name="__codelineno-0-2284"></a>        <span class="p">)</span>
+<a id="__codelineno-0-2285" name="__codelineno-0-2285"></a>
+<a id="__codelineno-0-2286" name="__codelineno-0-2286"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_inside_colorbar_axes</span><span class="p">(</span>
+<a id="__codelineno-0-2287" name="__codelineno-0-2287"></a>        <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-2288" name="__codelineno-0-2288"></a>        <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span><span class="p">,</span>
+<a id="__codelineno-0-2289" name="__codelineno-0-2289"></a>        <span class="n">im</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<a id="__codelineno-0-2290" name="__codelineno-0-2290"></a>        <span class="n">cbar_kw</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+<a id="__codelineno-0-2291" name="__codelineno-0-2291"></a>        <span class="n">location</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-0-2292" name="__codelineno-0-2292"></a>        <span class="n">orientation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-0-2293" name="__codelineno-0-2293"></a>        <span class="n">user_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+<a id="__codelineno-0-2294" name="__codelineno-0-2294"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Colorbar</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">]:</span>
+<a id="__codelineno-0-2295" name="__codelineno-0-2295"></a><span class="w">        </span><span class="sd">"""Draw the colorbar as an inset *inside* `ax` at `location`.</span>
+<a id="__codelineno-0-2296" name="__codelineno-0-2296"></a>
+<a id="__codelineno-0-2297" name="__codelineno-0-2297"></a><span class="sd">        The colorbar is placed in an inset axes (a child of `ax`), so it</span>
+<a id="__codelineno-0-2298" name="__codelineno-0-2298"></a><span class="sd">        tracks the data axes through `full_bleed` instead of floating. Its</span>
+<a id="__codelineno-0-2299" name="__codelineno-0-2299"></a><span class="sd">        tick labels are turned to face into the frame, so a backing box can</span>
+<a id="__codelineno-0-2300" name="__codelineno-0-2300"></a><span class="sd">        enclose them.</span>
+<a id="__codelineno-0-2301" name="__codelineno-0-2301"></a>
+<a id="__codelineno-0-2302" name="__codelineno-0-2302"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-2303" name="__codelineno-0-2303"></a><span class="sd">            ax: The data axes to inset the colorbar into.</span>
+<a id="__codelineno-0-2304" name="__codelineno-0-2304"></a><span class="sd">            im: The mappable to attach the colorbar to.</span>
+<a id="__codelineno-0-2305" name="__codelineno-0-2305"></a><span class="sd">            cbar_kw: Colorbar keyword arguments from `_create_norm_and_cbar_kw`.</span>
+<a id="__codelineno-0-2306" name="__codelineno-0-2306"></a><span class="sd">            location: Edge to sit on -- `'left'`, `'right'`, `'top'`, `'bottom'`.</span>
+<a id="__codelineno-0-2307" name="__codelineno-0-2307"></a><span class="sd">            orientation: `'vertical'` or `'horizontal'`.</span>
+<a id="__codelineno-0-2308" name="__codelineno-0-2308"></a><span class="sd">            user_kwargs: Extra `fig.colorbar` kwargs (user `cbar_kwargs`).</span>
+<a id="__codelineno-0-2309" name="__codelineno-0-2309"></a>
+<a id="__codelineno-0-2310" name="__codelineno-0-2310"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-2311" name="__codelineno-0-2311"></a><span class="sd">            tuple: `(cbar, box_info)` where `box_info` is</span>
+<a id="__codelineno-0-2312" name="__codelineno-0-2312"></a><span class="sd">                `(cax, inset_bounds, label_side)` for `_draw_cbar_box`.</span>
+<a id="__codelineno-0-2313" name="__codelineno-0-2313"></a><span class="sd">        """</span>
+<a id="__codelineno-0-2314" name="__codelineno-0-2314"></a>        <span class="n">fig</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">figure</span>
+<a id="__codelineno-0-2315" name="__codelineno-0-2315"></a>        <span class="n">default_length</span> <span class="o">=</span> <span class="n">STYLE_DEFAULTS</span><span class="p">[</span><span class="s2">"cbar_length"</span><span class="p">]</span>
+<a id="__codelineno-0-2316" name="__codelineno-0-2316"></a>        <span class="n">length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cbar_length"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">default_length</span>
+<a id="__codelineno-0-2317" name="__codelineno-0-2317"></a>        <span class="n">long_frac</span> <span class="o">=</span> <span class="mf">0.72</span> <span class="o">*</span> <span class="p">(</span><span class="n">length</span> <span class="o">/</span> <span class="n">default_length</span><span class="p">)</span>
+<a id="__codelineno-0-2318" name="__codelineno-0-2318"></a>        <span class="n">long_start</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">-</span> <span class="n">long_frac</span> <span class="o">/</span> <span class="mi">2</span>
+<a id="__codelineno-0-2319" name="__codelineno-0-2319"></a>        <span class="n">bounds</span><span class="p">,</span> <span class="n">label_side</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-2320" name="__codelineno-0-2320"></a>            <span class="s2">"right"</span><span class="p">:</span> <span class="p">((</span><span class="mf">0.905</span><span class="p">,</span> <span class="n">long_start</span><span class="p">,</span> <span class="mf">0.022</span><span class="p">,</span> <span class="n">long_frac</span><span class="p">),</span> <span class="s2">"left"</span><span class="p">),</span>
+<a id="__codelineno-0-2321" name="__codelineno-0-2321"></a>            <span class="s2">"left"</span><span class="p">:</span> <span class="p">((</span><span class="mf">0.073</span><span class="p">,</span> <span class="n">long_start</span><span class="p">,</span> <span class="mf">0.022</span><span class="p">,</span> <span class="n">long_frac</span><span class="p">),</span> <span class="s2">"right"</span><span class="p">),</span>
+<a id="__codelineno-0-2322" name="__codelineno-0-2322"></a>            <span class="s2">"top"</span><span class="p">:</span> <span class="p">((</span><span class="n">long_start</span><span class="p">,</span> <span class="mf">0.905</span><span class="p">,</span> <span class="n">long_frac</span><span class="p">,</span> <span class="mf">0.022</span><span class="p">),</span> <span class="s2">"bottom"</span><span class="p">),</span>
+<a id="__codelineno-0-2323" name="__codelineno-0-2323"></a>            <span class="s2">"bottom"</span><span class="p">:</span> <span class="p">((</span><span class="n">long_start</span><span class="p">,</span> <span class="mf">0.073</span><span class="p">,</span> <span class="n">long_frac</span><span class="p">,</span> <span class="mf">0.022</span><span class="p">),</span> <span class="s2">"top"</span><span class="p">),</span>
+<a id="__codelineno-0-2324" name="__codelineno-0-2324"></a>        <span class="p">}[</span><span class="n">location</span><span class="p">]</span>
+<a id="__codelineno-0-2325" name="__codelineno-0-2325"></a>        <span class="n">cax</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">inset_axes</span><span class="p">(</span><span class="n">bounds</span><span class="p">)</span>
+<a id="__codelineno-0-2326" name="__codelineno-0-2326"></a>        <span class="n">cax</span><span class="o">.</span><span class="n">set_zorder</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>
+<a id="__codelineno-0-2327" name="__codelineno-0-2327"></a>        <span class="n">merged_kw</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"orientation"</span><span class="p">:</span> <span class="n">orientation</span><span class="p">,</span> <span class="s2">"ticklocation"</span><span class="p">:</span> <span class="n">label_side</span><span class="p">}</span>
+<a id="__codelineno-0-2328" name="__codelineno-0-2328"></a>        <span class="n">merged_kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">cbar_kw</span><span class="p">)</span>
+<a id="__codelineno-0-2329" name="__codelineno-0-2329"></a>        <span class="n">merged_kw</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">user_kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-2330" name="__codelineno-0-2330"></a>        <span class="n">cbar</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">cax</span><span class="o">=</span><span class="n">cax</span><span class="p">,</span> <span class="o">**</span><span class="n">merged_kw</span><span class="p">)</span>
+<a id="__codelineno-0-2331" name="__codelineno-0-2331"></a>        <span class="k">return</span> <span class="n">cbar</span><span class="p">,</span> <span class="p">(</span><span class="n">cax</span><span class="p">,</span> <span class="n">bounds</span><span class="p">,</span> <span class="n">label_side</span><span class="p">)</span>
+<a id="__codelineno-0-2332" name="__codelineno-0-2332"></a>
+<a id="__codelineno-0-2333" name="__codelineno-0-2333"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_draw_cbar_box</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span><span class="p">,</span> <span class="n">box_info</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">box</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-2334" name="__codelineno-0-2334"></a><span class="w">        </span><span class="sd">"""Draw a backing panel behind an inset colorbar (its bar + tick labels).</span>
+<a id="__codelineno-0-2335" name="__codelineno-0-2335"></a>
+<a id="__codelineno-0-2336" name="__codelineno-0-2336"></a><span class="sd">        Sized to the colorbar's tight bounding box (labels included) with an</span>
+<a id="__codelineno-0-2337" name="__codelineno-0-2337"></a><span class="sd">        analytic fallback on the label side, and drawn above the data but</span>
+<a id="__codelineno-0-2338" name="__codelineno-0-2338"></a><span class="sd">        below the bar so the animating field can't show through the labels.</span>
+<a id="__codelineno-0-2339" name="__codelineno-0-2339"></a>
+<a id="__codelineno-0-2340" name="__codelineno-0-2340"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-2341" name="__codelineno-0-2341"></a><span class="sd">            ax: The data axes the colorbar is inset into.</span>
+<a id="__codelineno-0-2342" name="__codelineno-0-2342"></a><span class="sd">            box_info: `(cax, inset_bounds, label_side)` from</span>
+<a id="__codelineno-0-2343" name="__codelineno-0-2343"></a><span class="sd">                `_inside_colorbar_axes`.</span>
+<a id="__codelineno-0-2344" name="__codelineno-0-2344"></a><span class="sd">            box: `True` for a translucent white panel, a colour string for a</span>
+<a id="__codelineno-0-2345" name="__codelineno-0-2345"></a><span class="sd">                panel of that colour, or a dict of `Rectangle` kwargs.</span>
+<a id="__codelineno-0-2346" name="__codelineno-0-2346"></a><span class="sd">        """</span>
+<a id="__codelineno-0-2347" name="__codelineno-0-2347"></a>        <span class="n">cax</span><span class="p">,</span> <span class="n">bounds</span><span class="p">,</span> <span class="n">label_side</span> <span class="o">=</span> <span class="n">box_info</span>
+<a id="__codelineno-0-2348" name="__codelineno-0-2348"></a>        <span class="n">kw</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-2349" name="__codelineno-0-2349"></a>            <span class="s2">"facecolor"</span><span class="p">:</span> <span class="s2">"white"</span><span class="p">,</span>
+<a id="__codelineno-0-2350" name="__codelineno-0-2350"></a>            <span class="s2">"edgecolor"</span><span class="p">:</span> <span class="s2">"0.6"</span><span class="p">,</span>
+<a id="__codelineno-0-2351" name="__codelineno-0-2351"></a>            <span class="s2">"linewidth"</span><span class="p">:</span> <span class="mf">0.6</span><span class="p">,</span>
+<a id="__codelineno-0-2352" name="__codelineno-0-2352"></a>        <span class="p">}</span>
+<a id="__codelineno-0-2353" name="__codelineno-0-2353"></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+<a id="__codelineno-0-2354" name="__codelineno-0-2354"></a>            <span class="n">kw</span><span class="p">[</span><span class="s2">"facecolor"</span><span class="p">]</span> <span class="o">=</span> <span class="n">box</span>
+<a id="__codelineno-0-2355" name="__codelineno-0-2355"></a>        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">box</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+<a id="__codelineno-0-2356" name="__codelineno-0-2356"></a>            <span class="n">kw</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">kw</span><span class="p">,</span> <span class="o">**</span><span class="n">box</span><span class="p">}</span>
+<a id="__codelineno-0-2357" name="__codelineno-0-2357"></a>        <span class="n">fig</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">figure</span>
+<a id="__codelineno-0-2358" name="__codelineno-0-2358"></a>        <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-2359" name="__codelineno-0-2359"></a>            <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+<a id="__codelineno-0-2360" name="__codelineno-0-2360"></a>            <span class="n">bb</span> <span class="o">=</span> <span class="n">cax</span><span class="o">.</span><span class="n">get_tightbbox</span><span class="p">(</span><span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">get_renderer</span><span class="p">())</span>
+<a id="__codelineno-0-2361" name="__codelineno-0-2361"></a>            <span class="n">inv</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="o">.</span><span class="n">inverted</span><span class="p">()</span>
+<a id="__codelineno-0-2362" name="__codelineno-0-2362"></a>            <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="n">inv</span><span class="o">.</span><span class="n">transform</span><span class="p">((</span><span class="n">bb</span><span class="o">.</span><span class="n">x0</span><span class="p">,</span> <span class="n">bb</span><span class="o">.</span><span class="n">y0</span><span class="p">))</span>
+<a id="__codelineno-0-2363" name="__codelineno-0-2363"></a>            <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="n">inv</span><span class="o">.</span><span class="n">transform</span><span class="p">((</span><span class="n">bb</span><span class="o">.</span><span class="n">x1</span><span class="p">,</span> <span class="n">bb</span><span class="o">.</span><span class="n">y1</span><span class="p">))</span>
+<a id="__codelineno-0-2364" name="__codelineno-0-2364"></a>        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># pragma: no cover - renderer unavailable on some backends</span>
+<a id="__codelineno-0-2365" name="__codelineno-0-2365"></a>            <span class="c1"># Fallback: the inset bounds, grown on the side the labels face.</span>
+<a id="__codelineno-0-2366" name="__codelineno-0-2366"></a>            <span class="n">bx0</span><span class="p">,</span> <span class="n">by0</span><span class="p">,</span> <span class="n">bw</span><span class="p">,</span> <span class="n">bh</span> <span class="o">=</span> <span class="n">bounds</span>
+<a id="__codelineno-0-2367" name="__codelineno-0-2367"></a>            <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="n">bx0</span><span class="p">,</span> <span class="n">by0</span><span class="p">,</span> <span class="n">bx0</span> <span class="o">+</span> <span class="n">bw</span><span class="p">,</span> <span class="n">by0</span> <span class="o">+</span> <span class="n">bh</span>
+<a id="__codelineno-0-2368" name="__codelineno-0-2368"></a>            <span class="n">allow</span> <span class="o">=</span> <span class="mf">0.11</span> <span class="k">if</span> <span class="n">bw</span> <span class="o">&lt;</span> <span class="n">bh</span> <span class="k">else</span> <span class="mf">0.06</span>
+<a id="__codelineno-0-2369" name="__codelineno-0-2369"></a>            <span class="k">if</span> <span class="n">label_side</span> <span class="o">==</span> <span class="s2">"left"</span><span class="p">:</span>
+<a id="__codelineno-0-2370" name="__codelineno-0-2370"></a>                <span class="n">x0</span> <span class="o">-=</span> <span class="n">allow</span>
+<a id="__codelineno-0-2371" name="__codelineno-0-2371"></a>            <span class="k">elif</span> <span class="n">label_side</span> <span class="o">==</span> <span class="s2">"right"</span><span class="p">:</span>
+<a id="__codelineno-0-2372" name="__codelineno-0-2372"></a>                <span class="n">x1</span> <span class="o">+=</span> <span class="n">allow</span>
+<a id="__codelineno-0-2373" name="__codelineno-0-2373"></a>            <span class="k">elif</span> <span class="n">label_side</span> <span class="o">==</span> <span class="s2">"bottom"</span><span class="p">:</span>
+<a id="__codelineno-0-2374" name="__codelineno-0-2374"></a>                <span class="n">y0</span> <span class="o">-=</span> <span class="n">allow</span>
+<a id="__codelineno-0-2375" name="__codelineno-0-2375"></a>            <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-2376" name="__codelineno-0-2376"></a>                <span class="n">y1</span> <span class="o">+=</span> <span class="n">allow</span>
+<a id="__codelineno-0-2377" name="__codelineno-0-2377"></a>        <span class="n">pad</span> <span class="o">=</span> <span class="mf">0.014</span>
+<a id="__codelineno-0-2378" name="__codelineno-0-2378"></a>        <span class="n">rect</span> <span class="o">=</span> <span class="n">Rectangle</span><span class="p">(</span>
+<a id="__codelineno-0-2379" name="__codelineno-0-2379"></a>            <span class="p">(</span><span class="n">x0</span> <span class="o">-</span> <span class="n">pad</span><span class="p">,</span> <span class="n">y0</span> <span class="o">-</span> <span class="n">pad</span><span class="p">),</span>
+<a id="__codelineno-0-2380" name="__codelineno-0-2380"></a>            <span class="p">(</span><span class="n">x1</span> <span class="o">-</span> <span class="n">x0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">pad</span><span class="p">,</span>
+<a id="__codelineno-0-2381" name="__codelineno-0-2381"></a>            <span class="p">(</span><span class="n">y1</span> <span class="o">-</span> <span class="n">y0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">pad</span><span class="p">,</span>
+<a id="__codelineno-0-2382" name="__codelineno-0-2382"></a>            <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span>
+<a id="__codelineno-0-2383" name="__codelineno-0-2383"></a>            <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+<a id="__codelineno-0-2384" name="__codelineno-0-2384"></a>            <span class="n">clip_on</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-2385" name="__codelineno-0-2385"></a>            <span class="o">**</span><span class="n">kw</span><span class="p">,</span>
+<a id="__codelineno-0-2386" name="__codelineno-0-2386"></a>        <span class="p">)</span>
+<a id="__codelineno-0-2387" name="__codelineno-0-2387"></a>        <span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">rect</span><span class="p">)</span>
+<a id="__codelineno-0-2388" name="__codelineno-0-2388"></a>
+<a id="__codelineno-0-2389" name="__codelineno-0-2389"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_draws_own_colorbar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">compose</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">colorbar</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<a id="__codelineno-0-2390" name="__codelineno-0-2390"></a><span class="w">        </span><span class="sd">"""Whether this render should draw a colorbar of its own.</span>
+<a id="__codelineno-0-2391" name="__codelineno-0-2391"></a>
+<a id="__codelineno-0-2392" name="__codelineno-0-2392"></a><span class="sd">        `fig.colorbar()` takes its space from the axes the mappable is on, so an</span>
+<a id="__codelineno-0-2393" name="__codelineno-0-2393"></a><span class="sd">        overlay that adds one re-lays-out the host -- on every overlay, since</span>
+<a id="__codelineno-0-2394" name="__codelineno-0-2394"></a><span class="sd">        composing is the case where the axes already belongs to someone else.</span>
+<a id="__codelineno-0-2395" name="__codelineno-0-2395"></a><span class="sd">        Composing therefore defaults the colorbar off. Only the default: a</span>
+<a id="__codelineno-0-2396" name="__codelineno-0-2396"></a><span class="sd">        caller who asks for one, at construction or on the call, still gets it.</span>
+<a id="__codelineno-0-2397" name="__codelineno-0-2397"></a>
+<a id="__codelineno-0-2398" name="__codelineno-0-2398"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-2399" name="__codelineno-0-2399"></a><span class="sd">            compose: Whether this render is composing onto an existing axes.</span>
+<a id="__codelineno-0-2400" name="__codelineno-0-2400"></a><span class="sd">            colorbar: The render's `colorbar=` argument, if it has one. Anything</span>
+<a id="__codelineno-0-2401" name="__codelineno-0-2401"></a><span class="sd">                but `None` counts as asking.</span>
+<a id="__codelineno-0-2402" name="__codelineno-0-2402"></a>
+<a id="__codelineno-0-2403" name="__codelineno-0-2403"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-2404" name="__codelineno-0-2404"></a><span class="sd">            bool: `True` when a colorbar should be drawn.</span>
+<a id="__codelineno-0-2405" name="__codelineno-0-2405"></a><span class="sd">        """</span>
+<a id="__codelineno-0-2406" name="__codelineno-0-2406"></a>        <span class="n">wanted</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"add_colorbar"</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
+<a id="__codelineno-0-2407" name="__codelineno-0-2407"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">compose</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">wanted</span><span class="p">:</span>
+<a id="__codelineno-0-2408" name="__codelineno-0-2408"></a>            <span class="k">return</span> <span class="n">wanted</span>
+<a id="__codelineno-0-2409" name="__codelineno-0-2409"></a>        <span class="k">return</span> <span class="n">colorbar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="s2">"add_colorbar"</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span>
+<a id="__codelineno-0-2410" name="__codelineno-0-2410"></a>            <span class="bp">self</span><span class="p">,</span> <span class="s2">"_render_explicit_options"</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"_explicit_options"</span><span class="p">,</span> <span class="nb">set</span><span class="p">())</span>
+<a id="__codelineno-0-2411" name="__codelineno-0-2411"></a>        <span class="p">)</span>
+<a id="__codelineno-0-2412" name="__codelineno-0-2412"></a>
+<a id="__codelineno-0-2413" name="__codelineno-0-2413"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_restore_construction_axis_style</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">call_keys</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-2414" name="__codelineno-0-2414"></a><span class="w">        </span><span class="sd">"""Carry construction-time axis options across a `default_options` reset.</span>
+<a id="__codelineno-0-2415" name="__codelineno-0-2415"></a>
+<a id="__codelineno-0-2416" name="__codelineno-0-2416"></a><span class="sd">        `MeshGlyph.plot`/`animate` rebuild `default_options` from the module</span>
+<a id="__codelineno-0-2417" name="__codelineno-0-2417"></a><span class="sd">        defaults on every call, so that a per-call option cannot leak into the</span>
+<a id="__codelineno-0-2418" name="__codelineno-0-2418"></a><span class="sd">        next render. That is deliberate, but it also threw away the axis options</span>
+<a id="__codelineno-0-2419" name="__codelineno-0-2419"></a><span class="sd">        the constructor was given -- `MeshGlyph(xlabel=...)` rendered no label at</span>
+<a id="__codelineno-0-2420" name="__codelineno-0-2420"></a><span class="sd">        all. This puts them back, without overriding a key this call passed, and</span>
+<a id="__codelineno-0-2421" name="__codelineno-0-2421"></a><span class="sd">        records the combined set for `_apply_axis_style`.</span>
+<a id="__codelineno-0-2422" name="__codelineno-0-2422"></a>
+<a id="__codelineno-0-2423" name="__codelineno-0-2423"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-2424" name="__codelineno-0-2424"></a><span class="sd">            call_keys: The option keys this render call passed; these win over</span>
+<a id="__codelineno-0-2425" name="__codelineno-0-2425"></a><span class="sd">                the construction-time values.</span>
+<a id="__codelineno-0-2426" name="__codelineno-0-2426"></a><span class="sd">        """</span>
+<a id="__codelineno-0-2427" name="__codelineno-0-2427"></a>        <span class="n">call_keys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">call_keys</span><span class="p">)</span>
+<a id="__codelineno-0-2428" name="__codelineno-0-2428"></a>        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_construction_axis_style</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<a id="__codelineno-0-2429" name="__codelineno-0-2429"></a>            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">call_keys</span><span class="p">:</span>
+<a id="__codelineno-0-2430" name="__codelineno-0-2430"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">_default_options</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+<a id="__codelineno-0-2431" name="__codelineno-0-2431"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_render_explicit_options</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_construction_axis_style</span><span class="p">)</span> <span class="o">|</span> <span class="n">call_keys</span>
 <a id="__codelineno-0-2432" name="__codelineno-0-2432"></a>
-<a id="__codelineno-0-2433" name="__codelineno-0-2433"></a><span class="sd">        `MeshGlyph.plot`/`animate` rebuild `default_options` from the module</span>
-<a id="__codelineno-0-2434" name="__codelineno-0-2434"></a><span class="sd">        defaults on every call, so that a per-call option cannot leak into the</span>
-<a id="__codelineno-0-2435" name="__codelineno-0-2435"></a><span class="sd">        next render. That is deliberate, but it also threw away the axis options</span>
-<a id="__codelineno-0-2436" name="__codelineno-0-2436"></a><span class="sd">        the constructor was given -- `MeshGlyph(xlabel=...)` rendered no label at</span>
-<a id="__codelineno-0-2437" name="__codelineno-0-2437"></a><span class="sd">        all. This puts them back, without overriding a key this call passed, and</span>
-<a id="__codelineno-0-2438" name="__codelineno-0-2438"></a><span class="sd">        records the combined set for `_apply_axis_style`.</span>
-<a id="__codelineno-0-2439" name="__codelineno-0-2439"></a>
-<a id="__codelineno-0-2440" name="__codelineno-0-2440"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-2441" name="__codelineno-0-2441"></a><span class="sd">            call_keys: The option keys this render call passed; these win over</span>
-<a id="__codelineno-0-2442" name="__codelineno-0-2442"></a><span class="sd">                the construction-time values.</span>
-<a id="__codelineno-0-2443" name="__codelineno-0-2443"></a><span class="sd">        """</span>
-<a id="__codelineno-0-2444" name="__codelineno-0-2444"></a>        <span class="n">call_keys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">call_keys</span><span class="p">)</span>
-<a id="__codelineno-0-2445" name="__codelineno-0-2445"></a>        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_construction_axis_style</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-<a id="__codelineno-0-2446" name="__codelineno-0-2446"></a>            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">call_keys</span><span class="p">:</span>
-<a id="__codelineno-0-2447" name="__codelineno-0-2447"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">_default_options</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
-<a id="__codelineno-0-2448" name="__codelineno-0-2448"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_render_explicit_options</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_construction_axis_style</span><span class="p">)</span> <span class="o">|</span> <span class="n">call_keys</span>
-<a id="__codelineno-0-2449" name="__codelineno-0-2449"></a>
-<a id="__codelineno-0-2450" name="__codelineno-0-2450"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_apply_axis_style</span><span class="p">(</span>
-<a id="__codelineno-0-2451" name="__codelineno-0-2451"></a>        <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-2452" name="__codelineno-0-2452"></a>        <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span><span class="p">,</span>
-<a id="__codelineno-0-2453" name="__codelineno-0-2453"></a>        <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-2454" name="__codelineno-0-2454"></a>        <span class="n">apply_defaults</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-2455" name="__codelineno-0-2455"></a>        <span class="n">grid_axis</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">"both"</span><span class="p">,</span>
-<a id="__codelineno-0-2456" name="__codelineno-0-2456"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-2457" name="__codelineno-0-2457"></a><span class="w">        </span><span class="sd">"""Apply this glyph's axis-styling options to `ax`.</span>
-<a id="__codelineno-0-2458" name="__codelineno-0-2458"></a>
-<a id="__codelineno-0-2459" name="__codelineno-0-2459"></a><span class="sd">        Thin wrapper over `_apply_axis_options`; see it for what is applied and</span>
-<a id="__codelineno-0-2460" name="__codelineno-0-2460"></a><span class="sd">        why only explicitly-passed options are honoured by default.</span>
-<a id="__codelineno-0-2461" name="__codelineno-0-2461"></a>
-<a id="__codelineno-0-2462" name="__codelineno-0-2462"></a><span class="sd">        A render method that accepts these options as keyword arguments sets</span>
-<a id="__codelineno-0-2463" name="__codelineno-0-2463"></a><span class="sd">        `_render_explicit_options` to the constructor's keys plus its own, and</span>
-<a id="__codelineno-0-2464" name="__codelineno-0-2464"></a><span class="sd">        that set wins here. It is rebuilt on every call rather than accumulated,</span>
-<a id="__codelineno-0-2465" name="__codelineno-0-2465"></a><span class="sd">        so an option the caller drops on a later call stops being re-applied --</span>
-<a id="__codelineno-0-2466" name="__codelineno-0-2466"></a><span class="sd">        and it is kept apart from `_explicit_options`, which `create_figure_axes`</span>
-<a id="__codelineno-0-2467" name="__codelineno-0-2467"></a><span class="sd">        reads to decide whether to auto-size the figure.</span>
-<a id="__codelineno-0-2468" name="__codelineno-0-2468"></a>
-<a id="__codelineno-0-2469" name="__codelineno-0-2469"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-2470" name="__codelineno-0-2470"></a><span class="sd">            ax: The axes to style.</span>
-<a id="__codelineno-0-2471" name="__codelineno-0-2471"></a><span class="sd">            apply_defaults: Apply every option, not only the explicitly-passed</span>
-<a id="__codelineno-0-2472" name="__codelineno-0-2472"></a><span class="sd">                ones.</span>
-<a id="__codelineno-0-2473" name="__codelineno-0-2473"></a><span class="sd">            grid_axis: Which gridlines `grid_alpha` draws; `None` leaves the</span>
-<a id="__codelineno-0-2474" name="__codelineno-0-2474"></a><span class="sd">                grid untouched.</span>
-<a id="__codelineno-0-2475" name="__codelineno-0-2475"></a><span class="sd">        """</span>
-<a id="__codelineno-0-2476" name="__codelineno-0-2476"></a>        <span class="n">explicit</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"_render_explicit_options"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-<a id="__codelineno-0-2477" name="__codelineno-0-2477"></a>        <span class="k">if</span> <span class="n">explicit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-2478" name="__codelineno-0-2478"></a>            <span class="n">explicit</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"_explicit_options"</span><span class="p">,</span> <span class="nb">set</span><span class="p">())</span>
-<a id="__codelineno-0-2479" name="__codelineno-0-2479"></a>        <span class="n">_apply_axis_options</span><span class="p">(</span>
-<a id="__codelineno-0-2480" name="__codelineno-0-2480"></a>            <span class="n">ax</span><span class="p">,</span>
-<a id="__codelineno-0-2481" name="__codelineno-0-2481"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">,</span>
-<a id="__codelineno-0-2482" name="__codelineno-0-2482"></a>            <span class="n">explicit</span><span class="p">,</span>
-<a id="__codelineno-0-2483" name="__codelineno-0-2483"></a>            <span class="n">apply_defaults</span><span class="o">=</span><span class="n">apply_defaults</span><span class="p">,</span>
-<a id="__codelineno-0-2484" name="__codelineno-0-2484"></a>            <span class="n">grid_axis</span><span class="o">=</span><span class="n">grid_axis</span><span class="p">,</span>
-<a id="__codelineno-0-2485" name="__codelineno-0-2485"></a>        <span class="p">)</span>
-<a id="__codelineno-0-2486" name="__codelineno-0-2486"></a>
-<a id="__codelineno-0-2487" name="__codelineno-0-2487"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">adjust_ticks</span><span class="p">(</span>
-<a id="__codelineno-0-2488" name="__codelineno-0-2488"></a>        <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-2489" name="__codelineno-0-2489"></a>        <span class="n">axis</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-0-2490" name="__codelineno-0-2490"></a>        <span class="n">multiply_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-2491" name="__codelineno-0-2491"></a>        <span class="n">add_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-<a id="__codelineno-0-2492" name="__codelineno-0-2492"></a>        <span class="n">fmt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"</span><span class="si">{0:g}</span><span class="s2">"</span><span class="p">,</span>
-<a id="__codelineno-0-2493" name="__codelineno-0-2493"></a>        <span class="n">visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-0-2494" name="__codelineno-0-2494"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-2495" name="__codelineno-0-2495"></a><span class="w">        </span><span class="sd">"""Adjust the axis tick labels with a linear transformation.</span>
-<a id="__codelineno-0-2496" name="__codelineno-0-2496"></a>
-<a id="__codelineno-0-2497" name="__codelineno-0-2497"></a><span class="sd">        Applies `tick_value * multiply_value + add_value` to each</span>
-<a id="__codelineno-0-2498" name="__codelineno-0-2498"></a><span class="sd">        tick, formatted with `fmt`. Useful for converting pixel</span>
-<a id="__codelineno-0-2499" name="__codelineno-0-2499"></a><span class="sd">        coordinates to real-world units.</span>
-<a id="__codelineno-0-2500" name="__codelineno-0-2500"></a>
-<a id="__codelineno-0-2501" name="__codelineno-0-2501"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-2502" name="__codelineno-0-2502"></a><span class="sd">            axis: `"x"` or `"y"`.</span>
-<a id="__codelineno-0-2503" name="__codelineno-0-2503"></a><span class="sd">            multiply_value: Multiplier for tick values. Default is 1.</span>
-<a id="__codelineno-0-2504" name="__codelineno-0-2504"></a><span class="sd">            add_value: Offset added to tick values. Default is 0.</span>
-<a id="__codelineno-0-2505" name="__codelineno-0-2505"></a><span class="sd">            fmt: Format string for tick labels.</span>
-<a id="__codelineno-0-2506" name="__codelineno-0-2506"></a><span class="sd">                Default is `"{0:g}"`.</span>
-<a id="__codelineno-0-2507" name="__codelineno-0-2507"></a><span class="sd">            visible: Whether the axis is visible. Default is True.</span>
-<a id="__codelineno-0-2508" name="__codelineno-0-2508"></a>
-<a id="__codelineno-0-2509" name="__codelineno-0-2509"></a><span class="sd">        Examples:</span>
-<a id="__codelineno-0-2510" name="__codelineno-0-2510"></a><span class="sd">            - Scale x-axis ticks by 100 and offset by 5:</span>
-<a id="__codelineno-0-2511" name="__codelineno-0-2511"></a><span class="sd">                ```python</span>
-<a id="__codelineno-0-2512" name="__codelineno-0-2512"></a><span class="sd">                &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-2513" name="__codelineno-0-2513"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyphs.base.glyph import Glyph</span>
-<a id="__codelineno-0-2514" name="__codelineno-0-2514"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.styling.styles import DEFAULT_OPTIONS</span>
-<a id="__codelineno-0-2515" name="__codelineno-0-2515"></a><span class="sd">                &gt;&gt;&gt; opts = DEFAULT_OPTIONS.copy()</span>
-<a id="__codelineno-0-2516" name="__codelineno-0-2516"></a><span class="sd">                &gt;&gt;&gt; opts.update({"vmin": None, "vmax": None})</span>
-<a id="__codelineno-0-2517" name="__codelineno-0-2517"></a><span class="sd">                &gt;&gt;&gt; g = Glyph(default_options=opts)</span>
-<a id="__codelineno-0-2518" name="__codelineno-0-2518"></a><span class="sd">                &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-2519" name="__codelineno-0-2519"></a><span class="sd">                &gt;&gt;&gt; _ = ax.plot([0, 1, 2], [0, 1, 2])</span>
-<a id="__codelineno-0-2520" name="__codelineno-0-2520"></a><span class="sd">                &gt;&gt;&gt; g.fig, g.ax = fig, ax</span>
-<a id="__codelineno-0-2521" name="__codelineno-0-2521"></a><span class="sd">                &gt;&gt;&gt; g.adjust_ticks(axis="x", multiply_value=100, add_value=5)</span>
-<a id="__codelineno-0-2522" name="__codelineno-0-2522"></a>
-<a id="__codelineno-0-2523" name="__codelineno-0-2523"></a><span class="sd">                ```</span>
-<a id="__codelineno-0-2524" name="__codelineno-0-2524"></a><span class="sd">        """</span>
-<a id="__codelineno-0-2525" name="__codelineno-0-2525"></a>        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-<a id="__codelineno-0-2526" name="__codelineno-0-2526"></a>        <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="s2">"x"</span><span class="p">:</span>
-<a id="__codelineno-0-2527" name="__codelineno-0-2527"></a>            <span class="n">ticks_fn</span> <span class="o">=</span> <span class="n">ticker</span><span class="o">.</span><span class="n">FuncFormatter</span><span class="p">(</span>
-<a id="__codelineno-0-2528" name="__codelineno-0-2528"></a>                <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">multiply_value</span> <span class="o">+</span> <span class="n">add_value</span><span class="p">)</span>
-<a id="__codelineno-0-2529" name="__codelineno-0-2529"></a>            <span class="p">)</span>
-<a id="__codelineno-0-2530" name="__codelineno-0-2530"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">ticks_fn</span><span class="p">)</span>
-<a id="__codelineno-0-2531" name="__codelineno-0-2531"></a>        <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-2532" name="__codelineno-0-2532"></a>            <span class="n">ticks_fn</span> <span class="o">=</span> <span class="n">ticker</span><span class="o">.</span><span class="n">FuncFormatter</span><span class="p">(</span>
-<a id="__codelineno-0-2533" name="__codelineno-0-2533"></a>                <span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">y</span> <span class="o">*</span> <span class="n">multiply_value</span> <span class="o">+</span> <span class="n">add_value</span><span class="p">)</span>
-<a id="__codelineno-0-2534" name="__codelineno-0-2534"></a>            <span class="p">)</span>
-<a id="__codelineno-0-2535" name="__codelineno-0-2535"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">ticks_fn</span><span class="p">)</span>
-<a id="__codelineno-0-2536" name="__codelineno-0-2536"></a>
-<a id="__codelineno-0-2537" name="__codelineno-0-2537"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">visible</span><span class="p">:</span>
-<a id="__codelineno-0-2538" name="__codelineno-0-2538"></a>            <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="s2">"x"</span><span class="p">:</span>
-<a id="__codelineno-0-2539" name="__codelineno-0-2539"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">get_xaxis</span><span class="p">()</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="n">visible</span><span class="p">)</span>
-<a id="__codelineno-0-2540" name="__codelineno-0-2540"></a>            <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-2541" name="__codelineno-0-2541"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">get_yaxis</span><span class="p">()</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="n">visible</span><span class="p">)</span>
-<a id="__codelineno-0-2542" name="__codelineno-0-2542"></a>
-<a id="__codelineno-0-2543" name="__codelineno-0-2543"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">save_animation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="n">fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-2544" name="__codelineno-0-2544"></a><span class="w">        </span><span class="sd">"""Save this glyph's animation (`self.anim`) to a file.</span>
-<a id="__codelineno-0-2545" name="__codelineno-0-2545"></a>
-<a id="__codelineno-0-2546" name="__codelineno-0-2546"></a><span class="sd">        Thin wrapper around `cleopatra.glyphs.base.animation.save_animation`; the output</span>
-<a id="__codelineno-0-2547" name="__codelineno-0-2547"></a><span class="sd">        format is determined by the file extension. GIF and WebP use an</span>
-<a id="__codelineno-0-2548" name="__codelineno-0-2548"></a><span class="sd">        optimising Pillow writer; mov/avi/mp4 use FFmpeg (a system binary if</span>
-<a id="__codelineno-0-2549" name="__codelineno-0-2549"></a><span class="sd">        present, otherwise the one bundled with imageio-ffmpeg).</span>
+<a id="__codelineno-0-2433" name="__codelineno-0-2433"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_apply_axis_style</span><span class="p">(</span>
+<a id="__codelineno-0-2434" name="__codelineno-0-2434"></a>        <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-2435" name="__codelineno-0-2435"></a>        <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span><span class="p">,</span>
+<a id="__codelineno-0-2436" name="__codelineno-0-2436"></a>        <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-2437" name="__codelineno-0-2437"></a>        <span class="n">apply_defaults</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-2438" name="__codelineno-0-2438"></a>        <span class="n">grid_axis</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">"both"</span><span class="p">,</span>
+<a id="__codelineno-0-2439" name="__codelineno-0-2439"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-2440" name="__codelineno-0-2440"></a><span class="w">        </span><span class="sd">"""Apply this glyph's axis-styling options to `ax`.</span>
+<a id="__codelineno-0-2441" name="__codelineno-0-2441"></a>
+<a id="__codelineno-0-2442" name="__codelineno-0-2442"></a><span class="sd">        Thin wrapper over `_apply_axis_options`; see it for what is applied and</span>
+<a id="__codelineno-0-2443" name="__codelineno-0-2443"></a><span class="sd">        why only explicitly-passed options are honoured by default.</span>
+<a id="__codelineno-0-2444" name="__codelineno-0-2444"></a>
+<a id="__codelineno-0-2445" name="__codelineno-0-2445"></a><span class="sd">        A render method that accepts these options as keyword arguments sets</span>
+<a id="__codelineno-0-2446" name="__codelineno-0-2446"></a><span class="sd">        `_render_explicit_options` to the constructor's keys plus its own, and</span>
+<a id="__codelineno-0-2447" name="__codelineno-0-2447"></a><span class="sd">        that set wins here. It is rebuilt on every call rather than accumulated,</span>
+<a id="__codelineno-0-2448" name="__codelineno-0-2448"></a><span class="sd">        so an option the caller drops on a later call stops being re-applied --</span>
+<a id="__codelineno-0-2449" name="__codelineno-0-2449"></a><span class="sd">        and it is kept apart from `_explicit_options`, which `create_figure_axes`</span>
+<a id="__codelineno-0-2450" name="__codelineno-0-2450"></a><span class="sd">        reads to decide whether to auto-size the figure.</span>
+<a id="__codelineno-0-2451" name="__codelineno-0-2451"></a>
+<a id="__codelineno-0-2452" name="__codelineno-0-2452"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-2453" name="__codelineno-0-2453"></a><span class="sd">            ax: The axes to style.</span>
+<a id="__codelineno-0-2454" name="__codelineno-0-2454"></a><span class="sd">            apply_defaults: Apply every option, not only the explicitly-passed</span>
+<a id="__codelineno-0-2455" name="__codelineno-0-2455"></a><span class="sd">                ones.</span>
+<a id="__codelineno-0-2456" name="__codelineno-0-2456"></a><span class="sd">            grid_axis: Which gridlines `grid_alpha` draws; `None` leaves the</span>
+<a id="__codelineno-0-2457" name="__codelineno-0-2457"></a><span class="sd">                grid untouched.</span>
+<a id="__codelineno-0-2458" name="__codelineno-0-2458"></a><span class="sd">        """</span>
+<a id="__codelineno-0-2459" name="__codelineno-0-2459"></a>        <span class="n">explicit</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"_render_explicit_options"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<a id="__codelineno-0-2460" name="__codelineno-0-2460"></a>        <span class="k">if</span> <span class="n">explicit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-2461" name="__codelineno-0-2461"></a>            <span class="n">explicit</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"_explicit_options"</span><span class="p">,</span> <span class="nb">set</span><span class="p">())</span>
+<a id="__codelineno-0-2462" name="__codelineno-0-2462"></a>        <span class="n">_apply_axis_options</span><span class="p">(</span>
+<a id="__codelineno-0-2463" name="__codelineno-0-2463"></a>            <span class="n">ax</span><span class="p">,</span>
+<a id="__codelineno-0-2464" name="__codelineno-0-2464"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="p">,</span>
+<a id="__codelineno-0-2465" name="__codelineno-0-2465"></a>            <span class="n">explicit</span><span class="p">,</span>
+<a id="__codelineno-0-2466" name="__codelineno-0-2466"></a>            <span class="n">apply_defaults</span><span class="o">=</span><span class="n">apply_defaults</span><span class="p">,</span>
+<a id="__codelineno-0-2467" name="__codelineno-0-2467"></a>            <span class="n">grid_axis</span><span class="o">=</span><span class="n">grid_axis</span><span class="p">,</span>
+<a id="__codelineno-0-2468" name="__codelineno-0-2468"></a>        <span class="p">)</span>
+<a id="__codelineno-0-2469" name="__codelineno-0-2469"></a>
+<a id="__codelineno-0-2470" name="__codelineno-0-2470"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">adjust_ticks</span><span class="p">(</span>
+<a id="__codelineno-0-2471" name="__codelineno-0-2471"></a>        <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-2472" name="__codelineno-0-2472"></a>        <span class="n">axis</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-0-2473" name="__codelineno-0-2473"></a>        <span class="n">multiply_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-2474" name="__codelineno-0-2474"></a>        <span class="n">add_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-0-2475" name="__codelineno-0-2475"></a>        <span class="n">fmt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"</span><span class="si">{0:g}</span><span class="s2">"</span><span class="p">,</span>
+<a id="__codelineno-0-2476" name="__codelineno-0-2476"></a>        <span class="n">visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-2477" name="__codelineno-0-2477"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-2478" name="__codelineno-0-2478"></a><span class="w">        </span><span class="sd">"""Adjust the axis tick labels with a linear transformation.</span>
+<a id="__codelineno-0-2479" name="__codelineno-0-2479"></a>
+<a id="__codelineno-0-2480" name="__codelineno-0-2480"></a><span class="sd">        Applies `tick_value * multiply_value + add_value` to each</span>
+<a id="__codelineno-0-2481" name="__codelineno-0-2481"></a><span class="sd">        tick, formatted with `fmt`. Useful for converting pixel</span>
+<a id="__codelineno-0-2482" name="__codelineno-0-2482"></a><span class="sd">        coordinates to real-world units.</span>
+<a id="__codelineno-0-2483" name="__codelineno-0-2483"></a>
+<a id="__codelineno-0-2484" name="__codelineno-0-2484"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-2485" name="__codelineno-0-2485"></a><span class="sd">            axis: `"x"` or `"y"`.</span>
+<a id="__codelineno-0-2486" name="__codelineno-0-2486"></a><span class="sd">            multiply_value: Multiplier for tick values. Default is 1.</span>
+<a id="__codelineno-0-2487" name="__codelineno-0-2487"></a><span class="sd">            add_value: Offset added to tick values. Default is 0.</span>
+<a id="__codelineno-0-2488" name="__codelineno-0-2488"></a><span class="sd">            fmt: Format string for tick labels.</span>
+<a id="__codelineno-0-2489" name="__codelineno-0-2489"></a><span class="sd">                Default is `"{0:g}"`.</span>
+<a id="__codelineno-0-2490" name="__codelineno-0-2490"></a><span class="sd">            visible: Whether the axis is visible. Default is True.</span>
+<a id="__codelineno-0-2491" name="__codelineno-0-2491"></a>
+<a id="__codelineno-0-2492" name="__codelineno-0-2492"></a><span class="sd">        Examples:</span>
+<a id="__codelineno-0-2493" name="__codelineno-0-2493"></a><span class="sd">            - Scale x-axis ticks by 100 and offset by 5:</span>
+<a id="__codelineno-0-2494" name="__codelineno-0-2494"></a><span class="sd">                ```python</span>
+<a id="__codelineno-0-2495" name="__codelineno-0-2495"></a><span class="sd">                &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-2496" name="__codelineno-0-2496"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyphs.base.glyph import Glyph</span>
+<a id="__codelineno-0-2497" name="__codelineno-0-2497"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.styling.styles import DEFAULT_OPTIONS</span>
+<a id="__codelineno-0-2498" name="__codelineno-0-2498"></a><span class="sd">                &gt;&gt;&gt; opts = DEFAULT_OPTIONS.copy()</span>
+<a id="__codelineno-0-2499" name="__codelineno-0-2499"></a><span class="sd">                &gt;&gt;&gt; opts.update({"vmin": None, "vmax": None})</span>
+<a id="__codelineno-0-2500" name="__codelineno-0-2500"></a><span class="sd">                &gt;&gt;&gt; g = Glyph(default_options=opts)</span>
+<a id="__codelineno-0-2501" name="__codelineno-0-2501"></a><span class="sd">                &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-2502" name="__codelineno-0-2502"></a><span class="sd">                &gt;&gt;&gt; _ = ax.plot([0, 1, 2], [0, 1, 2])</span>
+<a id="__codelineno-0-2503" name="__codelineno-0-2503"></a><span class="sd">                &gt;&gt;&gt; g.fig, g.ax = fig, ax</span>
+<a id="__codelineno-0-2504" name="__codelineno-0-2504"></a><span class="sd">                &gt;&gt;&gt; g.adjust_ticks(axis="x", multiply_value=100, add_value=5)</span>
+<a id="__codelineno-0-2505" name="__codelineno-0-2505"></a>
+<a id="__codelineno-0-2506" name="__codelineno-0-2506"></a><span class="sd">                ```</span>
+<a id="__codelineno-0-2507" name="__codelineno-0-2507"></a><span class="sd">        """</span>
+<a id="__codelineno-0-2508" name="__codelineno-0-2508"></a>        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-2509" name="__codelineno-0-2509"></a>        <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="s2">"x"</span><span class="p">:</span>
+<a id="__codelineno-0-2510" name="__codelineno-0-2510"></a>            <span class="n">ticks_fn</span> <span class="o">=</span> <span class="n">ticker</span><span class="o">.</span><span class="n">FuncFormatter</span><span class="p">(</span>
+<a id="__codelineno-0-2511" name="__codelineno-0-2511"></a>                <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">multiply_value</span> <span class="o">+</span> <span class="n">add_value</span><span class="p">)</span>
+<a id="__codelineno-0-2512" name="__codelineno-0-2512"></a>            <span class="p">)</span>
+<a id="__codelineno-0-2513" name="__codelineno-0-2513"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">ticks_fn</span><span class="p">)</span>
+<a id="__codelineno-0-2514" name="__codelineno-0-2514"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-2515" name="__codelineno-0-2515"></a>            <span class="n">ticks_fn</span> <span class="o">=</span> <span class="n">ticker</span><span class="o">.</span><span class="n">FuncFormatter</span><span class="p">(</span>
+<a id="__codelineno-0-2516" name="__codelineno-0-2516"></a>                <span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">y</span> <span class="o">*</span> <span class="n">multiply_value</span> <span class="o">+</span> <span class="n">add_value</span><span class="p">)</span>
+<a id="__codelineno-0-2517" name="__codelineno-0-2517"></a>            <span class="p">)</span>
+<a id="__codelineno-0-2518" name="__codelineno-0-2518"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">ticks_fn</span><span class="p">)</span>
+<a id="__codelineno-0-2519" name="__codelineno-0-2519"></a>
+<a id="__codelineno-0-2520" name="__codelineno-0-2520"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">visible</span><span class="p">:</span>
+<a id="__codelineno-0-2521" name="__codelineno-0-2521"></a>            <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="s2">"x"</span><span class="p">:</span>
+<a id="__codelineno-0-2522" name="__codelineno-0-2522"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">get_xaxis</span><span class="p">()</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="n">visible</span><span class="p">)</span>
+<a id="__codelineno-0-2523" name="__codelineno-0-2523"></a>            <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-2524" name="__codelineno-0-2524"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">get_yaxis</span><span class="p">()</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="n">visible</span><span class="p">)</span>
+<a id="__codelineno-0-2525" name="__codelineno-0-2525"></a>
+<a id="__codelineno-0-2526" name="__codelineno-0-2526"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">save_animation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="n">fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-2527" name="__codelineno-0-2527"></a><span class="w">        </span><span class="sd">"""Save this glyph's animation (`self.anim`) to a file.</span>
+<a id="__codelineno-0-2528" name="__codelineno-0-2528"></a>
+<a id="__codelineno-0-2529" name="__codelineno-0-2529"></a><span class="sd">        Thin wrapper around `cleopatra.glyphs.base.animation.save_animation`; the output</span>
+<a id="__codelineno-0-2530" name="__codelineno-0-2530"></a><span class="sd">        format is determined by the file extension. GIF and WebP use an</span>
+<a id="__codelineno-0-2531" name="__codelineno-0-2531"></a><span class="sd">        optimising Pillow writer; mov/avi/mp4 use FFmpeg (a system binary if</span>
+<a id="__codelineno-0-2532" name="__codelineno-0-2532"></a><span class="sd">        present, otherwise the one bundled with imageio-ffmpeg).</span>
+<a id="__codelineno-0-2533" name="__codelineno-0-2533"></a>
+<a id="__codelineno-0-2534" name="__codelineno-0-2534"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-2535" name="__codelineno-0-2535"></a><span class="sd">            path: Output file path, as a `str` or `os.PathLike` (e.g. a</span>
+<a id="__codelineno-0-2536" name="__codelineno-0-2536"></a><span class="sd">                `pathlib.Path`). Extension determines format.</span>
+<a id="__codelineno-0-2537" name="__codelineno-0-2537"></a><span class="sd">                Supported: gif, mov, avi, mp4, webp.</span>
+<a id="__codelineno-0-2538" name="__codelineno-0-2538"></a><span class="sd">            fps: Frames per second. Default is 2.</span>
+<a id="__codelineno-0-2539" name="__codelineno-0-2539"></a><span class="sd">            **kwargs: Additional keyword arguments forwarded to</span>
+<a id="__codelineno-0-2540" name="__codelineno-0-2540"></a><span class="sd">                `cleopatra.glyphs.base.animation.save_animation`, e.g. `crf`, `bitrate`,</span>
+<a id="__codelineno-0-2541" name="__codelineno-0-2541"></a><span class="sd">                `codec`, `preset`, `pix_fmt`, `dpi` (ffmpeg formats) or</span>
+<a id="__codelineno-0-2542" name="__codelineno-0-2542"></a><span class="sd">                `optimize`, `loop` and `quantize_method` (GIF/WebP).</span>
+<a id="__codelineno-0-2543" name="__codelineno-0-2543"></a>
+<a id="__codelineno-0-2544" name="__codelineno-0-2544"></a><span class="sd">        Raises:</span>
+<a id="__codelineno-0-2545" name="__codelineno-0-2545"></a><span class="sd">            ValueError: If `animate()` has not been called yet, if the file</span>
+<a id="__codelineno-0-2546" name="__codelineno-0-2546"></a><span class="sd">                format is not supported, or if both `crf` and `bitrate`</span>
+<a id="__codelineno-0-2547" name="__codelineno-0-2547"></a><span class="sd">                are given.</span>
+<a id="__codelineno-0-2548" name="__codelineno-0-2548"></a><span class="sd">            FileNotFoundError: If a video format is requested but neither a</span>
+<a id="__codelineno-0-2549" name="__codelineno-0-2549"></a><span class="sd">                system FFmpeg nor imageio-ffmpeg's bundled binary is found.</span>
 <a id="__codelineno-0-2550" name="__codelineno-0-2550"></a>
-<a id="__codelineno-0-2551" name="__codelineno-0-2551"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-2552" name="__codelineno-0-2552"></a><span class="sd">            path: Output file path, as a `str` or `os.PathLike` (e.g. a</span>
-<a id="__codelineno-0-2553" name="__codelineno-0-2553"></a><span class="sd">                `pathlib.Path`). Extension determines format.</span>
-<a id="__codelineno-0-2554" name="__codelineno-0-2554"></a><span class="sd">                Supported: gif, mov, avi, mp4, webp.</span>
-<a id="__codelineno-0-2555" name="__codelineno-0-2555"></a><span class="sd">            fps: Frames per second. Default is 2.</span>
-<a id="__codelineno-0-2556" name="__codelineno-0-2556"></a><span class="sd">            **kwargs: Additional keyword arguments forwarded to</span>
-<a id="__codelineno-0-2557" name="__codelineno-0-2557"></a><span class="sd">                `cleopatra.glyphs.base.animation.save_animation`, e.g. `crf`, `bitrate`,</span>
-<a id="__codelineno-0-2558" name="__codelineno-0-2558"></a><span class="sd">                `codec`, `preset`, `pix_fmt`, `dpi` (ffmpeg formats) or</span>
-<a id="__codelineno-0-2559" name="__codelineno-0-2559"></a><span class="sd">                `optimize`, `loop` and `quantize_method` (GIF/WebP).</span>
-<a id="__codelineno-0-2560" name="__codelineno-0-2560"></a>
-<a id="__codelineno-0-2561" name="__codelineno-0-2561"></a><span class="sd">        Raises:</span>
-<a id="__codelineno-0-2562" name="__codelineno-0-2562"></a><span class="sd">            ValueError: If `animate()` has not been called yet, if the file</span>
-<a id="__codelineno-0-2563" name="__codelineno-0-2563"></a><span class="sd">                format is not supported, or if both `crf` and `bitrate`</span>
-<a id="__codelineno-0-2564" name="__codelineno-0-2564"></a><span class="sd">                are given.</span>
-<a id="__codelineno-0-2565" name="__codelineno-0-2565"></a><span class="sd">            FileNotFoundError: If a video format is requested but neither a</span>
-<a id="__codelineno-0-2566" name="__codelineno-0-2566"></a><span class="sd">                system FFmpeg nor imageio-ffmpeg's bundled binary is found.</span>
-<a id="__codelineno-0-2567" name="__codelineno-0-2567"></a>
-<a id="__codelineno-0-2568" name="__codelineno-0-2568"></a><span class="sd">        Examples:</span>
-<a id="__codelineno-0-2569" name="__codelineno-0-2569"></a><span class="sd">            - Check the supported video formats:</span>
-<a id="__codelineno-0-2570" name="__codelineno-0-2570"></a><span class="sd">                ```python</span>
-<a id="__codelineno-0-2571" name="__codelineno-0-2571"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyphs.base.glyph import SUPPORTED_VIDEO_FORMAT</span>
-<a id="__codelineno-0-2572" name="__codelineno-0-2572"></a><span class="sd">                &gt;&gt;&gt; sorted(SUPPORTED_VIDEO_FORMAT)</span>
-<a id="__codelineno-0-2573" name="__codelineno-0-2573"></a><span class="sd">                ['avi', 'gif', 'mov', 'mp4', 'webp']</span>
-<a id="__codelineno-0-2574" name="__codelineno-0-2574"></a>
-<a id="__codelineno-0-2575" name="__codelineno-0-2575"></a><span class="sd">                ```</span>
-<a id="__codelineno-0-2576" name="__codelineno-0-2576"></a><span class="sd">        """</span>
-<a id="__codelineno-0-2577" name="__codelineno-0-2577"></a>        <span class="n">_save_animation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">anim</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-2551" name="__codelineno-0-2551"></a><span class="sd">        Examples:</span>
+<a id="__codelineno-0-2552" name="__codelineno-0-2552"></a><span class="sd">            - Check the supported video formats:</span>
+<a id="__codelineno-0-2553" name="__codelineno-0-2553"></a><span class="sd">                ```python</span>
+<a id="__codelineno-0-2554" name="__codelineno-0-2554"></a><span class="sd">                &gt;&gt;&gt; from cleopatra.glyphs.base.glyph import SUPPORTED_VIDEO_FORMAT</span>
+<a id="__codelineno-0-2555" name="__codelineno-0-2555"></a><span class="sd">                &gt;&gt;&gt; sorted(SUPPORTED_VIDEO_FORMAT)</span>
+<a id="__codelineno-0-2556" name="__codelineno-0-2556"></a><span class="sd">                ['avi', 'gif', 'mov', 'mp4', 'webp']</span>
+<a id="__codelineno-0-2557" name="__codelineno-0-2557"></a>
+<a id="__codelineno-0-2558" name="__codelineno-0-2558"></a><span class="sd">                ```</span>
+<a id="__codelineno-0-2559" name="__codelineno-0-2559"></a><span class="sd">        """</span>
+<a id="__codelineno-0-2560" name="__codelineno-0-2560"></a>        <span class="n">_save_animation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">anim</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
               </details>
 
@@ -6961,7 +6927,24 @@ Default is <code>"{0:g}"</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/cleopatra/glyphs/base/glyph.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-2487">2487</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-2470">2470</a></span>
+<span class="normal"><a href="#__codelineno-0-2471">2471</a></span>
+<span class="normal"><a href="#__codelineno-0-2472">2472</a></span>
+<span class="normal"><a href="#__codelineno-0-2473">2473</a></span>
+<span class="normal"><a href="#__codelineno-0-2474">2474</a></span>
+<span class="normal"><a href="#__codelineno-0-2475">2475</a></span>
+<span class="normal"><a href="#__codelineno-0-2476">2476</a></span>
+<span class="normal"><a href="#__codelineno-0-2477">2477</a></span>
+<span class="normal"><a href="#__codelineno-0-2478">2478</a></span>
+<span class="normal"><a href="#__codelineno-0-2479">2479</a></span>
+<span class="normal"><a href="#__codelineno-0-2480">2480</a></span>
+<span class="normal"><a href="#__codelineno-0-2481">2481</a></span>
+<span class="normal"><a href="#__codelineno-0-2482">2482</a></span>
+<span class="normal"><a href="#__codelineno-0-2483">2483</a></span>
+<span class="normal"><a href="#__codelineno-0-2484">2484</a></span>
+<span class="normal"><a href="#__codelineno-0-2485">2485</a></span>
+<span class="normal"><a href="#__codelineno-0-2486">2486</a></span>
+<span class="normal"><a href="#__codelineno-0-2487">2487</a></span>
 <span class="normal"><a href="#__codelineno-0-2488">2488</a></span>
 <span class="normal"><a href="#__codelineno-0-2489">2489</a></span>
 <span class="normal"><a href="#__codelineno-0-2490">2490</a></span>
@@ -6998,78 +6981,61 @@ Default is <code>"{0:g}"</code>.</p>
 <span class="normal"><a href="#__codelineno-0-2521">2521</a></span>
 <span class="normal"><a href="#__codelineno-0-2522">2522</a></span>
 <span class="normal"><a href="#__codelineno-0-2523">2523</a></span>
-<span class="normal"><a href="#__codelineno-0-2524">2524</a></span>
-<span class="normal"><a href="#__codelineno-0-2525">2525</a></span>
-<span class="normal"><a href="#__codelineno-0-2526">2526</a></span>
-<span class="normal"><a href="#__codelineno-0-2527">2527</a></span>
-<span class="normal"><a href="#__codelineno-0-2528">2528</a></span>
-<span class="normal"><a href="#__codelineno-0-2529">2529</a></span>
-<span class="normal"><a href="#__codelineno-0-2530">2530</a></span>
-<span class="normal"><a href="#__codelineno-0-2531">2531</a></span>
-<span class="normal"><a href="#__codelineno-0-2532">2532</a></span>
-<span class="normal"><a href="#__codelineno-0-2533">2533</a></span>
-<span class="normal"><a href="#__codelineno-0-2534">2534</a></span>
-<span class="normal"><a href="#__codelineno-0-2535">2535</a></span>
-<span class="normal"><a href="#__codelineno-0-2536">2536</a></span>
-<span class="normal"><a href="#__codelineno-0-2537">2537</a></span>
-<span class="normal"><a href="#__codelineno-0-2538">2538</a></span>
-<span class="normal"><a href="#__codelineno-0-2539">2539</a></span>
-<span class="normal"><a href="#__codelineno-0-2540">2540</a></span>
-<span class="normal"><a href="#__codelineno-0-2541">2541</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-2487" name="__codelineno-0-2487"></a><span class="k">def</span><span class="w"> </span><span class="nf">adjust_ticks</span><span class="p">(</span>
-<a id="__codelineno-0-2488" name="__codelineno-0-2488"></a>    <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-2489" name="__codelineno-0-2489"></a>    <span class="n">axis</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-0-2490" name="__codelineno-0-2490"></a>    <span class="n">multiply_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-2491" name="__codelineno-0-2491"></a>    <span class="n">add_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-<a id="__codelineno-0-2492" name="__codelineno-0-2492"></a>    <span class="n">fmt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"</span><span class="si">{0:g}</span><span class="s2">"</span><span class="p">,</span>
-<a id="__codelineno-0-2493" name="__codelineno-0-2493"></a>    <span class="n">visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-0-2494" name="__codelineno-0-2494"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-2495" name="__codelineno-0-2495"></a><span class="w">    </span><span class="sd">"""Adjust the axis tick labels with a linear transformation.</span>
-<a id="__codelineno-0-2496" name="__codelineno-0-2496"></a>
-<a id="__codelineno-0-2497" name="__codelineno-0-2497"></a><span class="sd">    Applies `tick_value * multiply_value + add_value` to each</span>
-<a id="__codelineno-0-2498" name="__codelineno-0-2498"></a><span class="sd">    tick, formatted with `fmt`. Useful for converting pixel</span>
-<a id="__codelineno-0-2499" name="__codelineno-0-2499"></a><span class="sd">    coordinates to real-world units.</span>
-<a id="__codelineno-0-2500" name="__codelineno-0-2500"></a>
-<a id="__codelineno-0-2501" name="__codelineno-0-2501"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-2502" name="__codelineno-0-2502"></a><span class="sd">        axis: `"x"` or `"y"`.</span>
-<a id="__codelineno-0-2503" name="__codelineno-0-2503"></a><span class="sd">        multiply_value: Multiplier for tick values. Default is 1.</span>
-<a id="__codelineno-0-2504" name="__codelineno-0-2504"></a><span class="sd">        add_value: Offset added to tick values. Default is 0.</span>
-<a id="__codelineno-0-2505" name="__codelineno-0-2505"></a><span class="sd">        fmt: Format string for tick labels.</span>
-<a id="__codelineno-0-2506" name="__codelineno-0-2506"></a><span class="sd">            Default is `"{0:g}"`.</span>
-<a id="__codelineno-0-2507" name="__codelineno-0-2507"></a><span class="sd">        visible: Whether the axis is visible. Default is True.</span>
-<a id="__codelineno-0-2508" name="__codelineno-0-2508"></a>
-<a id="__codelineno-0-2509" name="__codelineno-0-2509"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-2510" name="__codelineno-0-2510"></a><span class="sd">        - Scale x-axis ticks by 100 and offset by 5:</span>
-<a id="__codelineno-0-2511" name="__codelineno-0-2511"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-2512" name="__codelineno-0-2512"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-2513" name="__codelineno-0-2513"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyphs.base.glyph import Glyph</span>
-<a id="__codelineno-0-2514" name="__codelineno-0-2514"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.styles import DEFAULT_OPTIONS</span>
-<a id="__codelineno-0-2515" name="__codelineno-0-2515"></a><span class="sd">            &gt;&gt;&gt; opts = DEFAULT_OPTIONS.copy()</span>
-<a id="__codelineno-0-2516" name="__codelineno-0-2516"></a><span class="sd">            &gt;&gt;&gt; opts.update({"vmin": None, "vmax": None})</span>
-<a id="__codelineno-0-2517" name="__codelineno-0-2517"></a><span class="sd">            &gt;&gt;&gt; g = Glyph(default_options=opts)</span>
-<a id="__codelineno-0-2518" name="__codelineno-0-2518"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-2519" name="__codelineno-0-2519"></a><span class="sd">            &gt;&gt;&gt; _ = ax.plot([0, 1, 2], [0, 1, 2])</span>
-<a id="__codelineno-0-2520" name="__codelineno-0-2520"></a><span class="sd">            &gt;&gt;&gt; g.fig, g.ax = fig, ax</span>
-<a id="__codelineno-0-2521" name="__codelineno-0-2521"></a><span class="sd">            &gt;&gt;&gt; g.adjust_ticks(axis="x", multiply_value=100, add_value=5)</span>
-<a id="__codelineno-0-2522" name="__codelineno-0-2522"></a>
-<a id="__codelineno-0-2523" name="__codelineno-0-2523"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-2524" name="__codelineno-0-2524"></a><span class="sd">    """</span>
-<a id="__codelineno-0-2525" name="__codelineno-0-2525"></a>    <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-<a id="__codelineno-0-2526" name="__codelineno-0-2526"></a>    <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="s2">"x"</span><span class="p">:</span>
-<a id="__codelineno-0-2527" name="__codelineno-0-2527"></a>        <span class="n">ticks_fn</span> <span class="o">=</span> <span class="n">ticker</span><span class="o">.</span><span class="n">FuncFormatter</span><span class="p">(</span>
-<a id="__codelineno-0-2528" name="__codelineno-0-2528"></a>            <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">multiply_value</span> <span class="o">+</span> <span class="n">add_value</span><span class="p">)</span>
-<a id="__codelineno-0-2529" name="__codelineno-0-2529"></a>        <span class="p">)</span>
-<a id="__codelineno-0-2530" name="__codelineno-0-2530"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">ticks_fn</span><span class="p">)</span>
-<a id="__codelineno-0-2531" name="__codelineno-0-2531"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-2532" name="__codelineno-0-2532"></a>        <span class="n">ticks_fn</span> <span class="o">=</span> <span class="n">ticker</span><span class="o">.</span><span class="n">FuncFormatter</span><span class="p">(</span>
-<a id="__codelineno-0-2533" name="__codelineno-0-2533"></a>            <span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">y</span> <span class="o">*</span> <span class="n">multiply_value</span> <span class="o">+</span> <span class="n">add_value</span><span class="p">)</span>
-<a id="__codelineno-0-2534" name="__codelineno-0-2534"></a>        <span class="p">)</span>
-<a id="__codelineno-0-2535" name="__codelineno-0-2535"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">ticks_fn</span><span class="p">)</span>
-<a id="__codelineno-0-2536" name="__codelineno-0-2536"></a>
-<a id="__codelineno-0-2537" name="__codelineno-0-2537"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">visible</span><span class="p">:</span>
-<a id="__codelineno-0-2538" name="__codelineno-0-2538"></a>        <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="s2">"x"</span><span class="p">:</span>
-<a id="__codelineno-0-2539" name="__codelineno-0-2539"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">get_xaxis</span><span class="p">()</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="n">visible</span><span class="p">)</span>
-<a id="__codelineno-0-2540" name="__codelineno-0-2540"></a>        <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-2541" name="__codelineno-0-2541"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">get_yaxis</span><span class="p">()</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="n">visible</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-2524">2524</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-2470" name="__codelineno-0-2470"></a><span class="k">def</span><span class="w"> </span><span class="nf">adjust_ticks</span><span class="p">(</span>
+<a id="__codelineno-0-2471" name="__codelineno-0-2471"></a>    <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-2472" name="__codelineno-0-2472"></a>    <span class="n">axis</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-0-2473" name="__codelineno-0-2473"></a>    <span class="n">multiply_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-2474" name="__codelineno-0-2474"></a>    <span class="n">add_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-0-2475" name="__codelineno-0-2475"></a>    <span class="n">fmt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"</span><span class="si">{0:g}</span><span class="s2">"</span><span class="p">,</span>
+<a id="__codelineno-0-2476" name="__codelineno-0-2476"></a>    <span class="n">visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-2477" name="__codelineno-0-2477"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-2478" name="__codelineno-0-2478"></a><span class="w">    </span><span class="sd">"""Adjust the axis tick labels with a linear transformation.</span>
+<a id="__codelineno-0-2479" name="__codelineno-0-2479"></a>
+<a id="__codelineno-0-2480" name="__codelineno-0-2480"></a><span class="sd">    Applies `tick_value * multiply_value + add_value` to each</span>
+<a id="__codelineno-0-2481" name="__codelineno-0-2481"></a><span class="sd">    tick, formatted with `fmt`. Useful for converting pixel</span>
+<a id="__codelineno-0-2482" name="__codelineno-0-2482"></a><span class="sd">    coordinates to real-world units.</span>
+<a id="__codelineno-0-2483" name="__codelineno-0-2483"></a>
+<a id="__codelineno-0-2484" name="__codelineno-0-2484"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-2485" name="__codelineno-0-2485"></a><span class="sd">        axis: `"x"` or `"y"`.</span>
+<a id="__codelineno-0-2486" name="__codelineno-0-2486"></a><span class="sd">        multiply_value: Multiplier for tick values. Default is 1.</span>
+<a id="__codelineno-0-2487" name="__codelineno-0-2487"></a><span class="sd">        add_value: Offset added to tick values. Default is 0.</span>
+<a id="__codelineno-0-2488" name="__codelineno-0-2488"></a><span class="sd">        fmt: Format string for tick labels.</span>
+<a id="__codelineno-0-2489" name="__codelineno-0-2489"></a><span class="sd">            Default is `"{0:g}"`.</span>
+<a id="__codelineno-0-2490" name="__codelineno-0-2490"></a><span class="sd">        visible: Whether the axis is visible. Default is True.</span>
+<a id="__codelineno-0-2491" name="__codelineno-0-2491"></a>
+<a id="__codelineno-0-2492" name="__codelineno-0-2492"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-2493" name="__codelineno-0-2493"></a><span class="sd">        - Scale x-axis ticks by 100 and offset by 5:</span>
+<a id="__codelineno-0-2494" name="__codelineno-0-2494"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-2495" name="__codelineno-0-2495"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-2496" name="__codelineno-0-2496"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyphs.base.glyph import Glyph</span>
+<a id="__codelineno-0-2497" name="__codelineno-0-2497"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.styles import DEFAULT_OPTIONS</span>
+<a id="__codelineno-0-2498" name="__codelineno-0-2498"></a><span class="sd">            &gt;&gt;&gt; opts = DEFAULT_OPTIONS.copy()</span>
+<a id="__codelineno-0-2499" name="__codelineno-0-2499"></a><span class="sd">            &gt;&gt;&gt; opts.update({"vmin": None, "vmax": None})</span>
+<a id="__codelineno-0-2500" name="__codelineno-0-2500"></a><span class="sd">            &gt;&gt;&gt; g = Glyph(default_options=opts)</span>
+<a id="__codelineno-0-2501" name="__codelineno-0-2501"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-2502" name="__codelineno-0-2502"></a><span class="sd">            &gt;&gt;&gt; _ = ax.plot([0, 1, 2], [0, 1, 2])</span>
+<a id="__codelineno-0-2503" name="__codelineno-0-2503"></a><span class="sd">            &gt;&gt;&gt; g.fig, g.ax = fig, ax</span>
+<a id="__codelineno-0-2504" name="__codelineno-0-2504"></a><span class="sd">            &gt;&gt;&gt; g.adjust_ticks(axis="x", multiply_value=100, add_value=5)</span>
+<a id="__codelineno-0-2505" name="__codelineno-0-2505"></a>
+<a id="__codelineno-0-2506" name="__codelineno-0-2506"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-2507" name="__codelineno-0-2507"></a><span class="sd">    """</span>
+<a id="__codelineno-0-2508" name="__codelineno-0-2508"></a>    <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-2509" name="__codelineno-0-2509"></a>    <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="s2">"x"</span><span class="p">:</span>
+<a id="__codelineno-0-2510" name="__codelineno-0-2510"></a>        <span class="n">ticks_fn</span> <span class="o">=</span> <span class="n">ticker</span><span class="o">.</span><span class="n">FuncFormatter</span><span class="p">(</span>
+<a id="__codelineno-0-2511" name="__codelineno-0-2511"></a>            <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">multiply_value</span> <span class="o">+</span> <span class="n">add_value</span><span class="p">)</span>
+<a id="__codelineno-0-2512" name="__codelineno-0-2512"></a>        <span class="p">)</span>
+<a id="__codelineno-0-2513" name="__codelineno-0-2513"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">ticks_fn</span><span class="p">)</span>
+<a id="__codelineno-0-2514" name="__codelineno-0-2514"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-2515" name="__codelineno-0-2515"></a>        <span class="n">ticks_fn</span> <span class="o">=</span> <span class="n">ticker</span><span class="o">.</span><span class="n">FuncFormatter</span><span class="p">(</span>
+<a id="__codelineno-0-2516" name="__codelineno-0-2516"></a>            <span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">y</span> <span class="o">*</span> <span class="n">multiply_value</span> <span class="o">+</span> <span class="n">add_value</span><span class="p">)</span>
+<a id="__codelineno-0-2517" name="__codelineno-0-2517"></a>        <span class="p">)</span>
+<a id="__codelineno-0-2518" name="__codelineno-0-2518"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">ticks_fn</span><span class="p">)</span>
+<a id="__codelineno-0-2519" name="__codelineno-0-2519"></a>
+<a id="__codelineno-0-2520" name="__codelineno-0-2520"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">visible</span><span class="p">:</span>
+<a id="__codelineno-0-2521" name="__codelineno-0-2521"></a>        <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="s2">"x"</span><span class="p">:</span>
+<a id="__codelineno-0-2522" name="__codelineno-0-2522"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">get_xaxis</span><span class="p">()</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="n">visible</span><span class="p">)</span>
+<a id="__codelineno-0-2523" name="__codelineno-0-2523"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-2524" name="__codelineno-0-2524"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">get_yaxis</span><span class="p">()</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="n">visible</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -7763,17 +7729,7 @@ but is not a <code>dict</code>.</p>
 <span class="normal"><a href="#__codelineno-0-2202">2202</a></span>
 <span class="normal"><a href="#__codelineno-0-2203">2203</a></span>
 <span class="normal"><a href="#__codelineno-0-2204">2204</a></span>
-<span class="normal"><a href="#__codelineno-0-2205">2205</a></span>
-<span class="normal"><a href="#__codelineno-0-2206">2206</a></span>
-<span class="normal"><a href="#__codelineno-0-2207">2207</a></span>
-<span class="normal"><a href="#__codelineno-0-2208">2208</a></span>
-<span class="normal"><a href="#__codelineno-0-2209">2209</a></span>
-<span class="normal"><a href="#__codelineno-0-2210">2210</a></span>
-<span class="normal"><a href="#__codelineno-0-2211">2211</a></span>
-<span class="normal"><a href="#__codelineno-0-2212">2212</a></span>
-<span class="normal"><a href="#__codelineno-0-2213">2213</a></span>
-<span class="normal"><a href="#__codelineno-0-2214">2214</a></span>
-<span class="normal"><a href="#__codelineno-0-2215">2215</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-2068" name="__codelineno-0-2068"></a><span class="k">def</span><span class="w"> </span><span class="nf">create_color_bar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span><span class="p">,</span> <span class="n">im</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Colorbar</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-2205">2205</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-2068" name="__codelineno-0-2068"></a><span class="k">def</span><span class="w"> </span><span class="nf">create_color_bar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span><span class="p">,</span> <span class="n">im</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Colorbar</span><span class="p">:</span>
 <a id="__codelineno-0-2069" name="__codelineno-0-2069"></a><span class="w">    </span><span class="sd">"""Create a colorbar with full customization from default_options.</span>
 <a id="__codelineno-0-2070" name="__codelineno-0-2070"></a>
 <a id="__codelineno-0-2071" name="__codelineno-0-2071"></a><span class="sd">    Reads `cbar_length`, `cbar_orientation`, `cbar_label`,</span>
@@ -7902,25 +7858,15 @@ but is not a <code>dict</code>.</p>
 <a id="__codelineno-0-2194" name="__codelineno-0-2194"></a>            <span class="n">ax</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">,</span> <span class="n">inset_location</span><span class="p">,</span> <span class="n">orientation</span><span class="p">,</span> <span class="n">user_kwargs</span>
 <a id="__codelineno-0-2195" name="__codelineno-0-2195"></a>        <span class="p">)</span>
 <a id="__codelineno-0-2196" name="__codelineno-0-2196"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-2197" name="__codelineno-0-2197"></a>        <span class="c1"># `cbar_span_axes`, when set, makes the bar span those axes instead</span>
-<a id="__codelineno-0-2198" name="__codelineno-0-2198"></a>        <span class="c1"># of just `ax` (a facet grid's shared bar across its panels); the</span>
-<a id="__codelineno-0-2199" name="__codelineno-0-2199"></a>        <span class="c1"># single-axes default is `ax` itself. Only the outside bar spans --</span>
-<a id="__codelineno-0-2200" name="__codelineno-0-2200"></a>        <span class="c1"># an inset bar lives inside one axes.</span>
-<a id="__codelineno-0-2201" name="__codelineno-0-2201"></a>        <span class="n">span_axes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cbar_span_axes"</span><span class="p">)</span>
-<a id="__codelineno-0-2202" name="__codelineno-0-2202"></a>        <span class="n">cbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outside_colorbar</span><span class="p">(</span>
-<a id="__codelineno-0-2203" name="__codelineno-0-2203"></a>            <span class="n">span_axes</span> <span class="k">if</span> <span class="n">span_axes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ax</span><span class="p">,</span>
-<a id="__codelineno-0-2204" name="__codelineno-0-2204"></a>            <span class="n">im</span><span class="p">,</span>
-<a id="__codelineno-0-2205" name="__codelineno-0-2205"></a>            <span class="n">cbar_kw</span><span class="p">,</span>
-<a id="__codelineno-0-2206" name="__codelineno-0-2206"></a>            <span class="n">location</span><span class="p">,</span>
-<a id="__codelineno-0-2207" name="__codelineno-0-2207"></a>            <span class="n">orientation</span><span class="p">,</span>
-<a id="__codelineno-0-2208" name="__codelineno-0-2208"></a>            <span class="n">user_kwargs</span><span class="p">,</span>
-<a id="__codelineno-0-2209" name="__codelineno-0-2209"></a>        <span class="p">)</span>
-<a id="__codelineno-0-2210" name="__codelineno-0-2210"></a>
-<a id="__codelineno-0-2211" name="__codelineno-0-2211"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_apply_cbar_styling</span><span class="p">(</span><span class="n">cbar</span><span class="p">,</span> <span class="n">user_label</span><span class="p">)</span>
-<a id="__codelineno-0-2212" name="__codelineno-0-2212"></a>    <span class="n">box</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cbar_box"</span><span class="p">)</span>
-<a id="__codelineno-0-2213" name="__codelineno-0-2213"></a>    <span class="k">if</span> <span class="n">inside</span> <span class="ow">and</span> <span class="n">box</span> <span class="ow">and</span> <span class="n">box_info</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-2214" name="__codelineno-0-2214"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_draw_cbar_box</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">box_info</span><span class="p">,</span> <span class="n">box</span><span class="p">)</span>
-<a id="__codelineno-0-2215" name="__codelineno-0-2215"></a>    <span class="k">return</span> <span class="n">cbar</span>
+<a id="__codelineno-0-2197" name="__codelineno-0-2197"></a>        <span class="n">cbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outside_colorbar</span><span class="p">(</span>
+<a id="__codelineno-0-2198" name="__codelineno-0-2198"></a>            <span class="n">ax</span><span class="p">,</span> <span class="n">im</span><span class="p">,</span> <span class="n">cbar_kw</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">orientation</span><span class="p">,</span> <span class="n">user_kwargs</span>
+<a id="__codelineno-0-2199" name="__codelineno-0-2199"></a>        <span class="p">)</span>
+<a id="__codelineno-0-2200" name="__codelineno-0-2200"></a>
+<a id="__codelineno-0-2201" name="__codelineno-0-2201"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_apply_cbar_styling</span><span class="p">(</span><span class="n">cbar</span><span class="p">,</span> <span class="n">user_label</span><span class="p">)</span>
+<a id="__codelineno-0-2202" name="__codelineno-0-2202"></a>    <span class="n">box</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cbar_box"</span><span class="p">)</span>
+<a id="__codelineno-0-2203" name="__codelineno-0-2203"></a>    <span class="k">if</span> <span class="n">inside</span> <span class="ow">and</span> <span class="n">box</span> <span class="ow">and</span> <span class="n">box_info</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-2204" name="__codelineno-0-2204"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_draw_cbar_box</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">box_info</span><span class="p">,</span> <span class="n">box</span><span class="p">)</span>
+<a id="__codelineno-0-2205" name="__codelineno-0-2205"></a>    <span class="k">return</span> <span class="n">cbar</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -8681,7 +8627,24 @@ system FFmpeg nor imageio-ffmpeg's bundled binary is found.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/cleopatra/glyphs/base/glyph.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-2543">2543</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-2526">2526</a></span>
+<span class="normal"><a href="#__codelineno-0-2527">2527</a></span>
+<span class="normal"><a href="#__codelineno-0-2528">2528</a></span>
+<span class="normal"><a href="#__codelineno-0-2529">2529</a></span>
+<span class="normal"><a href="#__codelineno-0-2530">2530</a></span>
+<span class="normal"><a href="#__codelineno-0-2531">2531</a></span>
+<span class="normal"><a href="#__codelineno-0-2532">2532</a></span>
+<span class="normal"><a href="#__codelineno-0-2533">2533</a></span>
+<span class="normal"><a href="#__codelineno-0-2534">2534</a></span>
+<span class="normal"><a href="#__codelineno-0-2535">2535</a></span>
+<span class="normal"><a href="#__codelineno-0-2536">2536</a></span>
+<span class="normal"><a href="#__codelineno-0-2537">2537</a></span>
+<span class="normal"><a href="#__codelineno-0-2538">2538</a></span>
+<span class="normal"><a href="#__codelineno-0-2539">2539</a></span>
+<span class="normal"><a href="#__codelineno-0-2540">2540</a></span>
+<span class="normal"><a href="#__codelineno-0-2541">2541</a></span>
+<span class="normal"><a href="#__codelineno-0-2542">2542</a></span>
+<span class="normal"><a href="#__codelineno-0-2543">2543</a></span>
 <span class="normal"><a href="#__codelineno-0-2544">2544</a></span>
 <span class="normal"><a href="#__codelineno-0-2545">2545</a></span>
 <span class="normal"><a href="#__codelineno-0-2546">2546</a></span>
@@ -8698,58 +8661,41 @@ system FFmpeg nor imageio-ffmpeg's bundled binary is found.</p>
 <span class="normal"><a href="#__codelineno-0-2557">2557</a></span>
 <span class="normal"><a href="#__codelineno-0-2558">2558</a></span>
 <span class="normal"><a href="#__codelineno-0-2559">2559</a></span>
-<span class="normal"><a href="#__codelineno-0-2560">2560</a></span>
-<span class="normal"><a href="#__codelineno-0-2561">2561</a></span>
-<span class="normal"><a href="#__codelineno-0-2562">2562</a></span>
-<span class="normal"><a href="#__codelineno-0-2563">2563</a></span>
-<span class="normal"><a href="#__codelineno-0-2564">2564</a></span>
-<span class="normal"><a href="#__codelineno-0-2565">2565</a></span>
-<span class="normal"><a href="#__codelineno-0-2566">2566</a></span>
-<span class="normal"><a href="#__codelineno-0-2567">2567</a></span>
-<span class="normal"><a href="#__codelineno-0-2568">2568</a></span>
-<span class="normal"><a href="#__codelineno-0-2569">2569</a></span>
-<span class="normal"><a href="#__codelineno-0-2570">2570</a></span>
-<span class="normal"><a href="#__codelineno-0-2571">2571</a></span>
-<span class="normal"><a href="#__codelineno-0-2572">2572</a></span>
-<span class="normal"><a href="#__codelineno-0-2573">2573</a></span>
-<span class="normal"><a href="#__codelineno-0-2574">2574</a></span>
-<span class="normal"><a href="#__codelineno-0-2575">2575</a></span>
-<span class="normal"><a href="#__codelineno-0-2576">2576</a></span>
-<span class="normal"><a href="#__codelineno-0-2577">2577</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-2543" name="__codelineno-0-2543"></a><span class="k">def</span><span class="w"> </span><span class="nf">save_animation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="n">fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-2544" name="__codelineno-0-2544"></a><span class="w">    </span><span class="sd">"""Save this glyph's animation (`self.anim`) to a file.</span>
-<a id="__codelineno-0-2545" name="__codelineno-0-2545"></a>
-<a id="__codelineno-0-2546" name="__codelineno-0-2546"></a><span class="sd">    Thin wrapper around `cleopatra.glyphs.base.animation.save_animation`; the output</span>
-<a id="__codelineno-0-2547" name="__codelineno-0-2547"></a><span class="sd">    format is determined by the file extension. GIF and WebP use an</span>
-<a id="__codelineno-0-2548" name="__codelineno-0-2548"></a><span class="sd">    optimising Pillow writer; mov/avi/mp4 use FFmpeg (a system binary if</span>
-<a id="__codelineno-0-2549" name="__codelineno-0-2549"></a><span class="sd">    present, otherwise the one bundled with imageio-ffmpeg).</span>
+<span class="normal"><a href="#__codelineno-0-2560">2560</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-2526" name="__codelineno-0-2526"></a><span class="k">def</span><span class="w"> </span><span class="nf">save_animation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="n">fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-2527" name="__codelineno-0-2527"></a><span class="w">    </span><span class="sd">"""Save this glyph's animation (`self.anim`) to a file.</span>
+<a id="__codelineno-0-2528" name="__codelineno-0-2528"></a>
+<a id="__codelineno-0-2529" name="__codelineno-0-2529"></a><span class="sd">    Thin wrapper around `cleopatra.glyphs.base.animation.save_animation`; the output</span>
+<a id="__codelineno-0-2530" name="__codelineno-0-2530"></a><span class="sd">    format is determined by the file extension. GIF and WebP use an</span>
+<a id="__codelineno-0-2531" name="__codelineno-0-2531"></a><span class="sd">    optimising Pillow writer; mov/avi/mp4 use FFmpeg (a system binary if</span>
+<a id="__codelineno-0-2532" name="__codelineno-0-2532"></a><span class="sd">    present, otherwise the one bundled with imageio-ffmpeg).</span>
+<a id="__codelineno-0-2533" name="__codelineno-0-2533"></a>
+<a id="__codelineno-0-2534" name="__codelineno-0-2534"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-2535" name="__codelineno-0-2535"></a><span class="sd">        path: Output file path, as a `str` or `os.PathLike` (e.g. a</span>
+<a id="__codelineno-0-2536" name="__codelineno-0-2536"></a><span class="sd">            `pathlib.Path`). Extension determines format.</span>
+<a id="__codelineno-0-2537" name="__codelineno-0-2537"></a><span class="sd">            Supported: gif, mov, avi, mp4, webp.</span>
+<a id="__codelineno-0-2538" name="__codelineno-0-2538"></a><span class="sd">        fps: Frames per second. Default is 2.</span>
+<a id="__codelineno-0-2539" name="__codelineno-0-2539"></a><span class="sd">        **kwargs: Additional keyword arguments forwarded to</span>
+<a id="__codelineno-0-2540" name="__codelineno-0-2540"></a><span class="sd">            `cleopatra.glyphs.base.animation.save_animation`, e.g. `crf`, `bitrate`,</span>
+<a id="__codelineno-0-2541" name="__codelineno-0-2541"></a><span class="sd">            `codec`, `preset`, `pix_fmt`, `dpi` (ffmpeg formats) or</span>
+<a id="__codelineno-0-2542" name="__codelineno-0-2542"></a><span class="sd">            `optimize`, `loop` and `quantize_method` (GIF/WebP).</span>
+<a id="__codelineno-0-2543" name="__codelineno-0-2543"></a>
+<a id="__codelineno-0-2544" name="__codelineno-0-2544"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-0-2545" name="__codelineno-0-2545"></a><span class="sd">        ValueError: If `animate()` has not been called yet, if the file</span>
+<a id="__codelineno-0-2546" name="__codelineno-0-2546"></a><span class="sd">            format is not supported, or if both `crf` and `bitrate`</span>
+<a id="__codelineno-0-2547" name="__codelineno-0-2547"></a><span class="sd">            are given.</span>
+<a id="__codelineno-0-2548" name="__codelineno-0-2548"></a><span class="sd">        FileNotFoundError: If a video format is requested but neither a</span>
+<a id="__codelineno-0-2549" name="__codelineno-0-2549"></a><span class="sd">            system FFmpeg nor imageio-ffmpeg's bundled binary is found.</span>
 <a id="__codelineno-0-2550" name="__codelineno-0-2550"></a>
-<a id="__codelineno-0-2551" name="__codelineno-0-2551"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-2552" name="__codelineno-0-2552"></a><span class="sd">        path: Output file path, as a `str` or `os.PathLike` (e.g. a</span>
-<a id="__codelineno-0-2553" name="__codelineno-0-2553"></a><span class="sd">            `pathlib.Path`). Extension determines format.</span>
-<a id="__codelineno-0-2554" name="__codelineno-0-2554"></a><span class="sd">            Supported: gif, mov, avi, mp4, webp.</span>
-<a id="__codelineno-0-2555" name="__codelineno-0-2555"></a><span class="sd">        fps: Frames per second. Default is 2.</span>
-<a id="__codelineno-0-2556" name="__codelineno-0-2556"></a><span class="sd">        **kwargs: Additional keyword arguments forwarded to</span>
-<a id="__codelineno-0-2557" name="__codelineno-0-2557"></a><span class="sd">            `cleopatra.glyphs.base.animation.save_animation`, e.g. `crf`, `bitrate`,</span>
-<a id="__codelineno-0-2558" name="__codelineno-0-2558"></a><span class="sd">            `codec`, `preset`, `pix_fmt`, `dpi` (ffmpeg formats) or</span>
-<a id="__codelineno-0-2559" name="__codelineno-0-2559"></a><span class="sd">            `optimize`, `loop` and `quantize_method` (GIF/WebP).</span>
-<a id="__codelineno-0-2560" name="__codelineno-0-2560"></a>
-<a id="__codelineno-0-2561" name="__codelineno-0-2561"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-2562" name="__codelineno-0-2562"></a><span class="sd">        ValueError: If `animate()` has not been called yet, if the file</span>
-<a id="__codelineno-0-2563" name="__codelineno-0-2563"></a><span class="sd">            format is not supported, or if both `crf` and `bitrate`</span>
-<a id="__codelineno-0-2564" name="__codelineno-0-2564"></a><span class="sd">            are given.</span>
-<a id="__codelineno-0-2565" name="__codelineno-0-2565"></a><span class="sd">        FileNotFoundError: If a video format is requested but neither a</span>
-<a id="__codelineno-0-2566" name="__codelineno-0-2566"></a><span class="sd">            system FFmpeg nor imageio-ffmpeg's bundled binary is found.</span>
-<a id="__codelineno-0-2567" name="__codelineno-0-2567"></a>
-<a id="__codelineno-0-2568" name="__codelineno-0-2568"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-2569" name="__codelineno-0-2569"></a><span class="sd">        - Check the supported video formats:</span>
-<a id="__codelineno-0-2570" name="__codelineno-0-2570"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-2571" name="__codelineno-0-2571"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyphs.base.glyph import SUPPORTED_VIDEO_FORMAT</span>
-<a id="__codelineno-0-2572" name="__codelineno-0-2572"></a><span class="sd">            &gt;&gt;&gt; sorted(SUPPORTED_VIDEO_FORMAT)</span>
-<a id="__codelineno-0-2573" name="__codelineno-0-2573"></a><span class="sd">            ['avi', 'gif', 'mov', 'mp4', 'webp']</span>
-<a id="__codelineno-0-2574" name="__codelineno-0-2574"></a>
-<a id="__codelineno-0-2575" name="__codelineno-0-2575"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-2576" name="__codelineno-0-2576"></a><span class="sd">    """</span>
-<a id="__codelineno-0-2577" name="__codelineno-0-2577"></a>    <span class="n">_save_animation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">anim</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-2551" name="__codelineno-0-2551"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-2552" name="__codelineno-0-2552"></a><span class="sd">        - Check the supported video formats:</span>
+<a id="__codelineno-0-2553" name="__codelineno-0-2553"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-2554" name="__codelineno-0-2554"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.glyphs.base.glyph import SUPPORTED_VIDEO_FORMAT</span>
+<a id="__codelineno-0-2555" name="__codelineno-0-2555"></a><span class="sd">            &gt;&gt;&gt; sorted(SUPPORTED_VIDEO_FORMAT)</span>
+<a id="__codelineno-0-2556" name="__codelineno-0-2556"></a><span class="sd">            ['avi', 'gif', 'mov', 'mp4', 'webp']</span>
+<a id="__codelineno-0-2557" name="__codelineno-0-2557"></a>
+<a id="__codelineno-0-2558" name="__codelineno-0-2558"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-2559" name="__codelineno-0-2559"></a><span class="sd">    """</span>
+<a id="__codelineno-0-2560" name="__codelineno-0-2560"></a>    <span class="n">_save_animation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">anim</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="n">fps</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
