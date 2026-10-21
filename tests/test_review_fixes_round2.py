@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import warnings
 
-import pytest
 import matplotlib
+import pytest
 
 matplotlib.use("Agg")
 

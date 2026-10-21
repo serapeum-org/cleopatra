@@ -1214,7 +1214,6 @@ class TestSupportedVideoFormat:
         )
 
 
-
 #: A textured background with four small, highly saturated marks that move each
 #: frame -- the shape of a satellite-showcase clip in miniature. The texture owns
 #: ~99% of the pixels, so it is exactly the case where a population-weighted

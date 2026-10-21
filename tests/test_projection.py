@@ -12,7 +12,6 @@ so runs are deterministic.
 
 from __future__ import annotations
 
-
 import numpy as np
 import pytest
 
@@ -1105,7 +1104,6 @@ class TestApplyProjectionStyle:
             ax, lon, lat, data, style="globe", draw_frame=False
         )
         assert len(ax.lines) == before, "graticule line count should not change"
-
 
 
 class TestApplyProjectionStyleMesh:

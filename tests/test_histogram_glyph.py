@@ -21,7 +21,6 @@ def _close_figures():
     plt.close("all")
 
 
-
 def test_histogram_does_not_call_plt_show(monkeypatch):
     """Test that `HistogramGlyph.histogram()` does not force an interactive display.
 

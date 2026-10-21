@@ -38,7 +38,6 @@ def texture() -> np.ndarray:
     return tex
 
 
-
 class TestConstruction:
     def test_defaults(self, texture):
         globe = TexturedGlobeGlyph(texture)
