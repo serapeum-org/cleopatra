@@ -143,3 +143,16 @@ class TestBarGlyphPlot:
         fig, ax = plt.subplots()
         _, out_ax, _ = BarGlyph(["a", "b"], [1.0, 2.0], ax=ax).plot()
         assert out_ax is ax, "the construction-time axes should be reused"
+
+    def test_plot_label_override_does_not_leak_into_later_plot(self):
+        """A one-off plot-time xlabel reverts to the construction label next call."""
+        glyph = BarGlyph(["a", "b"], [1.0, 2.0], xlabel="CX")
+        _, ax1 = plt.subplots()
+        glyph.plot(ax=ax1)
+        assert ax1.get_xlabel() == "CX", "construction label on the first plot"
+        _, ax2 = plt.subplots()
+        glyph.plot(ax=ax2, xlabel="PX")
+        assert ax2.get_xlabel() == "PX", "override applies for its own call"
+        _, ax3 = plt.subplots()
+        glyph.plot(ax=ax3)
+        assert ax3.get_xlabel() == "CX", "override must not persist into a later plain plot"

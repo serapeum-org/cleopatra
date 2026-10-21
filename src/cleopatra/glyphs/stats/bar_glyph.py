@@ -159,16 +159,19 @@ class BarGlyph(Glyph):
         ax = self.ax
         opts = self.default_options
 
-        explicit = set(getattr(self, "_explicit_options", set()))
         if title is not None:
             opts["title"] = title
+        call_keys = set()
         if xlabel is not None:
             opts["xlabel"] = xlabel
-            explicit.add("xlabel")
+            call_keys.add("xlabel")
         if ylabel is not None:
             opts["ylabel"] = ylabel
-            explicit.add("ylabel")
-        self._render_explicit_options = explicit
+            call_keys.add("ylabel")
+        # Restore the construction-time axis labels the call did not override and
+        # set `_render_explicit_options` (construction keys + this call's), so a
+        # one-off `plot(xlabel=...)` does not leak into a later plain `plot()`.
+        self._restore_construction_axis_style(call_keys)
 
         chosen = colors if colors is not None else self._colors
         palette_colors = resolve_category_colors(
