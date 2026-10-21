@@ -1690,10 +1690,10 @@ def swatch_legend(
         try:
             fig.canvas.draw()
             bb = swatch.get_tightbbox(cast(Any, fig.canvas).get_renderer())
-            assert bb is not None
-            inv = ax.transAxes.inverted()
-            x0, y0 = inv.transform((bb.x0, bb.y0))
-            x1, y1 = inv.transform((bb.x1, bb.y1))
+            if bb is not None:
+                inv = ax.transAxes.inverted()
+                x0, y0 = inv.transform((bb.x0, bb.y0))
+                x1, y1 = inv.transform((bb.x1, bb.y1))
         except Exception:  # pragma: no cover - renderer unavailable on some backends
             x0, y0, x1, y1 = bx0, by0 - 0.06, bx0 + bw, by0 + bh
         pad = 0.012

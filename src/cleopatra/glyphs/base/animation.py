@@ -21,7 +21,7 @@ import shutil
 import tempfile
 import warnings
 from collections.abc import Generator, Iterable, Iterator
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any
 
 import matplotlib as mpl
 import numpy as np
@@ -51,7 +51,7 @@ __all__ = [
 SUPPORTED_VIDEO_FORMAT = ["gif", "mov", "avi", "mp4", "webp"]
 
 #: The matplotlib rcParam naming the ffmpeg binary to shell out to.
-_FFMPEG_PATH_RCPARAM: Literal["animation.ffmpeg_path"] = "animation.ffmpeg_path"
+_FFMPEG_PATH_RCPARAM = "animation.ffmpeg_path"
 
 #: Formats written by Pillow rather than FFmpeg.
 _PILLOW_FORMATS = {"gif", "webp"}
@@ -414,7 +414,7 @@ def _ensure_ffmpeg_available() -> None:
         FileNotFoundError: If neither a system ffmpeg nor `imageio-ffmpeg`'s
             bundled binary can be located.
     """
-    configured = mpl.rcParams["animation.ffmpeg_path"]
+    configured = mpl.rcParams[_FFMPEG_PATH_RCPARAM]
     if os.path.isfile(configured) or shutil.which(configured):
         return
     try:
@@ -433,7 +433,7 @@ def _ensure_ffmpeg_available() -> None:
             RuntimeWarning,
             stacklevel=3,
         )
-    mpl.rcParams["animation.ffmpeg_path"] = bundled
+    mpl.rcParams[_FFMPEG_PATH_RCPARAM] = bundled
 
 
 class _OptimizedPillowWriter(PillowWriter):
@@ -1201,7 +1201,7 @@ def _read_video_frames(src: str, **kwargs) -> tuple[dict, Generator[bytes, None,
         ) from e
     _ensure_ffmpeg_available()
     previous = os.environ.get("IMAGEIO_FFMPEG_EXE")
-    os.environ["IMAGEIO_FFMPEG_EXE"] = mpl.rcParams["animation.ffmpeg_path"]
+    os.environ["IMAGEIO_FFMPEG_EXE"] = mpl.rcParams[_FFMPEG_PATH_RCPARAM]
     try:
         reader = imageio_ffmpeg.read_frames(src, **kwargs)
         metadata = next(reader)  # starts the child while the variable is set
