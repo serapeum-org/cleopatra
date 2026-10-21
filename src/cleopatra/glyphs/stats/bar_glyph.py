@@ -207,4 +207,5 @@ class BarGlyph(Glyph):
         if draw_legend:
             disjoint_legend(ax, palette_colors, self.categories)
 
+        assert self.fig is not None
         return self.fig, ax, self.bars

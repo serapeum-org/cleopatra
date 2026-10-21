@@ -24,6 +24,7 @@ import numpy as np
 from matplotlib.animation import FuncAnimation
 from matplotlib.axes import Axes
 from matplotlib.colorbar import Colorbar
+from matplotlib.colors import Colormap
 from matplotlib.figure import Figure, SubFigure
 from matplotlib.font_manager import FontProperties
 from matplotlib.legend import Legend
@@ -127,7 +128,7 @@ def _group_option_items(group: Any) -> dict:
             f"{group!r}. These parameters take a typed style object, not the "
             f"loose value the option they replaced accepted."
         )
-    return group.to_options()
+    return cast(dict[Any, Any], group.to_options())
 
 
 def _reject_grouped_kwargs(keys: Any) -> None:
@@ -389,7 +390,7 @@ def _apply_axis_options(
     if wanted("ytick_font_size"):
         ax.tick_params(axis="y", labelsize=options["ytick_font_size"])
     if grid_axis is not None and wanted("grid_alpha"):
-        ax.grid(axis=grid_axis, alpha=options["grid_alpha"])
+        ax.grid(axis=cast(Any, grid_axis), alpha=options["grid_alpha"])
 
 
 #: The options `_apply_axis_options` applies. Named here so a glyph that resets
@@ -513,7 +514,7 @@ def _multiline_title_pad(ax: Axes, title: Any, fontsize: Any) -> float | None:
     spacing = getattr(ax.title, "get_linespacing", lambda: None)()
     linespacing = spacing if isinstance(spacing, Real) else _TITLE_LINESPACING
     pad = plt.rcParams["axes.titlepad"]
-    return pad + extra_lines * _title_points(fontsize) * linespacing
+    return cast(float, pad + extra_lines * _title_points(fontsize) * linespacing)
 
 
 #: Hands out render-ownership tokens. A counter rather than `id()` because ids
@@ -566,7 +567,7 @@ def _render_owner_token(owner: Any) -> int:
         return 0
     # The finalizer registers itself in weakref's own table, which keeps it alive
     # until it fires; there is nothing worth doing at interpreter shutdown.
-    finalizer.atexit = False
+    cast(Any, finalizer).atexit = False
     token = next(_render_owner_counter) + 1
     _render_owner_tokens[key] = token
     return token
@@ -782,7 +783,7 @@ def _restore_flat_axes(
             `"auto"` for the array raster path).
     """
     ax.set_axis_on()
-    ax.set_aspect(aspect)
+    ax.set_aspect(cast(Any, aspect))
     lo_x, hi_x = sorted((x_min, x_max))
     lo_y, hi_y = sorted((y_min, y_max))
     px = 0.05 * ((hi_x - lo_x) or 1.0)
@@ -1788,7 +1789,10 @@ class Glyph(WatermarkMixin):
             else:
                 ticks = self.get_ticks()
                 norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
-                result = (norm, cbar_kw, ticks)
+                result = cast(
+                    tuple[colors.Normalize | None, dict[Any, Any], np.ndarray],
+                    (norm, cbar_kw, ticks),
+                )
         return result
 
     def _warn_scheme_overrides_continuous_options(self) -> None:
@@ -1952,10 +1956,11 @@ class Glyph(WatermarkMixin):
                 "labels)."
             )
         self._warn_scheme_overrides_continuous_options()
-        cmap = resolve_colormap(self.default_options["cmap"])
+        cmap: str | Colormap | None = resolve_colormap(self.default_options["cmap"])
         cmap_name = cmap if isinstance(cmap, str) else getattr(cmap, "name", None)
         if cmap_name == STYLE_DEFAULTS["cmap"]:
             cmap = CATEGORICAL_DEFAULT_CMAP
+        assert cmap is not None
         raw = np.asarray(values, dtype=object).ravel().tolist()
         categories, palette = categorize(raw, cmap=cmap)
         lookup = {category: i for i, category in enumerate(categories.tolist())}
@@ -2344,7 +2349,7 @@ class Glyph(WatermarkMixin):
         merged_kw = {"orientation": orientation, "ticklocation": label_side}
         merged_kw.update(cbar_kw)
         merged_kw.update(user_kwargs)
-        cbar = fig.colorbar(im, cax=cax, **merged_kw)
+        cbar = cast(Any, fig).colorbar(im, cax=cax, **merged_kw)
         return cbar, (cax, bounds, label_side)
 
     def _draw_cbar_box(self, ax: Axes, box_info: tuple, box: bool | str | dict) -> None:
@@ -2374,7 +2379,7 @@ class Glyph(WatermarkMixin):
         fig = ax.figure
         try:
             fig.canvas.draw()
-            bb = cax.get_tightbbox(fig.canvas.get_renderer())
+            bb = cax.get_tightbbox(cast(Any, fig.canvas).get_renderer())
             inv = ax.transAxes.inverted()
             x0, y0 = inv.transform((bb.x0, bb.y0))
             x1, y1 = inv.transform((bb.x1, bb.y1))

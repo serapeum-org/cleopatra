@@ -380,7 +380,9 @@ class ColorScaling:
 
                 ```
         """
-        return cls(kind=ColorScale.SYM_LOGNORM, line_threshold=threshold, line_scale=scale)
+        return cls(
+            kind=ColorScale.SYM_LOGNORM, line_threshold=threshold, line_scale=scale
+        )
 
     @classmethod
     def log(cls) -> ColorScaling:
@@ -530,7 +532,9 @@ class ColorScaling:
         return cls(
             kind=kind,
             gamma=options.get("gamma", _SCALE_DEFAULTS["gamma"]),
-            line_threshold=options.get("line_threshold", _SCALE_DEFAULTS["line_threshold"]),
+            line_threshold=options.get(
+                "line_threshold", _SCALE_DEFAULTS["line_threshold"]
+            ),
             line_scale=options.get("line_scale", _SCALE_DEFAULTS["line_scale"]),
             bounds=options.get("bounds", _SCALE_DEFAULTS["bounds"]),
             center=options.get("midpoint", _SCALE_DEFAULTS["midpoint"]),
@@ -724,6 +728,7 @@ class ColorScaling:
         self, ticks: np.ndarray, bounds_from_levels: np.ndarray | None
     ) -> tuple[colors.Normalize, dict[str, Any]]:
         """Explicit-bounds norm: own `bounds` win, then `levels`, then the ticks."""
+        bounds: np.ndarray | list[float]
         if self.bounds:
             bounds = self.bounds
         elif bounds_from_levels is not None:

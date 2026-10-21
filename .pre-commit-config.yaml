@@ -111,11 +111,12 @@ repos:
     rev: v8.30.0
     hooks:
       # The repo's single secret scanner (replaced detect-secrets + trufflehog).
-      # This hook scans staged changes at commit time using ci/gitleaks.toml's
-      # allowlist (planning/ notes, uv.lock hashes).
+      # This hook scans staged changes at commit time using .github/gitleaks.toml's
+      # allowlist (planning/ notes, uv.lock hashes). The same config file is also
+      # read by the CI job in .github/workflows/lint.yml for whole-tree scans.
       - id: gitleaks
         name: "[cred -  check] gitleaks"
-        args: ["--config", "ci/gitleaks.toml"]
+        args: ["--config", ".github/gitleaks.toml"]
 
   - repo: https://github.com/bridgecrewio/checkov
     rev: 3.3.8

@@ -1,0 +1,49 @@
+name: pip-audit
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  pip-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        # serapeum-org/github-actions is a monorepo: one commit carries the release tag for
+        # every action in it, so 38c11108 is the dereferenced commit for mkdocs/v1.3.1,
+        # github-release/v1.5.0, pypi-release/v1.0.3 and uv/v1.2.1 alike. Three different
+        # actions pinned to one SHA reads like a copy-paste error and is not; verify with
+        #   git ls-remote --tags https://github.com/serapeum-org/github-actions
+        uses: serapeum-org/github-actions/actions/python-setup/uv@38c111084f99d5ff5f4a1e63bedce48fe33a10c0  # uv/v1.2.1
+        with:
+          version: '0.12.1'
+          # Python 3.11 is the floor of `requires-python`, so it resolves the
+          # oldest dependency set the project supports — the one most likely to
+          # carry a known advisory.
+          python-version: "3.11"
+          install-groups: "groups: dev"
+          verify-lock: true
+
+      # `--exclude-editable` drops this package itself (it has no release to
+      # audit); the grep keeps only `name==version` lines, since pip-audit
+      # rejects a requirements file holding direct URLs or local paths.
+      - name: Audit dependencies with pip-audit
+        run: |
+          uv run --active --frozen --no-build --no-sync --extra tiles --extra science-colors python -m pip freeze --exclude-editable \
+            | grep -E '^[A-Za-z0-9_.-]+==' > "${RUNNER_TEMP}/pip-audit-reqs.txt"
+          echo "Auditing $(wc -l < "${RUNNER_TEMP}/pip-audit-reqs.txt") pinned packages against the advisory DB"
+          pipx run pip-audit --requirement "${RUNNER_TEMP}/pip-audit-reqs.txt" --desc

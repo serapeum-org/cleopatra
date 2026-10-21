@@ -22,12 +22,14 @@ Example:
     >>> get_palette("demo").to_colormap().name
     'demo'
 """
+
 from __future__ import annotations
 
 import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -389,25 +391,56 @@ def preview_palettes(
         if row_type == "header":
             for spine in ax.spines.values():
                 spine.set_visible(False)
-            ax.text(0.0, 0.5, payload, fontsize=12, fontweight="bold",
-                    va="center", ha="left", transform=ax.transAxes)
+            ax.text(
+                0.0,
+                0.5,
+                payload,
+                fontsize=12,
+                fontweight="bold",
+                va="center",
+                ha="left",
+                transform=ax.transAxes,
+            )
             continue
-        ax.imshow(grad, aspect="auto", cmap=payload.to_colormap(n), extent=(0, 1, 0, 1))
+        _pal = cast("Palette", payload)
+        ax.imshow(grad, aspect="auto", cmap=_pal.to_colormap(n), extent=(0, 1, 0, 1))
         for spine in ax.spines.values():
             spine.set_edgecolor("0.6")
             spine.set_linewidth(0.5)
-        ax.text(-0.02, 0.5, payload.name, fontsize=9, family="monospace",
-                va="center", ha="right", transform=ax.transAxes)
-        ax.text(1.008, 0.5, payload.source, fontsize=6.5, color="0.45",
-                va="center", ha="left", transform=ax.transAxes)
+        ax.text(
+            -0.02,
+            0.5,
+            _pal.name,
+            fontsize=9,
+            family="monospace",
+            va="center",
+            ha="right",
+            transform=ax.transAxes,
+        )
+        ax.text(
+            1.008,
+            0.5,
+            _pal.source,
+            fontsize=6.5,
+            color="0.45",
+            va="center",
+            ha="left",
+            transform=ax.transAxes,
+        )
     return fig
-
 
 
 #: Sequential "haze" ramps (white at 0.0, saturating toward the named hue) -- the
 #: value-modulated-alpha glow of CAMS aerosol animations.
 _HAZE_ANCHORS: dict[str, list[str]] = {
-    "organic_matter": ["#ffffff", "#ffd9f2", "#ff5fc9", "#c400a0", "#5c0050", "#200018"],
+    "organic_matter": [
+        "#ffffff",
+        "#ffd9f2",
+        "#ff5fc9",
+        "#c400a0",
+        "#5c0050",
+        "#200018",
+    ],
     "dust": ["#ffffff", "#fff2b3", "#ffcc33", "#ff6a00", "#7a1500", "#2a0800"],
 }
 
@@ -419,27 +452,72 @@ _HAZE_ANCHORS: dict[str, list[str]] = {
 _CAMS_AOD_ANCHORS: dict[str, list[str]] = {
     # Magics `sh_BuYlRd_aod` -- the canonical CAMS AOD scale.
     "blue_yellow_red": [
-        "#d3d7eb", "#a8afd7", "#8892bf", "#a3a891", "#bebd65", "#d8d239",
-        "#f3e70b", "#f4c60a", "#f6a508", "#f88406", "#f96205", "#fb4103",
-        "#fd2001", "#ff0000",
+        "#d3d7eb",
+        "#a8afd7",
+        "#8892bf",
+        "#a3a891",
+        "#bebd65",
+        "#d8d239",
+        "#f3e70b",
+        "#f4c60a",
+        "#f6a508",
+        "#f88406",
+        "#f96205",
+        "#fb4103",
+        "#fd2001",
+        "#ff0000",
     ],
     # Magics `sh_BuYlRdBr_aod` -- like blue_yellow_red but fading to dark maroon.
     "blue_yellow_red_brown": [
-        "#d2d2ff", "#a1a1ff", "#7070ff", "#8787c7", "#b8b876", "#e9e926",
-        "#ffda00", "#ff8a00", "#ff3900", "#f40000", "#c40000", "#930000",
+        "#d2d2ff",
+        "#a1a1ff",
+        "#7070ff",
+        "#8787c7",
+        "#b8b876",
+        "#e9e926",
+        "#ffda00",
+        "#ff8a00",
+        "#ff3900",
+        "#f40000",
+        "#c40000",
+        "#930000",
         "#640000",
     ],
     # Magics `sh_all_aod` / `sh_all_aod550` -- blue->cyan->green->yellow->red.
     "blue_red": [
-        "#0000f1", "#004cff", "#00b1ff", "#29ffce", "#7dff7a", "#ceff29",
-        "#ffc400", "#ff6800", "#f10800", "#800000",
+        "#0000f1",
+        "#004cff",
+        "#00b1ff",
+        "#29ffce",
+        "#7dff7a",
+        "#ceff29",
+        "#ffc400",
+        "#ff6800",
+        "#f10800",
+        "#800000",
     ],
     # Magics `sh_Oranges_aod` -- white->dark-orange.
     "oranges": [
-        "#ffefe0", "#fee9d4", "#fee2c6", "#fdd9b4", "#fdd0a2", "#fdc38d",
-        "#fdb576", "#fda762", "#fd9a4e", "#fd8c3b", "#f87f2c", "#f3701b",
-        "#ec620f", "#e25508", "#d84801", "#c54102", "#b03903", "#9e3303",
-        "#8e2d04", "#7f2704",
+        "#ffefe0",
+        "#fee9d4",
+        "#fee2c6",
+        "#fdd9b4",
+        "#fdd0a2",
+        "#fdc38d",
+        "#fdb576",
+        "#fda762",
+        "#fd9a4e",
+        "#fd8c3b",
+        "#f87f2c",
+        "#f3701b",
+        "#ec620f",
+        "#e25508",
+        "#d84801",
+        "#c54102",
+        "#b03903",
+        "#9e3303",
+        "#8e2d04",
+        "#7f2704",
     ],
 }
 
@@ -447,8 +525,25 @@ _CAMS_AOD_ANCHORS: dict[str, list[str]] = {
 #: glowing plume -- the aerosol technique recoloured for heat.
 _FLAME_ANCHORS: dict[str, list[str]] = {
     # A stand-alone copy of matplotlib's `afmhot` (black->red->yellow->white).
-    "white_hot": ["#000000", "#4d0000", "#990000", "#e02a00", "#ff7a00", "#ffbf1a", "#fff29a", "#ffffff"],
-    "amber": ["#240000", "#7a0000", "#c81800", "#ff5a00", "#ff9a00", "#ffd21e", "#fff2a8"],
+    "white_hot": [
+        "#000000",
+        "#4d0000",
+        "#990000",
+        "#e02a00",
+        "#ff7a00",
+        "#ffbf1a",
+        "#fff29a",
+        "#ffffff",
+    ],
+    "amber": [
+        "#240000",
+        "#7a0000",
+        "#c81800",
+        "#ff5a00",
+        "#ff9a00",
+        "#ffd21e",
+        "#fff2a8",
+    ],
 }
 
 for _prefix, _anchor_map, _src in [
@@ -457,7 +552,14 @@ for _prefix, _anchor_map, _src in [
     ("flame", _FLAME_ANCHORS, "cleopatra"),
 ]:
     for _key, _anchors in _anchor_map.items():
-        register(Palette(f"{_prefix}_{_key}", PaletteKind.SEQUENTIAL, _anchors, source=_src))
+        register(
+            Palette(
+                f"{_prefix}_{_key}",
+                PaletteKind.SEQUENTIAL,
+                tuple(_anchors),
+                source=_src,
+            )
+        )
 del _prefix, _anchor_map, _src, _key, _anchors
 
 #: Backward-compatible `name -> Colormap` dicts, perceptually interpolated. New
@@ -474,7 +576,6 @@ FLAME_COLORMAPS: dict[str, Colormap] = {
 }
 
 
-
 for _name, _low, _high in [
     ("diverging_blue_red", "#2166ac", "#b2182b"),
     ("diverging_purple_green", "#762a83", "#1b7837"),
@@ -488,8 +589,18 @@ register(
         "category12",
         PaletteKind.QUALITATIVE,
         (
-            "#520af5", "#0ae30a", "#f50a0a", "#2e9bbf", "#f564bf", "#89760a",
-            "#0ae3ad", "#5276f5", "#894040", "#0a6440", "#f50af5", "#e3bff5",
+            "#520af5",
+            "#0ae30a",
+            "#f50a0a",
+            "#2e9bbf",
+            "#f564bf",
+            "#89760a",
+            "#0ae3ad",
+            "#5276f5",
+            "#894040",
+            "#0a6440",
+            "#f50af5",
+            "#e3bff5",
         ),
     )
 )
@@ -498,10 +609,26 @@ register(
         "category20",
         PaletteKind.QUALITATIVE,
         (
-            "#520af5", "#0ae30a", "#f50a0a", "#2e9bbf", "#f564bf", "#89760a",
-            "#0ae3ad", "#5276f5", "#894040", "#0a6440", "#f50af5", "#e3bff5",
-            "#f5890a", "#f5bf9b", "#add11c", "#645289", "#0a890a", "#f54064",
-            "#891cad", "#add189",
+            "#520af5",
+            "#0ae30a",
+            "#f50a0a",
+            "#2e9bbf",
+            "#f564bf",
+            "#89760a",
+            "#0ae3ad",
+            "#5276f5",
+            "#894040",
+            "#0a6440",
+            "#f50af5",
+            "#e3bff5",
+            "#f5890a",
+            "#f5bf9b",
+            "#add11c",
+            "#645289",
+            "#0a890a",
+            "#f54064",
+            "#891cad",
+            "#add189",
         ),
     )
 )

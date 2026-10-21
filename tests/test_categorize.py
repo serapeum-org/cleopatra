@@ -28,16 +28,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
 from cleopatra.glyphs.base.glyph import CATEGORICAL_DEFAULT_CMAP, Glyph
+from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
+from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
 from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
-from cleopatra.styling.scaling import ColorScaling
 from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
+from cleopatra.styling.params import Classify, Contour
+from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import categorize
-from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
-from cleopatra.styling.params import Contour
-from cleopatra.styling.params import Classify
 
 
 @pytest.fixture(autouse=True)
@@ -188,7 +187,9 @@ class TestCategorize:
             spurious NaT class alongside its real timestamps.
         """
         real = [np.datetime64("2020-01-01"), np.datetime64("2021-01-01")]
-        categories, _ = categorize(np.array(real + [np.datetime64("NaT")], dtype=object))
+        categories, _ = categorize(
+            np.array(real + [np.datetime64("NaT")], dtype=object)
+        )
         assert len(categories) == 2, f"numpy NaT leaked into categories: {categories}"
 
     def test_datetime_nat_dropped_via_isnat_without_pandas(self, monkeypatch):
@@ -217,7 +218,9 @@ class TestCategorize:
         monkeypatch.setattr(np, "isnan", isnan_no_datetime)
         monkeypatch.setattr(builtins, "__import__", blocked_import)
         real = [np.datetime64("2020-01-01"), np.datetime64("2021-01-01")]
-        categories, _ = categorize(np.array(real + [np.datetime64("NaT")], dtype=object))
+        categories, _ = categorize(
+            np.array(real + [np.datetime64("NaT")], dtype=object)
+        )
         assert len(categories) == 2, f"NaT leaked via isnat fallback: {categories}"
 
     def test_pandas_nullable_dtype_missing_dropped(self):
@@ -232,10 +235,14 @@ class TestCategorize:
         """
         pd = pytest.importorskip("pandas")
         int_cats, _ = categorize(pd.array([1, 2, pd.NA, 1], dtype="Int64"))
-        assert list(int_cats) == [1, 2], f"Int64 pd.NA leaked into categories: {int_cats}"
+        assert list(int_cats) == [1, 2], (
+            f"Int64 pd.NA leaked into categories: {int_cats}"
+        )
 
         str_cats, _ = categorize(pd.Series(["a", "b", None, "a"], dtype="string"))
-        assert list(str_cats) == ["a", "b"], f"string-dtype null leaked into categories: {str_cats}"
+        assert list(str_cats) == ["a", "b"], (
+            f"string-dtype null leaked into categories: {str_cats}"
+        )
 
     def test_arraylike_object_element_does_not_crash(self):
         """An array-like object element is carried through, not crashed on.
@@ -518,7 +525,9 @@ class TestGlyphPrepareCategoricalMapping:
             Categorical colouring owns the norm, so a conflicting
             `color_scale` is ignored -- and a warning says so.
         """
-        glyph = ScatterGlyph(np.arange(4.0), np.zeros(4), values=np.array(["a", "b", "a", "b"]))
+        glyph = ScatterGlyph(
+            np.arange(4.0), np.zeros(4), values=np.array(["a", "b", "a", "b"])
+        )
         classify = Classify(scheme="categorical")
         color = ColorScaling.midpoint()
         with pytest.warns(UserWarning, match="color_scale"):
@@ -531,7 +540,9 @@ class TestGlyphPrepareCategoricalMapping:
             The categorical mapping determines the classes, so `levels` is
             ignored -- and a warning says so.
         """
-        glyph = ScatterGlyph(np.arange(4.0), np.zeros(4), values=np.array(["a", "b", "a", "b"]))
+        glyph = ScatterGlyph(
+            np.arange(4.0), np.zeros(4), values=np.array(["a", "b", "a", "b"])
+        )
         classify = Classify(scheme="categorical")
         contour = Contour(levels=3)
         with pytest.warns(UserWarning, match="levels"):
@@ -593,7 +604,12 @@ class TestPolygonGlyphCategorical:
         """
         polys, labels = polys_land_use
         glyph = PolygonGlyph(polys, values=labels)
-        glyph.plot(classify=Classify(scheme="categorical", category_legend_kwargs={"title": "Land use", "loc": "lower left"}))
+        glyph.plot(
+            classify=Classify(
+                scheme="categorical",
+                category_legend_kwargs={"title": "Land use", "loc": "lower left"},
+            )
+        )
         assert glyph.category_legend.get_title().get_text() == "Land use"
 
     def test_add_colorbar_false_suppresses_legend(self, polys_land_use):

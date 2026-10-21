@@ -55,7 +55,9 @@ class TestResolveColormap:
             and comes back as the built-in ``viridis`` colormap.
         """
         result = resolve_colormap("viridis")
-        assert isinstance(result, Colormap), f"expected a Colormap, got {type(result)!r}"
+        assert isinstance(result, Colormap), (
+            f"expected a Colormap, got {type(result)!r}"
+        )
         assert result.name == "viridis", f"expected name 'viridis', got {result.name!r}"
 
     def test_plain_reversed_name_resolves(self):
@@ -76,12 +78,17 @@ class TestResolveColormap:
             resolving a plain name must still succeed, proving the colon dispatch
             keeps plain names entirely off the optional-package path.
         """
+
         def _boom(action):
-            raise AssertionError(f"_require_cmap should not be called for a plain name; got {action!r}")
+            raise AssertionError(
+                f"_require_cmap should not be called for a plain name; got {action!r}"
+            )
 
         monkeypatch.setattr("cleopatra.styling.colors._require_cmap", _boom)
         result = resolve_colormap("coolwarm_r")
-        assert result.name == "coolwarm_r", f"expected 'coolwarm_r', got {result.name!r}"
+        assert result.name == "coolwarm_r", (
+            f"expected 'coolwarm_r', got {result.name!r}"
+        )
 
     def test_colormap_object_returned_unchanged(self):
         """A ``Colormap`` instance is returned unchanged (idempotent).
@@ -92,7 +99,9 @@ class TestResolveColormap:
             be colormaps (as ``DATA_STYLES`` stores).
         """
         cmap = mpl.colormaps["plasma"]
-        assert resolve_colormap(cmap) is cmap, "a Colormap object must be returned unchanged"
+        assert resolve_colormap(cmap) is cmap, (
+            "a Colormap object must be returned unchanged"
+        )
 
     def test_namespaced_resolves_to_matplotlib_colormap(self):
         """A namespaced name resolves through the ``cmap`` package.
@@ -103,7 +112,9 @@ class TestResolveColormap:
         """
         pytest.importorskip("cmap", reason="requires the [science-colors] extra")
         result = resolve_colormap("cmocean:thermal")
-        assert isinstance(result, Colormap), f"expected a Colormap, got {type(result)!r}"
+        assert isinstance(result, Colormap), (
+            f"expected a Colormap, got {type(result)!r}"
+        )
 
     def test_namespaced_reversed_suffix_resolves(self):
         """The ``_r`` suffix works on a namespaced name.
@@ -115,8 +126,12 @@ class TestResolveColormap:
         pytest.importorskip("cmap", reason="requires the [science-colors] extra")
         forward = resolve_colormap("cmocean:thermal")
         reverse = resolve_colormap("cmocean:thermal_r")
-        assert isinstance(reverse, Colormap), f"expected a Colormap, got {type(reverse)!r}"
-        assert forward(0.0) != reverse(0.0), "reversed colormap should differ at the low end"
+        assert isinstance(reverse, Colormap), (
+            f"expected a Colormap, got {type(reverse)!r}"
+        )
+        assert forward(0.0) != reverse(0.0), (
+            "reversed colormap should differ at the low end"
+        )
 
     def test_unknown_namespaced_name_raises_valueerror(self):
         """An unknown namespaced name raises ``ValueError`` naming the kwarg.
@@ -128,7 +143,9 @@ class TestResolveColormap:
         pytest.importorskip("cmap", reason="requires the [science-colors] extra")
         with pytest.raises(ValueError, match=r"cmap=") as exc_info:
             resolve_colormap("cmocean:not_a_real_colormap")
-        assert "not_a_real_colormap" in str(exc_info.value), f"message should echo the bad name: {exc_info.value}"
+        assert "not_a_real_colormap" in str(exc_info.value), (
+            f"message should echo the bad name: {exc_info.value}"
+        )
 
     def test_unknown_namespaced_name_uses_param_in_message(self):
         """The ``param`` argument is woven into the error message.
@@ -140,7 +157,9 @@ class TestResolveColormap:
         pytest.importorskip("cmap", reason="requires the [science-colors] extra")
         with pytest.raises(ValueError, match=r"face_cmap=") as exc_info:
             resolve_colormap("cmocean:nope", param="face_cmap")
-        assert "face_cmap" in str(exc_info.value), f"custom param name missing from message: {exc_info.value}"
+        assert "face_cmap" in str(exc_info.value), (
+            f"custom param name missing from message: {exc_info.value}"
+        )
 
     def test_namespaced_without_extra_raises_importerror(self, without_cmap):
         """A namespaced name without the extra raises an actionable ImportError.
@@ -154,7 +173,9 @@ class TestResolveColormap:
         """
         with pytest.raises(ImportError, match=r"\[science-colors\]") as exc_info:
             resolve_colormap("cmocean:thermal")
-        assert "cmocean:thermal" in str(exc_info.value), f"message should name the colormap: {exc_info.value}"
+        assert "cmocean:thermal" in str(exc_info.value), (
+            f"message should name the colormap: {exc_info.value}"
+        )
 
     def test_plain_name_works_without_extra(self, without_cmap):
         """Plain names resolve even when the extra is absent.
@@ -180,7 +201,9 @@ class TestRequireCmap:
             returns ``None`` without raising.
         """
         monkeypatch.setattr(importlib.util, "find_spec", lambda name, *a, **k: object())
-        assert _require_cmap("an action") is None, "_require_cmap must not raise when cmap is present"
+        assert _require_cmap("an action") is None, (
+            "_require_cmap must not raise when cmap is present"
+        )
 
     def test_raises_actionable_importerror_when_absent(self, without_cmap):
         """The guard raises an actionable ``ImportError`` when ``cmap`` is absent.
@@ -196,8 +219,12 @@ class TestRequireCmap:
             _require_cmap("A namespaced colormap (cmap='cmocean:thermal')")
         message = str(exc_info.value)
         assert "cmap" in message, f"message should name the cmap package: {message}"
-        assert "[science-colors]" in message, f"message should name the extra: {message}"
-        assert "cmocean:thermal" in message, f"message should echo the action context: {message}"
+        assert "[science-colors]" in message, (
+            f"message should name the extra: {message}"
+        )
+        assert "cmocean:thermal" in message, (
+            f"message should echo the action context: {message}"
+        )
 
 
 class TestCategoricalDefaultInvariant:

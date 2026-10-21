@@ -29,7 +29,7 @@ dependencies = [
     # which Contour(hatch_color=...) relies on to recolour hatch strokes
     # independently of the global hatch.color rcParam.
     "matplotlib>=3.11",
-    "pillow>=12.1.1",
+    "pillow>=13.0.0",  # floor bumped from 12.1.1 for CVE-2025-27607
     # 0.6.0 is the floor the suite actually exercises. gif_from_video reads
     # frames back through read_frames with output_params and relies on the
     # reported size being post-filter, none of which the previous 0.4.9 floor
@@ -54,10 +54,15 @@ dev = [
     "pytest>=8.2.2",
     "pytest-cov>=5.0.0",
     "pytest-env>=1.6.0",
+    "pytest-mock>=3.12.0",
     "pre-commit>=3.7.1",
     "pre-commit-hooks>=4.6.0",
     "nbval>=0.11.0",
     "mypy>=1.10.0",
+    "coverage",
+    "build>=1.0.0",
+    "twine>=5.0.0",
+    "pip",
 ]
 
 docs = [

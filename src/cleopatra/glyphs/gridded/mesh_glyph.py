@@ -29,7 +29,7 @@ Examples:
 from __future__ import annotations
 
 import warnings
-from typing import Any
+from typing import Any, cast
 
 import matplotlib.collections as mcoll
 import matplotlib.pyplot as plt
@@ -673,7 +673,11 @@ class MeshGlyph(GeoMixin, Glyph):
             return
         before = set(map(id, self.ax.patches)) | set(map(id, self.ax.lines))
         self._cached_triangulation = apply_projection_style_mesh(
-            self.ax, self._node_x, self._node_y, self._fan_triangles(), style=projection
+            self.ax,
+            self._node_x,
+            self._node_y,
+            self._fan_triangles(),
+            style=cast(Any, projection),
         )
         _stash_projection_frame(
             self.ax,

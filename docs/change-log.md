@@ -28,25 +28,25 @@ layers rejected, unknown layer, unknown resolution).
 
 
 - fix(array): place cell-value labels in the drawn coordinate system (#381)
-- ArrayGlyph._plot_text positioned each cell-value label at the raw                                                 
-  (col, row) array index and ignored the glyph's coordinate system, so                                              
-  whenever the data was drawn in a real coordinate system the labels fell                                           
-  outside the frame (invisible, and savefig(bbox_inches="tight") expanded                                           
-  the saved canvas).                                                                                                
-                                                                                                                    
-  - imshow + extent: map each (row, col) to its cell centre (origin upper)                                          
-  - pcolormesh + coords: centre at (x[col], y[row]); each axis is resolved                                          
-    independently, so 1-D, 2-D curvilinear and mixed-rank coord pairs work                                          
-  - pcolormesh without coords, no extent, or under a projection: keep raw                                           
-    index space (a projected render draws at reprojected coords, so the                                             
-    existing "omit labels under a projection" warning stays accurate)                                               
-  - route the extent/coords through both the plot and animate call sites;                                           
-    the RGB + cell-value path no longer raises                                                                      
-                                                                                                                    
-  Covered by new tests: exact cell centres (extent and 1-D/2-D coords),                                             
-  non-square, 1x1, descending and mixed-rank coords, pcolormesh index                                               
-  space, projection raw indices, and the RGB render.                                                                
-                                                                                                                    
+- ArrayGlyph._plot_text positioned each cell-value label at the raw  
+  (col, row) array index and ignored the glyph's coordinate system, so  
+  whenever the data was drawn in a real coordinate system the labels fell  
+  outside the frame (invisible, and savefig(bbox_inches="tight") expanded  
+  the saved canvas).  
+
+  - imshow + extent: map each (row, col) to its cell centre (origin upper)  
+  - pcolormesh + coords: centre at (x[col], y[row]); each axis is resolved  
+    independently, so 1-D, 2-D curvilinear and mixed-rank coord pairs work  
+  - pcolormesh without coords, no extent, or under a projection: keep raw  
+    index space (a projected render draws at reprojected coords, so the  
+    existing "omit labels under a projection" warning stays accurate)  
+  - route the extent/coords through both the plot and animate call sites;  
+    the RGB + cell-value path no longer raises  
+
+  Covered by new tests: exact cell centres (extent and 1-D/2-D coords),  
+  non-square, 1x1, descending and mixed-rank coords, pcolormesh index  
+  space, projection raw indices, and the RGB render.  
+
   Closes #378, #382
 - feat(basemap.solar): add solar_altitude and night_mask (#380)
 - Expose solar altitude as a reusable CRS-free primitive and a boolean night
@@ -218,22 +218,22 @@ ArrayGlyph.animate takes playback=Animation(...) instead of the loose
 interval / frame_label / cell_value_text_colors / data_getter keywords.
 - Closes #351, #352
 - feat(styling): add a hatch encoding to Contour and a hatch legend (#362)
-- Contour gains hatches / fill / hatch_color, applied on the contourf                                               
-  render path. fill=False draws the bands unfilled so only the hatch                                                
-  marks show -- the significance/uncertainty overlay form -- and                                                    
-  hatch_color recolours just the hatch strokes via                                                                  
-  QuadContourSet.set_hatchcolor (matplotlib >= 3.11), leaving band                                                  
-  edges untouched.                                                                                                  
-                                                                                                                    
-  - add hatch_legend(): a Patch-proxy legend keyed by pattern rather                                                
-    than colour, the counterpart to disjoint_legend                                                                 
-  - hatch fields are contourf-only: they warn and are ignored on other                                              
-    kinds and in animate; loose hatches=/fill=/hatch_color= are rejected                                            
-    with a contour=Contour(...) hint                                                                                
-  - warn on degenerate combinations: fill=False or hatch_color with no                                              
-    hatches, and a colorbar explicitly requested on an unfilled overlay                                             
-  - raise the matplotlib floor to >=3.11 (required by set_hatchcolor)                                               
-                                                                                                                    
+- Contour gains hatches / fill / hatch_color, applied on the contourf  
+  render path. fill=False draws the bands unfilled so only the hatch  
+  marks show -- the significance/uncertainty overlay form -- and  
+  hatch_color recolours just the hatch strokes via  
+  QuadContourSet.set_hatchcolor (matplotlib >= 3.11), leaving band  
+  edges untouched.  
+
+  - add hatch_legend(): a Patch-proxy legend keyed by pattern rather  
+    than colour, the counterpart to disjoint_legend  
+  - hatch fields are contourf-only: they warn and are ignored on other  
+    kinds and in animate; loose hatches=/fill=/hatch_color= are rejected  
+    with a contour=Contour(...) hint  
+  - warn on degenerate combinations: fill=False or hatch_color with no  
+    hatches, and a colorbar explicitly requested on an unfilled overlay  
+  - raise the matplotlib floor to >=3.11 (required by set_hatchcolor)  
+
   Closes #354
 - feat(glyphs): add HexbinGlyph for hexagonally-binned point density (#361)
 - Add `cleopatra.glyphs.stats.hexbin_glyph.HexbinGlyph`, the discrete
@@ -290,39 +290,39 @@ URL construction.
 - carry credentials in `extra_params`, which also closes the keyed-provider gap
   that existed for XYZ, and keep them out of the provider's `repr()` and out of
   the tile fetcher's debug log
--  `fetch_single_tile` now logs a redacted URL on a failed attempt, masking                                          
-  credential-shaped query values and userinfo while keeping the OGC and XYZ                                         
-  parameter names that say which tile failed. This changes the DEBUG log line for                                   
-  existing XYZ callers; nothing else in the render path moved.                                                      
-                                                                                                                    
-  No new runtime dependency -- `urllib.parse.urlencode` and `decimal.Decimal` are                                   
-  stdlib -- and importing the module touches neither `xyzservices` nor `pyproj`.                                    
-  Only the GoogleMapsCompatible tile-matrix set is supported, and `world_texture`                                   
-  stays XYZ-only; both limits are stated in the docstrings and on the new                                           
-  `docs/reference/ogc.md` page.                                                                                     
-                                                                                                                    
+-  `fetch_single_tile` now logs a redacted URL on a failed attempt, masking  
+  credential-shaped query values and userinfo while keeping the OGC and XYZ  
+  parameter names that say which tile failed. This changes the DEBUG log line for  
+  existing XYZ callers; nothing else in the render path moved.  
+
+  No new runtime dependency -- `urllib.parse.urlencode` and `decimal.Decimal` are  
+  stdlib -- and importing the module touches neither `xyzservices` nor `pyproj`.  
+  Only the GoogleMapsCompatible tile-matrix set is supported, and `world_texture`  
+  stays XYZ-only; both limits are stated in the docstrings and on the new  
+  `docs/reference/ogc.md` page.  
+
   Closes #355
 - feat(basemap): add day/night terminator and Tissot artists for 2-D axes (#358)
-- Add cleopatra.basemap.solar: a CRS-free, matplotlib-only layer that                                               
-  draws a day/night terminator and a Tissot indicatrix on a plain lon/lat                                           
-  axes, the flat-map counterpart to TexturedGlobeGlyph's 3-D lighting.                                              
-                                                                                                                    
-  - subsolar_point / terminator / night_polygon: NOAA/Meeus solar position,                                         
-    the terminator small circle, and the filled night region as lon/lat                                             
-    rings — split at the antimeridian (or closed along the dark pole) so a                                          
-    flat map is never smeared with a whole-world band                                                               
-  - tissot_circles: geodesic circles of a fixed ground radius, in lon/lat                                           
-  - add_nightshade / add_tissot: draw the geometry as a PolyCollection in                                           
-    data coordinates, preserving axis limits; map via a transform callable                                          
-    or the optional pyproj crs= shortcut (mutually exclusive), dropping                                             
-    non-finite vertices a non-global projection produces                                                            
-  - share the small-circle geometry between terminator and tissot_circles                                           
-  - docs/reference/solar.md with a runnable example and autodoc, wired                                              
-    into the nav and index and cross-linked from the globe glyph page                                               
-  - tests/test_solar.py: 100% line and branch coverage, plus doctests                                               
-                                                                                                                    
-  No new required dependency; pyproj stays behind the [tiles] extra.                                                
-                                                                                                                    
+- Add cleopatra.basemap.solar: a CRS-free, matplotlib-only layer that  
+  draws a day/night terminator and a Tissot indicatrix on a plain lon/lat  
+  axes, the flat-map counterpart to TexturedGlobeGlyph's 3-D lighting.  
+
+  - subsolar_point / terminator / night_polygon: NOAA/Meeus solar position,  
+    the terminator small circle, and the filled night region as lon/lat  
+    rings — split at the antimeridian (or closed along the dark pole) so a  
+    flat map is never smeared with a whole-world band  
+  - tissot_circles: geodesic circles of a fixed ground radius, in lon/lat  
+  - add_nightshade / add_tissot: draw the geometry as a PolyCollection in  
+    data coordinates, preserving axis limits; map via a transform callable  
+    or the optional pyproj crs= shortcut (mutually exclusive), dropping  
+    non-finite vertices a non-global projection produces  
+  - share the small-circle geometry between terminator and tissot_circles  
+  - docs/reference/solar.md with a runnable example and autodoc, wired  
+    into the nav and index and cross-linked from the globe glyph page  
+  - tests/test_solar.py: 100% line and branch coverage, plus doctests  
+
+  No new required dependency; pyproj stays behind the [tiles] extra.  
+
   Closes #356
 - feat(glyphs)!: let ArrayGlyph.facet draw into caller-supplied axes via FacetLayout (#359)
 - Add an `axes=` target on `FacetLayout` so `facet` can render its panels
@@ -346,100 +346,100 @@ colour scale reachable for callers assembling their own layout.
 - BREAKING CHANGE: ArrayGlyph.facet no longer accepts col/row/col_wrap/labels/figure_size/axes/extents as loose keywords; pass a FacetLayout as the first argument, e.g. facet(FacetLayout(col="time", col_wrap=3), color=...).
 Closes #357
 - feat(styling): add an equalising colour scale + caller norm passthrough (#349)
-- Add ColorScaling.equalize(), a continuous rank-equalising scale backed                                            
-  by a matplotlib FuncNorm over the data's empirical CDF, so every                                                  
-  quantile of a skewed field gets an equal share of the colour ramp while                                           
-  the surface stays continuous (unlike the discrete boundary scale).                                                
-  Callers can also pass a pre-built matplotlib norm directly, so any norm                                           
-  is reachable without a dedicated scale variant.                                                                   
-                                                                                                                    
-  - new ColorScale.EQUALIZE and equalize(samples=512) factory; build_norm                                           
-    gains a values= argument (a CDF needs the data itself, not just the                                             
-    tick range), supplied lazily by a _scale_values() hook that ArrayGlyph                                          
-    overrides to expose its finite cells                                                                            
-  - equalize ranks within the resolved display window, so vmin/vmax and                                             
-    robust clip the field before ranking; the bar gets quantile-placed,                                             
-    plainly formatted ticks; and plateau / constant / all-non-finite                                                
-    fields are handled or raise a clear, actionable error                                                           
-  - plot(color=my_norm) and plot(norm=my_norm) accept a matplotlib                                                  
-    Normalize; applying a ColorScaling clears a sticky caller norm, a                                               
-    caller norm's ticks sit in its own space, and passing both a scale and                                          
-    a raw norm in one call warns (the norm wins)                                                                    
-  - honoured by the colormap glyphs (ArrayGlyph, MeshGlyph) that build                                              
-    a norm                                                                                                          
-                                                                                                                    
+- Add ColorScaling.equalize(), a continuous rank-equalising scale backed  
+  by a matplotlib FuncNorm over the data's empirical CDF, so every  
+  quantile of a skewed field gets an equal share of the colour ramp while  
+  the surface stays continuous (unlike the discrete boundary scale).  
+  Callers can also pass a pre-built matplotlib norm directly, so any norm  
+  is reachable without a dedicated scale variant.  
+
+  - new ColorScale.EQUALIZE and equalize(samples=512) factory; build_norm  
+    gains a values= argument (a CDF needs the data itself, not just the  
+    tick range), supplied lazily by a _scale_values() hook that ArrayGlyph  
+    overrides to expose its finite cells  
+  - equalize ranks within the resolved display window, so vmin/vmax and  
+    robust clip the field before ranking; the bar gets quantile-placed,  
+    plainly formatted ticks; and plateau / constant / all-non-finite  
+    fields are handled or raise a clear, actionable error  
+  - plot(color=my_norm) and plot(norm=my_norm) accept a matplotlib  
+    Normalize; applying a ColorScaling clears a sticky caller norm, a  
+    caller norm's ticks sit in its own space, and passing both a scale and  
+    a raw norm in one call warns (the norm wins)  
+  - honoured by the colormap glyphs (ArrayGlyph, MeshGlyph) that build  
+    a norm  
+
   Closes #343
 - fix(glyphs): default mp4 export to full colour range (#348)
-- save_animation's FFmpeg export (mp4/mov/avi) inherited ffmpeg's                                                   
-  limited/broadcast colour range (16-235), which visibly washed out the                                             
-  full-range (0-255) figures matplotlib produces. Encode full colour                                                
-  range by default instead so exported video keeps the figure's contrast.                                           
-                                                                                                                    
-  - Use the full-range yuvj* pixel format (yuv420p -> yuvj420p); the range                                          
-    is carried by the format, so the RGB->YUV conversion maps to 0-255 on                                           
-    every ffmpeg build, including the static binary imageio-ffmpeg bundles                                          
-    (which honours a bare -color_range tag only as a label, not a remap)                                            
-  - Keep the escape hatch: a caller-supplied -color_range in extra_args                                             
-    leaves the pixel format as-is, so extra_args=["-color_range", "tv"]                                             
-    restores the old limited/broadcast-range output                                                                 
-  - Extract extra_args parsing into a helper to keep cognitive complexity                                           
-    within bounds                                                                                                   
-  - Add a real-encode regression that decodes the Y-plane with an identity                                          
-    range map to read the stored luma faithfully across ffmpeg builds                                               
-  - Document the new default and the opt-out in the animation reference                                             
-                                                                                                                    
-  This changes the encoded bytes/metadata of the default FFmpeg export                                              
-  (no Python API change); callers relying on limited range can opt out as                                           
-  above.                                                                                                            
-                                                                                                                    
+- save_animation's FFmpeg export (mp4/mov/avi) inherited ffmpeg's  
+  limited/broadcast colour range (16-235), which visibly washed out the  
+  full-range (0-255) figures matplotlib produces. Encode full colour  
+  range by default instead so exported video keeps the figure's contrast.  
+
+  - Use the full-range yuvj* pixel format (yuv420p -> yuvj420p); the range  
+    is carried by the format, so the RGB->YUV conversion maps to 0-255 on  
+    every ffmpeg build, including the static binary imageio-ffmpeg bundles  
+    (which honours a bare -color_range tag only as a label, not a remap)  
+  - Keep the escape hatch: a caller-supplied -color_range in extra_args  
+    leaves the pixel format as-is, so extra_args=["-color_range", "tv"]  
+    restores the old limited/broadcast-range output  
+  - Extract extra_args parsing into a helper to keep cognitive complexity  
+    within bounds  
+  - Add a real-encode regression that decodes the Y-plane with an identity  
+    range map to read the stored luma faithfully across ffmpeg builds  
+  - Document the new default and the opt-out in the animation reference  
+
+  This changes the encoded bytes/metadata of the default FFmpeg export  
+  (no Python API change); callers relying on limited range can opt out as  
+  above.  
+
   Closes #344
 - feat(glyphs): apply the advertised axis options and allow composition (#350)
-- xlabel, ylabel, their font sizes, the tick label sizes and grid_alpha                                             
-  were advertised by the option validator on every glyph and applied by                                             
-  none of them. A shared helper now applies them, and only the ones the                                             
-  caller actually passed -- applying the declared defaults would have                                               
-  restyled every figure in the package.                                                                             
--   - add compose= to ArrayGlyph.plot/animate and VectorGlyph.plot, so a                                              
-    glyph can draw over an existing axes instead of replacing it. Off by                                            
-    default, where a render still replaces every glyph's artists on the                                             
-    axes (issue #210); a composed render leaves the host's layers,                                                  
-    colorbar, title, ticks, canvas colour and projection frame alone and                                            
-    draws no colorbar of its own unless asked                                                                       
-  - track render-artist ownership per glyph, keyed by identity, with a                                              
-    finalizer that drops a collected glyph's entry so a later glyph                                                 
-    handed the same address is not mistaken for it                                                                  
-  - pad a multi-line title clear of top-spine tick labels: matplotlib                                               
-    raises the title but anchors its first line, so every later line                                                
-    hangs down into the labels                                                                                      
-  - add thin=n to VectorGlyph for quiver/barbs, which draw one arrow per                                            
-    grid point -- unreadable and slow on a real grid                                                                
-  - document compose= and thin= in docs/reference/render-options.md                                                 
-                                                                                                                    
+- xlabel, ylabel, their font sizes, the tick label sizes and grid_alpha  
+  were advertised by the option validator on every glyph and applied by  
+  none of them. A shared helper now applies them, and only the ones the  
+  caller actually passed -- applying the declared defaults would have  
+  restyled every figure in the package.  
+-   - add compose= to ArrayGlyph.plot/animate and VectorGlyph.plot, so a  
+    glyph can draw over an existing axes instead of replacing it. Off by  
+    default, where a render still replaces every glyph's artists on the  
+    axes (issue #210); a composed render leaves the host's layers,  
+    colorbar, title, ticks, canvas colour and projection frame alone and  
+    draws no colorbar of its own unless asked  
+  - track render-artist ownership per glyph, keyed by identity, with a  
+    finalizer that drops a collected glyph's entry so a later glyph  
+    handed the same address is not mistaken for it  
+  - pad a multi-line title clear of top-spine tick labels: matplotlib  
+    raises the title but anchors its first line, so every later line  
+    hangs down into the labels  
+  - add thin=n to VectorGlyph for quiver/barbs, which draw one arrow per  
+    grid point -- unreadable and slow on a real grid  
+  - document compose= and thin= in docs/reference/render-options.md  
+
   Closes #347, #346, #345
 
 ## 0.37.0 (2026-09-07)
 
 
 - feat(glyphs): floor a log colour scale's vmin past near-zero outliers (#340)
-- A LogNorm has no linear band, so a single near-zero pixel dragged the                                             
-  whole log scale down: the colour bar spanned decades far below the                                                
-  data's bulk and the map's real values collapsed into the top colours                                              
-  (issue #339). The norm code only sees vmin/vmax, so the fix runs at                                               
+- A LogNorm has no linear band, so a single near-zero pixel dragged the  
+  whole log scale down: the colour bar spanned decades far below the  
+  data's bulk and the map's real values collapsed into the top colours  
+  (issue #339). The norm code only sees vmin/vmax, so the fix runs at  
   ArrayGlyph render time, where the data is in hand.
 
-  - When vmin is unset on a log scale, floor it at the smallest positive                                            
-    value that is not an extreme low outlier -- more than                                                           
-    LOG_OUTLIER_DECADES decades below the 2nd percentile of the positives.                                          
-    A stray near-zero pixel is dropped; clean and genuinely-low data keep                                           
+  - When vmin is unset on a log scale, floor it at the smallest positive  
+    value that is not an extreme low outlier -- more than  
+    LOG_OUTLIER_DECADES decades below the 2nd percentile of the positives.  
+    A stray near-zero pixel is dropped; clean and genuinely-low data keep  
     their true minimum, and the true vmax is untouched.
-  - Apply it per-render on both plot() and animate() without mutating the                                           
-    glyph's persistent vmin, so reusing the glyph for a later linear or                                             
+  - Apply it per-render on both plot() and animate() without mutating the  
+    glyph's persistent vmin, so reusing the glyph for a later linear or  
     sym_log render still auto-ranges from the true minimum.
-  - Genuine negative data yields no floor, so the strictly-positive                                                 
+  - Genuine negative data yields no floor, so the strictly-positive  
     guardrail still raises and steers to sym_log(); a lone zero is rescued.
-  - An explicit vmin (constructor or call, remembered across sticky calls)                                          
+  - An explicit vmin (constructor or call, remembered across sticky calls)  
     and an explicit ticks_spacing still win.
-  - Scope: ArrayGlyph + ColorScaling.log() only; the floor targets a small                                          
+  - Scope: ArrayGlyph + ColorScaling.log() only; the floor targets a small  
     fraction of stray low pixels (documented on _log_safe_vmin).
 
   Closes #339
@@ -509,46 +509,46 @@ A follow-up (#337) tracks auto-deriving the sym_log linear threshold.
 
 
 - feat(compositing): add reusable alpha "over" array primitive (#333)
-- Add `cleopatra.glyphs.base.compositing.alpha_over`, a NumPy-only                                                  
-  Porter-Duff "over" operator, so the leaf render package owns the                                                  
-  alpha-compositing formula that higher layers otherwise re-derive                                                  
-  privately -- with the two fiddly edge cases handled in one place:                                                 
-  un-premultiplying the RGBA blend, and guarding the divide-by-zero                                                 
-  where the output alpha is zero.                                                                                   
-                                                                                                                    
-  - channel-last (H, W, C): an RGB background gives a 3-band result and                                             
-    an RGBA background a 4-band one; this matches cleopatra's                                                       
-    matplotlib/PIL image layout rather than the issue's band-first                                                  
-    (C, H, W) sketch, and lets the watermark halo delegate directly                                                 
-    (band-first callers transpose at their own boundary)                                                            
-  - floating-point inputs keep their own width (a float32 pair yields a                                             
-    float32 result, never upcast to float64); integer and boolean inputs                                            
-    are promoted to float64                                                                                         
-  - replace the private watermark _alpha_over copy with the shared                                                  
-    primitive -- verified bit-for-bit identical, so the halo renders                                                
-    unchanged -- and drop its forward-referencing TODO                                                              
-  - validate array shapes, naming the offending array in the error                                                  
-                                                                                                                    
+- Add `cleopatra.glyphs.base.compositing.alpha_over`, a NumPy-only  
+  Porter-Duff "over" operator, so the leaf render package owns the  
+  alpha-compositing formula that higher layers otherwise re-derive  
+  privately -- with the two fiddly edge cases handled in one place:  
+  un-premultiplying the RGBA blend, and guarding the divide-by-zero  
+  where the output alpha is zero.  
+
+  - channel-last (H, W, C): an RGB background gives a 3-band result and  
+    an RGBA background a 4-band one; this matches cleopatra's  
+    matplotlib/PIL image layout rather than the issue's band-first  
+    (C, H, W) sketch, and lets the watermark halo delegate directly  
+    (band-first callers transpose at their own boundary)  
+  - floating-point inputs keep their own width (a float32 pair yields a  
+    float32 result, never upcast to float64); integer and boolean inputs  
+    are promoted to float64  
+  - replace the private watermark _alpha_over copy with the shared  
+    primitive -- verified bit-for-bit identical, so the halo renders  
+    unchanged -- and drop its forward-referencing TODO  
+  - validate array shapes, naming the offending array in the error  
+
   Closes #306
 - feat(globe): add area sampling and a face_colors accessor (#332)
-- TexturedGlobeGlyph point-sampled one texture cell per mesh-face centre,                                           
-  so a feature narrower than one face fell between the sample points and                                            
-  vanished. Add an opt-in reduction and a way to inspect the result,                                                
-  keeping the sample-once/rotate-per-frame contract (the reduction runs                                             
-  once in _prepare).                                                                                                
-                                                                                                                    
-  - sampling="point"|"area": "point" (default) is unchanged, the cheap                                              
-    per-centre lookup; "area" reduces the whole texture block each face                                             
-    covers, alpha-aware -- a face's colour is the mean of the                                                       
-    non-transparent (alpha > 0) cells it spans (transparent if none), so                                            
-    a small feature stays visible. RGB is an un-premultiplied mean, and                                             
-    faces finer than one texture cell fall back to point sampling so a                                              
-    coarse texture never gains gaps.                                                                                
-  - face_colors: a read-only property returning the base per-face RGBA                                              
-    the mesh is filled with (before per-frame lighting), so a caller can                                            
-    check whether its data survived the sampling without a draw().                                                  
-  - expose the modes as SAMPLING_POINT / SAMPLING_AREA / SAMPLING_MODES.                                            
-                                                                                                                    
+- TexturedGlobeGlyph point-sampled one texture cell per mesh-face centre,  
+  so a feature narrower than one face fell between the sample points and  
+  vanished. Add an opt-in reduction and a way to inspect the result,  
+  keeping the sample-once/rotate-per-frame contract (the reduction runs  
+  once in _prepare).  
+
+  - sampling="point"|"area": "point" (default) is unchanged, the cheap  
+    per-centre lookup; "area" reduces the whole texture block each face  
+    covers, alpha-aware -- a face's colour is the mean of the  
+    non-transparent (alpha > 0) cells it spans (transparent if none), so  
+    a small feature stays visible. RGB is an un-premultiplied mean, and  
+    faces finer than one texture cell fall back to point sampling so a  
+    coarse texture never gains gaps.  
+  - face_colors: a read-only property returning the base per-face RGBA  
+    the mesh is filled with (before per-frame lighting), so a caller can  
+    check whether its data survived the sampling without a draw().  
+  - expose the modes as SAMPLING_POINT / SAMPLING_AREA / SAMPLING_MODES.  
+
   Closes #325
 - fix(glyphs): draw into a figure supplied without an axes (#331)
 - Constructing a glyph with a figure but no axes left self.ax = None,
@@ -656,30 +656,30 @@ evenly illuminated. sun=None (the default) renders byte-identical to 0.33.0.
 
 
 - feat(animation): derive a GIF from an existing video and fix the clip palette (#317)
-- The shared GIF palette was chosen by pixel population, so on a clip with a                                        
-  large textured area the background claimed nearly the whole table and small                                       
-  saturated marks collapsed to the nearest muddy neighbour. It is now chosen                                        
-  for colour coverage over the set of colours the clip contains, collected at                                       
-  full 8-bit precision, so a mark survives however few pixels it covers.                                            
-                                                                                                                    
-  - Add gif_from_video, deriving a GIF from a video already on disk so the                                          
-    frames are rendered once and every other format read back off that file                                         
-  - Build the palette from a colour census rather than a spatial downsample,                                        
-    which blended one-pixel marks away before the quantiser could see them                                          
-  - Share build_clip_palette and quantize_to_palette between the rendered and                                       
-    derived paths so both quantise identically                                                                      
-  - Stream the video in two passes instead of buffering it, keeping the                                             
-    decoded RGB frames from ever being resident together                                                            
-  - Warn when the source is chroma-subsampled, since that loss precedes the                                         
-    palette and no quantiser can undo it                                                                            
-  - Add quantize_method for clips better served by a population-weighted split                                      
-  - Validate writer inputs, close the decoder, resolve ffmpeg the same way for                                      
-    reading as for writing, and classify pixel formats by family                                                    
-  - Document the real memory cost: Pillow accumulates the quantised frames, so                                      
-    peak stays proportional to the clip's length                                                                    
-  - Record in SCOPE.md why re-encoding cleopatra's own animation output is in                                       
-    scope, and what still is not                                                                                    
-                                                                                                                    
+- The shared GIF palette was chosen by pixel population, so on a clip with a  
+  large textured area the background claimed nearly the whole table and small  
+  saturated marks collapsed to the nearest muddy neighbour. It is now chosen  
+  for colour coverage over the set of colours the clip contains, collected at  
+  full 8-bit precision, so a mark survives however few pixels it covers.  
+
+  - Add gif_from_video, deriving a GIF from a video already on disk so the  
+    frames are rendered once and every other format read back off that file  
+  - Build the palette from a colour census rather than a spatial downsample,  
+    which blended one-pixel marks away before the quantiser could see them  
+  - Share build_clip_palette and quantize_to_palette between the rendered and  
+    derived paths so both quantise identically  
+  - Stream the video in two passes instead of buffering it, keeping the  
+    decoded RGB frames from ever being resident together  
+  - Warn when the source is chroma-subsampled, since that loss precedes the  
+    palette and no quantiser can undo it  
+  - Add quantize_method for clips better served by a population-weighted split  
+  - Validate writer inputs, close the decoder, resolve ffmpeg the same way for  
+    reading as for writing, and classify pixel formats by family  
+  - Document the real memory cost: Pillow accumulates the quantised frames, so  
+    peak stays proportional to the clip's length  
+  - Record in SCOPE.md why re-encoding cleopatra's own animation output is in  
+    scope, and what still is not  
+
   Closes #315, #308
 - feat(styling): add stamp_mark figure watermark / brand-mark helper (#314)
 - Stamp a logo/watermark image onto a matplotlib Figure with one call,
@@ -703,23 +703,23 @@ dpis a figure is exported at (MP4 master, web copy, GIF).
   presentation asset (a logo, not user data) is an allowed exception.
 - Closes #312
 - feat(glyphs): add TexturedGlobeGlyph for 3-D textured globes (#316)
-- Add cleopatra's first 3-D glyph: wrap an equirectangular (lon/lat)                                                
-  RGB(A) texture onto a tilted, spinnable sphere on a matplotlib Axes3D.                                            
-                                                                                                                    
-  - Take an (H, W, 3)/(H, W, 4) equirectangular array (the north-up                                                 
-    layout of basemap.reference.relief()) and return (fig, Axes3D); a                                               
-    standalone class like HistogramGlyph, not a Glyph subclass.                                                     
-  - draw(spin=...) rotates the globe about its fixed tilted polar axis by                                           
-    rotating only the once-sampled mesh; animate() returns a FuncAnimation                                          
-    of a full rotation.                                                                                             
-  - Normalize textures by dtype: integer by dtype max, float by their own                                           
-    peak only when a channel exceeds 1 (RGB only, so alpha is preserved);                                           
-    NaN and negative cells render black; unknown render options raise                                               
-    ValueError.                                                                                                     
-  - Add no dependency (mpl_toolkits.mplot3d ships with matplotlib);                                                 
-    default mesh 180x90, with the quadratic render cost documented.                                                 
-  - Add a full test suite (100% line + branch) and a reference doc page.                                            
-                                                                                                                    
+- Add cleopatra's first 3-D glyph: wrap an equirectangular (lon/lat)  
+  RGB(A) texture onto a tilted, spinnable sphere on a matplotlib Axes3D.  
+
+  - Take an (H, W, 3)/(H, W, 4) equirectangular array (the north-up  
+    layout of basemap.reference.relief()) and return (fig, Axes3D); a  
+    standalone class like HistogramGlyph, not a Glyph subclass.  
+  - draw(spin=...) rotates the globe about its fixed tilted polar axis by  
+    rotating only the once-sampled mesh; animate() returns a FuncAnimation  
+    of a full rotation.  
+  - Normalize textures by dtype: integer by dtype max, float by their own  
+    peak only when a channel exceeds 1 (RGB only, so alpha is preserved);  
+    NaN and negative cells render black; unknown render options raise  
+    ValueError.  
+  - Add no dependency (mpl_toolkits.mplot3d ships with matplotlib);  
+    default mesh 180x90, with the quadratic render cost documented.  
+  - Add a full test suite (100% line + branch) and a reference doc page.  
+
   Closes #311
 - feat(basemap): add world_texture() and mercator_to_equirectangular (#313)
 - Port the two generic basemap helpers from the earthlens satellite
@@ -764,28 +764,28 @@ per cell, with a pure-numpy, mask-aware reduction extracted into
   `num_domain_cells` docstring
 - Closes #304
 - fix(styling): drop pandas & numpy null sentinels in categorize (#303)
-- categorize's null filter recognised only None and np.nan, so pandas'                                              
-  pd.NA / pd.NaT (and, on some numpy builds, datetime64('NaT')) survived                                            
-  and became their own colour category -- making categorisation depend on                                           
-  the column dtype. Treat every null flavour uniformly so the category set                                          
-  depends only on the distinct real values (the in-glyph categorical path                                           
-  delegates to categorize and inherits the fix).                                                                    
-                                                                                                                    
-  - Drop pd.NA / pd.NaT via pandas' scalar pd.isna, and datetime64('NaT')                                           
-    via np.isnan or np.isnat.                                                                                       
-  - Keep pandas an undeclared soft dependency: import pd.isna lazily and                                            
-    once (not per element), degrading to the numpy-only path (np.isnat for                                          
-    datetime NaT) when pandas is absent -- no new runtime dependency.                                               
-  - Short-circuit str/bytes and guard np.isnan / pd.isna against array-like                                         
-    object-array elements (e.g. range) so odd contents are carried through                                          
-    as non-null rather than crashing, matching base behaviour.                                                      
-  - Extract the check to a module-level _categorical_is_null helper to keep                                         
-    categorize's cognitive complexity within bounds.                                                                
-  - Add tests (pd.NA/pd.NaT, no-pandas fallback, all-null error, mixed null                                         
-    kinds, numpy datetime NaT incl. the forced np.isnat path, genuine                                               
-    pandas nullable dtypes, array-like element) and refresh the categorize                                          
-    / _is_null docstrings.                                                                                          
-                                                                                                                    
+- categorize's null filter recognised only None and np.nan, so pandas'  
+  pd.NA / pd.NaT (and, on some numpy builds, datetime64('NaT')) survived  
+  and became their own colour category -- making categorisation depend on  
+  the column dtype. Treat every null flavour uniformly so the category set  
+  depends only on the distinct real values (the in-glyph categorical path  
+  delegates to categorize and inherits the fix).  
+
+  - Drop pd.NA / pd.NaT via pandas' scalar pd.isna, and datetime64('NaT')  
+    via np.isnan or np.isnat.  
+  - Keep pandas an undeclared soft dependency: import pd.isna lazily and  
+    once (not per element), degrading to the numpy-only path (np.isnat for  
+    datetime NaT) when pandas is absent -- no new runtime dependency.  
+  - Short-circuit str/bytes and guard np.isnan / pd.isna against array-like  
+    object-array elements (e.g. range) so odd contents are carried through  
+    as non-null rather than crashing, matching base behaviour.  
+  - Extract the check to a module-level _categorical_is_null helper to keep  
+    categorize's cognitive complexity within bounds.  
+  - Add tests (pd.NA/pd.NaT, no-pandas fallback, all-null error, mixed null  
+    kinds, numpy datetime NaT incl. the forced np.isnat path, genuine  
+    pandas nullable dtypes, array-like element) and refresh the categorize  
+    / _is_null docstrings.  
+
   Closes #302
 
 ## 0.31.0 (2026-08-12)
@@ -833,57 +833,57 @@ their loose keyword signatures.
 
 
 - feat(styling)!: grouped render parameters and a large vendored preset-library expansion (#275)
-- Complete the migration of ArrayGlyph/MeshGlyph plot/animate/facet from                                            
-  flat keyword arguments to typed group objects, and substantially expand                                           
-  the vendored preset library.                                                                                      
-                                                                                                                    
-  - Finish the grouped-parameter render API: data_style=DataStyle(...),                                             
-    color=ColorScaling(...), contour=Contour(...), cells=CellValues(...),                                           
-    classify=Classify(...); remove the legacy-keyword shims so a moved                                              
-    keyword now raises with a pointer to its group object.                                                          
-  - Widen per-call styled-preset overrides (bands/alpha/alpha_range) onto                                           
-    DataStyle: sticky across calls on a reused glyph, with correct opacity                                          
-    mode-switch and clearing.                                                                                       
-  - Vendor ~200 presets across seven libraries: 39 perceptually-uniform                                             
-    scientific colour maps, 11 radar/satellite tables, 3 hypsometric                                                
-    terrain ramps, and the weather library grown to 112 (+28 CAMS                                                   
-    atmospheric-composition and operational fields).                                                                
-  - Add an optional [science-colors] extra for namespaced colour maps                                               
-    (cmocean:thermal, ...) via the numpy-only cmap aggregator; no new                                               
-    runtime dependency.                                                                                             
-  - Add gallery notebooks for the new preset sets, committed output-free.                                           
-  - Treat vendored colour data as derived under neutral-source naming; keep                                         
-    the maintainer download scripts local-only.                                                                     
-                                                                                                                    
-  BREAKING CHANGE: the legacy flat render keywords on ArrayGlyph/MeshGlyph                                          
-  plot/animate/facet are removed. Pass them through the group objects                                               
-  (DataStyle, ColorScaling, Contour, CellValues, Classify) instead; a                                               
-  removed keyword now raises with a pointer to its group.                                                           
+- Complete the migration of ArrayGlyph/MeshGlyph plot/animate/facet from  
+  flat keyword arguments to typed group objects, and substantially expand  
+  the vendored preset library.  
+
+  - Finish the grouped-parameter render API: data_style=DataStyle(...),  
+    color=ColorScaling(...), contour=Contour(...), cells=CellValues(...),  
+    classify=Classify(...); remove the legacy-keyword shims so a moved  
+    keyword now raises with a pointer to its group object.  
+  - Widen per-call styled-preset overrides (bands/alpha/alpha_range) onto  
+    DataStyle: sticky across calls on a reused glyph, with correct opacity  
+    mode-switch and clearing.  
+  - Vendor ~200 presets across seven libraries: 39 perceptually-uniform  
+    scientific colour maps, 11 radar/satellite tables, 3 hypsometric  
+    terrain ramps, and the weather library grown to 112 (+28 CAMS  
+    atmospheric-composition and operational fields).  
+  - Add an optional [science-colors] extra for namespaced colour maps  
+    (cmocean:thermal, ...) via the numpy-only cmap aggregator; no new  
+    runtime dependency.  
+  - Add gallery notebooks for the new preset sets, committed output-free.  
+  - Treat vendored colour data as derived under neutral-source naming; keep  
+    the maintainer download scripts local-only.  
+
+  BREAKING CHANGE: the legacy flat render keywords on ArrayGlyph/MeshGlyph  
+  plot/animate/facet are removed. Pass them through the group objects  
+  (DataStyle, ColorScaling, Contour, CellValues, Classify) instead; a  
+  removed keyword now raises with a pointer to its group.  
 -   Closes #288, #289
 - refactor(glyphs)!: group plot/animate parameters into typed objects (#287)
-- Replace the loose **kwargs surface on every glyph's plot() / animate()                                            
-  with a small set of discoverable, typed parameter objects, and remove the                                         
-  backward-compatibility shims that kept the old loose keywords working.                                            
-                                                                                                                    
-  - bundle the loose plot() / animate() keywords into grouped objects:                                              
-    color=ColorScaling, contour=Contour, cells=CellValues,                                                          
-    classify=Classify, data_style=DataStyle, points=PointOverlay,                                                   
-    frame_label=FrameLabel, colorbar=ColorBar                                                                       
-  - group facet's per-panel coordinate labels into PanelLabels and rename                                           
-    facet's figsize to figure_size                                                                                  
-  - remove the legacy loose-kwarg shims; a removed keyword now raises with a                                        
-    pointer to its group object                                                                                     
-  - rename text_colors to cell_value_text_colors and no_elem to                                                     
-    num_domain_cells                                                                                                
-                                                                                                                    
-  BREAKING CHANGE: the loose plot / animate styling keywords (point_color /                                         
-  point_size / point_label_color / point_label_size / pid_color / pid_size,                                         
-  label_location / label_color / text_loc, text_colors, col_coords /                                                
-  row_coords, and facet's figsize) are removed and now raise; pass the                                              
-  matching group object instead (PointOverlay, FrameLabel,                                                          
-  cell_value_text_colors, labels=PanelLabels, figure_size). ArrayGlyph.no_elem                                      
-  is renamed to num_domain_cells, and a bare array for points must be wrapped                                       
-  in a PointOverlay.                                                                                                
+- Replace the loose **kwargs surface on every glyph's plot() / animate()  
+  with a small set of discoverable, typed parameter objects, and remove the  
+  backward-compatibility shims that kept the old loose keywords working.  
+
+  - bundle the loose plot() / animate() keywords into grouped objects:  
+    color=ColorScaling, contour=Contour, cells=CellValues,  
+    classify=Classify, data_style=DataStyle, points=PointOverlay,  
+    frame_label=FrameLabel, colorbar=ColorBar  
+  - group facet's per-panel coordinate labels into PanelLabels and rename  
+    facet's figsize to figure_size  
+  - remove the legacy loose-kwarg shims; a removed keyword now raises with a  
+    pointer to its group object  
+  - rename text_colors to cell_value_text_colors and no_elem to  
+    num_domain_cells  
+
+  BREAKING CHANGE: the loose plot / animate styling keywords (point_color /  
+  point_size / point_label_color / point_label_size / pid_color / pid_size,  
+  label_location / label_color / text_loc, text_colors, col_coords /  
+  row_coords, and facet's figsize) are removed and now raise; pass the  
+  matching group object instead (PointOverlay, FrameLabel,  
+  cell_value_text_colors, labels=PanelLabels, figure_size). ArrayGlyph.no_elem  
+  is renamed to num_domain_cells, and a bare array for points must be wrapped  
+  in a PointOverlay.  
 -   Closes #281, #283, #285
 - refactor(glyphs)!: group plot/animate parameters into typed objects (#274)
 - Replace the flat ~30 keyword surface on every glyph's plot()/animate()
@@ -972,85 +972,85 @@ colorbar=None (default) preserves the prior per-panel behaviour.
   is_notebook branch coverage
 - Closes #256
 - refactor!: reorganize the package into glyphs/styling/basemap subpackages (#254)
-- Split the flat src/cleopatra/ module layout into three concern-based                                       
-  subpackages so the ~25 modules are navigable, and rename the histogram                                     
-  glyph for accuracy. Behavior is unchanged throughout -- only import                                        
-  paths (and one class name) move; every function, method, argument, and                                     
-  return value keeps its name and semantics. Verified behavior-preserving                                    
-  via byte-identical ASTs and the full test suite (2157 passed).                                             
-                                                                                                             
-  - glyphs/ -- chart-type building blocks, grouped by data model:                                            
-    base/ (Glyph, animation, hillshade), gridded/ (array, mesh, vector),                                     
-    primitives/ (scatter, line, polygon, flow), stats/ (histogram, kde)                                      
-  - styling/ -- colour/legend/presentation layer (styles, colors,                                            
-    colorbar, palettes, perceptual) plus the data/ preset assets                                             
-  - basemap/ -- networked basemap/CRS helpers (geo, tiles, reference,                                        
-    projection)                                                                                              
-  - config and templates stay at the top level                                                               
-  - rename statistical_glyph -> glyphs/stats/histogram_glyph and the class                                   
-    StatisticalGlyph -> HistogramGlyph (it only draws histogram-family                                       
-    plots)                                                                                                   
-  - rewrite every internal import and all docs, notebooks, and tools to                                      
-    the new paths; the package root still re-exports nothing                                                 
-  - strip ~1300 redundant/rationale comment lines and simplify glyphs/base                                   
-    (single-return helpers, hoisted Pillow import); promote pillow to a                                      
-    core dependency                                                                                          
-  - add docs/migration.md with the full old->new import map and an                                           
-    automated-migration script for downstream packages                                                       
-                                                                                                             
-  BREAKING CHANGE: all submodule import paths change, e.g.                                                   
-  `from cleopatra.array_glyph import ArrayGlyph` is now                                                      
-  `from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph`, and                                         
-  `cleopatra.statistical_glyph.StatisticalGlyph` is now                                                      
-  `cleopatra.glyphs.stats.histogram_glyph.HistogramGlyph`. See                                               
-  docs/migration.md for the complete mapping and a migration script.                                         
-                                                                                                             
+- Split the flat src/cleopatra/ module layout into three concern-based  
+  subpackages so the ~25 modules are navigable, and rename the histogram  
+  glyph for accuracy. Behavior is unchanged throughout -- only import  
+  paths (and one class name) move; every function, method, argument, and  
+  return value keeps its name and semantics. Verified behavior-preserving  
+  via byte-identical ASTs and the full test suite (2157 passed).  
+
+  - glyphs/ -- chart-type building blocks, grouped by data model:  
+    base/ (Glyph, animation, hillshade), gridded/ (array, mesh, vector),  
+    primitives/ (scatter, line, polygon, flow), stats/ (histogram, kde)  
+  - styling/ -- colour/legend/presentation layer (styles, colors,  
+    colorbar, palettes, perceptual) plus the data/ preset assets  
+  - basemap/ -- networked basemap/CRS helpers (geo, tiles, reference,  
+    projection)  
+  - config and templates stay at the top level  
+  - rename statistical_glyph -> glyphs/stats/histogram_glyph and the class  
+    StatisticalGlyph -> HistogramGlyph (it only draws histogram-family  
+    plots)  
+  - rewrite every internal import and all docs, notebooks, and tools to  
+    the new paths; the package root still re-exports nothing  
+  - strip ~1300 redundant/rationale comment lines and simplify glyphs/base  
+    (single-return helpers, hoisted Pillow import); promote pillow to a  
+    core dependency  
+  - add docs/migration.md with the full old->new import map and an  
+    automated-migration script for downstream packages  
+
+  BREAKING CHANGE: all submodule import paths change, e.g.  
+  `from cleopatra.array_glyph import ArrayGlyph` is now  
+  `from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph`, and  
+  `cleopatra.statistical_glyph.StatisticalGlyph` is now  
+  `cleopatra.glyphs.stats.histogram_glyph.HistogramGlyph`. See  
+  docs/migration.md for the complete mapping and a migration script.  
+
   Closes #268, #269, #270
 - feat(styles): unified preset schema, science colormaps, glow, projection, rendering polish (#246)
-- Land the outstanding style & preset workstreams, the preset schema                                                 
-  restructure, and the rendering polish surfaced in review.                                                          
-                                                                                                                     
-  - Unify all 111 presets onto one canonical on-disk schema with a single                                            
-    loader; the in-memory DATA_STYLES is byte-for-byte unchanged.                                                    
-  - Add a namespaced scientific-colormap resolver (cmocean: and other collections)                                                
-    behind the optional [science-colors] extra.                                                                      
-  - Add a native line-glow primitive and glow= on LineGlyph/FlowGlyph.                                               
-  - Add projection= (globe/flat) on ArrayGlyph and MeshGlyph, styled-globe                                           
-    composition, scientific terrain and NCL/MeteoSwiss colour tables, and fix                                           
-    the topography hinge mis-registration.                                                                           
-  - Add a units layer (convert_units), a shortName->style lookup, a NEXRAD                                           
-    radar preset, THIRD_PARTY_NOTICES, and the publication_map composer.                                             
-  - Tighten auto-sized figures to their content, add a preset background                                             
-    canvas with value-linked opacity, and create+seed the axes on demand                                             
-    so basemap layers work before plot/animate.                                                                      
-  - Rewrite the preset example notebooks to the glyph builder flow.                                                  
-                                                                                                                     
+- Land the outstanding style & preset workstreams, the preset schema  
+  restructure, and the rendering polish surfaced in review.  
+
+  - Unify all 111 presets onto one canonical on-disk schema with a single  
+    loader; the in-memory DATA_STYLES is byte-for-byte unchanged.  
+  - Add a namespaced scientific-colormap resolver (cmocean: and other collections)  
+    behind the optional [science-colors] extra.  
+  - Add a native line-glow primitive and glow= on LineGlyph/FlowGlyph.  
+  - Add projection= (globe/flat) on ArrayGlyph and MeshGlyph, styled-globe  
+    composition, scientific terrain and NCL/MeteoSwiss colour tables, and fix  
+    the topography hinge mis-registration.  
+  - Add a units layer (convert_units), a shortName->style lookup, a NEXRAD  
+    radar preset, THIRD_PARTY_NOTICES, and the publication_map composer.  
+  - Tighten auto-sized figures to their content, add a preset background  
+    canvas with value-linked opacity, and create+seed the axes on demand  
+    so basemap layers work before plot/animate.  
+  - Rewrite the preset example notebooks to the glyph builder flow.  
+
   Closes #247, #248, #249, #250, #251, #252, #257, #258, #259, #260, #261, #262, #263, #264, #265, #266, #267
 
 ## 0.29.0 (2026-08-03)
 
 
 - feat(glyphs): accept colorbar=ColorBar on every glyph, plus label_location validation and colorbar=True reset (#244)
-- Follow-ups to the ColorBar spec (#234/#235) that make it work package-wide                                         
-  and harden two edges.                                                                                              
-                                                                                                                     
-  - Move ColorBar, _resolve_colorbar, _swatch_text_default,                                                          
-    _warn_deprecated_cbar_kwargs, and _DEPRECATED_CBAR_KWARGS into a lean,                                           
-    glyph-independent cleopatra.colorbar module, re-exported from array_glyph                                        
-    for back-compat.                                                                                                 
-  - Wire a colorbar: bool | ColorBar | None parameter into MeshGlyph (plot and                                       
-    animate), FlowGlyph, KDEGlyph, ScatterGlyph, PolygonGlyph, and VectorGlyph;                                      
-    each merges the resolved spec into its options and deprecates the loose                                          
-    cbar_* kwargs. Non-breaking: existing add_colorbar params and MeshGlyph's                                        
-    colorbar bool toggle keep working, and the merged spec is sticky like                                            
-    ArrayGlyph (colorbar=True resets, False suppresses).                                                             
-  - Reject an orientation-incompatible label_location up front (and at render,                                       
-    against the resolved orientation, for the unpinned case) instead of crashing                                     
-    in matplotlib; drop the invalid baseline/center_baseline label positions.                                        
-  - Make colorbar=True reset the whole caption/sizing cbar_* family to defaults                                      
-    on a reused glyph, and honour a ColorBar(ticks_spacing=...) spec on                                              
-    MeshGlyph rather than auto-overwriting it.                                                                       
-                                                                                                                     
+- Follow-ups to the ColorBar spec (#234/#235) that make it work package-wide  
+  and harden two edges.  
+
+  - Move ColorBar, _resolve_colorbar, _swatch_text_default,  
+    _warn_deprecated_cbar_kwargs, and _DEPRECATED_CBAR_KWARGS into a lean,  
+    glyph-independent cleopatra.colorbar module, re-exported from array_glyph  
+    for back-compat.  
+  - Wire a colorbar: bool | ColorBar | None parameter into MeshGlyph (plot and  
+    animate), FlowGlyph, KDEGlyph, ScatterGlyph, PolygonGlyph, and VectorGlyph;  
+    each merges the resolved spec into its options and deprecates the loose  
+    cbar_* kwargs. Non-breaking: existing add_colorbar params and MeshGlyph's  
+    colorbar bool toggle keep working, and the merged spec is sticky like  
+    ArrayGlyph (colorbar=True resets, False suppresses).  
+  - Reject an orientation-incompatible label_location up front (and at render,  
+    against the resolved orientation, for the unpinned case) instead of crashing  
+    in matplotlib; drop the invalid baseline/center_baseline label positions.  
+  - Make colorbar=True reset the whole caption/sizing cbar_* family to defaults  
+    on a reused glyph, and honour a ColorBar(ticks_spacing=...) spec on  
+    MeshGlyph rather than auto-overwriting it.  
+
   Closes #239, #241, #242
 
 ## 0.28.0 (2026-08-02)
@@ -1091,33 +1091,33 @@ loose cbar_* value survives during the transition.
   (SonarCloud S6711).
 - Closes #234
 - refactor(tiles): replace the mercantile dependency with built-in tile math (#236)
-- - Add a Tile NamedTuple plus _tiles_for_bbox()/_tile_xy_bounds()/                                                    
-    _lonlat_to_tile_xy(), a direct port of mercantile's tile(),                                                        
-    tiles(), and xy_bounds() (the only three things cleopatra.tiles                                                    
-    used from it), verified formula-for-formula against mercantile's                                                   
-    own installed source.                                                                                              
-  - Drop mercantile from the [tiles] extra, uv.lock, and docs/README;                                                  
-    update tests/test_tiles.py to mock the new internal function                                                       
-    instead of patching the mercantile module.                                                                         
-  - Clamp both latitude bounds symmetrically (north was capped but                                                     
-    south only floored, and vice versa) and nudge sin(lat) away from                                                   
-    the exact +/-90 singularity, closing a crash on any bbox whose                                                     
-    north or south sits within ~1e-7 degrees of a pole.                                                                
-  - Split an antimeridian-crossing bbox (west > east) into its two                                                     
-    dateline-side sub-boxes instead of raising, matching                                                               
-    mercantile.tiles()'s own behavior -- needed because reprojecting a                                                 
-    near-global Web Mercator extent to EPSG:4326 wraps longitude at                                                    
-    the +/-180 seam, so this is a real, reachable input through                                                        
-    add_tiles(), not just a hand-crafted edge case.                                                                    
-  - Add 30+ direct unit tests for the tile-math functions and Tile's                                                   
-    NamedTuple behavior, with expected values cross-checked against                                                    
-    the real mercantile package, plus an end-to-end add_tiles() test                                                   
-    exercising the reprojection-driven antimeridian wraparound.                                                        
-  - Fix a tautological-looking test assertion (same expression on                                                      
-    both sides of ==) flagged by SonarCloud.                                                                           
-                                                                                                                       
-  No public API changes; add_tiles/fetch_tiles/stitch_tiles/get_provider                                               
-  keep their existing signatures and behavior.                                                                         
+- - Add a Tile NamedTuple plus _tiles_for_bbox()/_tile_xy_bounds()/  
+    _lonlat_to_tile_xy(), a direct port of mercantile's tile(),  
+    tiles(), and xy_bounds() (the only three things cleopatra.tiles  
+    used from it), verified formula-for-formula against mercantile's  
+    own installed source.  
+  - Drop mercantile from the [tiles] extra, uv.lock, and docs/README;  
+    update tests/test_tiles.py to mock the new internal function  
+    instead of patching the mercantile module.  
+  - Clamp both latitude bounds symmetrically (north was capped but  
+    south only floored, and vice versa) and nudge sin(lat) away from  
+    the exact +/-90 singularity, closing a crash on any bbox whose  
+    north or south sits within ~1e-7 degrees of a pole.  
+  - Split an antimeridian-crossing bbox (west > east) into its two  
+    dateline-side sub-boxes instead of raising, matching  
+    mercantile.tiles()'s own behavior -- needed because reprojecting a  
+    near-global Web Mercator extent to EPSG:4326 wraps longitude at  
+    the +/-180 seam, so this is a real, reachable input through  
+    add_tiles(), not just a hand-crafted edge case.  
+  - Add 30+ direct unit tests for the tile-math functions and Tile's  
+    NamedTuple behavior, with expected values cross-checked against  
+    the real mercantile package, plus an end-to-end add_tiles() test  
+    exercising the reprojection-driven antimeridian wraparound.  
+  - Fix a tautological-looking test assertion (same expression on  
+    both sides of ==) flagged by SonarCloud.  
+
+  No public API changes; add_tiles/fetch_tiles/stitch_tiles/get_provider  
+  keep their existing signatures and behavior.  
   Closes #238
 - ci(docs): resolve release tag for workflow_run-triggered mkdocs deploys (#233)
 - deploy-release hardcoded trigger: 'release' but never supplied a

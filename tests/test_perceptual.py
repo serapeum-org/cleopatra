@@ -1,4 +1,5 @@
 """Tests for `cleopatra.styling.perceptual` -- the numpy-only perceptual colour toolkit."""
+
 import warnings
 
 import numpy as np
@@ -21,7 +22,9 @@ class TestColorSpace:
 
     def test_white_maps_to_l100(self):
         """Pure white has lightness L*=100 and no chroma."""
-        assert np.allclose(srgb_to_lab(np.array([1.0, 1.0, 1.0])), [100, 0, 0], atol=1e-3)
+        assert np.allclose(
+            srgb_to_lab(np.array([1.0, 1.0, 1.0])), [100, 0, 0], atol=1e-3
+        )
 
     def test_black_maps_to_l0(self):
         """Pure black has lightness L*=0."""
@@ -64,7 +67,9 @@ class TestInterpPerceptual:
         """Lab interpolation is more perceptually even than RGB interpolation."""
         lab_cv = perceptual_uniformity(interp_perceptual(self.ANCHORS))
         rgb_cv = perceptual_uniformity(
-            LinearSegmentedColormap.from_list("r", self.ANCHORS)(np.linspace(0, 1, 256))[:, :3]
+            LinearSegmentedColormap.from_list("r", self.ANCHORS)(
+                np.linspace(0, 1, 256)
+            )[:, :3]
         )
         assert lab_cv < rgb_cv
 
@@ -94,7 +99,9 @@ class TestPerceptualColormap:
         """cmap(0.0)/cmap(1.0) are the exact endpoint anchors."""
         cmap = perceptual_colormap("m", ["#ffffff", "#123456"])
         assert tuple(float(round(v, 6)) for v in cmap(0.0)[:3]) == (1.0, 1.0, 1.0)
-        assert np.allclose(cmap(1.0)[:3], [0x12 / 255, 0x34 / 255, 0x56 / 255], atol=1e-6)
+        assert np.allclose(
+            cmap(1.0)[:3], [0x12 / 255, 0x34 / 255, 0x56 / 255], atol=1e-6
+        )
 
 
 class TestMakeDiverging:
@@ -153,10 +160,19 @@ class TestMakeCategorical:
 
     def test_colours_are_well_separated(self):
         """The minimum pairwise Lab distance clears a distinguishability floor."""
-        lab = srgb_to_lab(np.array([[int(c[i:i + 2], 16) / 255 for i in (1, 3, 5)]
-                                    for c in make_categorical(10)]))
-        dists = [np.sqrt(((lab[i] - lab[j]) ** 2).sum())
-                 for i in range(len(lab)) for j in range(i + 1, len(lab))]
+        lab = srgb_to_lab(
+            np.array(
+                [
+                    [int(c[i : i + 2], 16) / 255 for i in (1, 3, 5)]
+                    for c in make_categorical(10)
+                ]
+            )
+        )
+        dists = [
+            np.sqrt(((lab[i] - lab[j]) ** 2).sum())
+            for i in range(len(lab))
+            for j in range(i + 1, len(lab))
+        ]
         assert min(dists) > 20.0
 
     def test_invalid_count_raises(self):
@@ -182,7 +198,9 @@ class TestUniformityMetric:
         """Works on both a Colormap and a raw (m, 3) LUT, returning a float."""
         cmap = perceptual_colormap("p", ["#ffffff", "#004cff", "#000033"])
         assert isinstance(perceptual_uniformity(cmap), float)
-        assert isinstance(perceptual_uniformity(cmap(np.linspace(0, 1, 64))[:, :3]), float)
+        assert isinstance(
+            perceptual_uniformity(cmap(np.linspace(0, 1, 64))[:, :3]), float
+        )
 
     def test_zero_for_even_ramp(self):
         """A Lab-uniform ramp scores near zero (very even steps)."""

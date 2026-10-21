@@ -46,7 +46,7 @@ Examples:
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -237,7 +237,7 @@ class HexbinGlyph(GeoMixin, Glyph):
         # can be renamed, so suppress SonarCloud's case-clash rule (S1845) here.
         reduce = self.default_options["reduce"]  # NOSONAR
         if callable(reduce):
-            return reduce
+            return cast(Callable[[Any], Any], reduce)
         try:
             return _REDUCE_FUNCTIONS[reduce]
         except (KeyError, TypeError):
@@ -313,7 +313,9 @@ class HexbinGlyph(GeoMixin, Glyph):
         # `.filled(np.nan)` guards older matplotlib that masked empty /
         # `mincnt`-dropped cells; current matplotlib returns an unmasked array
         # (dropped cells are absent), so this is a no-op there.
-        aggregate = np.ma.asarray(pc.get_array()).astype(float).filled(np.nan)
+        aggregate = cast(
+            np.ma.MaskedArray, np.ma.asarray(pc.get_array()).astype(float)
+        ).filled(np.nan)
         return offsets[:, 0], offsets[:, 1], aggregate
 
     def plot(

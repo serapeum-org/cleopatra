@@ -77,8 +77,12 @@ class TestHazeColormaps:
         """The organic_matter colormap saturates to a deep purple at value 1.0."""
         r, g, b, a = HAZE_COLORMAPS["organic_matter"](1.0)
         assert a == 1.0, "alpha should be opaque"
-        assert r > g, f'organic_matter top stop should be purple-toned, got rgb=({r}, {g}, {b})'
-        assert b > g, f'organic_matter top stop should be purple-toned, got rgb=({r}, {g}, {b})'
+        assert r > g, (
+            f'organic_matter top stop should be purple-toned, got rgb=({r}, {g}, {b})'
+        )
+        assert b > g, (
+            f'organic_matter top stop should be purple-toned, got rgb=({r}, {g}, {b})'
+        )
 
 
 class TestCamsAodColormaps:
@@ -683,12 +687,17 @@ class TestReferencePresets:
 
     def test_cmap_name_style_stays_a_name(self):
         """A style whose reference `colors` is a matplotlib name keeps it as a string cmap."""
-        assert DATA_STYLES["dewpoint_temperature_2m"]["dewpoint_temperature_2m"]["cmap"] == "BrBG_r"
+        assert (
+            DATA_STYLES["dewpoint_temperature_2m"]["dewpoint_temperature_2m"]["cmap"]
+            == "BrBG_r"
+        )
         assert DATA_STYLES["wind_u_10m"]["wind_u_10m"]["cmap"] == "PiYG"
 
     def test_colour_list_with_levels_is_discrete_listed_colormap(self):
         """A colour-list reference preset (with levels) keeps the exact reference colours (ListedColormap)."""
-        layer = DATA_STYLES["aerosol_optical_depth_550nm"]["aerosol_optical_depth_550nm"]
+        layer = DATA_STYLES["aerosol_optical_depth_550nm"][
+            "aerosol_optical_depth_550nm"
+        ]
         assert isinstance(layer["cmap"], ListedColormap)
         assert (
             layer["cmap"].N == 9
@@ -705,7 +714,9 @@ class TestReferencePresets:
 
     def test_colour_rich_list_preset_honours_extend(self):
         """convective_available_potential_energy (255 colours over 16 bands) keeps extend='max' -- it has room for an over colour."""
-        layer = DATA_STYLES["convective_available_potential_energy"]["convective_available_potential_energy"]
+        layer = DATA_STYLES["convective_available_potential_energy"][
+            "convective_available_potential_energy"
+        ]
         norm, _, _ = _resolve_style_norm(
             np.linspace(0.0, 5000.0, 400).reshape(20, 20), layer
         )
@@ -714,7 +725,9 @@ class TestReferencePresets:
 
     def test_one_colour_per_band_preset_drops_extend(self):
         """aerosol_optical_depth_550nm (9 colours, 9 bands) drops extend -- no spare colour for the over slot -- and clamps."""
-        layer = DATA_STYLES["aerosol_optical_depth_550nm"]["aerosol_optical_depth_550nm"]
+        layer = DATA_STYLES["aerosol_optical_depth_550nm"][
+            "aerosol_optical_depth_550nm"
+        ]
         norm, _, _ = _resolve_style_norm(
             np.linspace(0.0, 1.5, 400).reshape(20, 20), layer
         )
@@ -723,14 +736,21 @@ class TestReferencePresets:
 
     def test_colour_list_preset_renders_exact_discrete_colours(self, ax):
         """A ListedColormap reference preset paints each band with its exact palette colour."""
-        cmap = DATA_STYLES["aerosol_optical_depth_550nm"]["aerosol_optical_depth_550nm"]["cmap"]
-        levels = DATA_STYLES["aerosol_optical_depth_550nm"]["aerosol_optical_depth_550nm"]["levels"]
+        cmap = DATA_STYLES["aerosol_optical_depth_550nm"][
+            "aerosol_optical_depth_550nm"
+        ]["cmap"]
+        levels = DATA_STYLES["aerosol_optical_depth_550nm"][
+            "aerosol_optical_depth_550nm"
+        ]["levels"]
         data = np.array(
             [[levels[0] + 1e-3, levels[4] + 1e-3]]
         )  # falls in band 0 and band 4
-        img = apply_data_style(ax, {"aerosol_optical_depth_550nm": data}, style="aerosol_optical_depth_550nm", legend=False)[
-            "aerosol_optical_depth_550nm"
-        ]
+        img = apply_data_style(
+            ax,
+            {"aerosol_optical_depth_550nm": data},
+            style="aerosol_optical_depth_550nm",
+            legend=False,
+        )["aerosol_optical_depth_550nm"]
         rgb = np.asarray(img.get_array())[..., :3]
         assert np.allclose(rgb[0, 0], to_rgb(cmap.colors[0]), atol=1 / 255)
         assert np.allclose(rgb[0, 1], to_rgb(cmap.colors[4]), atol=1 / 255)
@@ -738,7 +758,9 @@ class TestReferencePresets:
     def test_reference_style_renders_banded(self, ax):
         """A vendored reference style renders discrete level bands end-to-end."""
         data = np.linspace(-10.0, 38.0, 60 * 60).reshape(60, 60)
-        img = apply_data_style(ax, {"temperature_2m": data}, style="temperature_2m", legend=False)
+        img = apply_data_style(
+            ax, {"temperature_2m": data}, style="temperature_2m", legend=False
+        )
         rgb = np.asarray(img["temperature_2m"].get_array())[..., :3].reshape(-1, 3)
         assert len(np.unique(np.round(rgb, 3), axis=0)) <= 43  # ~41 bands + extend
 
@@ -794,7 +816,9 @@ class TestContourLevelsStyle:
     def test_levels_render_discrete_bands(self, ax):
         """A continuous field styled with `levels` paints in a small set of banded colours."""
         data = np.linspace(-30.0, 38.0, 60 * 60).reshape(60, 60)
-        img = apply_data_style(ax, {"temperature_2m": data}, style="temperature_2m", legend=False)
+        img = apply_data_style(
+            ax, {"temperature_2m": data}, style="temperature_2m", legend=False
+        )
         rgb = np.asarray(img["temperature_2m"].get_array())[..., :3].reshape(-1, 3)
         distinct = len(np.unique(np.round(rgb, 3), axis=0))
         assert distinct <= 41, f"expected discrete level bands, got {distinct} colours"
@@ -803,11 +827,20 @@ class TestContourLevelsStyle:
         """An explicit caller vmin/vmax overrides a levels preset's fixed scale (not a silent no-op)."""
         data = np.linspace(-40.0, 100.0, 400).reshape(20, 20)
         fig2, ax2 = plt.subplots()
-        base = apply_data_style(ax, {"temperature_2m": data}, style="temperature_2m", legend=False)
-        over = apply_data_style(
-            ax2, {"temperature_2m": data}, style="temperature_2m", vmin=-40.0, vmax=100.0, legend=False
+        base = apply_data_style(
+            ax, {"temperature_2m": data}, style="temperature_2m", legend=False
         )
-        assert not np.allclose(base["temperature_2m"].get_array(), over["temperature_2m"].get_array())
+        over = apply_data_style(
+            ax2,
+            {"temperature_2m": data},
+            style="temperature_2m",
+            vmin=-40.0,
+            vmax=100.0,
+            legend=False,
+        )
+        assert not np.allclose(
+            base["temperature_2m"].get_array(), over["temperature_2m"].get_array()
+        )
         plt.close(fig2)
 
     def test_string_norm_kind_overrides_a_levels_preset(self):
@@ -832,11 +865,23 @@ class TestContourLevelsStyle:
             20, 20
         )  # positive, spans the aerosol_optical_depth_550nm levels
         fig2, ax2 = plt.subplots()
-        base = apply_data_style(ax, {"aerosol_optical_depth_550nm": data}, style="aerosol_optical_depth_550nm", legend=False)
-        logged = apply_data_style(
-            ax2, {"aerosol_optical_depth_550nm": data}, style="aerosol_optical_depth_550nm", norm="log", legend=False
+        base = apply_data_style(
+            ax,
+            {"aerosol_optical_depth_550nm": data},
+            style="aerosol_optical_depth_550nm",
+            legend=False,
         )
-        assert not np.allclose(base["aerosol_optical_depth_550nm"].get_array(), logged["aerosol_optical_depth_550nm"].get_array())
+        logged = apply_data_style(
+            ax2,
+            {"aerosol_optical_depth_550nm": data},
+            style="aerosol_optical_depth_550nm",
+            norm="log",
+            legend=False,
+        )
+        assert not np.allclose(
+            base["aerosol_optical_depth_550nm"].get_array(),
+            logged["aerosol_optical_depth_550nm"].get_array(),
+        )
         plt.close(fig2)
 
     def test_instance_norm_labels_legend_with_its_own_range_on_a_levels_preset(
@@ -848,7 +893,11 @@ class TestContourLevelsStyle:
             20, 20
         )  # positive, valid for LogNorm
         apply_data_style(
-            ax, {"temperature_2m": data}, style="temperature_2m", norm=LogNorm(vmin=1, vmax=100), legend=True
+            ax,
+            {"temperature_2m": data},
+            style="temperature_2m",
+            norm=LogNorm(vmin=1, vmax=100),
+            legend=True,
         )
         swatch_texts = [t.get_text() for c in ax.child_axes for t in c.texts]
         assert "1" in swatch_texts, (
@@ -857,8 +906,12 @@ class TestContourLevelsStyle:
         assert "≥100" in swatch_texts, (
             f"high endpoint should be the instance vmax (100), got {swatch_texts}"
         )
-        assert '-40' not in swatch_texts, f"must not label with the preset's fixed level endpoints, got {swatch_texts}"
-        assert '≤-40' not in swatch_texts, f"must not label with the preset's fixed level endpoints, got {swatch_texts}"
+        assert '-40' not in swatch_texts, (
+            f"must not label with the preset's fixed level endpoints, got {swatch_texts}"
+        )
+        assert '≤-40' not in swatch_texts, (
+            f"must not label with the preset's fixed level endpoints, got {swatch_texts}"
+        )
 
     def test_data_outside_fixed_levels_warns(self, ax):
         """Data entirely outside a levels preset's scale warns (Celsius levels, Kelvin data footgun)."""
@@ -866,12 +919,16 @@ class TestContourLevelsStyle:
             (4, 4), 290.0
         )  # ~17 degC in K, far above the -40..40 degC temperature_2m levels
         with pytest.warns(UserWarning, match="expected units"):
-            apply_data_style(ax, {"temperature_2m": kelvin}, style="temperature_2m", legend=False)
+            apply_data_style(
+                ax, {"temperature_2m": kelvin}, style="temperature_2m", legend=False
+            )
 
     def test_two_sided_extend_legend_caps_the_low_endpoint(self, ax):
         """A two-sided `extend='both'` levels preset marks both endpoints as capped ('≤'/'≥')."""
         data = np.linspace(-30.0, 38.0, 400).reshape(20, 20)
-        apply_data_style(ax, {"temperature_2m": data}, style="temperature_2m", legend=True)
+        apply_data_style(
+            ax, {"temperature_2m": data}, style="temperature_2m", legend=True
+        )
         swatch_texts = [t.get_text() for c in ax.child_axes for t in c.texts]
         assert "≤-40" in swatch_texts, (
             f"expected a capped '≤-40' low endpoint, got {swatch_texts}"
@@ -885,7 +942,12 @@ class TestContourLevelsStyle:
         has no spare over-slot), so the legend caps NEITHER end -- not a spurious '≥'.
         """
         data = np.linspace(0.05, 4.5, 400).reshape(20, 20)
-        apply_data_style(ax, {"aerosol_optical_depth_550nm": data}, style="aerosol_optical_depth_550nm", legend=True)
+        apply_data_style(
+            ax,
+            {"aerosol_optical_depth_550nm": data},
+            style="aerosol_optical_depth_550nm",
+            legend=True,
+        )
         swatch_texts = [t.get_text() for c in ax.child_axes for t in c.texts]
         assert not any(t.startswith("≤") for t in swatch_texts), (
             f"a downgraded extend must not cap the low endpoint, got {swatch_texts}"
@@ -898,7 +960,12 @@ class TestContourLevelsStyle:
         """A colour-rich `extend='max'` preset (convective_available_potential_energy keeps its over-slot) caps only the high
         end ('≥'), leaving the low endpoint plain."""
         data = np.linspace(100.0, 4500.0, 400).reshape(20, 20)
-        apply_data_style(ax, {"convective_available_potential_energy": data}, style="convective_available_potential_energy", legend=True)
+        apply_data_style(
+            ax,
+            {"convective_available_potential_energy": data},
+            style="convective_available_potential_energy",
+            legend=True,
+        )
         swatch_texts = [t.get_text() for c in ax.child_axes for t in c.texts]
         assert any(t.startswith("≥") for t in swatch_texts), (
             f"a kept extend='max' should cap the high endpoint, got {swatch_texts}"
@@ -988,12 +1055,12 @@ class TestMagicsPresets:
         `aerosol_optical_depth_550nm` shortNames are now the reference default
         styles -- see `TestReferencePresets`.)
         """
-        assert DATA_STYLES["mean_temperature_2m"]["mean_temperature_2m"]["label"].startswith(
-            "Mean temperature at 2 metres"
-        )
-        assert DATA_STYLES["potential_temperature"]["potential_temperature"]["label"].startswith(
-            "Potential temperature"
-        )
+        assert DATA_STYLES["mean_temperature_2m"]["mean_temperature_2m"][
+            "label"
+        ].startswith("Mean temperature at 2 metres")
+        assert DATA_STYLES["potential_temperature"]["potential_temperature"][
+            "label"
+        ].startswith("Potential temperature")
 
     def test_a_substantial_library_was_loaded(self):
         """The vendored asset registers a large batch of parameter presets."""
@@ -1026,7 +1093,9 @@ class TestMagicsPresets:
     def test_magics_preset_renders_opaque_field(self, ax):
         """A Magics preset draws end-to-end; an opaque one fills the field, NaN transparent."""
         images = apply_data_style(
-            ax, {"min_temperature_2m": np.array([[-20.0, 30.0], [np.nan, 5.0]])}, style="min_temperature_2m"
+            ax,
+            {"min_temperature_2m": np.array([[-20.0, 30.0], [np.nan, 5.0]])},
+            style="min_temperature_2m",
         )
         alpha = images["min_temperature_2m"].get_array()[..., 3]
         assert alpha[0, 0] == alpha[0, 1] == alpha[1, 1] == 1.0, f"not opaque: {alpha}"
@@ -1071,7 +1140,9 @@ class TestMagicsPresets:
     def test_banded_render_produces_few_distinct_colours(self, ax):
         """A banded preset paints flat bands, so a smooth field renders in few colours."""
         data = np.linspace(-30.0, 45.0, 60 * 60).reshape(60, 60)
-        img = apply_data_style(ax, {"min_temperature_2m": data}, style="min_temperature_2m", legend=False)["min_temperature_2m"]
+        img = apply_data_style(
+            ax, {"min_temperature_2m": data}, style="min_temperature_2m", legend=False
+        )["min_temperature_2m"]
         rgb = np.asarray(img.get_array())[..., :3].reshape(-1, 3)
         distinct = np.unique(np.round(rgb, 3), axis=0)
         assert len(distinct) <= 27, (
@@ -1109,7 +1180,9 @@ class TestMagicsPresets:
             .read_text()
         )["presets"]["air_temperature"]["layers"]["air_temperature"]
         palette = rec["colors"]
-        assert len(palette) >= 25, f"air_temperature ramp truncated to {len(palette)} colours"
+        assert len(palette) >= 25, (
+            f"air_temperature ramp truncated to {len(palette)} colours"
+        )
         assert any(g > r and g > b and g > 0.5 for r, g, b in map(to_rgb, palette)), (
             "the green transition band (Magics named colours) must be preserved"
         )
@@ -1129,18 +1202,34 @@ class TestMagicsPresets:
         """Passing vmin=None to apply_data_style keeps the preset's fixed range (not auto-range)."""
         data = np.linspace(-10.0, 50.0, 400).reshape(20, 20)
         fig2, ax2 = plt.subplots()
-        base = apply_data_style(ax, {"min_temperature_2m": data}, style="min_temperature_2m", legend=False)
-        none = apply_data_style(
-            ax2, {"min_temperature_2m": data}, style="min_temperature_2m", vmin=None, legend=False
+        base = apply_data_style(
+            ax, {"min_temperature_2m": data}, style="min_temperature_2m", legend=False
         )
-        assert np.allclose(base["min_temperature_2m"].get_array(), none["min_temperature_2m"].get_array())
+        none = apply_data_style(
+            ax2,
+            {"min_temperature_2m": data},
+            style="min_temperature_2m",
+            vmin=None,
+            legend=False,
+        )
+        assert np.allclose(
+            base["min_temperature_2m"].get_array(),
+            none["min_temperature_2m"].get_array(),
+        )
         plt.close(fig2)
 
     def test_data_outside_fixed_range_warns(self, ax):
         """A fixed-range Magics preset warns when the data is entirely outside its scale."""
-        kelvin = np.full((4, 4), 290.0)  # far above min_temperature_2m's decoded -48..56 degC scale
+        kelvin = np.full(
+            (4, 4), 290.0
+        )  # far above min_temperature_2m's decoded -48..56 degC scale
         with pytest.warns(UserWarning, match="expected units"):
-            apply_data_style(ax, {"min_temperature_2m": kelvin}, style="min_temperature_2m", legend=False)
+            apply_data_style(
+                ax,
+                {"min_temperature_2m": kelvin},
+                style="min_temperature_2m",
+                legend=False,
+            )
 
     def test_range_without_interval_is_decoded(self):
         """A style name with a range but no interval (wind f0t80) still gets vmin/vmax."""
@@ -1155,11 +1244,21 @@ class TestMagicsPresets:
         """An explicit vmin/vmax at draw time overrides the preset's fixed range."""
         data = np.linspace(-10.0, 50.0, 400).reshape(20, 20)
         fig2, ax2 = plt.subplots()
-        base = apply_data_style(ax, {"min_temperature_2m": data}, style="min_temperature_2m", legend=False)
-        over = apply_data_style(
-            ax2, {"min_temperature_2m": data}, style="min_temperature_2m", vmin=-10.0, vmax=50.0, legend=False
+        base = apply_data_style(
+            ax, {"min_temperature_2m": data}, style="min_temperature_2m", legend=False
         )
-        assert not np.allclose(base["min_temperature_2m"].get_array(), over["min_temperature_2m"].get_array())
+        over = apply_data_style(
+            ax2,
+            {"min_temperature_2m": data},
+            style="min_temperature_2m",
+            vmin=-10.0,
+            vmax=50.0,
+            legend=False,
+        )
+        assert not np.allclose(
+            base["min_temperature_2m"].get_array(),
+            over["min_temperature_2m"].get_array(),
+        )
         plt.close(fig2)
 
 
@@ -1518,11 +1617,25 @@ class TestCmoceanPresets:
             {
                 "version": 1,
                 "presets": {
-                    "good1": {"layers": {"good1": {
-                        "label": "Good 1", "colors": ["#000000", "#ffffff"], "colormap": "perceptual"}}},
+                    "good1": {
+                        "layers": {
+                            "good1": {
+                                "label": "Good 1",
+                                "colors": ["#000000", "#ffffff"],
+                                "colormap": "perceptual",
+                            }
+                        }
+                    },
                     "bad": {"label": "no layers"},
-                    "good2": {"layers": {"good2": {
-                        "label": "Good 2", "colors": ["#ff0000", "#00ff00"], "colormap": "perceptual"}}},
+                    "good2": {
+                        "layers": {
+                            "good2": {
+                                "label": "Good 2",
+                                "colors": ["#ff0000", "#00ff00"],
+                                "colormap": "perceptual",
+                            }
+                        }
+                    },
                 },
             }
         )

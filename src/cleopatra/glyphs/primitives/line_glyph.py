@@ -33,8 +33,8 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-from cleopatra.styling.colors import add_line_glow, resolve_glow_options
 from cleopatra.glyphs.base.glyph import Glyph, _root_figure
+from cleopatra.styling.colors import add_line_glow, resolve_glow_options
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 #: Option keys for LineGlyph (no scalar-mapping keys; this glyph does

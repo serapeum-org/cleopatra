@@ -38,7 +38,9 @@ class TestConvertUnits:
             The affine table maps each supported unit pair correctly.
         """
         result = float(convert_units(np.array([value]), src, dst)[0])
-        assert result == pytest.approx(expected), f"{value}{src}->{dst}: expected {expected}, got {result}"
+        assert result == pytest.approx(expected), (
+            f"{value}{src}->{dst}: expected {expected}, got {result}"
+        )
 
     @pytest.mark.parametrize("alias", ["K", "kelvin", "Kelvin", " KELVIN "])
     def test_aliases_are_normalised(self, alias):
@@ -51,7 +53,9 @@ class TestConvertUnits:
             All Kelvin spellings convert 273.15 K to 0 C.
         """
         result = float(convert_units(np.array([273.15]), alias, "celsius")[0])
-        assert result == pytest.approx(0.0), f"alias {alias!r} should convert like 'kelvin', got {result}"
+        assert result == pytest.approx(0.0), (
+            f"alias {alias!r} should convert like 'kelvin', got {result}"
+        )
 
     def test_none_units_is_noop(self):
         """A missing unit returns the data unchanged.
@@ -60,7 +64,9 @@ class TestConvertUnits:
             ``from_units=None`` skips conversion entirely.
         """
         data = np.array([1.0, 2.0])
-        assert convert_units(data, None, "celsius").tolist() == [1.0, 2.0], "None source unit must be a no-op"
+        assert convert_units(data, None, "celsius").tolist() == [1.0, 2.0], (
+            "None source unit must be a no-op"
+        )
 
     def test_same_units_is_noop(self):
         """Identical source and target units skip conversion.
@@ -69,7 +75,9 @@ class TestConvertUnits:
             Converting celsius to celsius returns the input unchanged.
         """
         data = np.array([5.0, 10.0])
-        assert convert_units(data, "celsius", "degC").tolist() == [5.0, 10.0], "same-unit conversion must be a no-op"
+        assert convert_units(data, "celsius", "degC").tolist() == [5.0, 10.0], (
+            "same-unit conversion must be a no-op"
+        )
 
     def test_unknown_pair_warns_and_passes_through(self):
         """An unsupported unit pair warns and leaves the data unchanged.
@@ -82,7 +90,9 @@ class TestConvertUnits:
             warnings.simplefilter("always")
             result = convert_units(np.array([1.0]), "meters", "celsius")
         assert len(caught) == 1, f"expected exactly one warning, got {len(caught)}"
-        assert result.tolist() == [1.0], f"unknown pair should pass through unchanged, got {result.tolist()}"
+        assert result.tolist() == [1.0], (
+            f"unknown pair should pass through unchanged, got {result.tolist()}"
+        )
 
 
 class TestPresetUnitLabels:
@@ -96,8 +106,12 @@ class TestPresetUnitLabels:
             ends with ``[celsius]`` and the unit is kept on the layer.
         """
         layer = DATA_STYLES["temperature_2m"]["temperature_2m"]
-        assert layer["label"].endswith("[celsius]"), f"label should carry the unit: {layer['label']!r}"
-        assert layer.get("units") == "celsius", f"the unit should be kept on the layer, got {layer.get('units')!r}"
+        assert layer["label"].endswith("[celsius]"), (
+            f"label should carry the unit: {layer['label']!r}"
+        )
+        assert layer.get("units") == "celsius", (
+            f"the unit should be kept on the layer, got {layer.get('units')!r}"
+        )
 
     def test_unitless_preset_label_has_no_brackets(self):
         """A preset without a declared unit keeps a plain label.
@@ -107,5 +121,7 @@ class TestPresetUnitLabels:
             and no ``units`` key.
         """
         layer = DATA_STYLES["elevation"]["elevation"]
-        assert "[" not in layer["label"], f"unitless preset label should have no unit suffix: {layer['label']!r}"
+        assert "[" not in layer["label"], (
+            f"unitless preset label should have no unit suffix: {layer['label']!r}"
+        )
         assert "units" not in layer, "a unitless preset should not carry a units key"

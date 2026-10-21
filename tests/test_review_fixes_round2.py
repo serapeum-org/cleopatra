@@ -34,7 +34,9 @@ class TestReviewFixesRound2:
         masked = np.ma.masked_array(int_data, mask)
         glyph = ArrayGlyph(masked, coords=(lon, lat), projection="flat")
         glyph.plot()
-        assert glyph.im is not None, "integer masked raster should render under projection"
+        assert glyph.im is not None, (
+            "integer masked raster should render under projection"
+        )
         plt.close("all")
 
     def test_globe_relief_warns_and_skips_l1(self):
@@ -50,7 +52,9 @@ class TestReviewFixesRound2:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
             publication_map(data, coords=(lon, lat), projection="globe", relief=True)
-        assert any("relief basemaps compose only" in str(w.message) for w in caught), "globe+relief must warn"
+        assert any("relief basemaps compose only" in str(w.message) for w in caught), (
+            "globe+relief must warn"
+        )
         plt.close("all")
 
     def test_projection_ignores_kind_and_hillshade_warns_l2(self):
@@ -66,5 +70,7 @@ class TestReviewFixesRound2:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
             ArrayGlyph(data, coords=(lon, lat), projection="flat").plot(kind="contour")
-        assert any("always renders via pcolormesh" in str(w.message) for w in caught), "kind under projection must warn"
+        assert any("always renders via pcolormesh" in str(w.message) for w in caught), (
+            "kind under projection must warn"
+        )
         plt.close("all")

@@ -16,13 +16,40 @@ from matplotlib.image import AxesImage
 from matplotlib.lines import Line2D
 from PIL import Image, UnidentifiedImageError
 
-from cleopatra.styling.palettes import CAMS_AOD_COLORMAPS, FLAME_COLORMAPS, HAZE_COLORMAPS
+from cleopatra.styling.palettes import (
+    CAMS_AOD_COLORMAPS,
+    FLAME_COLORMAPS,
+    HAZE_COLORMAPS,
+)
 from cleopatra.styling.perceptual import perceptual_colormap
-from cleopatra.styling.styles import disjoint_legend, swatch_extend_prefixes, swatch_legend
+from cleopatra.styling.styles import (
+    disjoint_legend,
+    swatch_extend_prefixes,
+    swatch_legend,
+)
 
-#: The haze / CAMS-AOD / flame colour families now live in `cleopatra.styling.palettes`
-#: (built there via perceptual CIELAB interpolation and registered in the unified
-#: palette registry). They are re-exported above and used by `DATA_STYLES` below.
+__all__ = [
+    "CAMS_AOD_COLORMAPS",
+    "FLAME_COLORMAPS",
+    "HAZE_COLORMAPS",
+    "GLOW_OPTION_KEYS",
+    "DATA_STYLES",
+    "Colors",
+    "add_line_glow",
+    "alpha_rgba",
+    "alpha_scaled_image",
+    "alpha_scaled_mesh",
+    "apply_data_style",
+    "build_log_norm",
+    "category_boundaries",
+    "convert_units",
+    "resolve_colormap",
+    "resolve_glow_options",
+    "resolve_single_layer_style",
+    "resolve_style_norm",
+    "resolve_style_overrides",
+    "style_for_parameter",
+]
 
 
 def _require_cmap(action: str) -> None:
@@ -43,7 +70,9 @@ def _require_cmap(action: str) -> None:
         )
 
 
-def resolve_colormap(cmap: str | Colormap | None, *, param: str = "cmap") -> Colormap | None:
+def resolve_colormap(
+    cmap: str | Colormap | None, *, param: str = "cmap"
+) -> Colormap | None:
     """Resolve a colormap name or object to a matplotlib `Colormap`.
 
     The single seam cleopatra uses to turn a ``cmap`` value into a concrete
@@ -109,8 +138,11 @@ def resolve_colormap(cmap: str | Colormap | None, *, param: str = "cmap") -> Col
         from cmap import Colormap as _CmapColormap
 
         try:
-            return _CmapColormap(cmap).to_mpl()
-        except (ValueError, KeyError) as exc:  # cmap raises ValueError for an unknown name
+            return cast(Colormap, _CmapColormap(cmap).to_mpl())
+        except (
+            ValueError,
+            KeyError,
+        ) as exc:  # cmap raises ValueError for an unknown name
             raise ValueError(
                 f"{param}={cmap!r} is not a known namespaced colormap: {exc}"
             ) from exc
@@ -472,6 +504,7 @@ def alpha_rgba(
         norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
     alpha_norm = norm if alpha_norm is None else alpha_norm
 
+    assert cmap_obj is not None
     rgba = cmap_obj(norm(data))
     if constant_alpha is not None:
         alpha = np.full(data.shape, float(np.clip(constant_alpha, 0.0, 1.0)))
@@ -792,39 +825,79 @@ del _asset
 #: re-implementing the mapping. "how to plot" stays here; "what to plot" (reading
 #: the shortName) stays with the data package (pyramids), not here.
 _SHORTNAME_TO_STYLE: dict[str, str] = {
-    "10fg": "wind_gust_10m", "10fgi": "wind_gust_10m_index", "10si": "wind_speed_10m",
-    "10u": "wind_u_10m", "10v": "wind_v_10m", "10wsi": "wind_speed_10m_index",
-    "2d": "dewpoint_temperature_2m", "2t": "temperature_2m", "2ti": "temperature_2m_index",
-    "2tp": "temperature_2m_probability", "aod550": "aerosol_optical_depth_550nm",
+    "10fg": "wind_gust_10m",
+    "10fgi": "wind_gust_10m_index",
+    "10si": "wind_speed_10m",
+    "10u": "wind_u_10m",
+    "10v": "wind_v_10m",
+    "10wsi": "wind_speed_10m_index",
+    "2d": "dewpoint_temperature_2m",
+    "2t": "temperature_2m",
+    "2ti": "temperature_2m_index",
+    "2tp": "temperature_2m_probability",
+    "aod550": "aerosol_optical_depth_550nm",
     "cape": "convective_available_potential_energy",
     "capei": "convective_available_potential_energy_index",
     "capes": "convective_available_potential_energy_shear",
     "capesi": "convective_available_potential_energy_shear_index",
-    "cin": "convective_inhibition", "clbt": "cloudy_brightness_temperature",
-    "co": "carbon_monoxide", "cp": "convective_precipitation", "crfrate": "convective_rainfall_rate",
-    "d": "divergence", "duaod550": "dust_aerosol_optical_depth_550nm",
-    "frpfire": "wildfire_radiative_power", "go3": "ozone", "gtco3": "total_column_ozone",
-    "hcc": "high_cloud_cover", "kx": "k_index", "lcc": "low_cloud_cover",
-    "lsp": "large_scale_precipitation", "lsrrate": "large_scale_rainfall_rate",
-    "maxswh": "max_significant_wave_height", "maxswhi": "max_significant_wave_height_index",
-    "mcc": "medium_cloud_cover", "mean10ws": "mean_wind_speed_10m", "mean2t": "mean_temperature_2m",
-    "mn2t": "min_temperature_2m", "mn2ti": "min_temperature_2m_index",
-    "mpts": "mean_period_total_swell", "mpww": "mean_period_wind_waves",
-    "mslpp": "mean_sea_level_pressure_probability", "mwp": "mean_wave_period",
-    "mx2t": "max_temperature_2m", "mx2ti": "max_temperature_2m_index", "no2": "nitrogen_dioxide",
-    "ph": "hurricane_probability", "prate": "precipitation_rate", "pt": "potential_temperature",
-    "ptd": "tropical_depression_probability", "pts": "tropical_storm_probability",
-    "q": "specific_humidity", "sf": "snowfall", "sfi": "snowfall_index",
-    "sh10": "significant_wave_height_over_10s_period", "shts": "significant_height_total_swell",
-    "shww": "significant_height_wind_waves", "srweq": "snowfall_rate_water_equivalent",
-    "stl1p": "soil_temperature_level1_probability", "suaod550": "sulphate_aerosol_optical_depth_550nm",
-    "swh": "significant_wave_height_combined", "t": "air_temperature",
-    "tcch4": "ch4_column_mean_molar_fraction", "tcco": "total_column_carbon_monoxide",
-    "tcco2": "co2_column_mean_molar_fraction", "tcso2": "total_column_sulphur_dioxide",
-    "totalx": "total_totals_index", "tp": "total_precipitation", "tpi": "total_precipitation_index",
-    "tpp": "total_precipitation_probability", "uvbed": "uv_biologically_effective_dose",
-    "uvbedcs": "uv_biologically_effective_dose_clear_sky", "vo": "relative_vorticity",
-    "w": "vertical_velocity", "ws": "total_wind_speed",
+    "cin": "convective_inhibition",
+    "clbt": "cloudy_brightness_temperature",
+    "co": "carbon_monoxide",
+    "cp": "convective_precipitation",
+    "crfrate": "convective_rainfall_rate",
+    "d": "divergence",
+    "duaod550": "dust_aerosol_optical_depth_550nm",
+    "frpfire": "wildfire_radiative_power",
+    "go3": "ozone",
+    "gtco3": "total_column_ozone",
+    "hcc": "high_cloud_cover",
+    "kx": "k_index",
+    "lcc": "low_cloud_cover",
+    "lsp": "large_scale_precipitation",
+    "lsrrate": "large_scale_rainfall_rate",
+    "maxswh": "max_significant_wave_height",
+    "maxswhi": "max_significant_wave_height_index",
+    "mcc": "medium_cloud_cover",
+    "mean10ws": "mean_wind_speed_10m",
+    "mean2t": "mean_temperature_2m",
+    "mn2t": "min_temperature_2m",
+    "mn2ti": "min_temperature_2m_index",
+    "mpts": "mean_period_total_swell",
+    "mpww": "mean_period_wind_waves",
+    "mslpp": "mean_sea_level_pressure_probability",
+    "mwp": "mean_wave_period",
+    "mx2t": "max_temperature_2m",
+    "mx2ti": "max_temperature_2m_index",
+    "no2": "nitrogen_dioxide",
+    "ph": "hurricane_probability",
+    "prate": "precipitation_rate",
+    "pt": "potential_temperature",
+    "ptd": "tropical_depression_probability",
+    "pts": "tropical_storm_probability",
+    "q": "specific_humidity",
+    "sf": "snowfall",
+    "sfi": "snowfall_index",
+    "sh10": "significant_wave_height_over_10s_period",
+    "shts": "significant_height_total_swell",
+    "shww": "significant_height_wind_waves",
+    "srweq": "snowfall_rate_water_equivalent",
+    "stl1p": "soil_temperature_level1_probability",
+    "suaod550": "sulphate_aerosol_optical_depth_550nm",
+    "swh": "significant_wave_height_combined",
+    "t": "air_temperature",
+    "tcch4": "ch4_column_mean_molar_fraction",
+    "tcco": "total_column_carbon_monoxide",
+    "tcco2": "co2_column_mean_molar_fraction",
+    "tcso2": "total_column_sulphur_dioxide",
+    "totalx": "total_totals_index",
+    "tp": "total_precipitation",
+    "tpi": "total_precipitation_index",
+    "tpp": "total_precipitation_probability",
+    "uvbed": "uv_biologically_effective_dose",
+    "uvbedcs": "uv_biologically_effective_dose_clear_sky",
+    "vo": "relative_vorticity",
+    "w": "vertical_velocity",
+    "ws": "total_wind_speed",
 }
 
 
@@ -998,6 +1071,7 @@ def resolve_style_norm(
         edges = [float(v) for v in levels]
         _warn_if_outside_fixed_range(data, edges[0], edges[-1])
         cmap_obj = resolve_colormap(cfg["cmap"])
+        assert cmap_obj is not None
         extend = cfg.get("extend", "neither")
         reserved = {"neither": 0, "min": 1, "max": 1, "both": 2}.get(extend, 0)
         if cmap_obj.N < (len(edges) - 1) + reserved:
@@ -1072,7 +1146,7 @@ def resolve_style_norm(
         raise ValueError(
             f"data style 'norm' must be 'linear', 'log', or 'symlog', got {norm_kind!r}"
         )
-    return norm, vmin, vmax
+    return norm, cast(float, vmin), cast(float, vmax)
 
 
 def resolve_style_overrides(raw: dict[str, Any]) -> dict[str, Any]:
@@ -1144,7 +1218,10 @@ def resolve_style_overrides(raw: dict[str, Any]) -> dict[str, Any]:
         out["alpha"] = alpha
         out["alpha_vmin"] = out["alpha_vmax"] = None  # constant replaces value-linked
     elif alpha_range is not None:
-        out["alpha_vmin"], out["alpha_vmax"] = float(alpha_range[0]), float(alpha_range[1])
+        out["alpha_vmin"], out["alpha_vmax"] = (
+            float(alpha_range[0]),
+            float(alpha_range[1]),
+        )
         out["alpha"] = None  # value-linked replaces constant
     return out
 
@@ -1354,8 +1431,15 @@ def apply_data_style(
     raw_overrides = {
         key: render_kwargs.pop(key, None)
         for key in (
-            "vmin", "vmax", "center", "cmap",
-            "extend", "levels", "bands", "alpha", "alpha_range",
+            "vmin",
+            "vmax",
+            "center",
+            "cmap",
+            "extend",
+            "levels",
+            "bands",
+            "alpha",
+            "alpha_range",
         )
     }
     if isinstance(norm_override, str):
@@ -1477,9 +1561,11 @@ def apply_data_style(
                 else (0.02, 0.92 - 0.12 * i, 0.32, 0.06)
             )
             vmin_prefix, vmax_prefix = swatch_extend_prefixes(norm)
+            _cmap_resolved = resolve_colormap(cfg["cmap"])
+            assert _cmap_resolved is not None
             swatch_legend(
                 ax,
-                resolve_colormap(cfg["cmap"]),
+                _cmap_resolved,
                 cfg["label"],
                 vmin=resolved_vmin,
                 vmax=resolved_vmax,

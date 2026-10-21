@@ -33,7 +33,9 @@ class TestColorbarPad:
         """
         glyph = ArrayGlyph(np.random.default_rng(0).random((20, 100)))
         glyph.plot()
-        assert _gap(glyph) < 0.03, f"default colorbar gap should be tight, got {_gap(glyph):.4f}"
+        assert _gap(glyph) < 0.03, (
+            f"default colorbar gap should be tight, got {_gap(glyph):.4f}"
+        )
         plt.close("all")
 
     def test_pad_override_widens_the_gap(self):
@@ -45,7 +47,9 @@ class TestColorbarPad:
         """
         tight = ArrayGlyph(np.random.default_rng(0).random((20, 100)))
         tight.plot()
-        wide = ArrayGlyph(np.random.default_rng(0).random((20, 100)), cbar_kwargs={"pad": 0.15})
+        wide = ArrayGlyph(
+            np.random.default_rng(0).random((20, 100)), cbar_kwargs={"pad": 0.15}
+        )
         wide.plot()
         assert _gap(wide) > _gap(tight), "a larger pad must widen the gap"
         plt.close("all")

@@ -162,7 +162,9 @@ class TestPieGlyphPlot:
         fig, ax = plt.subplots()
         PieGlyph(["a", "b"], [1.0, 1.0]).plot(ax=ax)
         PieGlyph(["c", "d"], [1.0, 1.0]).plot(ax=ax, compose=True)
-        assert len(ax.patches) == 4, "compose should overlay, keeping both glyphs' wedges"
+        assert len(ax.patches) == 4, (
+            "compose should overlay, keeping both glyphs' wedges"
+        )
         assert len(ax.texts) == 8, "compose keeps both glyphs' labels/percents"
 
     def test_uses_construction_axes_when_plot_ax_omitted(self):

@@ -50,9 +50,6 @@ from cleopatra.styling.colorbar import (
 from cleopatra.styling.colors import resolve_colormap
 from cleopatra.styling.params import Classify, Contour
 from cleopatra.styling.scaling import ColorScaling
-from cleopatra.styling.colors import resolve_colormap
-from cleopatra.basemap.geo import GeoMixin
-from cleopatra.glyphs.base.glyph import Glyph, _root_figure
 from cleopatra.styling.styles import CLASSIFY_OPTIONS, resolve_sizes, size_legend
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
@@ -319,7 +316,9 @@ class ScatterGlyph(GeoMixin, Glyph):
             if title is not None:
                 opts["title"] = title
             opts.update(_resolve_colorbar(colorbar))
-            draw_colorbar = opts["add_colorbar"] if add_colorbar is None else add_colorbar
+            draw_colorbar = (
+                opts["add_colorbar"] if add_colorbar is None else add_colorbar
+            )
             self.cbar = None
             self.category_legend = None
 
@@ -338,7 +337,10 @@ class ScatterGlyph(GeoMixin, Glyph):
                 if categorical is not None:
                     color_array, cmap = categorical["codes"], categorical["cmap"]
                 else:
-                    color_array, cmap = np.asarray(self.values), resolve_colormap(opts["cmap"])
+                    color_array, cmap = (
+                        np.asarray(self.values),
+                        resolve_colormap(opts["cmap"]),
+                    )
                 paths = ax.scatter(
                     self.x,
                     self.y,

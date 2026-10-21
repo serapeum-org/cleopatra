@@ -44,6 +44,7 @@ from matplotlib.colorbar import Colorbar
 from matplotlib.colors import BoundaryNorm, Colormap, ListedColormap, Normalize
 from matplotlib.figure import Figure, SubFigure
 from matplotlib.gridspec import (
+    GridSpec,
     GridSpecBase,
     GridSpecFromSubplotSpec,
     SubplotSpec,
@@ -2219,6 +2220,7 @@ class ArrayGlyph(GeoMixin, Glyph):
 
                 ```
         """
+        assert rgb is not None
         return RgbBands(
             rgb,
             surface_reflectance=surface_reflectance,
@@ -2825,7 +2827,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         if log_floor is None or log_floor <= vmin:
             return vmin
         if not ticks_spacing_pinned:
-            self.default_options["ticks_spacing"] = (self._vmax - log_floor) / 10 or 1.0
+            self.default_options["ticks_spacing"] = (
+                cast(float, self._vmax) - log_floor
+            ) / 10 or 1.0
         return log_floor
 
     @staticmethod
@@ -3202,6 +3206,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 elevation = np.asarray(
                     ma.filled(ma.asarray(plot_arr).astype(float), np.nan), dtype=float
                 )
+                assert cmap is not None
                 im.set_data(shade_grid(elevation, cmap, norm=hs_norm, **hillshade))
             else:
                 warnings.warn(
@@ -3534,7 +3539,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 self.ax,
                 [a for a in (*self.ax.patches, *self.ax.lines) if id(a) not in before],
             )
-            images = apply_data_style(
+            images = cast(Any, apply_data_style)(
                 self.ax,
                 {layer: masked},
                 style=style,
@@ -3545,7 +3550,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 **override,
             )
         elif coords is not None:
-            images = apply_data_style(
+            images = cast(Any, apply_data_style)(
                 self.ax,
                 {layer: data},
                 style=style,
@@ -3559,7 +3564,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             render_kwargs: dict[str, Any] = (
                 {"extent": self.extent} if self.extent is not None else {}
             )
-            images = apply_data_style(
+            images = cast(Any, apply_data_style)(
                 self.ax,
                 {layer: data},
                 style=style,
@@ -3640,6 +3645,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         ```
         """
         colormap = resolve_colormap(cmap)
+        assert colormap is not None
         normed_data = (self.arr - self.arr.min()) / (self.arr.max() - self.arr.min())
         colored = colormap(normed_data)
         return np.asarray((colored[:, :, :3] * 255).astype("uint8"))
@@ -3825,8 +3831,8 @@ class ArrayGlyph(GeoMixin, Glyph):
                 return left + (col + 0.5) * dx, top - (row + 0.5) * dy
         else:
 
-            def _xy(row: int, col: int) -> tuple[int, int]:
-                return col, row
+            def _xy(row: int, col: int) -> tuple[float, float]:
+                return float(col), float(row)
 
         def add_text(elem):
             x, y = _xy(elem[0], elem[1])
@@ -3953,6 +3959,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             tuple: `(QuadMesh, cbar_kw)` -- the mappable and its colorbar kwargs.
         """
         projection = self.default_options["projection"]
+        assert self._coords is not None
         lon, lat = self._coords
         cmap = resolve_colormap(self.default_options["cmap"])
         plot_arr = (
@@ -4721,7 +4728,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             self._vmin_explicit = self._vmin_explicit or "vmin" in kwargs
             self.default_options["vmin"] = self._log_floored_vmin(
                 arr,
-                self.vmin,
+                cast(float, self.vmin),
                 vmin_pinned=self._vmin_explicit,
                 ticks_spacing_pinned=(
                     "ticks_spacing" in kwargs or "ticks_spacing" in resolved_colorbar
@@ -4982,17 +4989,17 @@ class ArrayGlyph(GeoMixin, Glyph):
                 is smaller than `nrows x ncols`.
         """
         if isinstance(axes, SubplotSpec):
-            host = axes.get_gridspec().figure
+            host = cast(Any, axes.get_gridspec()).figure
             if host is None:
                 raise ValueError(
                     "the supplied SubplotSpec is not attached to a figure; build "
                     "its GridSpec with `GridSpec(..., figure=fig)`."
                 )
-            cells: SubplotSpec | GridSpecBase = GridSpecFromSubplotSpec(
+            cells: GridSpecBase = GridSpecFromSubplotSpec(
                 nrows, ncols, subplot_spec=axes
             )
         else:
-            host = axes.figure
+            host = cast(Any, axes).figure
             if host is None:
                 raise ValueError(
                     "the supplied grid spec is not attached to a figure; build it "
@@ -5007,7 +5014,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         grid = np.empty((nrows, ncols), dtype=object)
         for r in range(nrows):
             for c in range(ncols):
-                grid[r, c] = host.add_subplot(cells[r, c])
+                grid[r, c] = host.add_subplot(cast(Any, cells)[r, c])
         return _root_figure(grid[0, 0]), grid
 
     @staticmethod
@@ -5952,7 +5959,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         # numpy bool, as `sub_frames` accepts numpy ints) picks defaults / none;
         # anything else is out of the declared `bool | ProgressBar` contract and
         # fails fast here rather than later inside rendering.
-        progress_bar = playback.progress_bar
+        progress_bar: bool | ProgressBar | None = playback.progress_bar
         if isinstance(progress_bar, (bool, np.bool_)):
             progress_bar = ProgressBar() if bool(progress_bar) else None
         elif not isinstance(progress_bar, ProgressBar):

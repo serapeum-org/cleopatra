@@ -78,6 +78,7 @@ KDE_DEFAULT_OPTIONS = {
 }
 KDE_DEFAULT_OPTIONS = STYLE_DEFAULTS | KDE_DEFAULT_OPTIONS
 
+
 class KDEGlyph(Glyph):
     """Visualization class for 2-D kernel-density estimates.
 
@@ -515,6 +516,7 @@ class KDEGlyph(Glyph):
                 if norm is not None
                 else Normalize(vmin=float(density.min()), vmax=float(density.max()))
             )
+            assert cmap is not None
             rgba = shade_grid(density, cmap, norm=hs_norm, **hillshade)
             extent = (
                 float(gx.min()),

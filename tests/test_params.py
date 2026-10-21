@@ -23,7 +23,9 @@ class TestDataStyleForApplyStyle:
             just ``style`` and keeps any sticky relief shading.
         """
         ds = DataStyle.for_apply_style("dem")
-        assert ds.to_options() == {"style": "dem"}, f"unexpected options: {ds.to_options()}"
+        assert ds.to_options() == {"style": "dem"}, (
+            f"unexpected options: {ds.to_options()}"
+        )
 
     @pytest.mark.parametrize("hillshade", [True, False, {"azimuth": 315}, None])
     def test_hillshade_given_flows_through(self, hillshade):
@@ -61,7 +63,9 @@ class TestDataStyleForApplyStyle:
             ``for_apply_style(None)`` emits ``style=None`` (the clear signal).
         """
         ds = DataStyle.for_apply_style(None)
-        assert ds.to_options() == {"style": None}, f"unexpected options: {ds.to_options()}"
+        assert ds.to_options() == {"style": None}, (
+            f"unexpected options: {ds.to_options()}"
+        )
 
 
 class TestUnsetSentinel:

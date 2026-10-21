@@ -161,12 +161,18 @@ class TestColorScalingBuildNorm:
         assert ticks.size >= 2, f"expected several bar ticks, got {ticks.tolist()}"
         assert ticks.min() >= -24.0, f"tick below vmin: {ticks.tolist()}"
         assert ticks.max() <= 744.0, f"tick above vmax: {ticks.tolist()}"
-        assert ticks.min() < 0.0, f"a below-zero range should span a negative tick: {ticks.tolist()}"
+        assert ticks.min() < 0.0, (
+            f"a below-zero range should span a negative tick: {ticks.tolist()}"
+        )
         nonzero = ticks[ticks != 0.0]
         decades = np.log10(np.abs(nonzero))
-        assert np.allclose(decades, np.round(decades)), f"non-decade ticks: {ticks.tolist()}"
+        assert np.allclose(decades, np.round(decades)), (
+            f"non-decade ticks: {ticks.tolist()}"
+        )
         fmt = cbar_kw["format"]
-        assert fmt(-10.0) == "-10", f"negative decade must keep its sign, got {fmt(-10.0)!r}"
+        assert fmt(-10.0) == "-10", (
+            f"negative decade must keep its sign, got {fmt(-10.0)!r}"
+        )
         assert fmt(100.0) == "100", f"expected '100', got {fmt(100.0)!r}"
 
     def test_sym_log_default_auto_derives_linthresh_from_the_range(self):
@@ -286,7 +292,9 @@ class TestColorScalingBuildNorm:
         nonzero = np.asarray(cbar_kw["ticks"])
         nonzero = nonzero[nonzero != 0.0]
         decades = np.log10(np.abs(nonzero))
-        assert np.allclose(decades, np.round(decades)), f"non-decade ticks: {nonzero.tolist()}"
+        assert np.allclose(decades, np.round(decades)), (
+            f"non-decade ticks: {nonzero.tolist()}"
+        )
 
     def test_sym_log_default_keeps_in_band_ticks_legible(self):
         """The auto default spaces the near-zero in-band ticks legibly (#337).
@@ -306,7 +314,9 @@ class TestColorScalingBuildNorm:
         crushed_norm, crushed_kw = ColorScaling.sym_log(scale=0.001).build_norm(
             np.array([-24.0, 744.0])
         )
-        crushed = np.sort([float(crushed_norm(t)) for t in np.asarray(crushed_kw["ticks"])])
+        crushed = np.sort(
+            [float(crushed_norm(t)) for t in np.asarray(crushed_kw["ticks"])]
+        )
         assert np.diff(crushed).min() < 0.001, (
             f"an explicit scale should still win (old crushed spacing), got {crushed.tolist()}"
         )
@@ -319,7 +329,9 @@ class TestColorScalingBuildNorm:
         assert ticks.min() >= 0.5, f"tick below vmin: {ticks.tolist()}"
         assert ticks.max() <= 744.0, f"tick above vmax: {ticks.tolist()}"
         decades = np.log10(ticks)
-        assert np.allclose(decades, np.round(decades)), f"non-decade ticks: {ticks.tolist()}"
+        assert np.allclose(decades, np.round(decades)), (
+            f"non-decade ticks: {ticks.tolist()}"
+        )
         assert cbar_kw["format"](10.0) == "10", "log formatter should label a decade"
 
     def test_non_linear_formatter_labels_arbitrary_positions(self):
@@ -349,9 +361,9 @@ class TestColorScalingBuildNorm:
 
     def test_formatter_normalizes_signed_zero(self):
         """The tick formatter renders a signed zero as '0', not '-0'."""
-        fmt = ColorScaling.sym_log(threshold=10.0).build_norm(
-            np.array([-24.0, 744.0])
-        )[1]["format"]
+        fmt = ColorScaling.sym_log(threshold=10.0).build_norm(np.array([-24.0, 744.0]))[
+            1
+        ]["format"]
         assert fmt(-0.0) == "0", f"signed zero should render '0', got {fmt(-0.0)!r}"
         assert fmt(0.0) == "0", f"zero should render '0', got {fmt(0.0)!r}"
 
@@ -362,9 +374,13 @@ class TestColorScalingBuildNorm:
         # LogLocator strides decades on wide ranges (13 decades here -> ~7 ticks); 30
         # is generous headroom that only guards against an unbounded explosion. The
         # decade-alignment assertion below is the load-bearing check.
-        assert 2 <= ticks.size <= 30, f"decade set should stay bounded, got {ticks.size}"
+        assert 2 <= ticks.size <= 30, (
+            f"decade set should stay bounded, got {ticks.size}"
+        )
         decades = np.log10(ticks)
-        assert np.allclose(decades, np.round(decades)), f"non-decade ticks: {ticks.tolist()}"
+        assert np.allclose(decades, np.round(decades)), (
+            f"non-decade ticks: {ticks.tolist()}"
+        )
 
 
 class TestColorScalingEqualize:

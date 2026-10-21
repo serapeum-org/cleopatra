@@ -20,7 +20,6 @@ new maths. Pure numpy + matplotlib -- no new dependency.
 
 from typing import Any
 
-import matplotlib as mpl
 import numpy as np
 from matplotlib.colors import Colormap, LightSource, Normalize
 
@@ -182,6 +181,7 @@ def shade_grid(
         fully transparent.
     """
     cmap_obj = resolve_colormap(cmap)
+    assert cmap_obj is not None
     elevation = np.asarray(elevation, dtype=float)
     finite = np.isfinite(elevation)
     if norm is None:
