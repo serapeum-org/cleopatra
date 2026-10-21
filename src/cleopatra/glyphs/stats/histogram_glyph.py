@@ -946,6 +946,7 @@ class HistogramGlyph(WatermarkMixin):
         _clear_prior_render_artists(ax, self, compose=compose)
         cmap = cmap if cmap is not None else self.default_options["cmap"]
         cmap_obj = resolve_colormap(cmap)
+        assert cmap_obj is not None
         lo = float(np.nanmin(values)) if vmin is None else vmin
         hi = float(np.nanmax(values)) if vmax is None else vmax
         norm = Normalize(vmin=lo, vmax=hi)

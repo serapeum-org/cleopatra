@@ -49,7 +49,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, cast
 
 import numpy as np
 
@@ -1544,7 +1544,7 @@ def world_texture(
         cache_path = cache_dir / f"{name}_z{zoom}_{digest}.npy"
         if cache_path.exists():
             try:
-                return np.load(cache_path)
+                return cast(np.ndarray, np.load(cache_path))
             except (OSError, ValueError, EOFError):
                 # A truncated / foreign / pre-atomic .npy: drop it and rebuild
                 # (as reference.relief does with a poisoned cached asset).

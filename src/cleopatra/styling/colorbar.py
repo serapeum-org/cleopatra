@@ -266,7 +266,7 @@ class ColorBar:
             "cbar_label_color": self.label_color,
             "cbar_tick_color": self.tick_color,
         }
-        optional = {
+        optional: dict[str, Any] = {
             "cbar_label": self.label,
             "cbar_length": self.length,
             "cbar_label_size": self.label_size,

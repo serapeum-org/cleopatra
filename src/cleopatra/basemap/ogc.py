@@ -67,6 +67,7 @@ import re
 import urllib.parse
 from collections.abc import Mapping
 from dataclasses import dataclass, field, fields
+from typing import Any, cast
 from decimal import Decimal
 from types import MappingProxyType
 
@@ -597,7 +598,7 @@ def _repr_provider(provider: object) -> str:
             ```
     """
     rendered = []
-    for spec in fields(provider):
+    for spec in fields(cast(Any, provider)):
         value = getattr(provider, spec.name)
         if isinstance(value, Mapping):
             value = dict.fromkeys(value, "...")
@@ -629,7 +630,7 @@ def _reduce_provider(provider: object) -> tuple:
         order, with any mapping copied back to a plain `dict`.
     """
     values = []
-    for spec in fields(provider):
+    for spec in fields(cast(Any, provider)):
         # Positional reconstruction only works for constructor fields; filtering
         # on `init` here means a future `init=False` field cannot silently break
         # pickling.
@@ -664,7 +665,7 @@ def _hash_provider(provider: object) -> int:
         field flattened to its sorted items.
     """
     values = []
-    for spec in fields(provider):
+    for spec in fields(cast(Any, provider)):
         value = getattr(provider, spec.name)
         values.append(
             tuple(sorted(value.items())) if isinstance(value, Mapping) else value

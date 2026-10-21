@@ -53,7 +53,7 @@ plt.show()
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -842,8 +842,8 @@ class TexturedGlobeGlyph(WatermarkMixin):
         _clear_prior_render_artists(target, self)
 
         if options["background"] is not None:
-            fig.set_facecolor(options["background"])
-            target.set_facecolor(options["background"])
+            fig.set_facecolor(cast(Any, options["background"]))
+            target.set_facecolor(cast(Any, options["background"]))
 
         sun_vec = self._sun if sun is _INHERIT else self._normalize_sun(sun)
         amb = self._ambient if ambient is _INHERIT else self._validate_ambient(ambient)

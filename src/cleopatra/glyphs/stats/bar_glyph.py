@@ -25,7 +25,7 @@ Examples:
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, cast
 
 from matplotlib.axes import Axes
 from matplotlib.container import BarContainer
@@ -207,4 +207,5 @@ class BarGlyph(Glyph):
         if draw_legend:
             disjoint_legend(ax, palette_colors, self.categories)
 
+        assert self.fig is not None
         return self.fig, ax, self.bars

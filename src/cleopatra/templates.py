@@ -9,7 +9,7 @@ single call, so a caller does not have to wire them together by hand.
 from __future__ import annotations
 
 import warnings
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -103,7 +103,7 @@ def publication_map(
             "pass either `style=` or `data_style=` to publication_map, not both"
         )
     data_style = DataStyle(style=style) if style is not None else passed_data_style
-    glyph = ArrayGlyph(data, coords=coords, extent=extent, **options)
+    glyph = ArrayGlyph(data, coords=coords, extent=cast("list[Any] | None", extent), **options)
     fig, ax = glyph.plot(data_style=data_style, **plot_kwargs)
 
     if relief:

@@ -29,9 +29,10 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
+from matplotlib.figure import Figure
 from matplotlib.patches import Polygon, Rectangle
 from matplotlib.transforms import Affine2D
 
@@ -741,7 +742,7 @@ def add_north_arrow(
     # Keep the arrow square on screen: scale the inset's axes-fraction width by
     # the axes' inch aspect so a unit box maps to a square, and a rotation in
     # that box is a true screen rotation.
-    fig_w_in, fig_h_in = ax.figure.get_size_inches()
+    fig_w_in, fig_h_in = cast(Figure, ax.figure).get_size_inches()
     ax_pos = ax.get_position()
     ax_w_in = max(ax_pos.width * fig_w_in, 1e-9)
     ax_h_in = max(ax_pos.height * fig_h_in, 1e-9)

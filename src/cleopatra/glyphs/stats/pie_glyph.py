@@ -20,7 +20,7 @@ Examples:
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, cast
 
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
@@ -184,7 +184,7 @@ class PieGlyph(Glyph):
 
         _clear_prior_render_artists(ax, self, compose=compose)
         rendered = ax.pie(
-            self.values, labels=labels, colors=palette_colors, autopct=pct
+            self.values, labels=labels, colors=palette_colors, autopct=cast(Any, pct)
         )
         self.wedges = rendered[0]
         # `ax.pie` returns (wedges, texts) or (wedges, texts, autotexts); mark
@@ -198,4 +198,6 @@ class PieGlyph(Glyph):
         if draw_legend:
             disjoint_legend(ax, palette_colors, self.categories)
 
+        assert self.fig is not None
+        assert self.wedges is not None
         return self.fig, ax, self.wedges

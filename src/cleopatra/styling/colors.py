@@ -114,7 +114,7 @@ def resolve_colormap(
         from cmap import Colormap as _CmapColormap
 
         try:
-            return _CmapColormap(cmap).to_mpl()
+            return cast(Colormap, _CmapColormap(cmap).to_mpl())
         except (
             ValueError,
             KeyError,
@@ -480,6 +480,7 @@ def alpha_rgba(
         norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
     alpha_norm = norm if alpha_norm is None else alpha_norm
 
+    assert cmap_obj is not None
     rgba = cmap_obj(norm(data))
     if constant_alpha is not None:
         alpha = np.full(data.shape, float(np.clip(constant_alpha, 0.0, 1.0)))
@@ -1046,6 +1047,7 @@ def resolve_style_norm(
         edges = [float(v) for v in levels]
         _warn_if_outside_fixed_range(data, edges[0], edges[-1])
         cmap_obj = resolve_colormap(cfg["cmap"])
+        assert cmap_obj is not None
         extend = cfg.get("extend", "neither")
         reserved = {"neither": 0, "min": 1, "max": 1, "both": 2}.get(extend, 0)
         if cmap_obj.N < (len(edges) - 1) + reserved:
@@ -1120,7 +1122,7 @@ def resolve_style_norm(
         raise ValueError(
             f"data style 'norm' must be 'linear', 'log', or 'symlog', got {norm_kind!r}"
         )
-    return norm, vmin, vmax
+    return norm, cast(float, vmin), cast(float, vmax)
 
 
 def resolve_style_overrides(raw: dict[str, Any]) -> dict[str, Any]:
@@ -1535,9 +1537,11 @@ def apply_data_style(
                 else (0.02, 0.92 - 0.12 * i, 0.32, 0.06)
             )
             vmin_prefix, vmax_prefix = swatch_extend_prefixes(norm)
+            _cmap_resolved = resolve_colormap(cfg["cmap"])
+            assert _cmap_resolved is not None
             swatch_legend(
                 ax,
-                resolve_colormap(cfg["cmap"]),
+                _cmap_resolved,
                 cfg["label"],
                 vmin=resolved_vmin,
                 vmax=resolved_vmax,

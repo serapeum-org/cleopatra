@@ -29,6 +29,7 @@ import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -401,14 +402,15 @@ def preview_palettes(
                 transform=ax.transAxes,
             )
             continue
-        ax.imshow(grad, aspect="auto", cmap=payload.to_colormap(n), extent=(0, 1, 0, 1))
+        _pal = cast("Palette", payload)
+        ax.imshow(grad, aspect="auto", cmap=_pal.to_colormap(n), extent=(0, 1, 0, 1))
         for spine in ax.spines.values():
             spine.set_edgecolor("0.6")
             spine.set_linewidth(0.5)
         ax.text(
             -0.02,
             0.5,
-            payload.name,
+            _pal.name,
             fontsize=9,
             family="monospace",
             va="center",
@@ -418,7 +420,7 @@ def preview_palettes(
         ax.text(
             1.008,
             0.5,
-            payload.source,
+            _pal.source,
             fontsize=6.5,
             color="0.45",
             va="center",
@@ -551,7 +553,7 @@ for _prefix, _anchor_map, _src in [
 ]:
     for _key, _anchors in _anchor_map.items():
         register(
-            Palette(f"{_prefix}_{_key}", PaletteKind.SEQUENTIAL, _anchors, source=_src)
+            Palette(f"{_prefix}_{_key}", PaletteKind.SEQUENTIAL, tuple(_anchors), source=_src)
         )
 del _prefix, _anchor_map, _src, _key, _anchors
 

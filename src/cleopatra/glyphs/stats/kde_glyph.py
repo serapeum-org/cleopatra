@@ -516,6 +516,7 @@ class KDEGlyph(Glyph):
                 if norm is not None
                 else Normalize(vmin=float(density.min()), vmax=float(density.max()))
             )
+            assert cmap is not None
             rgba = shade_grid(density, cmap, norm=hs_norm, **hillshade)
             extent = (
                 float(gx.min()),

@@ -728,6 +728,7 @@ class ColorScaling:
         self, ticks: np.ndarray, bounds_from_levels: np.ndarray | None
     ) -> tuple[colors.Normalize, dict[str, Any]]:
         """Explicit-bounds norm: own `bounds` win, then `levels`, then the ticks."""
+        bounds: np.ndarray | list[float]
         if self.bounds:
             bounds = self.bounds
         elif bounds_from_levels is not None:
