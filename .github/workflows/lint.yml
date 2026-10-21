@@ -83,7 +83,7 @@ jobs:
   # The repo's secret gate. gitleaks is the single secret scanner. There is a
   # local gitleaks pre-commit hook, but that only scans staged diffs; this job
   # scans the whole working tree — every tracked file, notebooks included —
-  # with the ci/gitleaks.toml allowlist.
+  # with the .github/gitleaks.toml allowlist.
   gitleaks:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -100,4 +100,4 @@ jobs:
             "https://github.com/gitleaks/gitleaks/releases/download/v${VER}/gitleaks_${VER}_linux_x64.tar.gz"
           echo "${SHA}  gitleaks.tar.gz" | sha256sum -c -
           tar -xzf gitleaks.tar.gz gitleaks
-          ./gitleaks dir . -c ci/gitleaks.toml --redact --no-banner
+          ./gitleaks dir . -c .github/gitleaks.toml --redact --no-banner
