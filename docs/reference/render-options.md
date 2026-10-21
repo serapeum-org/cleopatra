@@ -4,7 +4,7 @@ Glyph `plot()` / `animate()` calls take these typed objects in place of loose ke
 Each bundles a family of related options and exposes `to_options()`, which the glyph flattens into
 its render settings — only the fields you set are applied, so a group never clobbers a glyph's own
 defaults. (The `ArrayGlyph`-specific input objects — `RgbBands`, `PointOverlay`, `FrameLabel`,
-`PanelLabels` — are documented on the [ArrayGlyph page](array-glyph.md).)
+`ProgressBar`, `PanelLabels` — are documented on the [ArrayGlyph page](array-glyph.md).)
 
 ## ColorScaling
 
