@@ -3839,6 +3839,55 @@ class TestFacetColorbar:
             f"the single shared cbar should read 'mm', got {labels}"
         )
 
+    def _bbox_overlap(self, result: FacetGrid) -> float:
+        """Largest overlap area between the shared colorbar and any visible panel.
+
+        Args:
+            result: The `FacetGrid` whose figure geometry is measured.
+
+        Returns:
+            float: The maximum colorbar/panel bounding-box intersection area in
+            figure-fraction units (0.0 when the bar sits in a clean gutter).
+        """
+        fig = result.fig
+        fig.canvas.draw()
+        cbar_axes = self._colorbar_axes(result)
+        panels = [
+            ax for ax in result.axes.ravel() if ax.get_visible() and ax not in cbar_axes
+        ]
+        cb = cbar_axes[0].get_position()
+        worst = 0.0
+        for panel in panels:
+            pb = panel.get_position()
+            dx = max(0.0, min(cb.x1, pb.x1) - max(cb.x0, pb.x0))
+            dy = max(0.0, min(cb.y1, pb.y1) - max(cb.y0, pb.y0))
+            worst = max(worst, dx * dy)
+        return worst
+
+    @pytest.mark.parametrize("col_wrap", [None, 3])
+    def test_facet_shared_bar_sits_in_a_gutter_not_over_panels(self, col_wrap):
+        """The shared bar lands in a gutter, not over any panel, on the owned-figure path.
+
+        Args:
+            col_wrap: `None` for a 1x3 row, `3` for a wrapped 2-row grid.
+
+        Test scenario:
+            On a cleopatra-owned figure the single shared colorbar must sit
+            outside every panel (overlap area 0), for both a single row and a
+            `col_wrap` multi-row grid -- the regression that `tight_layout`
+            re-expanding panels over the bar introduced (#389).
+        """
+        n = 3 if col_wrap is None else 6
+        result = ArrayGlyph(self._stack_3d(n=n)).facet(
+            FacetLayout(
+                col="time", col_wrap=col_wrap, labels=PanelLabels(col=list(range(n)))
+            ),
+            colorbar=True,
+        )
+        assert self._bbox_overlap(result) == 0.0, (
+            "the shared colorbar should sit in a gutter, not over any panel"
+        )
+
     def test_facet_colorbar_true_draws_one_shared_bar(self):
         """`facet(colorbar=True)` draws one shared bar spanning the grid.
 
