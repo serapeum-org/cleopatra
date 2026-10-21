@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import warnings
 
+import pytest
 import matplotlib
 
 matplotlib.use("Agg")
@@ -39,6 +40,7 @@ class TestReviewFixesRound2:
         )
         plt.close("all")
 
+    @pytest.mark.tiles
     def test_globe_relief_warns_and_skips_l1(self):
         """L1: `publication_map(projection="globe", relief=True)` warns and skips relief.
 
