@@ -13,7 +13,7 @@ from matplotlib.collections import PathCollection
 from matplotlib.colors import BoundaryNorm, Normalize, PowerNorm, to_rgba
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
-from matplotlib.patches import Circle
+from matplotlib.patches import Circle, Rectangle
 from matplotlib.text import Text
 from matplotlib.transforms import Bbox
 from PIL import Image
@@ -34,6 +34,7 @@ from cleopatra.glyphs.gridded.array_glyph import (
     PanelLabels,
     PlotKwargs,
     PointOverlay,
+    ProgressBar,
     RgbBands,
     _as_artists,
     _resolve_colorbar,
@@ -1088,6 +1089,201 @@ class TestFrameOverlayHook:
         )
         assert len(second) == 1, (
             f"re-animate must clear the prior overlay patch (#210 class): {len(second)}"
+        )
+
+
+class TestProgressBar:
+    """`ProgressBar` spec units and its rendered behaviour through `animate`."""
+
+    @staticmethod
+    def _bars(blit_output):
+        """Return the bar rectangles in a blit output, ordered track-then-fill."""
+        rects = [a for a in blit_output if isinstance(a, Rectangle)]
+        return sorted(rects, key=lambda r: r.get_zorder())
+
+    def test_resolve_location_default_and_explicit(self):
+        """`resolve_location` yields the bottom-left default, or an explicit anchor."""
+        assert ProgressBar().resolve_location() == [0.05, 0.05], "default anchor"
+        assert ProgressBar(location=[0.2, 0.9]).resolve_location() == [0.2, 0.9], (
+            "explicit anchor is kept"
+        )
+
+    def test_advance_scales_and_clamps(self):
+        """`advance` sets the fill width to `length * clamp(fraction, 0, 1)`."""
+        matplotlib.use("Agg")
+        fig, ax = plt.subplots()
+        bar = ProgressBar(length=0.6)
+        _, fill = bar.draw(ax)
+        bar.advance(fill, 0.5)
+        assert round(fill.get_width(), 6) == 0.3, "half of length 0.6"
+        bar.advance(fill, 2.0)
+        assert round(fill.get_width(), 6) == 0.6, "overshoot clamps to full length"
+        bar.advance(fill, -1.0)
+        assert fill.get_width() == 0.0, "undershoot clamps to empty"
+        plt.close(fig)
+
+    def test_fill_advances_per_frame(self):
+        """`progress_bar=True` advances the fill 0 -> length across the sequence."""
+        stack = np.arange(3 * 3 * 3, dtype=float).reshape(3, 3, 3)
+        anim = ArrayGlyph(stack).animate(
+            ["t0", "t1", "t2"], playback=Animation(progress_bar=True)
+        )
+        widths = [round(self._bars(anim._func(k))[1].get_width(), 4) for k in range(3)]
+        assert widths == [0.0, 0.45, 0.9], f"fill must advance per frame: {widths}"
+
+    def test_disabled_by_default_draws_no_bar(self):
+        """With no `progress_bar`, `animate` emits no `Rectangle` overlay artists."""
+        stack = np.arange(3 * 3 * 3, dtype=float).reshape(3, 3, 3)
+        anim = ArrayGlyph(stack).animate(["t0", "t1", "t2"])
+        assert self._bars(anim._func(1)) == [], "default output must carry no bar"
+
+    def test_custom_spec_controls_length_and_colour(self):
+        """A `ProgressBar` instance sets the track length and the fill colour."""
+        stack = np.arange(3 * 3 * 3, dtype=float).reshape(3, 3, 3)
+        anim = ArrayGlyph(stack).animate(
+            ["t0", "t1", "t2"],
+            playback=Animation(progress_bar=ProgressBar(length=0.5, color="red")),
+        )
+        track, fill = self._bars(anim._func(1))
+        assert round(track.get_width(), 6) == 0.5, "track spans the custom length"
+        assert round(fill.get_width(), 6) == 0.25, (
+            "fill is length * 0.5 at the midpoint"
+        )
+        assert fill.get_facecolor() == to_rgba("red"), "fill uses the custom colour"
+
+    def test_single_frame_shows_full_bar(self):
+        """A one-frame animation shows a full bar (no sequence to progress through)."""
+        stack = np.arange(1 * 3 * 3, dtype=float).reshape(1, 3, 3)
+        anim = ArrayGlyph(stack).animate(
+            ["only"], playback=Animation(progress_bar=True)
+        )
+        _, fill = self._bars(anim._func(0))
+        assert round(fill.get_width(), 6) == 0.9, "single frame -> full bar"
+
+    def test_bar_is_baked_into_the_saved_gif(self, tmp_path):
+        """The bar survives the Pillow writer: the saved last frame differs from no-bar.
+
+        Test scenario:
+            A flat field is animated with and without the progress bar and saved
+            through the Pillow GIF writer. Comparing the last frame of each saved
+            GIF, the bar must change pixels -- an assertion a mere `size > 0` check
+            (which passes even if the overlay were dropped) cannot make.
+        """
+        stack = np.zeros((3, 8, 8), dtype=float)
+
+        def saved_last_frame(progress_bar):
+            glyph = ArrayGlyph(stack)
+            anim = glyph.animate(
+                ["t0", "t1", "t2"], playback=Animation(progress_bar=progress_bar)
+            )
+            out = tmp_path / f"pb_{progress_bar}.gif"
+            anim.save(str(out), writer="pillow", fps=6)
+            with Image.open(out) as im:
+                im.seek(im.n_frames - 1)
+                return np.asarray(im.convert("RGB"))
+
+        with_bar = saved_last_frame(True)
+        without_bar = saved_last_frame(False)
+        assert with_bar.shape == without_bar.shape, (
+            f"frames must be comparable: {with_bar.shape} vs {without_bar.shape}"
+        )
+        assert not np.array_equal(with_bar, without_bar), (
+            "the saved last frame must show the progress bar"
+        )
+
+    def test_invalid_progress_bar_value_raises_typeerror(self):
+        """A non-bool, non-`ProgressBar` `progress_bar` fails fast with a `TypeError`."""
+        glyph = ArrayGlyph(np.arange(2 * 3 * 3, dtype=float).reshape(2, 3, 3))
+        playback = Animation(progress_bar=1)
+        with pytest.raises(TypeError, match="bool or a ProgressBar") as exc:
+            glyph.animate(["t0", "t1"], playback=playback)
+        assert "int" in str(exc.value), f"message should name the bad type: {exc.value}"
+
+    def test_resolve_location_returns_a_copy(self):
+        """Mutating the returned anchor must not change the spec's stored location."""
+        bar = ProgressBar(location=[0.2, 0.9])
+        loc = bar.resolve_location()
+        loc[0] = 0.5
+        assert bar.location == [0.2, 0.9], f"spec location was mutated: {bar.location}"
+
+    def test_sub_frames_hold_the_fill_per_data_frame(self):
+        """`sub_frames>1` steps the fill once per data frame and holds across sub-frames."""
+        stack = np.arange(3 * 3 * 3, dtype=float).reshape(3, 3, 3)
+        anim = ArrayGlyph(stack).animate(
+            ["t0", "t1", "t2"], playback=Animation(progress_bar=True, sub_frames=2)
+        )
+        widths = [round(self._bars(anim._func(k))[1].get_width(), 4) for k in range(6)]
+        assert widths == [0.0, 0.0, 0.45, 0.45, 0.9, 0.9], (
+            f"fill must step per data frame and hold across sub-frames: {widths}"
+        )
+
+    def test_init_path_draws_the_bar_empty(self):
+        """The init blit output carries the full-length track and an empty fill."""
+        stack = np.arange(3 * 3 * 3, dtype=float).reshape(3, 3, 3)
+        anim = ArrayGlyph(stack).animate(
+            ["t0", "t1", "t2"], playback=Animation(progress_bar=True)
+        )
+        track, fill = self._bars(anim._init_func())
+        assert round(track.get_width(), 4) == 0.9, (
+            "init must draw the full-length track"
+        )
+        assert fill.get_width() == 0.0, "init must start the fill empty"
+
+    def test_custom_spec_styling_reaches_the_artists(self):
+        """`track_color`, `alpha`, and the border reach the drawn track/fill artists."""
+        stack = np.arange(3 * 3 * 3, dtype=float).reshape(3, 3, 3)
+        bar = ProgressBar(
+            track_color="black", alpha=0.5, border_color="red", border_width=2.0
+        )
+        anim = ArrayGlyph(stack).animate(
+            ["t0", "t1", "t2"], playback=Animation(progress_bar=bar)
+        )
+        track, fill = self._bars(anim._func(1))
+        assert track.get_facecolor() == to_rgba("black", 0.5), "track colour + alpha"
+        assert track.get_edgecolor() == to_rgba("red", 0.5), "border colour applied"
+        assert track.get_linewidth() == 2.0, "border width applied"
+        assert fill.get_alpha() == 0.5, "fill alpha applied"
+
+    def test_numpy_boolean_progress_bar_is_accepted(self):
+        """A numpy bool is honoured like a Python bool (`np.True_` -> bar, `np.False_` -> none)."""
+        stack = np.arange(3 * 3 * 3, dtype=float).reshape(3, 3, 3)
+        on = ArrayGlyph(stack).animate(
+            ["t0", "t1", "t2"], playback=Animation(progress_bar=np.True_)
+        )
+        assert len(self._bars(on._func(1))) == 2, "np.True_ must draw the bar"
+        off = ArrayGlyph(stack).animate(
+            ["t0", "t1", "t2"], playback=Animation(progress_bar=np.False_)
+        )
+        assert self._bars(off._func(1)) == [], "np.False_ must draw no bar"
+
+    def test_bar_is_baked_into_the_saved_mp4(self, tmp_path):
+        """The FFmpeg/MP4 writer path runs with the overlay and writes a non-empty file.
+
+        Test scenario:
+            Saving a progress-bar animation to `.mp4` exercises the FFmpeg writer
+            (bundled via imageio-ffmpeg) end to end with the overlay present,
+            backing the docstring's "survives ... the FFmpeg (MP4) writer" claim.
+        """
+        stack = np.zeros((3, 8, 8), dtype=float)
+        glyph = ArrayGlyph(stack)
+        glyph.animate(["t0", "t1", "t2"], playback=Animation(progress_bar=True))
+        out = tmp_path / "pb.mp4"
+        glyph.save_animation(str(out), fps=6)
+        assert out.stat().st_size > 0, "progress-bar MP4 must be written"
+
+    def test_bar_sits_above_the_raster(self):
+        """The bar artists keep a higher z-order than the data image, so a basemap
+        or raster drawn beneath the image cannot occlude the overlay."""
+        stack = np.zeros((3, 8, 8), dtype=float)
+        glyph = ArrayGlyph(stack, extent=[-10, 10, -10, 10])
+        anim = glyph.animate(["t0", "t1", "t2"], playback=Animation(progress_bar=True))
+        track, fill = self._bars(anim._func(1))
+        im_z = glyph.im.get_zorder()
+        assert track.get_zorder() > im_z, (
+            f"track {track.get_zorder()} must top im {im_z}"
+        )
+        assert fill.get_zorder() > track.get_zorder(), (
+            f"fill {fill.get_zorder()} must sit above track {track.get_zorder()}"
         )
 
 

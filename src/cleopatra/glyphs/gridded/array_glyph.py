@@ -48,6 +48,7 @@ from matplotlib.gridspec import (
     GridSpecFromSubplotSpec,
     SubplotSpec,
 )
+from matplotlib.patches import Rectangle
 from matplotlib.patheffects import withStroke
 from matplotlib.ticker import MaxNLocator
 from PIL import Image
@@ -676,6 +677,231 @@ class FrameLabel:
         return artist
 
 
+class ProgressBar:
+    """Styling for the per-frame progress bar `ArrayGlyph.animate` can draw.
+
+    A thin horizontal bar that fills left-to-right as the animation plays, so a
+    viewer can see how far through a long timelapse each frame sits. Pass `True`
+    for the defaults, or an instance to control placement / size / colour, as
+    `animate(playback=Animation(progress_bar=...))`. `animate` owns advancing the
+    bar each frame (its fill width tracks ``frame_index / (n_frames - 1)``), so
+    the bar is baked into every rendered frame and survives both the Pillow
+    (GIF / WebP) and FFmpeg (MP4) writers -- it is a rendered overlay, not an
+    interactive scrubber.
+
+    The bar is drawn in axes-fraction coordinates (`0` = left / bottom,
+    `1` = right / top), so its placement and size are independent of the data
+    `extent` and identical across frames. A single-frame animation shows a full
+    bar, since there is no sequence to progress through. With `sub_frames > 1`
+    the fill tracks the *data*-frame index (not the animation-frame index), so it
+    steps once per data frame and holds across that frame's held sub-frames,
+    reaching full on the last data frame's first sub-frame.
+
+    Attributes:
+        location: `[x, y]` of the bar's left end in axes-fraction coordinates,
+            by default `None` -> `[0.05, 0.05]` (just inside the bottom-left
+            corner).
+        length: Bar length as a fraction of the axes width, by default `0.9`.
+        height: Bar thickness as a fraction of the axes height, by default
+            `0.02`.
+        color: Fill colour of the elapsed portion, by default `"white"`.
+        track_color: Colour of the unfilled track behind the fill, by default
+            `"0.3"` (dark grey), which keeps the bar's full extent visible even
+            while the fill is short.
+        alpha: Opacity of both the fill and the track, by default `1.0`. The
+            fill is drawn over the track, so with `alpha < 1` the visible
+            elapsed colour is `color` composited over `track_color`, not `color`
+            alone.
+        border_color: Outline colour drawn around the track, by default `None`
+            (no outline).
+        border_width: Outline width in points when `border_color` is set, by
+            default `0.5`.
+
+    Examples:
+        - Build a bar and read back its colour and placement:
+            ```python
+            >>> from cleopatra.glyphs.gridded.array_glyph import ProgressBar
+            >>> bar = ProgressBar(color="deepskyblue", length=0.8)
+            >>> bar.color
+            'deepskyblue'
+            >>> bar.resolve_location()
+            [0.05, 0.05]
+
+            ```
+        - Draw it on an axes and advance the fill to the halfway point:
+            ```python
+            >>> import matplotlib
+            >>> matplotlib.use("Agg")
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.glyphs.gridded.array_glyph import ProgressBar
+            >>> fig, ax = plt.subplots()
+            >>> bar = ProgressBar(length=0.8)
+            >>> track, fill = bar.draw(ax)
+            >>> fill.get_width()
+            0.0
+            >>> bar.advance(fill, 0.5)
+            >>> round(fill.get_width(), 3)
+            0.4
+            >>> plt.close(fig)
+
+            ```
+    """
+
+    def __init__(
+        self,
+        *,
+        location: list[float] | None = None,
+        length: float = 0.9,
+        height: float = 0.02,
+        color: str = "white",
+        track_color: str = "0.3",
+        alpha: float = 1.0,
+        border_color: str | None = None,
+        border_width: float = 0.5,
+    ) -> None:
+        """Initialise a `ProgressBar`.
+
+        Args:
+            location: `[x, y]` of the bar's left end in axes-fraction
+                coordinates, by default `None` (the `[0.05, 0.05]` bottom-left
+                default).
+            length: Bar length as a fraction of the axes width, by default
+                `0.9`.
+            height: Bar thickness as a fraction of the axes height, by default
+                `0.02`.
+            color: Fill colour of the elapsed portion, by default `"white"`.
+            track_color: Colour of the unfilled track, by default `"0.3"`.
+            alpha: Opacity of the fill and the track, by default `1.0`.
+            border_color: Outline colour for the track, by default `None`.
+            border_width: Outline width in points when `border_color` is set,
+                by default `0.5`.
+        """
+        self.location = location
+        self.length = length
+        self.height = height
+        self.color = color
+        self.track_color = track_color
+        self.alpha = alpha
+        self.border_color = border_color
+        self.border_width = border_width
+
+    def resolve_location(self) -> list[float]:
+        """Resolve the bar's left-end anchor in axes-fraction coordinates.
+
+        Returns:
+            The `[x, y]` anchor: this bar's `location`, or the `[0.05, 0.05]`
+            bottom-left default when `location` is unset.
+
+        Examples:
+            - An unset location falls back to the bottom-left default; an
+              explicit one is kept:
+                ```python
+                >>> from cleopatra.glyphs.gridded.array_glyph import ProgressBar
+                >>> ProgressBar().resolve_location()
+                [0.05, 0.05]
+                >>> ProgressBar(location=[0.2, 0.9]).resolve_location()
+                [0.2, 0.9]
+
+                ```
+        """
+        if self.location is None:
+            return [0.05, 0.05]
+        return list(self.location)
+
+    def draw(self, ax: Axes) -> tuple[Rectangle, Rectangle]:
+        """Draw the (empty) progress bar's track and fill on `ax`.
+
+        Creates two axes-fraction rectangles -- a full-length `track` and a
+        zero-width `fill` above it -- adds them to `ax` with `add_artist` (so
+        the axes-fraction overlay never perturbs the data limits), and returns
+        them. The caller advances the fill each frame with `advance`; both
+        artists are returned from `animate`'s per-frame blit list so they stay
+        visible.
+
+        Args:
+            ax: The matplotlib axes to draw on.
+
+        Returns:
+            tuple: `(track, fill)` -- the full-length background `Rectangle` and
+                the initially zero-width fill `Rectangle` (drawn above the
+                track).
+
+        Examples:
+            - Draw the bar and read back the track's full width and the fill's
+              initial (empty) width:
+                ```python
+                >>> import matplotlib
+                >>> matplotlib.use("Agg")
+                >>> import matplotlib.pyplot as plt
+                >>> from cleopatra.glyphs.gridded.array_glyph import ProgressBar
+                >>> fig, ax = plt.subplots()
+                >>> track, fill = ProgressBar(length=0.9).draw(ax)
+                >>> track.get_width()
+                0.9
+                >>> fill.get_width()
+                0.0
+                >>> plt.close(fig)
+
+                ```
+        """
+        x, y = self.resolve_location()
+        track = Rectangle(
+            (x, y),
+            self.length,
+            self.height,
+            transform=ax.transAxes,
+            facecolor=self.track_color,
+            edgecolor=self.border_color if self.border_color is not None else "none",
+            linewidth=self.border_width,
+            alpha=self.alpha,
+            zorder=5,
+            clip_on=False,
+        )
+        fill = Rectangle(
+            (x, y),
+            0.0,
+            self.height,
+            transform=ax.transAxes,
+            facecolor=self.color,
+            edgecolor="none",
+            alpha=self.alpha,
+            zorder=6,
+            clip_on=False,
+        )
+        ax.add_artist(track)
+        ax.add_artist(fill)
+        return track, fill
+
+    def advance(self, fill: Rectangle, fraction: float) -> None:
+        """Set the fill rectangle's width to `length` times a clamped `fraction`.
+
+        Args:
+            fill: The fill `Rectangle` returned by `draw`.
+            fraction: Progress through the sequence; clamped to `[0.0, 1.0]`
+                before scaling, so an over- or under-shoot never spills past the
+                track.
+
+        Examples:
+            - Advancing past 1.0 clamps to a full bar:
+                ```python
+                >>> import matplotlib
+                >>> matplotlib.use("Agg")
+                >>> import matplotlib.pyplot as plt
+                >>> from cleopatra.glyphs.gridded.array_glyph import ProgressBar
+                >>> fig, ax = plt.subplots()
+                >>> bar = ProgressBar(length=0.6)
+                >>> _, fill = bar.draw(ax)
+                >>> bar.advance(fill, 2.0)
+                >>> round(fill.get_width(), 3)
+                0.6
+                >>> plt.close(fig)
+
+                ```
+        """
+        clamped = max(0.0, min(1.0, fraction))
+        fill.set_width(self.length * clamped)
+
+
 @runtime_checkable
 class FrameOverlay(Protocol):
     """Protocol for a per-frame overlay drawn on top of `ArrayGlyph.animate`.
@@ -804,6 +1030,11 @@ class Animation:
             behaviour). With `N > 1` the raster and label are held while overlays
             are told a `phase` in `[0, 1)`, so time-varying effects can animate
             over still imagery -- without duplicating the frame arrays.
+        progress_bar: A per-frame progress bar showing position within the
+            sequence, by default `False` (none). `True` draws one with the
+            defaults; a `ProgressBar` instance controls its placement / size /
+            colour. The bar is baked into every rendered frame, so it survives
+            both the Pillow (GIF / WebP) and FFmpeg (MP4) writers.
 
     Examples:
         - Bundle a slower interval and a white-on-dark frame label:
@@ -826,6 +1057,13 @@ class Animation:
             ()
 
             ```
+        - Opt into the default progress bar:
+            ```python
+            >>> from cleopatra.glyphs.gridded.array_glyph import Animation
+            >>> Animation(progress_bar=True).progress_bar
+            True
+
+            ```
     """
 
     interval: int = 200
@@ -834,6 +1072,7 @@ class Animation:
     data_getter: Callable[[int], np.ndarray] | None = None
     overlays: Sequence[FrameOverlay] = ()
     sub_frames: int = 1
+    progress_bar: bool | ProgressBar = False
 
 
 class PanelLabels:
@@ -5352,10 +5591,12 @@ class ArrayGlyph(GeoMixin, Glyph):
                 `cell_value_text_colors` (the low/high cell-value text colours),
                 `data_getter` (a lazy `f(i) -> ndarray` frame source),
                 `overlays` (a sequence of `FrameOverlay` objects drawn and
-                blitted on top of every frame), and `sub_frames` (hold each data
+                blitted on top of every frame), `sub_frames` (hold each data
                 frame for N animation frames, giving overlays a `phase` in
-                `[0, 1)` to animate over still imagery). The render / colour
-                options below stay their own arguments.
+                `[0, 1)` to animate over still imagery), and `progress_bar`
+                (`True` or a `ProgressBar` to draw a per-frame progress bar that
+                fills across the sequence). The render / colour options below
+                stay their own arguments.
             color: Colour-scale group object
                 (`cleopatra.styling.scaling.ColorScaling`), e.g.
                 `ColorScaling.power(gamma=0.7)`. Replaces the loose
@@ -5671,6 +5912,19 @@ class ArrayGlyph(GeoMixin, Glyph):
         frame_label = playback.frame_label or FrameLabel()
         overlays = tuple(playback.overlays)
         sub_frames = playback.sub_frames
+        # Resolve the progress-bar spec: `True` -> defaults, `False` -> none,
+        # a `ProgressBar` instance -> used as given. A bool-like flag (incl. a
+        # numpy bool, as `sub_frames` accepts numpy ints) picks defaults / none;
+        # anything else is out of the declared `bool | ProgressBar` contract and
+        # fails fast here rather than later inside rendering.
+        progress_bar = playback.progress_bar
+        if isinstance(progress_bar, (bool, np.bool_)):
+            progress_bar = ProgressBar() if bool(progress_bar) else None
+        elif not isinstance(progress_bar, ProgressBar):
+            raise TypeError(
+                "playback.progress_bar must be a bool or a ProgressBar, got "
+                f"{type(progress_bar).__name__!r}."
+            )
         # Accept any integer (incl. numpy ints from array shapes); reject bool,
         # which is an `int` subclass but never a meaningful frame count.
         if (
@@ -5970,6 +6224,12 @@ class ArrayGlyph(GeoMixin, Glyph):
         day_text = frame_label.draw(ax, self.default_options["cbar_label_size"])
         self._day_text = day_text
 
+        # Progress-bar artists, created once (like day_text) and advanced per
+        # frame in init / animate_a. `None` when no progress bar was requested.
+        progress_track = progress_fill = None
+        if progress_bar is not None:
+            progress_track, progress_fill = progress_bar.draw(ax)
+
         # Create each overlay's artists once (like day_text / the point scatter),
         # so a FuncAnimation init_func replay on save never duplicates them; the
         # per-frame refresh happens in `animate_a` via `overlay.update`.
@@ -5982,6 +6242,16 @@ class ArrayGlyph(GeoMixin, Glyph):
         # changes (so a lazy `data_getter` is not called once per sub-frame).
         n_anim_frames = n_frames * sub_frames
         frame_state: dict[str, Any] = {"index": -1, "frame": None}
+
+        progress_last = n_frames - 1
+
+        def _progress_fraction(i: int) -> float:
+            """Fraction in `[0, 1]` for data frame `i`.
+
+            Follows the issue's `frame_index / (n_frames - 1)`; a single-frame
+            animation (no sequence to progress through) shows a full bar.
+            """
+            return i / progress_last if progress_last > 0 else 1.0
 
         def _fetch_frame(i: int) -> np.ndarray:
             """Resolve frame `i` for the animation step.
@@ -6076,6 +6346,10 @@ class ArrayGlyph(GeoMixin, Glyph):
 
             output += overlay_init_artists
 
+            if progress_bar is not None:
+                progress_bar.advance(progress_fill, _progress_fraction(0))
+                output += [progress_track, progress_fill]
+
             return output
 
         def animate_a(k):
@@ -6123,6 +6397,10 @@ class ArrayGlyph(GeoMixin, Glyph):
             for overlay in overlays:
                 output += _as_artists(overlay.update(data_index, phase))
 
+            if progress_bar is not None:
+                progress_bar.advance(progress_fill, _progress_fraction(data_index))
+                output += [progress_track, progress_fill]
+
             return output
 
         if basemap is not None:
@@ -6154,5 +6432,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             *points_id,
             *cell_text_value,
             *overlay_init_artists,
+            progress_track,
+            progress_fill,
         )
         return anim

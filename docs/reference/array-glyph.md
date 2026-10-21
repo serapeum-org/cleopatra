@@ -48,6 +48,11 @@ and `labels=PanelLabels(...)` to title `facet` panels by coordinate.
       show_root_heading: true
       heading_level: 3
 
+::: cleopatra.glyphs.gridded.array_glyph.ProgressBar
+    options:
+      show_root_heading: true
+      heading_level: 3
+
 ::: cleopatra.glyphs.gridded.array_glyph.Animation
     options:
       show_root_heading: true
