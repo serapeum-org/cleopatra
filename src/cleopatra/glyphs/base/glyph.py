@@ -19,12 +19,12 @@ from typing import Any, cast
 
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
-from matplotlib.colors import Colormap
 import matplotlib.ticker as ticker
 import numpy as np
 from matplotlib.animation import FuncAnimation
 from matplotlib.axes import Axes
 from matplotlib.colorbar import Colorbar
+from matplotlib.colors import Colormap
 from matplotlib.figure import Figure, SubFigure
 from matplotlib.font_manager import FontProperties
 from matplotlib.legend import Legend
@@ -1789,8 +1789,10 @@ class Glyph(WatermarkMixin):
             else:
                 ticks = self.get_ticks()
                 norm, cbar_kw = self._create_norm_and_cbar_kw(ticks)
-                assert norm is not None
-                result = (cast(colors.BoundaryNorm, norm), cbar_kw, ticks)
+                result = cast(
+                    tuple[colors.Normalize | None, dict[Any, Any], np.ndarray],
+                    (norm, cbar_kw, ticks),
+                )
         return result
 
     def _warn_scheme_overrides_continuous_options(self) -> None:

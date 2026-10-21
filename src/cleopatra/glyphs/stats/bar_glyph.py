@@ -25,7 +25,7 @@ Examples:
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, cast
+from typing import Any
 
 from matplotlib.axes import Axes
 from matplotlib.container import BarContainer

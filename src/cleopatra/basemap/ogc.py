@@ -67,9 +67,9 @@ import re
 import urllib.parse
 from collections.abc import Mapping
 from dataclasses import dataclass, field, fields
-from typing import Any, cast
 from decimal import Decimal
 from types import MappingProxyType
+from typing import Any, cast
 
 from cleopatra.basemap.tiles import Tile, _tile_xy_bounds
 

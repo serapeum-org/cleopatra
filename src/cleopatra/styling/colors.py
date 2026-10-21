@@ -16,16 +16,13 @@ from matplotlib.image import AxesImage
 from matplotlib.lines import Line2D
 from PIL import Image, UnidentifiedImageError
 
+from cleopatra.styling.palettes import CAMS_AOD_COLORMAPS, FLAME_COLORMAPS, HAZE_COLORMAPS
 from cleopatra.styling.perceptual import perceptual_colormap
 from cleopatra.styling.styles import (
     disjoint_legend,
     swatch_extend_prefixes,
     swatch_legend,
 )
-
-#: The haze / CAMS-AOD / flame colour families now live in `cleopatra.styling.palettes`
-#: (built there via perceptual CIELAB interpolation and registered in the unified
-#: palette registry). They are re-exported above and used by `DATA_STYLES` below.
 
 
 def _require_cmap(action: str) -> None:
