@@ -2463,6 +2463,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0430-2026-10-21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.43.0 (2026-10-21)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0420-2026-10-08" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3350,6 +3361,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0430-2026-10-21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.43.0 (2026-10-21)
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#0420-2026-10-08" class="md-nav__link">
@@ -4240,6 +4262,126 @@
 
 
 <h1 id="changelog"><a class="toclink" href="#changelog">Changelog</a><a class="headerlink" href="#changelog" title="Permanent link">#</a></h1>
+<h2 id="0430-2026-10-21"><a class="toclink" href="#0430-2026-10-21">0.43.0 (2026-10-21)</a><a class="headerlink" href="#0430-2026-10-21" title="Permanent link">#</a></h2>
+<ul>
+<li>fix(ci): repair lint and pure-wheel-test workflows after (#394)</li>
+<li>
+<ul>
+<li>Quote <code>--only-binary :all:</code> in lint.yml so the colons
+  do not break YAML parsing</li>
+</ul>
+</li>
+<li>Exclude <code>tiles</code> and <code>science_colors</code> marked tests from
+  the pure-wheel core job (no extras installed)</li>
+<li>Register <code>tiles</code> and <code>science_colors</code> pytest markers in
+  pyproject.toml</li>
+<li>Mark four tests that need pyproj with @pytest.mark.tiles</li>
+<li>Remove no-op <code>-o pythonpath=</code> from pure-wheel-test jobs</li>
+<li>Delete six redundant in-file doctest runners superseded
+  by the lint.yml static job's --doctest-modules pass</li>
+<li>Closes #395</li>
+<li>ci: adopt lint, pip-audit, and pure-wheel-test workflows (#393)</li>
+<li>Port the three missing CI workflows from pyramids-mesh and fix every
+issue they surfaced on the existing codebase:</li>
+<li>
+<ul>
+<li>Add lint.yml (pre-commit + doctests + gitleaks secret scan),
+  pip-audit.yml (weekly + PR dependency audit), and
+  pure-wheel-test.yml (build wheel, install, test on 3x3 matrix)</li>
+</ul>
+</li>
+<li>Relocate gitleaks.toml from ci/ to .github/</li>
+<li>Fix ~65 mypy errors across 20 source files (cast guards,
+  assert-not-None narrowing, missing type annotations)</li>
+<li>Fix bandit B110 (bare except:pass in renderer-unavailable fallback)</li>
+<li>Resolve all 14 SonarCloud findings (S1192 duplicated strings,
+  S5779 assert inside try/except, S3776 cognitive complexity,
+  S8541/S8544 CI security)</li>
+<li>Bump pillow floor 12.1.1 -&gt; 13.0.0 (CVE-2025-27607), certifi,
+  urllib3, tornado, virtualenv for pip-audit CVEs</li>
+<li>Add <strong>all</strong> to colors.py for clean palette re-exports</li>
+<li>Add dev dependencies (pip, build, twine, pytest-mock, coverage)</li>
+<li>Pre-commit formatting pass (ruff-format + ruff-check)</li>
+<li>Closes #393</li>
+<li>feat(colorbar): let colorbar helpers span a sequence of axes (#392)</li>
+<li>cleopatra's colorbar wrappers only attached a bar to a single axes, so a
+multi-panel figure could not carry one bar spanning a subset of panels --
+though Figure.colorbar already accepts a sequence. Widen the wrappers,
+keeping the single-Axes path byte-for-byte unchanged:</li>
+<li>
+<ul>
+<li>colorbar_legend(mappable, ax=...) accepts ax: Axes | Sequence[Axes];
+  for a sequence it infers the figure (flattening any ndarray shape) and
+  passes the list to Figure.colorbar, which steals space from each. An
+  empty sequence raises the same clear ValueError.</li>
+</ul>
+</li>
+<li>Glyph._outside_colorbar / create_color_bar accept a sequence the same
+  way, via an internal cbar_span_axes option.</li>
+<li>ArrayGlyph.facet draws ONE shared bar across the whole panel grid for a
+  continuous scale (like xarray's FacetGrid) instead of one per panel; the
+  bar sits in a gutter and the figure stays re-layoutable. A data_style
+  preset keeps its own per-panel legend.</li>
+<li>Unblocks serapeum-org/Digital-Earth#219, whose spanning primitive must
+live in cleopatra.</li>
+<li>Closes #389</li>
+<li>feat(glyphs): add an opt-in progress-bar overlay to animate() (#391)</li>
+<li>Add a per-frame progress bar to <code>ArrayGlyph.animate</code> that fills across the
+sequence, so a viewer of a long timelapse can see how far through each frame
+sits. Opt-in via the existing <code>playback=Animation(...)</code> spec and off by
+default, so current output is unchanged.</li>
+<li>
+<ul>
+<li>New <code>ProgressBar</code> spec (location / length / height / color / track_color /
+  alpha / border) with <code>draw(ax) -&gt; (track, fill)</code> and
+  <code>advance(fill, fraction)</code>, mirroring the FrameLabel / ColorBar style and
+  documented in the API reference.</li>
+</ul>
+</li>
+<li><code>Animation.progress_bar: bool | ProgressBar = False</code>; <code>True</code> or a numpy
+  bool uses the defaults, an instance customises placement / size / colour,
+  and any other value raises a clear TypeError.</li>
+<li>animate advances the fill each frame to <code>frame_index / (n_frames - 1)</code> (a
+  single-frame animation shows a full bar; with <code>sub_frames &gt; 1</code> the fill
+  tracks the data-frame index and holds across its sub-frames), drawn in
+  axes-fraction coordinates via <code>add_artist</code> so the overlay never perturbs
+  the data limits, and blitted + registered like the time label so a
+  re-animate clears it.</li>
+<li>Baked into each rendered frame, so it survives both the Pillow (GIF / WebP)
+  and FFmpeg (MP4) writers.</li>
+<li>Closes #388</li>
+<li>feat(glyphs): add categorical BarGlyph and PieGlyph (#390)</li>
+<li>Add two thin categorical glyphs over matplotlib bar/pie, each taking a
+(categories, values) pair and colouring one artist per category from the
+shared palette system. Both subclass Glyph and reuse its pipeline:
+construction/ax handling, title/axis-label/tick styling, the disjoint
+swatch legend, and the clear-prior-artists + compose= contract the other
+glyphs expose.</li>
+<li>
+<ul>
+<li>BarGlyph(categories, values).plot(...) -&gt; (fig, ax, BarContainer);
+  vertical or horizontal (horizontal=True -&gt; barh); optional
+  category-&gt;colour legend; plot-time title/xlabel/ylabel honoured without
+  leaking across calls.</li>
+</ul>
+</li>
+<li>PieGlyph(categories, values).plot(...) -&gt; (fig, ax, [Wedge]); equal
+  aspect, autopct percentages (on by default, autopct=None hides them),
+  and an optional legend that replaces the inline wedge labels.</li>
+<li>Colours come from a named qualitative palette (default category12,
+  cycled) or an explicit colors= list; shared resolve_categories /
+  resolve_category_colors validate the inputs (rejecting length
+  mismatches, empties and non-finite values) and map them (an unknown
+  palette raises ValueError). PieGlyph also rejects negative or zero-sum
+  values.</li>
+<li>compose=False (default) clears prior render artists so a re-plot or a
+  second glyph on a shared axes replaces rather than stacks; compose=True
+  overlays.</li>
+<li>Imported from the submodule per the stats-package convention
+(from cleopatra.glyphs.stats.bar_glyph import BarGlyph); nothing is
+re-exported from the package <strong>init</strong>.</li>
+<li>Closes #387</li>
+</ul>
 <h2 id="0420-2026-10-08"><a class="toclink" href="#0420-2026-10-08">0.42.0 (2026-10-08)</a><a class="headerlink" href="#0420-2026-10-08" title="Permanent link">#</a></h2>
 <ul>
 <li>feat(basemap.reference): add natural_earth_polygons for hole-aware fills (#385)</li>
