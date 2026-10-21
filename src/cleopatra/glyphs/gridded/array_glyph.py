@@ -692,7 +692,10 @@ class ProgressBar:
     The bar is drawn in axes-fraction coordinates (`0` = left / bottom,
     `1` = right / top), so its placement and size are independent of the data
     `extent` and identical across frames. A single-frame animation shows a full
-    bar, since there is no sequence to progress through.
+    bar, since there is no sequence to progress through. With `sub_frames > 1`
+    the fill tracks the *data*-frame index (not the animation-frame index), so it
+    steps once per data frame and holds across that frame's held sub-frames,
+    reaching full on the last data frame's first sub-frame.
 
     Attributes:
         location: `[x, y]` of the bar's left end in axes-fraction coordinates,
@@ -705,7 +708,10 @@ class ProgressBar:
         track_color: Colour of the unfilled track behind the fill, by default
             `"0.3"` (dark grey), which keeps the bar's full extent visible even
             while the fill is short.
-        alpha: Opacity of both the fill and the track, by default `1.0`.
+        alpha: Opacity of both the fill and the track, by default `1.0`. The
+            fill is drawn over the track, so with `alpha < 1` the visible
+            elapsed colour is `color` composited over `track_color`, not `color`
+            alone.
         border_color: Outline colour drawn around the track, by default `None`
             (no outline).
         border_width: Outline width in points when `border_color` is set, by
