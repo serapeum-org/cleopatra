@@ -44,7 +44,6 @@ from matplotlib.colorbar import Colorbar
 from matplotlib.colors import BoundaryNorm, Colormap, ListedColormap, Normalize
 from matplotlib.figure import Figure, SubFigure
 from matplotlib.gridspec import (
-    GridSpec,
     GridSpecBase,
     GridSpecFromSubplotSpec,
     SubplotSpec,
