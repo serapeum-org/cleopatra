@@ -3888,6 +3888,21 @@ class TestFacetColorbar:
             "the shared colorbar should sit in a gutter, not over any panel"
         )
 
+    def test_facet_shared_bar_figure_allows_downstream_relayout(self):
+        """The shared-bar figure is not locked into a layout engine (#389).
+
+        Test scenario:
+            A constrained engine plus an existing colorbar cannot be switched
+            back out, so the shared-bar facet must leave the owned figure on the
+            default engine; a downstream `fig.tight_layout()` must not raise.
+        """
+        result = ArrayGlyph(self._stack_3d()).facet(
+            FacetLayout(col="time", labels=PanelLabels(col=[0, 1, 2])), colorbar=True
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            result.fig.tight_layout()  # must not raise RuntimeError
+
     def test_facet_colorbar_true_draws_one_shared_bar(self):
         """`facet(colorbar=True)` draws one shared bar spanning the grid.
 

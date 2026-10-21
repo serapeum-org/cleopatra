@@ -5243,7 +5243,11 @@ class ArrayGlyph(GeoMixin, Glyph):
                 if not span_shared_bar:
                     panel_colorbar = colorbar
                 elif panel_idx == 0:
-                    sub.default_options["cbar_span_axes"] = flat_axes[:n_panels]
+                    # Only the span-drawing panel needs the span axes, and only
+                    # when a bar is actually requested (colorbar is not False) --
+                    # otherwise the assignment is dead.
+                    if colorbar is not False:
+                        sub.default_options["cbar_span_axes"] = flat_axes[:n_panels]
                     panel_colorbar = colorbar
                 else:
                     panel_colorbar = False
@@ -5271,17 +5275,16 @@ class ArrayGlyph(GeoMixin, Glyph):
                 hidden_ax.set_visible(False)
 
             # Only re-lay-out a figure cleopatra created; a caller's figure is
-            # theirs to arrange.
-            if owns_figure:
-                if span_shared_bar and cbar is not None:
-                    # The shared bar is a non-gridspec `make_axes` artist;
-                    # `tight_layout` re-expands the gridspec panels back over it
-                    # (and warns that the result "might be incorrect").
-                    # Constrained layout places the panels and the spanning bar
-                    # together in a gutter, without overlap or the warning.
-                    fig.set_layout_engine("constrained")
-                else:
-                    fig.tight_layout()
+            # theirs to arrange. The shared bar is a non-gridspec `make_axes`
+            # artist that already carved its own gutter when it was drawn, so
+            # `tight_layout` is skipped for it: tight_layout would re-expand the
+            # gridspec panels back over the bar (and warn). Skipping it (rather
+            # than switching to constrained layout) keeps the returned figure on
+            # the default engine, so a downstream `fig.tight_layout()` /
+            # `subplots_adjust` still works -- constrained + an existing colorbar
+            # cannot be switched back out.
+            if owns_figure and not (span_shared_bar and cbar is not None):
+                fig.tight_layout()
         except Exception:
             # Roll back what cleopatra created: close a figure it owns; on a
             # caller's host, remove the subplots it added (but never touch
