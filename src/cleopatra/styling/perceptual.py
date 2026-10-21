@@ -33,6 +33,7 @@ Examples:
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import cast
 
 import matplotlib.colors as mcolors
 import numpy as np
@@ -132,7 +133,7 @@ def lab_to_srgb(lab: np.ndarray) -> np.ndarray:
     f = np.stack([fy + lab[..., 1] / 500, fy, fy - lab[..., 2] / 200], axis=-1)
     t = np.where(f > _DELTA, f**3, 3 * _DELTA**2 * (f - 4 / 29))
     rgb = _linear_to_srgb((t * _WHITE_D65) @ _M_XYZ2RGB.T)
-    return np.clip(rgb, 0.0, 1.0)
+    return cast(np.ndarray, np.clip(rgb, 0.0, 1.0))
 
 
 def _to_rgb(anchors: Sequence) -> np.ndarray:

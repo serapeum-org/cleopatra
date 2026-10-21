@@ -41,7 +41,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -192,14 +192,14 @@ def _as_hours(time: Any) -> np.ndarray:
     arr = np.asarray(time)
     if np.issubdtype(arr.dtype, np.datetime64):
         dt = arr.astype("datetime64[s]")
-        return (dt - dt[0]) / np.timedelta64(1, "h")
+        return cast(np.ndarray, (dt - dt[0]) / np.timedelta64(1, "h"))
     if arr.dtype == object:
         try:
-            return np.asarray(arr, dtype=float)  # numeric objects are hours
+            return cast(np.ndarray, np.asarray(arr, dtype=float))  # numeric objects are hours
         except (ValueError, TypeError):
             dt = arr.astype("datetime64[s]")  # datetime objects / ISO strings
-            return (dt - dt[0]) / np.timedelta64(1, "h")
-    return np.asarray(arr, dtype=float)
+            return cast(np.ndarray, (dt - dt[0]) / np.timedelta64(1, "h"))
+    return cast(np.ndarray, np.asarray(arr, dtype=float))
 
 
 def _column(table: Mapping[str, Any], key: str) -> np.ndarray | None:
@@ -470,7 +470,7 @@ class CycloneOverlay:
             category_of(storm["vmax_kt"][j + 1], self.palette)[1]
             for j in range(len(segments))
         ]
-        widths = np.linspace(0.6, 3.0, len(segments)) if len(segments) else []
+        widths: np.ndarray | list[float] = np.linspace(0.6, 3.0, len(segments)) if len(segments) else []
         return segments, colours, widths
 
     def _update_track(self, storm, art, i, dissipated) -> None:

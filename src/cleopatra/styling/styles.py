@@ -1437,7 +1437,7 @@ def histogram_legend(
         else (cmap if cmap is not None else mpl.colormaps[mpl.rcParams["image.cmap"]])
     )
     if norm is None and mappable is not None:
-        norm = copy.copy(mappable.norm)
+        norm = cast(colors.Normalize, copy.copy(mappable.norm))
 
     counts, edges = np.histogram(values, bins=bins)
     centers = 0.5 * (edges[:-1] + edges[1:])
@@ -1689,7 +1689,8 @@ def swatch_legend(
         fig = ax.figure
         try:
             fig.canvas.draw()
-            bb = swatch.get_tightbbox(fig.canvas.get_renderer())
+            bb = swatch.get_tightbbox(cast(Any, fig.canvas).get_renderer())
+            assert bb is not None
             inv = ax.transAxes.inverted()
             x0, y0 = inv.transform((bb.x0, bb.y0))
             x1, y1 = inv.transform((bb.x1, bb.y1))

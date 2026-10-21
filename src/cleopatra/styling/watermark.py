@@ -46,7 +46,7 @@ dependency, so no new dependency (and no SciPy) is pulled in.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 from matplotlib import patheffects
@@ -309,7 +309,7 @@ def _fit_text_to_frac(fig: Figure, artist: Text, frac: float) -> None:
             return
         if abs(longest - frac) <= _FIT_TOLERANCE:
             return
-        artist.set_fontsize(artist.get_fontsize() * frac / longest)
+        artist.set_fontsize(float(artist.get_fontsize()) * frac / longest)
 
 
 def _validate_watermark_options(
@@ -590,7 +590,7 @@ def _float_to_uint8(arr: np.ndarray) -> np.ndarray:
             f"[{float(arr.min()):.4g}, {float(arr.max()):.4g}]. "
             "For 0-255 data pass a uint8 array."
         )
-    return (np.clip(arr, 0.0, 1.0) * 255).round().astype(np.uint8)
+    return cast(np.ndarray, (np.clip(arr, 0.0, 1.0) * 255).round().astype(np.uint8))
 
 
 def _as_rgba(path: str | os.PathLike | np.ndarray) -> np.ndarray:
@@ -845,13 +845,13 @@ class WatermarkMixin:
         for name in ("fig", "_rendered_fig", "_fig"):
             figure = getattr(self, name, None)
             if figure is not None:
-                return figure
+                return cast("Figure", figure)
         for name in ("ax", "_ax"):
             axes = getattr(self, name, None)
             if axes is not None:
                 figure = axes.get_figure()
                 if figure is not None:
-                    return figure
+                    return cast("Figure", figure)
         raise ValueError(
             f"{type(self).__name__} has no figure to stamp yet -- render it "
             f"first (e.g. plot()), then stamp."
