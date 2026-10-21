@@ -84,6 +84,12 @@ class TestPieGlyphPlot:
         assert abs(spans[0] - 90.0) < 1e-6, "1/4 of the circle"
         assert abs(spans[1] - 270.0) < 1e-6, "3/4 of the circle"
 
+    def test_single_category_fills_the_circle(self):
+        """A single category is one full 360° wedge."""
+        _, _, wedges = PieGlyph(["only"], [5.0]).plot()
+        assert len(wedges) == 1, "one wedge for one category"
+        assert abs(float(wedges[0].theta2 - wedges[0].theta1) - 360.0) < 1e-6
+
     def test_default_palette_colours_wedges(self):
         """Wedges take the palette swatches in category order."""
         _, _, wedges = PieGlyph(["a", "b", "c"], [1.0, 1.0, 1.0]).plot()

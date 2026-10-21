@@ -76,6 +76,16 @@ class TestBarGlyphPlot:
         _, _, bars = BarGlyph(["a", "b", "c"], [1.0, 2.0, 3.0]).plot()
         assert [float(b.get_height()) for b in bars] == [1.0, 2.0, 3.0]
 
+    def test_duplicate_labels_draw_one_bar_per_value(self):
+        """Duplicate category labels still draw one bar per value."""
+        _, _, bars = BarGlyph(["a", "a", "b"], [1.0, 2.0, 3.0]).plot()
+        assert len(bars) == 3, "one bar per value even when labels repeat"
+
+    def test_single_category(self):
+        """A single category draws a single bar."""
+        _, _, bars = BarGlyph(["only"], [5.0]).plot()
+        assert len(bars) == 1 and float(bars[0].get_height()) == 5.0
+
     def test_default_palette_colours_distinct_categories(self):
         """With no explicit colours, bars take the palette swatches in order."""
         _, _, bars = BarGlyph(["a", "b", "c"], [1.0, 2.0, 3.0]).plot()
