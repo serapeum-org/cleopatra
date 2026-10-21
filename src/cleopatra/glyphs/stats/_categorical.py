@@ -30,6 +30,8 @@ def resolve_categories(categories: Sequence, values: Any) -> tuple[list[str], np
     Raises:
         ValueError: If `values` is not 1-D, if the two lengths differ, if
             either is empty, or if any value is non-finite (NaN or inf).
+        TypeError: If `values` cannot be coerced to a float array (a
+            non-numeric / object input), surfaced by `numpy`.
 
     Examples:
         - A simple pair is normalised to labels and a float array:
