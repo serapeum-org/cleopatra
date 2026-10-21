@@ -1193,9 +1193,10 @@ class TestProgressBar:
 
     def test_invalid_progress_bar_value_raises_typeerror(self):
         """A non-bool, non-`ProgressBar` `progress_bar` fails fast with a `TypeError`."""
-        stack = np.arange(2 * 3 * 3, dtype=float).reshape(2, 3, 3)
+        glyph = ArrayGlyph(np.arange(2 * 3 * 3, dtype=float).reshape(2, 3, 3))
+        playback = Animation(progress_bar=1)
         with pytest.raises(TypeError, match="bool or a ProgressBar") as exc:
-            ArrayGlyph(stack).animate(["t0", "t1"], playback=Animation(progress_bar=1))
+            glyph.animate(["t0", "t1"], playback=playback)
         assert "int" in str(exc.value), f"message should name the bad type: {exc.value}"
 
     def test_resolve_location_returns_a_copy(self):
