@@ -29,9 +29,10 @@ Examples:
     >>> len(make_categorical(8))
     8
 """
+
 from __future__ import annotations
 
-from typing import Sequence
+from collections.abc import Sequence
 
 import matplotlib.colors as mcolors
 import numpy as np
@@ -97,7 +98,11 @@ def srgb_to_lab(rgb: np.ndarray) -> np.ndarray:
     t = xyz / _WHITE_D65
     f = np.where(t > _DELTA**3, np.cbrt(t), t / (3 * _DELTA**2) + 4 / 29)
     return np.stack(
-        [116 * f[..., 1] - 16, 500 * (f[..., 0] - f[..., 1]), 200 * (f[..., 1] - f[..., 2])],
+        [
+            116 * f[..., 1] - 16,
+            500 * (f[..., 0] - f[..., 1]),
+            200 * (f[..., 1] - f[..., 2]),
+        ],
         axis=-1,
     )
 
@@ -182,7 +187,9 @@ def interp_perceptual(anchors: Sequence, n: int = 256) -> np.ndarray:
     return out
 
 
-def perceptual_colormap(name: str, anchors: Sequence, n: int = 256) -> LinearSegmentedColormap:
+def perceptual_colormap(
+    name: str, anchors: Sequence, n: int = 256
+) -> LinearSegmentedColormap:
     """Build a `LinearSegmentedColormap` from anchors interpolated in CIELAB.
 
     A perceptually-uniform, drop-in replacement for

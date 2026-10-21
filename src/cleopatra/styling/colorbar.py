@@ -299,11 +299,7 @@ class ColorBar:
 
                 ```
         """
-        return (
-            self.location is not None
-            or self.inside
-            or self.orientation is not None
-        )
+        return self.location is not None or self.inside or self.orientation is not None
 
     @classmethod
     def reset_options(cls) -> dict:

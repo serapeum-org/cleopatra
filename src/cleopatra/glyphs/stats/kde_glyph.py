@@ -78,6 +78,7 @@ KDE_DEFAULT_OPTIONS = {
 }
 KDE_DEFAULT_OPTIONS = STYLE_DEFAULTS | KDE_DEFAULT_OPTIONS
 
+
 class KDEGlyph(Glyph):
     """Visualization class for 2-D kernel-density estimates.
 

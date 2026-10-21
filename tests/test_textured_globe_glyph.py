@@ -594,14 +594,18 @@ class TestAreaSampling:
 
     def test_default_sampling_is_point(self, texture):
         """The sampling mode defaults to the cheap point lookup."""
-        assert TexturedGlobeGlyph(texture).sampling == "point", "default should be 'point'"
+        assert TexturedGlobeGlyph(texture).sampling == "point", (
+            "default should be 'point'"
+        )
 
     def test_point_sampling_drops_a_subface_feature(self):
         """Point sampling misses a feature narrower than one mesh face -- the #325 gap."""
         glyph = TexturedGlobeGlyph(
             self._subface_patch(), n_lon=24, n_lat=12, sampling="point"
         )
-        assert self._painted(glyph) == 0, "point sampling should drop the sub-face patch"
+        assert self._painted(glyph) == 0, (
+            "point sampling should drop the sub-face patch"
+        )
 
     def test_area_sampling_keeps_a_subface_feature(self):
         """Area sampling reduces the covered block, so the sub-face feature still paints."""
@@ -627,8 +631,12 @@ class TestAreaSampling:
         rgb = np.zeros((100, 200, 3), dtype=np.uint8)
         rgb[::2, :, :] = 255  # alternating white / black rows -- high frequency
         area = TexturedGlobeGlyph(rgb, n_lon=20, n_lat=10, sampling="area").face_colors
-        point = TexturedGlobeGlyph(rgb, n_lon=20, n_lat=10, sampling="point").face_colors
-        assert np.all(area[..., 3] == 1.0), "an RGB texture has no transparency; every face stays opaque"
+        point = TexturedGlobeGlyph(
+            rgb, n_lon=20, n_lat=10, sampling="point"
+        ).face_colors
+        assert np.all(area[..., 3] == 1.0), (
+            "an RGB texture has no transparency; every face stays opaque"
+        )
         assert not np.allclose(area[..., 0], point[..., 0]), (
             "block-averaging a high-frequency pattern must differ from centre sampling"
         )
@@ -670,7 +678,9 @@ class TestAreaSampling:
     def test_area_matches_point_when_mesh_finer_than_texture(self):
         """When the mesh is finer than the texture, area falls back to point cell-for-cell (no gaps)."""
         coarse = np.zeros((4, 8, 4), dtype=np.uint8)
-        coarse[..., 0] = np.arange(8, dtype=np.uint8)[None, :] * 30  # each column distinct
+        coarse[..., 0] = (
+            np.arange(8, dtype=np.uint8)[None, :] * 30
+        )  # each column distinct
         coarse[..., 1] = np.arange(4, dtype=np.uint8)[:, None] * 60  # each row distinct
         coarse[..., 3] = 255
         point = TexturedGlobeGlyph(coarse, n_lon=40, n_lat=20, sampling="point")

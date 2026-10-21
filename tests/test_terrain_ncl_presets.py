@@ -52,8 +52,12 @@ class TestAssetCmap:
             hinge maps rely on.
         """
         cmap = _preset_cmap("t", PALETTE, "linear")
-        assert isinstance(cmap, LinearSegmentedColormap), "linear must be a segmented map"
-        assert abs(_fraction_of(cmap, (0.0, 1.0, 0.0)) - 0.5) < 0.02, "hinge should stay at 0.5"
+        assert isinstance(cmap, LinearSegmentedColormap), (
+            "linear must be a segmented map"
+        )
+        assert abs(_fraction_of(cmap, (0.0, 1.0, 0.0)) - 0.5) < 0.02, (
+            "hinge should stay at 0.5"
+        )
 
     def test_perceptual_default_drifts_hinge(self):
         """`colormap="perceptual"` reparameterises, moving the midpoint off 0.5.
@@ -64,8 +68,12 @@ class TestAssetCmap:
             `"linear"` instead.
         """
         cmap = _preset_cmap("t", PALETTE, "perceptual")
-        assert isinstance(cmap, LinearSegmentedColormap), "perceptual returns a segmented map"
-        assert abs(_fraction_of(cmap, (0.0, 1.0, 0.0)) - 0.5) > 0.02, "perceptual should drift the midpoint"
+        assert isinstance(cmap, LinearSegmentedColormap), (
+            "perceptual returns a segmented map"
+        )
+        assert abs(_fraction_of(cmap, (0.0, 1.0, 0.0)) - 0.5) > 0.02, (
+            "perceptual should drift the midpoint"
+        )
 
     def test_listed_is_discrete_with_one_band_per_colour(self):
         """`colormap="listed"` yields a `ListedColormap` with `N == len(palette)`.
@@ -114,7 +122,9 @@ class TestTopographyHingeFix:
             `center=0`.
         """
         layer = DATA_STYLES["topography"]["topography"]
-        assert isinstance(layer["cmap"], LinearSegmentedColormap), "topography must be a segmented map"
+        assert isinstance(layer["cmap"], LinearSegmentedColormap), (
+            "topography must be a segmented map"
+        )
         assert layer["center"] == 0.0, "topography must stay centred at sea level"
 
     def test_topography_sea_level_near_half(self):
@@ -127,13 +137,17 @@ class TestTopographyHingeFix:
         """
         cmap = DATA_STYLES["topography"]["topography"]["cmap"]
         dark_land = (0x0F / 255, 0x29 / 255, 0x15 / 255)
-        assert abs(_fraction_of(cmap, dark_land) - 0.5) < 0.03, "sea-level hinge should sit near 0.5"
+        assert abs(_fraction_of(cmap, dark_land) - 0.5) < 0.03, (
+            "sea-level hinge should sit near 0.5"
+        )
 
 
 class TestTerrainPresets:
     """Tests for the vendored terrain presets (F1)."""
 
-    @pytest.mark.parametrize("key", ["elevation_oleron", "elevation_bukavu", "elevation_fes"])
+    @pytest.mark.parametrize(
+        "key", ["elevation_oleron", "elevation_bukavu", "elevation_fes"]
+    )
     def test_terrain_preset_registered_linear_centered(self, key):
         """Each terrain preset is a linear map centred at zero.
 
@@ -146,10 +160,14 @@ class TestTerrainPresets:
             (`center=0`).
         """
         layer = DATA_STYLES[key][key]
-        assert isinstance(layer["cmap"], LinearSegmentedColormap), f"{key} must be a segmented map"
+        assert isinstance(layer["cmap"], LinearSegmentedColormap), (
+            f"{key} must be a segmented map"
+        )
         assert layer["center"] == 0.0, f"{key} must be centred at zero"
 
-    @pytest.mark.parametrize("key", ["elevation_oleron", "elevation_bukavu", "elevation_fes"])
+    @pytest.mark.parametrize(
+        "key", ["elevation_oleron", "elevation_bukavu", "elevation_fes"]
+    )
     def test_terrain_preset_renders(self, key):
         """Each terrain preset draws through `apply_data_style` without error.
 
@@ -194,7 +212,9 @@ class TestNCLPresets:
         assert isinstance(cmap, ListedColormap), f"{key} must be a discrete banded map"
         assert cmap.N >= 2, f"{key} should have at least two bands, got {cmap.N}"
 
-    @pytest.mark.parametrize("key", ["precipitation_anomaly", "temperature_anomaly", "hot_cold"])
+    @pytest.mark.parametrize(
+        "key", ["precipitation_anomaly", "temperature_anomaly", "hot_cold"]
+    )
     def test_anomaly_presets_are_centered(self, key):
         """The diverging anomaly tables carry `center=0`.
 
@@ -206,7 +226,9 @@ class TestNCLPresets:
         """
         assert DATA_STYLES[key][key]["center"] == 0.0, f"{key} must be centred at zero"
 
-    @pytest.mark.parametrize("key", ["precipitation_steps", "temperature_anomaly", "hot_cold"])
+    @pytest.mark.parametrize(
+        "key", ["precipitation_steps", "temperature_anomaly", "hot_cold"]
+    )
     def test_ncl_preset_renders(self, key):
         """Each NCL preset draws through `apply_data_style` without error.
 

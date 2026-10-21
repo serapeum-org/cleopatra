@@ -43,8 +43,8 @@ from typing import Any
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.patches import PathPatch
-from matplotlib.tri import Triangulation
 from matplotlib.path import Path
+from matplotlib.tri import Triangulation
 
 #: Default style for the projection boundary patch. Merged with (and
 #: overridden by) the caller's ``boundary_kw``.

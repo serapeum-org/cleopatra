@@ -24,8 +24,20 @@ ASSETS = [
 
 #: The complete set of keys a layer record may carry (the "one structure").
 LAYER_KEYS = {
-    "label", "colors", "colormap", "categories", "norm", "center", "vmin",
-    "vmax", "levels", "bands", "extend", "alpha", "alpha_range", "units",
+    "label",
+    "colors",
+    "colormap",
+    "categories",
+    "norm",
+    "center",
+    "vmin",
+    "vmax",
+    "levels",
+    "bands",
+    "extend",
+    "alpha",
+    "alpha_range",
+    "units",
 }
 COLORMAPS = {"perceptual", "linear", "listed", "named"}
 
@@ -40,7 +52,9 @@ def _read(name: str) -> dict:
         dict: The parsed JSON.
     """
     return json.loads(
-        importlib.resources.files("cleopatra.styling.data").joinpath(name).read_text(encoding="utf-8")
+        importlib.resources.files("cleopatra.styling.data")
+        .joinpath(name)
+        .read_text(encoding="utf-8")
     )
 
 
@@ -74,25 +88,37 @@ class TestPresetSchema:
             `colormap`) XOR categorical (`categories`), with only allowed keys.
         """
         obj = _read(asset)
-        assert set(obj) <= {"version", "source", "license", "presets"}, f"{asset}: stray asset key"
+        assert set(obj) <= {"version", "source", "license", "presets"}, (
+            f"{asset}: stray asset key"
+        )
         assert obj.get("version") == 1, f"{asset}: missing/unknown version"
         for pname, preset in obj["presets"].items():
-            assert set(preset) <= {"source", "license", "background", "layers"}, f"{asset}:{pname}: stray preset key"
+            assert set(preset) <= {"source", "license", "background", "layers"}, (
+                f"{asset}:{pname}: stray preset key"
+            )
             assert preset.get("layers"), f"{asset}:{pname}: no layers"
             for lname, layer in preset["layers"].items():
                 where = f"{asset}:{pname}:{lname}"
-                assert set(layer) <= LAYER_KEYS, f"{where}: stray layer key {set(layer) - LAYER_KEYS}"
+                assert set(layer) <= LAYER_KEYS, (
+                    f"{where}: stray layer key {set(layer) - LAYER_KEYS}"
+                )
                 assert "label" in layer, f"{where}: missing label"
                 is_cat = "categories" in layer
                 is_cont = "colors" in layer and "colormap" in layer
                 assert is_cat ^ is_cont, f"{where}: must be categorical XOR continuous"
                 if is_cont:
-                    assert layer["colormap"] in COLORMAPS, f"{where}: bad colormap {layer['colormap']!r}"
+                    assert layer["colormap"] in COLORMAPS, (
+                        f"{where}: bad colormap {layer['colormap']!r}"
+                    )
                     if isinstance(layer["colors"], str):
-                        assert layer["colormap"] == "named", f"{where}: a colormap name needs colormap='named'"
+                        assert layer["colormap"] == "named", (
+                            f"{where}: a colormap name needs colormap='named'"
+                        )
                 if is_cat:
                     for cat in layer["categories"]:
-                        assert set(cat) == {"value", "color", "label"}, f"{where}: bad category {cat}"
+                        assert set(cat) == {"value", "color", "label"}, (
+                            f"{where}: bad category {cat}"
+                        )
 
     def test_schema_rejects_mixed_categorical_continuous(self):
         """The schema rejects a layer carrying both `categories` and `colors`.
@@ -103,11 +129,23 @@ class TestPresetSchema:
         """
         jsonschema = pytest.importorskip("jsonschema")
         schema = _read("preset.schema.json")
-        mixed = {"version": 1, "presets": {"x": {"layers": {"x": {
-            "label": "mixed",
-            "colors": ["#000000", "#ffffff"], "colormap": "listed",
-            "categories": [{"value": 1, "color": "#000000", "label": "a"}],
-        }}}}}
+        mixed = {
+            "version": 1,
+            "presets": {
+                "x": {
+                    "layers": {
+                        "x": {
+                            "label": "mixed",
+                            "colors": ["#000000", "#ffffff"],
+                            "colormap": "listed",
+                            "categories": [
+                                {"value": 1, "color": "#000000", "label": "a"}
+                            ],
+                        }
+                    }
+                }
+            },
+        }
         with pytest.raises(jsonschema.ValidationError):
             jsonschema.validate(mixed, schema)
 
@@ -129,7 +167,9 @@ class TestPresetSchema:
         with pytest.raises(jsonschema.ValidationError):
             jsonschema.validate(mangled, schema)
         # the correct named form validates
-        jsonschema.validate(wrap({"label": "L", "colors": "Spectral_r", "colormap": "named"}), schema)
+        jsonschema.validate(
+            wrap({"label": "L", "colors": "Spectral_r", "colormap": "named"}), schema
+        )
 
     def test_schema_accepts_preset_background(self):
         """A preset may declare an optional string `background` (canvas colour).
@@ -145,7 +185,9 @@ class TestPresetSchema:
         def wrap(preset):
             return {"version": 1, "presets": {"x": preset}}
 
-        jsonschema.validate(wrap({"background": "#000000", "layers": {"x": layer}}), schema)
+        jsonschema.validate(
+            wrap({"background": "#000000", "layers": {"x": layer}}), schema
+        )
         bad = wrap({"background": 0, "layers": {"x": layer}})
         with pytest.raises(jsonschema.ValidationError):
             jsonschema.validate(bad, schema)
@@ -176,7 +218,9 @@ class TestPresetSchema:
         from cleopatra.styling.colors import DATA_STYLES
 
         layer = DATA_STYLES["total_precipitation"]["total_precipitation"]
-        assert "alpha" not in layer, "total_precipitation should fade at the low end (no constant alpha)"
+        assert "alpha" not in layer, (
+            "total_precipitation should fade at the low end (no constant alpha)"
+        )
 
     @pytest.mark.parametrize("asset", ASSETS)
     def test_loader_reads_asset(self, asset):

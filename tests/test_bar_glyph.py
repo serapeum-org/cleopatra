@@ -203,4 +203,6 @@ class TestBarGlyphPlot:
         assert ax2.get_xlabel() == "PX", "override applies for its own call"
         _, ax3 = plt.subplots()
         glyph.plot(ax=ax3)
-        assert ax3.get_xlabel() == "CX", "override must not persist into a later plain plot"
+        assert ax3.get_xlabel() == "CX", (
+            "override must not persist into a later plain plot"
+        )

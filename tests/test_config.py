@@ -21,9 +21,9 @@ class TestGetCacheDir:
     def test_default_when_unset(self, monkeypatch):
         """With no override, it is `~/.cleopatra/naturalearth`."""
         monkeypatch.delenv("CLEOPATRA_CACHE_DIR", raising=False)
-        assert (
-            Config.get_cache_dir() == Path.home() / ".cleopatra" / "naturalearth"
-        ), "default should be ~/.cleopatra/naturalearth"
+        assert Config.get_cache_dir() == Path.home() / ".cleopatra" / "naturalearth", (
+            "default should be ~/.cleopatra/naturalearth"
+        )
 
     def test_env_var_override(self, monkeypatch, tmp_path):
         """`CLEOPATRA_CACHE_DIR` overrides the default."""
@@ -33,9 +33,9 @@ class TestGetCacheDir:
     def test_explicit_arg_overrides_env(self, monkeypatch, tmp_path):
         """An explicit `path` argument wins over the environment variable."""
         monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path / "from_env"))
-        assert (
-            Config.get_cache_dir(tmp_path / "explicit") == tmp_path / "explicit"
-        ), "explicit path should take precedence over the env var"
+        assert Config.get_cache_dir(tmp_path / "explicit") == tmp_path / "explicit", (
+            "explicit path should take precedence over the env var"
+        )
 
     def test_tilde_is_expanded(self, monkeypatch):
         """A leading `~` in the env var is expanded to the home directory."""
@@ -141,12 +141,14 @@ class TestGetCacheDir:
             `Path` instance (so callers can chain path operations).
         """
         monkeypatch.delenv("CLEOPATRA_CACHE_DIR", raising=False)
-        assert isinstance(Config.get_cache_dir(), Path), "default branch must return Path"
+        assert isinstance(Config.get_cache_dir(), Path), (
+            "default branch must return Path"
+        )
         monkeypatch.setenv("CLEOPATRA_CACHE_DIR", str(tmp_path))
         assert isinstance(Config.get_cache_dir(), Path), "env branch must return Path"
-        assert isinstance(
-            Config.get_cache_dir(str(tmp_path)), Path
-        ), "explicit branch must return Path"
+        assert isinstance(Config.get_cache_dir(str(tmp_path)), Path), (
+            "explicit branch must return Path"
+        )
 
     def test_is_a_staticmethod(self):
         """`get_cache_dir` works without an instance (parity with the other helper).

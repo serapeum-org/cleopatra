@@ -56,7 +56,9 @@ class TestResolveStyleOverrides:
 
     def test_none_passed_resolves_to_empty(self):
         """No override inputs yields an empty merge dict (preset untouched)."""
-        assert resolve_style_overrides({k: None for k in ("vmin", "cmap", "alpha")}) == {}
+        assert (
+            resolve_style_overrides({k: None for k in ("vmin", "cmap", "alpha")}) == {}
+        )
 
     def test_bands_clears_levels(self):
         """An explicit `bands` also clears the preset's `levels`."""
@@ -147,7 +149,9 @@ class TestStyleOverridesPlot:
         """Passing both `alpha` and `alpha_range`, the constant `alpha` wins."""
         g = ArrayGlyph(_data2d())
         g.plot(
-            data_style=DataStyle(style=_LEVELS_STYLE, alpha=0.4, alpha_range=(10.0, 30.0))
+            data_style=DataStyle(
+                style=_LEVELS_STYLE, alpha=0.4, alpha_range=(10.0, 30.0)
+            )
         )
         alpha = _finite_alpha(g.im)
         assert np.allclose(alpha, 0.4)

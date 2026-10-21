@@ -20,7 +20,6 @@ new maths. Pure numpy + matplotlib -- no new dependency.
 
 from typing import Any
 
-import matplotlib as mpl
 import numpy as np
 from matplotlib.colors import Colormap, LightSource, Normalize
 

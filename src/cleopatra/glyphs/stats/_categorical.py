@@ -16,7 +16,9 @@ import numpy as np
 from cleopatra.styling.palettes import get_palette
 
 
-def resolve_categories(categories: Sequence, values: Any) -> tuple[list[str], np.ndarray]:
+def resolve_categories(
+    categories: Sequence, values: Any
+) -> tuple[list[str], np.ndarray]:
     """Validate a `(categories, values)` pair and normalise it.
 
     Args:
@@ -64,9 +66,7 @@ def resolve_categories(categories: Sequence, values: Any) -> tuple[list[str], np
     return labels, vals
 
 
-def resolve_category_colors(
-    n: int, colors: Sequence | None, palette: str
-) -> list:
+def resolve_category_colors(n: int, colors: Sequence | None, palette: str) -> list:
     """Return one colour per category.
 
     Args:

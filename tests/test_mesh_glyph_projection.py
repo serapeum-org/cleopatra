@@ -65,7 +65,9 @@ class TestMeshGlyphProjection:
         node_x, node_y, faces, values = mesh
         glyph = MeshGlyph(node_x, node_y, faces)
         glyph.plot(values, location="node", projection="globe")
-        assert len(glyph.ax.patches) >= 1, "plot(projection='globe') should frame the axes"
+        assert len(glyph.ax.patches) >= 1, (
+            "plot(projection='globe') should frame the axes"
+        )
         plt.close("all")
 
     def test_sticky_projection_survives_replot(self, mesh):
@@ -80,7 +82,9 @@ class TestMeshGlyphProjection:
         glyph = MeshGlyph(node_x, node_y, faces, projection="globe")
         glyph.plot(values, location="node")
         glyph.plot(values, location="node")  # no projection= here
-        assert len(glyph.ax.patches) >= 1, "sticky projection should persist across replot"
+        assert len(glyph.ax.patches) >= 1, (
+            "sticky projection should persist across replot"
+        )
         plt.close("all")
 
     def test_replot_does_not_stack_globe_frame(self, mesh):
@@ -97,7 +101,9 @@ class TestMeshGlyphProjection:
         glyph.plot(values, location="node")
         patches1, lines1 = len(glyph.ax.patches), len(glyph.ax.lines)
         glyph.plot(values, location="node")
-        assert len(glyph.ax.patches) == patches1, "globe boundary must not stack on replot"
+        assert len(glyph.ax.patches) == patches1, (
+            "globe boundary must not stack on replot"
+        )
         assert len(glyph.ax.lines) == lines1, "graticule must not stack on replot"
         plt.close("all")
 
@@ -122,7 +128,9 @@ class TestMeshGlyphProjection:
         assert glyph.triangulation.x.max() > 1e6, "globe should reproject to metres"
         assert glyph.ax.get_xlim()[1] > 1e6, "globe should freeze the view to metres"
         glyph.plot(values, location="node", projection=revert)
-        assert glyph.triangulation.x.max() <= 360.0, "revert should restore lon/lat coords"
+        assert glyph.triangulation.x.max() <= 360.0, (
+            "revert should restore lon/lat coords"
+        )
         assert glyph.ax.get_xlim()[1] <= 360.0, "revert should restore the flat view"
         assert glyph.ax.axison, "revert should turn the axis back on"
         assert len(glyph.ax.patches) == 0, "revert should remove the globe frame"
@@ -141,5 +149,7 @@ class TestMeshGlyphProjection:
         node_x, node_y, faces, values = mesh
         glyph = MeshGlyph(node_x, node_y, faces, projection=projection)
         glyph.plot(values, location="node")
-        assert len(glyph.ax.patches) == 0, f"projection={projection!r} should draw no boundary"
+        assert len(glyph.ax.patches) == 0, (
+            f"projection={projection!r} should draw no boundary"
+        )
         plt.close("all")

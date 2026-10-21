@@ -36,8 +36,12 @@ class TestPublicationMap:
         Test scenario:
             `style` + `title` produce a titled axes carrying a mappable.
         """
-        fig, ax = publication_map(field, style="temperature_2m", title="2 m temperature")
-        assert ax.get_title() == "2 m temperature", f"unexpected title: {ax.get_title()!r}"
+        fig, ax = publication_map(
+            field, style="temperature_2m", title="2 m temperature"
+        )
+        assert ax.get_title() == "2 m temperature", (
+            f"unexpected title: {ax.get_title()!r}"
+        )
         assert ax.images or ax.collections, "the field should be drawn"
         plt.close(fig)
 
@@ -61,7 +65,9 @@ class TestPublicationMap:
         """
         lon = np.linspace(-10.0, 10.0, 12)
         lat = np.linspace(30.0, 50.0, 10)
-        fig, ax = publication_map(field, coords=(lon, lat), cmap="viridis", projection="flat")
+        fig, ax = publication_map(
+            field, coords=(lon, lat), cmap="viridis", projection="flat"
+        )
         assert ax.collections, "a projected render should add a QuadMesh collection"
         plt.close(fig)
 

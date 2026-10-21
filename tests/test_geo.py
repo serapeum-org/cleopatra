@@ -401,8 +401,12 @@ def test_real_glyph_basemap_axes_lazily_creates_and_seeds_bounds():
     assert glyph.ax is not None, "should create and store the axes"
     assert ax is glyph.ax
     x_min, x_max, y_min, y_max = glyph._flat_axis_bounds()
-    assert tuple(round(v) for v in ax.get_xlim()) == (round(x_min), round(x_max)), "x seeded to data bounds"
-    assert tuple(round(v) for v in ax.get_ylim()) == (round(y_min), round(y_max)), "y seeded to data bounds"
+    assert tuple(round(v) for v in ax.get_xlim()) == (round(x_min), round(x_max)), (
+        "x seeded to data bounds"
+    )
+    assert tuple(round(v) for v in ax.get_ylim()) == (round(y_min), round(y_max)), (
+        "y seeded to data bounds"
+    )
     plt.close("all")
 
 
@@ -418,7 +422,9 @@ def test_non_seeding_glyph_basemap_axes_raises_clearly():
     """
     glyph = FlowGlyph([np.array([[0.0, 0.0], [1.0, 1.0], [2.0, 0.5]])])
     assert glyph.ax is None, "a fresh FlowGlyph has no axes yet"
-    assert not hasattr(glyph, "_flat_axis_bounds"), "FlowGlyph cannot seed its own bounds"
+    assert not hasattr(glyph, "_flat_axis_bounds"), (
+        "FlowGlyph cannot seed its own bounds"
+    )
     with pytest.raises(RuntimeError, match="Plot the glyph first"):
         glyph._basemap_axes()
     plt.close("all")
@@ -433,7 +439,9 @@ def test_pixel_index_basemap_axes_seeds_matshow_orientation():
         same view, or a reference/label layer added before `plot()` locks a
         non-inverted box (autoscale off) and the raster renders upside-down.
     """
-    glyph = ArrayGlyph(np.arange(24, dtype=float).reshape(4, 6))  # 4 rows x 6 cols, no extent/coords
+    glyph = ArrayGlyph(
+        np.arange(24, dtype=float).reshape(4, 6)
+    )  # 4 rows x 6 cols, no extent/coords
     ax = glyph._basemap_axes()
     assert ax.get_ylim() == (3.5, -0.5), "y inverted (row 0 at top), matching matshow"
     assert ax.get_xlim() == (-0.5, 5.5), "x half-pixel edges, matching matshow"
@@ -980,7 +988,9 @@ class TestFeature:
         """The layer name and style keywords are captured verbatim."""
         f = Feature("coastline", colors="0.55", linewidths=0.5)
         assert f.layer == "coastline", f"Got layer {f.layer!r}"
-        assert f.style == {"colors": "0.55", "linewidths": 0.5}, f"Got style {f.style!r}"
+        assert f.style == {"colors": "0.55", "linewidths": 0.5}, (
+            f"Got style {f.style!r}"
+        )
 
     def test_no_style_is_empty_dict(self):
         """With no style keywords the style is an empty dict."""
@@ -995,7 +1005,9 @@ class TestFeature:
 
     def test_unknown_layer_raises(self):
         """An unknown layer is rejected at construction with a helpful message."""
-        with pytest.raises(ValueError, match=r"Unknown basemap feature layer 'countries'"):
+        with pytest.raises(
+            ValueError, match=r"Unknown basemap feature layer 'countries'"
+        ):
             Feature("countries")
 
 
@@ -1008,14 +1020,20 @@ class TestBasemap:
         assert bm.relief is True, f"Got relief {bm.relief!r}"
         assert bm.features is None, f"Got features {bm.features!r}"
         assert bm.resolution == "50m", f"Got resolution {bm.resolution!r}"
-        assert bm.check_alignment is False, f"Got check_alignment {bm.check_alignment!r}"
+        assert bm.check_alignment is False, (
+            f"Got check_alignment {bm.check_alignment!r}"
+        )
 
     def test_explicit_values_stored(self):
         """All keywords are stored; `features` is materialised into a list copy."""
         feats = (Feature("coastline"), Feature("borders"))
-        bm = Basemap(relief="medium", features=feats, resolution="10m", check_alignment=True)
+        bm = Basemap(
+            relief="medium", features=feats, resolution="10m", check_alignment=True
+        )
         assert bm.relief == "medium", f"Got relief {bm.relief!r}"
-        assert bm.features == list(feats), "features should be a list copy of the iterable"
+        assert bm.features == list(feats), (
+            "features should be a list copy of the iterable"
+        )
         assert bm.resolution == "10m", f"Got resolution {bm.resolution!r}"
         assert bm.check_alignment is True, f"Got check_alignment {bm.check_alignment!r}"
 
@@ -1034,7 +1052,9 @@ class TestBasemap:
         """`_as_config` drops `features` when None so the default still applies."""
         cfg = Basemap()._as_config()
         assert "features" not in cfg, f"features should be omitted, got {cfg}"
-        assert cfg == {"relief": True, "resolution": "50m", "check_alignment": False}, cfg
+        assert cfg == {"relief": True, "resolution": "50m", "check_alignment": False}, (
+            cfg
+        )
 
     def test_as_config_includes_features_when_set(self):
         """`_as_config` includes the features list when provided."""
@@ -1062,7 +1082,9 @@ class TestDrawBasemapRouting:
             ArrayGlyph, "add_relief", lambda self, *a, **k: relief_calls.append((a, k))
         )
         monkeypatch.setattr(
-            ArrayGlyph, "add_features", lambda self, *a, **k: feature_calls.append((a, k))
+            ArrayGlyph,
+            "add_features",
+            lambda self, *a, **k: feature_calls.append((a, k)),
         )
         return relief_calls, feature_calls
 
@@ -1095,10 +1117,14 @@ class TestDrawBasemapRouting:
         """A `Feature`'s own `zorder` overrides the default feature zorder (3)."""
         glyph = ArrayGlyph(np.ones((3, 5, 5)), extent=[0, 0, 5, 5])
         _, feats = self._record(monkeypatch)
-        glyph._draw_basemap(Basemap(relief=False, features=[Feature("ocean", zorder=-2)]))
-        (args, kwargs), = feats
+        glyph._draw_basemap(
+            Basemap(relief=False, features=[Feature("ocean", zorder=-2)])
+        )
+        ((args, kwargs),) = feats
         assert args[0] == "ocean", f"Got layer {args[0]!r}"
-        assert kwargs["zorder"] == -2, f"Feature zorder should win, got {kwargs.get('zorder')}"
+        assert kwargs["zorder"] == -2, (
+            f"Feature zorder should win, got {kwargs.get('zorder')}"
+        )
 
 
 class _StubImage:
@@ -1154,7 +1180,9 @@ class TestBackgroundIsDarkGuards:
             warnings.simplefilter("error")  # averaging an empty slice would warn
             result = host._background_is_dark(None)
 
-        assert result is False, f"an empty sample should read as not dark; got {result!r}"
+        assert result is False, (
+            f"an empty sample should read as not dark; got {result!r}"
+        )
 
     def test_fully_transparent_sample_reads_as_not_dark(self):
         """Pixels that are all transparent carry no colour to judge.
@@ -1174,8 +1202,7 @@ class TestBackgroundIsDarkGuards:
             result = host._background_is_dark(None)
 
         assert result is False, (
-            "a fully transparent sample has nothing opaque to judge; "
-            f"got {result!r}"
+            f"a fully transparent sample has nothing opaque to judge; got {result!r}"
         )
 
     def test_one_dimensional_sample_is_not_decimated(self):

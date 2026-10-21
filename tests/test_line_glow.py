@@ -15,9 +15,13 @@ import numpy as np
 import pytest
 from matplotlib.collections import LineCollection
 
-from cleopatra.styling.colors import GLOW_OPTION_KEYS, add_line_glow, resolve_glow_options
 from cleopatra.glyphs.primitives.flow_glyph import FlowGlyph
 from cleopatra.glyphs.primitives.line_glyph import LineGlyph
+from cleopatra.styling.colors import (
+    GLOW_OPTION_KEYS,
+    add_line_glow,
+    resolve_glow_options,
+)
 
 
 @pytest.fixture(scope="function")
@@ -47,7 +51,9 @@ class TestAddLineGlow:
         ax, _src = line_axes
         glow = add_line_glow(ax, n_glow=6)
         assert len(glow) == 6, f"expected 6 glow artists, got {len(glow)}"
-        assert len(ax.get_lines()) == 7, f"expected 1 source + 6 glow = 7 lines, got {len(ax.get_lines())}"
+        assert len(ax.get_lines()) == 7, (
+            f"expected 1 source + 6 glow = 7 lines, got {len(ax.get_lines())}"
+        )
 
     def test_copies_grow_in_width_and_sit_beneath(self, line_axes):
         """Glow copies grow by ``linewidth_step`` and sit under the source.
@@ -60,7 +66,9 @@ class TestAddLineGlow:
         glow = add_line_glow(ax, [src], n_glow=3, linewidth_step=1.5)
         widths = [g.get_linewidth() for g in glow]
         assert widths == [3.5, 5.0, 6.5], f"unexpected glow widths: {widths}"
-        assert all(g.get_zorder() < src.get_zorder() for g in glow), "glow must sit beneath the source line"
+        assert all(g.get_zorder() < src.get_zorder() for g in glow), (
+            "glow must sit beneath the source line"
+        )
 
     def test_copies_are_low_alpha_and_excluded_from_legend(self, line_axes):
         """Glow copies use the given per-copy alpha and are legend-excluded.
@@ -71,8 +79,12 @@ class TestAddLineGlow:
         """
         ax, _src = line_axes
         glow = add_line_glow(ax)
-        assert all(round(float(g.get_alpha()), 3) == 0.05 for g in glow), "every glow copy should use alpha=0.05"
-        assert all(g.get_label() == "_nolegend_" for g in glow), "glow copies must be excluded from the legend"
+        assert all(round(float(g.get_alpha()), 3) == 0.05 for g in glow), (
+            "every glow copy should use alpha=0.05"
+        )
+        assert all(g.get_label() == "_nolegend_" for g in glow), (
+            "glow copies must be excluded from the legend"
+        )
 
     def test_inherits_each_source_line_colour(self):
         """Glow copies take the colour of their own source line.
@@ -86,7 +98,9 @@ class TestAddLineGlow:
         (blue,) = ax.plot([0, 1], [1, 0], color="blue")
         glow = add_line_glow(ax, [red, blue], n_glow=2)
         colours = [g.get_color() for g in glow]
-        assert colours == ["red", "red", "blue", "blue"], f"glow colours should follow their source: {colours}"
+        assert colours == ["red", "red", "blue", "blue"], (
+            f"glow colours should follow their source: {colours}"
+        )
         plt.close(fig)
 
     def test_defaults_to_all_axes_lines(self, line_axes):
@@ -97,7 +111,9 @@ class TestAddLineGlow:
         """
         ax, _src = line_axes
         glow = add_line_glow(ax, n_glow=3)
-        assert len(glow) == 3, f"expected 3 glow copies for the single axes line, got {len(glow)}"
+        assert len(glow) == 3, (
+            f"expected 3 glow copies for the single axes line, got {len(glow)}"
+        )
 
 
 class TestResolveGlowOptions:
@@ -109,7 +125,9 @@ class TestResolveGlowOptions:
         Test scenario:
             ``resolve_glow_options(True)`` returns ``{}``.
         """
-        assert resolve_glow_options(True) == {}, "True should map to default (empty) kwargs"
+        assert resolve_glow_options(True) == {}, (
+            "True should map to default (empty) kwargs"
+        )
 
     def test_dict_is_passed_through(self):
         """A dict of valid keys is returned as forwardable kwargs.
@@ -118,7 +136,9 @@ class TestResolveGlowOptions:
             Every key in ``GLOW_OPTION_KEYS`` is accepted and returned verbatim.
         """
         opts = {key: 1 for key in GLOW_OPTION_KEYS}
-        assert resolve_glow_options(opts) == opts, f"valid dict should pass through unchanged: {opts}"
+        assert resolve_glow_options(opts) == opts, (
+            f"valid dict should pass through unchanged: {opts}"
+        )
 
     def test_unknown_key_raises_valueerror(self):
         """An unknown dict key raises ``ValueError`` naming the bad key.
@@ -128,9 +148,13 @@ class TestResolveGlowOptions:
         """
         with pytest.raises(ValueError, match=r"unknown glow option") as exc_info:
             resolve_glow_options({"bogus": 1})
-        assert "bogus" in str(exc_info.value), f"message should name the bad key: {exc_info.value}"
+        assert "bogus" in str(exc_info.value), (
+            f"message should name the bad key: {exc_info.value}"
+        )
 
-    @pytest.mark.parametrize("bad", [1, "yes", (), None], ids=["int", "str", "tuple", "none"])
+    @pytest.mark.parametrize(
+        "bad", [1, "yes", (), None], ids=["int", "str", "tuple", "none"]
+    )
     def test_non_bool_non_dict_raises_typeerror(self, bad):
         """A non-bool, non-dict value raises ``TypeError``.
 
@@ -167,7 +191,9 @@ class TestLineGlyphGlow:
             A dict override is forwarded to ``add_line_glow``.
         """
         x = np.linspace(0, 1, 10)
-        fig, ax, lines = LineGlyph(x, np.sin(x), glow={"n_glow": 8, "alpha": 0.08}).line()
+        fig, ax, lines = LineGlyph(
+            x, np.sin(x), glow={"n_glow": 8, "alpha": 0.08}
+        ).line()
         extra = len(ax.get_lines()) - len(lines)
         assert extra == 8, f"expected 8 glow lines, got {extra}"
         plt.close(fig)
@@ -207,7 +233,10 @@ class TestFlowGlyphGlow:
         Returns:
             list[numpy.ndarray]: Two ``(N, 2)`` coordinate arrays.
         """
-        return [np.array([[0, 0], [1, 1], [2, 0]], float), np.array([[0, 1], [1, 0]], float)]
+        return [
+            np.array([[0, 0], [1, 1], [2, 0]], float),
+            np.array([[0, 1], [1, 0]], float),
+        ]
 
     def _line_collections(self, ax):
         """Return the ``LineCollection`` artists on ``ax``."""
@@ -221,7 +250,9 @@ class TestFlowGlyphGlow:
             plus six glow collections (seven total).
         """
         fig, ax, _lc = FlowGlyph(paths, glow=True).plot()
-        assert len(self._line_collections(ax)) == 7, "expected 1 main + 6 glow collections"
+        assert len(self._line_collections(ax)) == 7, (
+            "expected 1 main + 6 glow collections"
+        )
         plt.close(fig)
 
     def test_coloured_glow_keeps_single_mappable(self, paths):
@@ -232,9 +263,15 @@ class TestFlowGlyphGlow:
             collections, and the returned collection is the array-carrying
             mappable (glow copies are not colorbar-registered).
         """
-        fig, ax, lc = FlowGlyph(paths, values=np.array([1.0, 2.0]), glow={"n_glow": 4}).plot()
-        assert len(self._line_collections(ax)) == 5, "expected 1 main + 4 glow collections"
-        assert lc.get_array() is not None, "the returned collection should be the scalar mappable"
+        fig, ax, lc = FlowGlyph(
+            paths, values=np.array([1.0, 2.0]), glow={"n_glow": 4}
+        ).plot()
+        assert len(self._line_collections(ax)) == 5, (
+            "expected 1 main + 4 glow collections"
+        )
+        assert lc.get_array() is not None, (
+            "the returned collection should be the scalar mappable"
+        )
         plt.close(fig)
 
     def test_glow_off_is_unchanged(self, paths):
@@ -244,5 +281,7 @@ class TestFlowGlyphGlow:
             Omitting ``glow`` draws only the main flow collection.
         """
         fig, ax, _lc = FlowGlyph(paths).plot()
-        assert len(self._line_collections(ax)) == 1, "glow=False must not add collections"
+        assert len(self._line_collections(ax)) == 1, (
+            "glow=False must not add collections"
+        )
         plt.close(fig)

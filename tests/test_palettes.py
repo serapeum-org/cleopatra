@@ -1,4 +1,5 @@
 """Tests for `cleopatra.styling.palettes` -- the unified Palette record and registry."""
+
 import matplotlib
 import numpy as np
 import pytest
@@ -15,8 +16,6 @@ from matplotlib.colors import (
 )
 from matplotlib.figure import Figure
 
-from cleopatra.styling.perceptual import srgb_to_lab
-
 from cleopatra.styling.palettes import (
     PALETTES,
     Palette,
@@ -26,6 +25,7 @@ from cleopatra.styling.palettes import (
     preview_palettes,
     register,
 )
+from cleopatra.styling.perceptual import srgb_to_lab
 
 
 class TestPaletteKind:
@@ -99,7 +99,9 @@ class TestDefaultNorm:
 
     def test_diverging_is_symmetric_centered(self):
         """A diverging palette yields a CenteredNorm symmetric about 0 by default."""
-        norm = Palette("d", "diverging", ("#00f", "#fff", "#f00")).default_norm(vmin=-5, vmax=8)
+        norm = Palette("d", "diverging", ("#00f", "#fff", "#f00")).default_norm(
+            vmin=-5, vmax=8
+        )
         assert isinstance(norm, CenteredNorm)
         assert norm.vcenter == 0.0
         assert norm.halfrange == 8.0  # max(|-5|, |8|)
@@ -129,18 +131,24 @@ class TestDefaultNorm:
 
     def test_cyclic_is_linear_normalize(self):
         """A cyclic palette uses a linear Normalize (the wrapping lives in the colormap)."""
-        norm = Palette("c", "cyclic", ("#f00", "#0f0", "#f00")).default_norm(vmin=0, vmax=360)
+        norm = Palette("c", "cyclic", ("#f00", "#0f0", "#f00")).default_norm(
+            vmin=0, vmax=360
+        )
         assert type(norm) is Normalize
 
     def test_explicit_bounds_ignore_data(self):
         """When both vmin and vmax are given, the data range is not consulted."""
         data = np.array([-999.0, 999.0])
-        norm = Palette("s", "sequential", ("#fff", "#000")).default_norm(data, vmin=0, vmax=1)
+        norm = Palette("s", "sequential", ("#fff", "#000")).default_norm(
+            data, vmin=0, vmax=1
+        )
         assert (norm.vmin, norm.vmax) == (0, 1)
 
     def test_all_nan_data_leaves_bounds_unset(self):
         """All-NaN data yields no finite range, so bounds stay None (autoscale at draw)."""
-        norm = Palette("s", "sequential", ("#fff", "#000")).default_norm(np.full(4, np.nan))
+        norm = Palette("s", "sequential", ("#fff", "#000")).default_norm(
+            np.full(4, np.nan)
+        )
         assert norm.vmin is None
         assert norm.vmax is None
 
@@ -153,7 +161,9 @@ class TestDefaultNorm:
     def test_partial_bounds_fill_missing_vmin(self):
         """Given only vmax and data, vmin (and only vmin) is auto-ranged."""
         data = np.array([2.0, 4.0, 6.0])
-        norm = Palette("s", "sequential", ("#fff", "#000")).default_norm(data, vmax=10.0)
+        norm = Palette("s", "sequential", ("#fff", "#000")).default_norm(
+            data, vmax=10.0
+        )
         assert (norm.vmin, norm.vmax) == (2.0, 10.0)
 
 
@@ -191,7 +201,8 @@ class TestBuiltinsRegistered:
     """The built-in haze/cams/flame families register at import."""
 
     @pytest.mark.parametrize(
-        "name", ["haze_dust", "haze_organic_matter", "cams_aod_blue_red", "flame_white_hot"]
+        "name",
+        ["haze_dust", "haze_organic_matter", "cams_aod_blue_red", "flame_white_hot"],
     )
     def test_present_as_sequential(self, name):
         """Each built-in colour family is registered as a sequential palette."""
@@ -241,11 +252,18 @@ class TestCuratedPalettes:
     def test_category_colours_are_well_separated(self):
         """category12's minimum pairwise CIELAB distance clears a distinguishability floor."""
         lab = srgb_to_lab(
-            np.array([[int(c[i:i + 2], 16) / 255 for i in (1, 3, 5)]
-                      for c in get_palette("category12").colors])
+            np.array(
+                [
+                    [int(c[i : i + 2], 16) / 255 for i in (1, 3, 5)]
+                    for c in get_palette("category12").colors
+                ]
+            )
         )
-        dists = [np.sqrt(((lab[i] - lab[j]) ** 2).sum())
-                 for i in range(len(lab)) for j in range(i + 1, len(lab))]
+        dists = [
+            np.sqrt(((lab[i] - lab[j]) ** 2).sum())
+            for i in range(len(lab))
+            for j in range(i + 1, len(lab))
+        ]
         assert min(dists) > 25.0
 
 
