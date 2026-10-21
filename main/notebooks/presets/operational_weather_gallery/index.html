@@ -3327,8 +3327,8 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styling.colors</span><span class="w"> </span><span class="kn">import</span> <span class="n">DATA_STYLES</span><span class="p">,</span> <span class="n">apply_data_style</span>
 
@@ -3342,7 +3342,11 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
     <span class="k">def</span><span class="w"> </span><span class="nf">blob</span><span class="p">(</span><span class="n">cx</span><span class="p">,</span> <span class="n">cy</span><span class="p">,</span> <span class="n">sx</span><span class="p">,</span> <span class="n">sy</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(((</span><span class="n">xx</span> <span class="o">-</span> <span class="n">cx</span><span class="p">)</span> <span class="o">/</span> <span class="n">sx</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">((</span><span class="n">yy</span> <span class="o">-</span> <span class="n">cy</span><span class="p">)</span> <span class="o">/</span> <span class="n">sy</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span>
 
-    <span class="n">field</span> <span class="o">=</span> <span class="mf">0.25</span> <span class="o">*</span> <span class="n">blob</span><span class="p">(</span><span class="mi">38</span><span class="p">,</span> <span class="mi">26</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.7</span> <span class="o">*</span> <span class="n">blob</span><span class="p">(</span><span class="mi">92</span><span class="p">,</span> <span class="mi">55</span><span class="p">,</span> <span class="mi">26</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">blob</span><span class="p">(</span><span class="mi">66</span><span class="p">,</span> <span class="mi">70</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+    <span class="n">field</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="mf">0.25</span> <span class="o">*</span> <span class="n">blob</span><span class="p">(</span><span class="mi">38</span><span class="p">,</span> <span class="mi">26</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+        <span class="o">+</span> <span class="mf">0.7</span> <span class="o">*</span> <span class="n">blob</span><span class="p">(</span><span class="mi">92</span><span class="p">,</span> <span class="mi">55</span><span class="p">,</span> <span class="mi">26</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
+        <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">blob</span><span class="p">(</span><span class="mi">66</span><span class="p">,</span> <span class="mi">70</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+    <span class="p">)</span>
     <span class="n">field</span> <span class="o">=</span> <span class="p">(</span><span class="n">field</span> <span class="o">-</span> <span class="n">field</span><span class="o">.</span><span class="n">min</span><span class="p">())</span> <span class="o">/</span> <span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">-</span> <span class="n">field</span><span class="o">.</span><span class="n">min</span><span class="p">())</span>
     <span class="n">levels</span> <span class="o">=</span> <span class="n">layer</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"levels"</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">levels</span><span class="p">:</span>
@@ -3363,13 +3367,13 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
         <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">"left"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
-    <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">):]:</span>
+    <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">)</span> <span class="p">:]:</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-1">import numpy as np
-import matplotlib.pyplot as plt
+<div class="clipboard-copy-txt" id="cell-1">import matplotlib.pyplot as plt
+import numpy as np
 
 from cleopatra.styling.colors import DATA_STYLES, apply_data_style
 
@@ -3383,7 +3387,11 @@ def demo_field(name, shape=(80, 120)):
     def blob(cx, cy, sx, sy):
         return np.exp(-(((xx - cx) / sx) ** 2 + ((yy - cy) / sy) ** 2))
 
-    field = 0.25 * blob(38, 26, 30, 20) + 0.7 * blob(92, 55, 26, 30) + 0.5 * blob(66, 70, 40, 16)
+    field = (
+        0.25 * blob(38, 26, 30, 20)
+        + 0.7 * blob(92, 55, 26, 30)
+        + 0.5 * blob(66, 70, 40, 16)
+    )
     field = (field - field.min()) / (field.max() - field.min())
     levels = layer.get("levels")
     if levels:
@@ -3404,11 +3412,10 @@ def gallery(names, ncols=4):
         ax.set_title(name, loc="left", fontsize=8)
         ax.set_xticks([])
         ax.set_yticks([])
-    for ax in axes[len(names):]:
+    for ax in axes[len(names) :]:
         ax.set_visible(False)
     fig.tight_layout()
-    plt.show()
-</div>
+    plt.show()</div>
 </div>
 </div>
 </div>
@@ -3444,9 +3451,29 @@ def gallery(names, ncols=4):
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">gallery</span><span class="p">([</span><span class="s1">'significant_wave_height_combined'</span><span class="p">,</span> <span class="s1">'significant_wave_height_over_10s_period'</span><span class="p">,</span> <span class="s1">'mean_wave_period'</span><span class="p">,</span> <span class="s1">'mean_period_total_swell'</span><span class="p">,</span> <span class="s1">'mean_period_wind_waves'</span><span class="p">,</span> <span class="s1">'significant_height_total_swell'</span><span class="p">,</span> <span class="s1">'significant_height_wind_waves'</span><span class="p">])</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">gallery</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="s1">'significant_wave_height_combined'</span><span class="p">,</span>
+        <span class="s1">'significant_wave_height_over_10s_period'</span><span class="p">,</span>
+        <span class="s1">'mean_wave_period'</span><span class="p">,</span>
+        <span class="s1">'mean_period_total_swell'</span><span class="p">,</span>
+        <span class="s1">'mean_period_wind_waves'</span><span class="p">,</span>
+        <span class="s1">'significant_height_total_swell'</span><span class="p">,</span>
+        <span class="s1">'significant_height_wind_waves'</span><span class="p">,</span>
+    <span class="p">]</span>
+<span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-2">gallery(['significant_wave_height_combined', 'significant_wave_height_over_10s_period', 'mean_wave_period', 'mean_period_total_swell', 'mean_period_wind_waves', 'significant_height_total_swell', 'significant_height_wind_waves'])</div>
+<div class="clipboard-copy-txt" id="cell-2">gallery(
+    [
+        'significant_wave_height_combined',
+        'significant_wave_height_over_10s_period',
+        'mean_wave_period',
+        'mean_period_total_swell',
+        'mean_period_wind_waves',
+        'significant_height_total_swell',
+        'significant_height_wind_waves',
+    ]
+)</div>
 </div>
 </div>
 </div>
@@ -3494,9 +3521,27 @@ def gallery(names, ncols=4):
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">gallery</span><span class="p">([</span><span class="s1">'temperature_3hpa'</span><span class="p">,</span> <span class="s1">'temperature_250hpa'</span><span class="p">,</span> <span class="s1">'temperature_500hpa'</span><span class="p">,</span> <span class="s1">'temperature_925hpa'</span><span class="p">,</span> <span class="s1">'min_temperature_2m'</span><span class="p">,</span> <span class="s1">'max_temperature_2m'</span><span class="p">])</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">gallery</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="s1">'temperature_3hpa'</span><span class="p">,</span>
+        <span class="s1">'temperature_250hpa'</span><span class="p">,</span>
+        <span class="s1">'temperature_500hpa'</span><span class="p">,</span>
+        <span class="s1">'temperature_925hpa'</span><span class="p">,</span>
+        <span class="s1">'min_temperature_2m'</span><span class="p">,</span>
+        <span class="s1">'max_temperature_2m'</span><span class="p">,</span>
+    <span class="p">]</span>
+<span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-3">gallery(['temperature_3hpa', 'temperature_250hpa', 'temperature_500hpa', 'temperature_925hpa', 'min_temperature_2m', 'max_temperature_2m'])</div>
+<div class="clipboard-copy-txt" id="cell-3">gallery(
+    [
+        'temperature_3hpa',
+        'temperature_250hpa',
+        'temperature_500hpa',
+        'temperature_925hpa',
+        'min_temperature_2m',
+        'max_temperature_2m',
+    ]
+)</div>
 </div>
 </div>
 </div>
@@ -3544,9 +3589,27 @@ def gallery(names, ncols=4):
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">gallery</span><span class="p">([</span><span class="s1">'wind_speed_200hpa'</span><span class="p">,</span> <span class="s1">'wind_speed_250hpa'</span><span class="p">,</span> <span class="s1">'wind_speed_300hpa'</span><span class="p">,</span> <span class="s1">'wind_speed_500hpa'</span><span class="p">,</span> <span class="s1">'wind_speed_800hpa'</span><span class="p">,</span> <span class="s1">'wind_speed_925hpa'</span><span class="p">])</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">gallery</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="s1">'wind_speed_200hpa'</span><span class="p">,</span>
+        <span class="s1">'wind_speed_250hpa'</span><span class="p">,</span>
+        <span class="s1">'wind_speed_300hpa'</span><span class="p">,</span>
+        <span class="s1">'wind_speed_500hpa'</span><span class="p">,</span>
+        <span class="s1">'wind_speed_800hpa'</span><span class="p">,</span>
+        <span class="s1">'wind_speed_925hpa'</span><span class="p">,</span>
+    <span class="p">]</span>
+<span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-4">gallery(['wind_speed_200hpa', 'wind_speed_250hpa', 'wind_speed_300hpa', 'wind_speed_500hpa', 'wind_speed_800hpa', 'wind_speed_925hpa'])</div>
+<div class="clipboard-copy-txt" id="cell-4">gallery(
+    [
+        'wind_speed_200hpa',
+        'wind_speed_250hpa',
+        'wind_speed_300hpa',
+        'wind_speed_500hpa',
+        'wind_speed_800hpa',
+        'wind_speed_925hpa',
+    ]
+)</div>
 </div>
 </div>
 </div>
@@ -3594,9 +3657,25 @@ def gallery(names, ncols=4):
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">gallery</span><span class="p">([</span><span class="s1">'relative_vorticity_700hpa'</span><span class="p">,</span> <span class="s1">'relative_vorticity_850hpa'</span><span class="p">,</span> <span class="s1">'potential_vorticity_315k'</span><span class="p">,</span> <span class="s1">'divergence_1000hpa'</span><span class="p">,</span> <span class="s1">'vertical_velocity_700hpa'</span><span class="p">])</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">gallery</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="s1">'relative_vorticity_700hpa'</span><span class="p">,</span>
+        <span class="s1">'relative_vorticity_850hpa'</span><span class="p">,</span>
+        <span class="s1">'potential_vorticity_315k'</span><span class="p">,</span>
+        <span class="s1">'divergence_1000hpa'</span><span class="p">,</span>
+        <span class="s1">'vertical_velocity_700hpa'</span><span class="p">,</span>
+    <span class="p">]</span>
+<span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-5">gallery(['relative_vorticity_700hpa', 'relative_vorticity_850hpa', 'potential_vorticity_315k', 'divergence_1000hpa', 'vertical_velocity_700hpa'])</div>
+<div class="clipboard-copy-txt" id="cell-5">gallery(
+    [
+        'relative_vorticity_700hpa',
+        'relative_vorticity_850hpa',
+        'potential_vorticity_315k',
+        'divergence_1000hpa',
+        'vertical_velocity_700hpa',
+    ]
+)</div>
 </div>
 </div>
 </div>
@@ -3644,9 +3723,29 @@ def gallery(names, ncols=4):
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">gallery</span><span class="p">([</span><span class="s1">'cloud_base_height'</span><span class="p">,</span> <span class="s1">'cloud_ceiling'</span><span class="p">,</span> <span class="s1">'high_cloud_cover'</span><span class="p">,</span> <span class="s1">'medium_cloud_cover'</span><span class="p">,</span> <span class="s1">'low_cloud_cover'</span><span class="p">,</span> <span class="s1">'relative_humidity_1000hpa'</span><span class="p">,</span> <span class="s1">'specific_humidity'</span><span class="p">])</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">gallery</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="s1">'cloud_base_height'</span><span class="p">,</span>
+        <span class="s1">'cloud_ceiling'</span><span class="p">,</span>
+        <span class="s1">'high_cloud_cover'</span><span class="p">,</span>
+        <span class="s1">'medium_cloud_cover'</span><span class="p">,</span>
+        <span class="s1">'low_cloud_cover'</span><span class="p">,</span>
+        <span class="s1">'relative_humidity_1000hpa'</span><span class="p">,</span>
+        <span class="s1">'specific_humidity'</span><span class="p">,</span>
+    <span class="p">]</span>
+<span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-6">gallery(['cloud_base_height', 'cloud_ceiling', 'high_cloud_cover', 'medium_cloud_cover', 'low_cloud_cover', 'relative_humidity_1000hpa', 'specific_humidity'])</div>
+<div class="clipboard-copy-txt" id="cell-6">gallery(
+    [
+        'cloud_base_height',
+        'cloud_ceiling',
+        'high_cloud_cover',
+        'medium_cloud_cover',
+        'low_cloud_cover',
+        'relative_humidity_1000hpa',
+        'specific_humidity',
+    ]
+)</div>
 </div>
 </div>
 </div>
@@ -3694,9 +3793,29 @@ def gallery(names, ncols=4):
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">gallery</span><span class="p">([</span><span class="s1">'total_precipitation_rate'</span><span class="p">,</span> <span class="s1">'snow_water_equivalent'</span><span class="p">,</span> <span class="s1">'total_runoff_water_equivalent'</span><span class="p">,</span> <span class="s1">'river_discharge'</span><span class="p">,</span> <span class="s1">'soil_wetness_index'</span><span class="p">,</span> <span class="s1">'sea_ice_cover'</span><span class="p">,</span> <span class="s1">'surface_net_solar_radiation'</span><span class="p">])</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">gallery</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="s1">'total_precipitation_rate'</span><span class="p">,</span>
+        <span class="s1">'snow_water_equivalent'</span><span class="p">,</span>
+        <span class="s1">'total_runoff_water_equivalent'</span><span class="p">,</span>
+        <span class="s1">'river_discharge'</span><span class="p">,</span>
+        <span class="s1">'soil_wetness_index'</span><span class="p">,</span>
+        <span class="s1">'sea_ice_cover'</span><span class="p">,</span>
+        <span class="s1">'surface_net_solar_radiation'</span><span class="p">,</span>
+    <span class="p">]</span>
+<span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-7">gallery(['total_precipitation_rate', 'snow_water_equivalent', 'total_runoff_water_equivalent', 'river_discharge', 'soil_wetness_index', 'sea_ice_cover', 'surface_net_solar_radiation'])</div>
+<div class="clipboard-copy-txt" id="cell-7">gallery(
+    [
+        'total_precipitation_rate',
+        'snow_water_equivalent',
+        'total_runoff_water_equivalent',
+        'river_discharge',
+        'soil_wetness_index',
+        'sea_ice_cover',
+        'surface_net_solar_radiation',
+    ]
+)</div>
 </div>
 </div>
 </div>
@@ -3744,9 +3863,27 @@ def gallery(names, ncols=4):
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">gallery</span><span class="p">([</span><span class="s1">'k_index'</span><span class="p">,</span> <span class="s1">'total_totals_index'</span><span class="p">,</span> <span class="s1">'convective_inhibition'</span><span class="p">,</span> <span class="s1">'wet_bulb_potential_temperature_850hpa'</span><span class="p">,</span> <span class="s1">'visibility'</span><span class="p">,</span> <span class="s1">'freezing_rain'</span><span class="p">])</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">gallery</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="s1">'k_index'</span><span class="p">,</span>
+        <span class="s1">'total_totals_index'</span><span class="p">,</span>
+        <span class="s1">'convective_inhibition'</span><span class="p">,</span>
+        <span class="s1">'wet_bulb_potential_temperature_850hpa'</span><span class="p">,</span>
+        <span class="s1">'visibility'</span><span class="p">,</span>
+        <span class="s1">'freezing_rain'</span><span class="p">,</span>
+    <span class="p">]</span>
+<span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-8">gallery(['k_index', 'total_totals_index', 'convective_inhibition', 'wet_bulb_potential_temperature_850hpa', 'visibility', 'freezing_rain'])</div>
+<div class="clipboard-copy-txt" id="cell-8">gallery(
+    [
+        'k_index',
+        'total_totals_index',
+        'convective_inhibition',
+        'wet_bulb_potential_temperature_850hpa',
+        'visibility',
+        'freezing_rain',
+    ]
+)</div>
 </div>
 </div>
 </div>

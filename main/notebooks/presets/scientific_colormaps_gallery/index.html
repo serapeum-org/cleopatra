@@ -3294,8 +3294,8 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styling.colors</span><span class="w"> </span><span class="kn">import</span> <span class="n">DATA_STYLES</span><span class="p">,</span> <span class="n">apply_data_style</span>
 
@@ -3309,7 +3309,11 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
     <span class="k">def</span><span class="w"> </span><span class="nf">blob</span><span class="p">(</span><span class="n">cx</span><span class="p">,</span> <span class="n">cy</span><span class="p">,</span> <span class="n">sx</span><span class="p">,</span> <span class="n">sy</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(((</span><span class="n">xx</span> <span class="o">-</span> <span class="n">cx</span><span class="p">)</span> <span class="o">/</span> <span class="n">sx</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">((</span><span class="n">yy</span> <span class="o">-</span> <span class="n">cy</span><span class="p">)</span> <span class="o">/</span> <span class="n">sy</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span>
 
-    <span class="n">field</span> <span class="o">=</span> <span class="mf">0.25</span> <span class="o">*</span> <span class="n">blob</span><span class="p">(</span><span class="mi">38</span><span class="p">,</span> <span class="mi">26</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.7</span> <span class="o">*</span> <span class="n">blob</span><span class="p">(</span><span class="mi">92</span><span class="p">,</span> <span class="mi">55</span><span class="p">,</span> <span class="mi">26</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">blob</span><span class="p">(</span><span class="mi">66</span><span class="p">,</span> <span class="mi">70</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+    <span class="n">field</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="mf">0.25</span> <span class="o">*</span> <span class="n">blob</span><span class="p">(</span><span class="mi">38</span><span class="p">,</span> <span class="mi">26</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+        <span class="o">+</span> <span class="mf">0.7</span> <span class="o">*</span> <span class="n">blob</span><span class="p">(</span><span class="mi">92</span><span class="p">,</span> <span class="mi">55</span><span class="p">,</span> <span class="mi">26</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
+        <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">blob</span><span class="p">(</span><span class="mi">66</span><span class="p">,</span> <span class="mi">70</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+    <span class="p">)</span>
     <span class="n">field</span> <span class="o">=</span> <span class="p">(</span><span class="n">field</span> <span class="o">-</span> <span class="n">field</span><span class="o">.</span><span class="n">min</span><span class="p">())</span> <span class="o">/</span> <span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">-</span> <span class="n">field</span><span class="o">.</span><span class="n">min</span><span class="p">())</span>
     <span class="n">levels</span> <span class="o">=</span> <span class="n">layer</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"levels"</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">levels</span><span class="p">:</span>
@@ -3330,13 +3334,13 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
         <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">"left"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
-    <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">):]:</span>
+    <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">)</span> <span class="p">:]:</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-1">import numpy as np
-import matplotlib.pyplot as plt
+<div class="clipboard-copy-txt" id="cell-1">import matplotlib.pyplot as plt
+import numpy as np
 
 from cleopatra.styling.colors import DATA_STYLES, apply_data_style
 
@@ -3350,7 +3354,11 @@ def demo_field(name, shape=(80, 120)):
     def blob(cx, cy, sx, sy):
         return np.exp(-(((xx - cx) / sx) ** 2 + ((yy - cy) / sy) ** 2))
 
-    field = 0.25 * blob(38, 26, 30, 20) + 0.7 * blob(92, 55, 26, 30) + 0.5 * blob(66, 70, 40, 16)
+    field = (
+        0.25 * blob(38, 26, 30, 20)
+        + 0.7 * blob(92, 55, 26, 30)
+        + 0.5 * blob(66, 70, 40, 16)
+    )
     field = (field - field.min()) / (field.max() - field.min())
     levels = layer.get("levels")
     if levels:
@@ -3371,11 +3379,10 @@ def gallery(names, ncols=4):
         ax.set_title(name, loc="left", fontsize=8)
         ax.set_xticks([])
         ax.set_yticks([])
-    for ax in axes[len(names):]:
+    for ax in axes[len(names) :]:
         ax.set_visible(False)
     fig.tight_layout()
-    plt.show()
-</div>
+    plt.show()</div>
 </div>
 </div>
 </div>
@@ -3411,9 +3418,57 @@ def gallery(names, ncols=4):
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">gallery</span><span class="p">([</span><span class="s1">'acton'</span><span class="p">,</span> <span class="s1">'bamako'</span><span class="p">,</span> <span class="s1">'batlow'</span><span class="p">,</span> <span class="s1">'batlowK'</span><span class="p">,</span> <span class="s1">'batlowW'</span><span class="p">,</span> <span class="s1">'bilbao'</span><span class="p">,</span> <span class="s1">'buda'</span><span class="p">,</span> <span class="s1">'davos'</span><span class="p">,</span> <span class="s1">'devon'</span><span class="p">,</span> <span class="s1">'glasgow'</span><span class="p">,</span> <span class="s1">'grayC'</span><span class="p">,</span> <span class="s1">'hawaii'</span><span class="p">,</span> <span class="s1">'imola'</span><span class="p">,</span> <span class="s1">'lajolla'</span><span class="p">,</span> <span class="s1">'lapaz'</span><span class="p">,</span> <span class="s1">'lipari'</span><span class="p">,</span> <span class="s1">'navia'</span><span class="p">,</span> <span class="s1">'nuuk'</span><span class="p">,</span> <span class="s1">'oslo'</span><span class="p">,</span> <span class="s1">'tokyo'</span><span class="p">,</span> <span class="s1">'turku'</span><span class="p">])</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">gallery</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="s1">'acton'</span><span class="p">,</span>
+        <span class="s1">'bamako'</span><span class="p">,</span>
+        <span class="s1">'batlow'</span><span class="p">,</span>
+        <span class="s1">'batlowK'</span><span class="p">,</span>
+        <span class="s1">'batlowW'</span><span class="p">,</span>
+        <span class="s1">'bilbao'</span><span class="p">,</span>
+        <span class="s1">'buda'</span><span class="p">,</span>
+        <span class="s1">'davos'</span><span class="p">,</span>
+        <span class="s1">'devon'</span><span class="p">,</span>
+        <span class="s1">'glasgow'</span><span class="p">,</span>
+        <span class="s1">'grayC'</span><span class="p">,</span>
+        <span class="s1">'hawaii'</span><span class="p">,</span>
+        <span class="s1">'imola'</span><span class="p">,</span>
+        <span class="s1">'lajolla'</span><span class="p">,</span>
+        <span class="s1">'lapaz'</span><span class="p">,</span>
+        <span class="s1">'lipari'</span><span class="p">,</span>
+        <span class="s1">'navia'</span><span class="p">,</span>
+        <span class="s1">'nuuk'</span><span class="p">,</span>
+        <span class="s1">'oslo'</span><span class="p">,</span>
+        <span class="s1">'tokyo'</span><span class="p">,</span>
+        <span class="s1">'turku'</span><span class="p">,</span>
+    <span class="p">]</span>
+<span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-2">gallery(['acton', 'bamako', 'batlow', 'batlowK', 'batlowW', 'bilbao', 'buda', 'davos', 'devon', 'glasgow', 'grayC', 'hawaii', 'imola', 'lajolla', 'lapaz', 'lipari', 'navia', 'nuuk', 'oslo', 'tokyo', 'turku'])</div>
+<div class="clipboard-copy-txt" id="cell-2">gallery(
+    [
+        'acton',
+        'bamako',
+        'batlow',
+        'batlowK',
+        'batlowW',
+        'bilbao',
+        'buda',
+        'davos',
+        'devon',
+        'glasgow',
+        'grayC',
+        'hawaii',
+        'imola',
+        'lajolla',
+        'lapaz',
+        'lipari',
+        'navia',
+        'nuuk',
+        'oslo',
+        'tokyo',
+        'turku',
+    ]
+)</div>
 </div>
 </div>
 </div>
@@ -3461,9 +3516,35 @@ def gallery(names, ncols=4):
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">gallery</span><span class="p">([</span><span class="s1">'bam'</span><span class="p">,</span> <span class="s1">'berlin'</span><span class="p">,</span> <span class="s1">'broc'</span><span class="p">,</span> <span class="s1">'cork'</span><span class="p">,</span> <span class="s1">'lisbon'</span><span class="p">,</span> <span class="s1">'managua'</span><span class="p">,</span> <span class="s1">'roma'</span><span class="p">,</span> <span class="s1">'tofino'</span><span class="p">,</span> <span class="s1">'vanimo'</span><span class="p">,</span> <span class="s1">'vik'</span><span class="p">])</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">gallery</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="s1">'bam'</span><span class="p">,</span>
+        <span class="s1">'berlin'</span><span class="p">,</span>
+        <span class="s1">'broc'</span><span class="p">,</span>
+        <span class="s1">'cork'</span><span class="p">,</span>
+        <span class="s1">'lisbon'</span><span class="p">,</span>
+        <span class="s1">'managua'</span><span class="p">,</span>
+        <span class="s1">'roma'</span><span class="p">,</span>
+        <span class="s1">'tofino'</span><span class="p">,</span>
+        <span class="s1">'vanimo'</span><span class="p">,</span>
+        <span class="s1">'vik'</span><span class="p">,</span>
+    <span class="p">]</span>
+<span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-3">gallery(['bam', 'berlin', 'broc', 'cork', 'lisbon', 'managua', 'roma', 'tofino', 'vanimo', 'vik'])</div>
+<div class="clipboard-copy-txt" id="cell-3">gallery(
+    [
+        'bam',
+        'berlin',
+        'broc',
+        'cork',
+        'lisbon',
+        'managua',
+        'roma',
+        'tofino',
+        'vanimo',
+        'vik',
+    ]
+)</div>
 </div>
 </div>
 </div>
