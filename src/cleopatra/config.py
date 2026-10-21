@@ -15,6 +15,7 @@ discoverable place:
 import logging
 import os
 from pathlib import Path
+
 import matplotlib
 
 logger = logging.getLogger(__name__)

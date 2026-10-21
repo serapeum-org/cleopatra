@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import logging
 import warnings
 from collections import OrderedDict
 from collections.abc import Callable, Sequence
@@ -1694,7 +1695,7 @@ def swatch_legend(
             x0, y0 = inv.transform((bb.x0, bb.y0))
             x1, y1 = inv.transform((bb.x1, bb.y1))
         except Exception:  # pragma: no cover - renderer unavailable on some backends
-            pass
+            logging.debug("renderer unavailable; using default swatch bounds")
         pad = 0.012
         ax.add_patch(
             Rectangle(

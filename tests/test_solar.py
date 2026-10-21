@@ -1053,6 +1053,7 @@ class TestAddNightshade:
         with pytest.raises(ValueError, match="one of"):
             add_nightshade(ax, JUN_SOLSTICE, transform=lambda a: a, crs=3857)
 
+    @pytest.mark.tiles
     def test_crs_reprojects_to_metres(self):
         """Test the crs shortcut reprojects lon/lat into projected coordinates.
 
@@ -1066,6 +1067,7 @@ class TestAddNightshade:
         verts = np.vstack([p.vertices for p in art.get_paths()])
         assert np.abs(verts[:, 0]).max() > 1e6, "x not reprojected to metres"
 
+    @pytest.mark.tiles
     def test_crs_nonglobal_projection_stays_finite(self):
         """Test a non-global crs drops the out-of-domain far side, staying finite.
 
@@ -1085,6 +1087,7 @@ class TestAddNightshade:
             "reprojected fill still contains non-finite vertices"
         )
 
+    @pytest.mark.tiles
     def test_crs_3857_at_solstice_stays_finite(self):
         """Test the pole-enclosed solstice case reprojects to finite Web Mercator.
 

@@ -180,7 +180,9 @@ norecursedirs = ["docs"]
 markers = [
     "slow: mark test as slow.",
     "fast: mark test as fast.",
-    "plot: test plotting function optional package (deselect with '-m \"not plot\"')"
+    "plot: test plotting function optional package (deselect with '-m \"not plot\"')",
+    "tiles: requires the [tiles] extra (pyproj, xyzservices).",
+    "science_colors: requires the [science-colors] extra (cmap).",
 ]
 
 #[tool.uv]

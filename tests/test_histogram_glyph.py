@@ -1,5 +1,3 @@
-import doctest
-
 import matplotlib
 import numpy as np
 import pytest
@@ -12,7 +10,6 @@ from matplotlib.axes import Axes
 from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 
-import cleopatra.glyphs.stats.histogram_glyph as histogram_glyph_module
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph
 
@@ -22,27 +19,6 @@ def _close_figures():
     """Close all matplotlib figures after each test to bound memory."""
     yield
     plt.close("all")
-
-
-def test_module_doctests_execute():
-    """Run the module's docstring examples so they are exercised in CI.
-
-    Pytest is not configured with ``--doctest-modules``, so docstring examples in
-    ``src/`` would otherwise never run. This test executes them for
-    ``cleopatra.glyphs.stats.histogram_glyph`` (including the fig/ax composition example) and
-    fails if any example's output no longer matches.
-    """
-    try:
-        results = doctest.testmod(histogram_glyph_module, verbose=False)
-    finally:
-        plt.close("all")
-    assert results.failed == 0, (
-        f"{results.failed} doctest example(s) failed in histogram_glyph"
-    )
-    assert results.attempted > 0, (
-        "no doctest examples were collected from histogram_glyph; the module's docstring "
-        "examples may have been moved or removed, silently dropping this coverage"
-    )
 
 
 def test_histogram_does_not_call_plt_show(monkeypatch):

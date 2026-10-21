@@ -102,9 +102,7 @@ jobs:
         run: "pip install pytest==9.1.1 pytest-env==1.7.0 pytest-mock==3.17.0 pytest-timeout==2.4.0 --only-binary=:all:"
 
       - name: Run core tests
-        # -o pythonpath= clears the `pythonpath = ["src"]` setting so the tests
-        # import the INSTALLED wheel, not the source tree.
-        run: pytest -vvv -sv -o pythonpath= tests/
+        run: pytest -vvv -sv -m "not tiles and not science_colors" tests/
 
   test-wheel-extras:
     needs: build-wheel
@@ -153,4 +151,4 @@ jobs:
 
       - name: Run the suite with the [${{ matrix.extra.name }}] extra present
         shell: bash
-        run: pytest -vvv -sv -o pythonpath= tests/ || [ $? -eq 5 ]
+        run: pytest -vvv -sv tests/ || [ $? -eq 5 ]

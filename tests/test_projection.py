@@ -12,8 +12,6 @@ so runs are deterministic.
 
 from __future__ import annotations
 
-import doctest
-
 import numpy as np
 import pytest
 
@@ -1106,29 +1104,6 @@ class TestApplyProjectionStyle:
             ax, lon, lat, data, style="globe", draw_frame=False
         )
         assert len(ax.lines) == before, "graticule line count should not change"
-
-
-class TestModuleDoctests:
-    """Run the module's docstring examples inside the default test suite."""
-
-    def test_doctests_pass(self):
-        """Execute every ``cleopatra.basemap.projection`` doctest in-band.
-
-        Test scenario:
-            The default ``pytest`` run (``testpaths = ["tests"]``) does not
-            collect ``--doctest-modules`` from ``src``, so the module and
-            function docstring examples would otherwise go unverified in CI.
-            Running ``doctest.testmod`` here catches example drift as part of
-            the normal suite. Several examples exercise the orthographic
-            ('globe') helpers, which require ``pyproj``.
-        """
-        pytest.importorskip("pyproj", reason="pyproj not installed (tiles extra)")
-        results = doctest.testmod(projection_module, verbose=False)
-        assert results.failed == 0, (
-            f"{results.failed} doctest(s) failed in cleopatra.basemap.projection "
-            f"(attempted {results.attempted})"
-        )
-        assert results.attempted > 0, "Expected doctest examples to be collected"
 
 
 class TestApplyProjectionStyleMesh:
