@@ -5079,10 +5079,11 @@ class ArrayGlyph(GeoMixin, Glyph):
         or 4-D `(N, M, H, W)` when both `col` and `row` are set.
         All subplots share a common colour scale (`vmin`/`vmax`
         computed over the full stack unless the user passed explicit
-        limits); each panel draws its own colour legend on that shared
-        scale (a colour bar, or a preset style's swatch -- see `colorbar=`
-        below), and `result.cbar` exposes the first panel's bar when one
-        is drawn.
+        limits); for a continuous scale that scale is shown by **one**
+        colour bar spanning the whole grid (like xarray's `FacetGrid`),
+        exposed as `result.cbar`. A `data_style` preset instead keeps its
+        own per-panel legend (a swatch, or a per-panel bar when a placement
+        `ColorBar` overrides it) -- see `colorbar=` below.
 
         Spatial extent: every panel is a slice of the *same* array, so by
         default they all share the parent glyph's `extent` (one spatial
@@ -5116,17 +5117,18 @@ class ArrayGlyph(GeoMixin, Glyph):
                 One of `"auto"`, `"imshow"`, `"pcolormesh"`,
                 `"contour"`, `"contourf"`. Default `"auto"`.
             colorbar: The shared colour bar, mirroring `plot` / `animate`.
-                `None` (default) keeps each panel's default colour legend --
-                a colour bar, or a preset style's swatch -- (the prior
-                behaviour); `False` suppresses them (`result.cbar` is then
-                `None`);
-                `True` draws default ones, resetting the resettable `cbar_*`
-                family to defaults so they do not inherit a prior sticky
-                spec; a `ColorBar` applies its
-                placement / caption / sizing to every panel (so the
-                `result.cbar` returned -- the first panel's -- carries the
-                spec). Prefer this typed form over the loose `cbar_*`
-                kwargs, here as on `plot` / `animate`.
+                For a continuous colour scale `facet` draws **one** bar
+                spanning the whole panel grid (like xarray's `FacetGrid`),
+                not one per panel, and `result.cbar` is it. `None` (default)
+                draws that shared bar; `False` suppresses it (`result.cbar`
+                is then `None`); `True` draws a default one, resetting the
+                resettable `cbar_*` family to defaults so it does not inherit
+                a prior sticky spec; a `ColorBar` applies its placement /
+                caption / sizing to the shared bar. A `data_style` preset
+                keeps its own per-panel legend instead -- a swatch, or a real
+                per-panel bar when a placement `ColorBar` overrides the
+                swatch. Prefer the typed form over the loose `cbar_*` kwargs,
+                here as on `plot` / `animate`.
             color: Colour-scale group object forwarded to each panel's `plot`
                 (`cleopatra.styling.params.ColorScaling`).
             contour: Contour/discretisation group object forwarded to each
@@ -5151,7 +5153,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 already carry a cleopatra layer (e.g. a relief drawn via
                 cleopatra) you want kept beneath the panel. Two consequences:
                 (1) like `plot(compose=True)`, composing **suppresses the
-                per-panel colorbar by default**, so `result.cbar` is `None`
+                shared colorbar by default**, so `result.cbar` is `None`
                 unless you also pass `colorbar=True` (or a `ColorBar` spec);
                 (2) `compose=True` is only meaningful when there is a prior
                 cleopatra layer to preserve -- on a self-built grid the axes are
@@ -5428,6 +5430,10 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         name_dicts: list[dict[str, Any]] = []
         cbar: Colorbar | None = None
+        # Draw one colour bar spanning the whole grid (xarray-style) for the
+        # plain continuous scale; a `data_style` preset keeps its own per-panel
+        # legend, so spanning is engaged only when no preset is in play.
+        span_shared_bar = data_style is None
 
         try:
             for panel_idx, (col_idx, row_idx) in enumerate(panel_indices):
@@ -5456,15 +5462,37 @@ class ArrayGlyph(GeoMixin, Glyph):
                     ax=ax,
                     **per_subplot_kwargs,
                 )
+                # One shared colour bar spanning the whole panel block, like
+                # xarray's `FacetGrid`, rather than one bar per panel: only the
+                # first panel draws the bar, and `cbar_span_axes` makes it steal
+                # space from every rendered panel (via `create_color_bar` ->
+                # `_outside_colorbar`, which accepts a sequence of axes); the
+                # other panels suppress their own bar with `colorbar=False`.
+                # Scoped to the plain continuous colour scale: a `data_style`
+                # preset keeps its own per-panel legend (a swatch, or a real bar
+                # when a placement `colorbar=` overrides it), so for that path
+                # every panel is drawn with the `colorbar=` spec unchanged.
+                #
                 # Route `colorbar=` through `plot` (not the constructor) so the
-                # shared `_apply_kwargs_and_colorbar` logic runs per panel -- it
-                # merges the resolved spec *over* any loose `cbar_*` already folded
-                # into the sub-glyph's options and sets `_style_wants_colorbar`, so
-                # a placement-bearing colorbar overrides a preset swatch here just
-                # as it does on `plot` / `animate`.
+                # shared `_apply_kwargs_and_colorbar` logic runs -- it merges the
+                # resolved spec *over* any loose `cbar_*` already folded into the
+                # sub-glyph's options and sets `_style_wants_colorbar`, so a
+                # placement-bearing colorbar overrides a preset swatch just as it
+                # does on `plot` / `animate`.
+                if not span_shared_bar:
+                    panel_colorbar = colorbar
+                elif panel_idx == 0:
+                    # Only the span-drawing panel needs the span axes, and only
+                    # when a bar is actually requested (colorbar is not False) --
+                    # otherwise the assignment is dead.
+                    if colorbar is not False:
+                        sub.default_options["cbar_span_axes"] = flat_axes[:n_panels]
+                    panel_colorbar = colorbar
+                else:
+                    panel_colorbar = False
                 sub.plot(
                     kind=kind,
-                    colorbar=colorbar,
+                    colorbar=panel_colorbar,
                     color=color,
                     contour=contour,
                     cells=cells,
@@ -5486,8 +5514,15 @@ class ArrayGlyph(GeoMixin, Glyph):
                 hidden_ax.set_visible(False)
 
             # Only re-lay-out a figure cleopatra created; a caller's figure is
-            # theirs to arrange.
-            if owns_figure:
+            # theirs to arrange. The shared bar is a non-gridspec `make_axes`
+            # artist that already carved its own gutter when it was drawn, so
+            # `tight_layout` is skipped for it: tight_layout would re-expand the
+            # gridspec panels back over the bar (and warn). Skipping it (rather
+            # than switching to constrained layout) keeps the returned figure on
+            # the default engine, so a downstream `fig.tight_layout()` /
+            # `subplots_adjust` still works -- constrained + an existing colorbar
+            # cannot be switched back out.
+            if owns_figure and not (span_shared_bar and cbar is not None):
                 fig.tight_layout()
         except Exception:
             # Roll back what cleopatra created: close a figure it owns; on a

@@ -1262,7 +1262,9 @@ def width_legend(
 
 
 def colorbar_legend(
-    mappable: ScalarMappable, ax: Axes | None = None, **kwargs
+    mappable: ScalarMappable,
+    ax: Axes | Sequence[Axes] | None = None,
+    **kwargs,
 ) -> Colorbar:
     """Attach a continuous colorbar legend for a mappable.
 
@@ -1277,9 +1279,11 @@ def colorbar_legend(
     Args:
         mappable: A `matplotlib.cm.ScalarMappable` (e.g. the result of
             `ax.scatter(..., c=values)`), carrying the cmap/norm to map.
-        ax: Axes to steal space from for the colorbar. Defaults to the
-            mappable's own axes. The parent figure is inferred from
-            whichever axes is used.
+        ax: Axes to steal space from for the colorbar. A single `Axes`, or a
+            sequence of `Axes` for a bar that **spans** them all (e.g. a row
+            of facet panels) -- `Figure.colorbar` steals space from each.
+            Defaults to the mappable's own axes. The parent figure is inferred
+            from the axes used (the first, for a sequence).
         **kwargs: Forwarded to `Figure.colorbar` (e.g. `label`,
             `orientation`, `shrink`, `ticks`, `extend`).
 
@@ -1302,6 +1306,17 @@ def colorbar_legend(
             'depth'
 
             ```
+        - Span one bar across a row of panels by passing a sequence of axes:
+            ```python
+            >>> import matplotlib.pyplot as plt
+            >>> from cleopatra.styling.styles import colorbar_legend
+            >>> fig, axes = plt.subplots(1, 3)
+            >>> sc = axes[0].scatter([0, 1], [0, 1], c=[1, 2])
+            >>> cbar = colorbar_legend(sc, list(axes), label="t")
+            >>> cbar.ax.get_ylabel()
+            't'
+
+            ```
     """
     parent_ax = ax if ax is not None else getattr(mappable, "axes", None)
     if parent_ax is None:
@@ -1309,7 +1324,21 @@ def colorbar_legend(
             "Cannot determine an axes for the colorbar: pass `ax` or use a "
             "mappable already attached to an axes."
         )
-    fig = parent_ax.figure
+    # A sequence of axes makes the bar span all of them -- `Figure.colorbar`
+    # steals space from each and accepts the sequence directly (a list or a 1-D
+    # or 2-D ndarray, e.g. from `plt.subplots(2, 2)`). The single-`Axes` path is
+    # unchanged; for a sequence the figure is taken from the first axes,
+    # flattening any ndarray shape.
+    if isinstance(parent_ax, Axes):
+        anchor = parent_ax
+    else:
+        flat = np.asarray(parent_ax, dtype=object).ravel()
+        if flat.size == 0:
+            raise ValueError(
+                "Cannot determine an axes for the colorbar: `ax` is an empty sequence."
+            )
+        anchor = flat[0]
+    fig = anchor.figure
     return fig.colorbar(mappable, ax=parent_ax, **kwargs)
 
 

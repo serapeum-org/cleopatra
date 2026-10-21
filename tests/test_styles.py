@@ -371,6 +371,58 @@ class TestColorbarLegend:
         with pytest.raises(ValueError, match="determine an axes"):
             colorbar_legend(sm)
 
+    def test_sequence_of_axes_spans_them(self):
+        """A sequence of axes makes one bar span them all (#389).
+
+        Test scenario:
+            Passing a list of axes draws a single colorbar that steals space
+            from every axes in the list, so the figure gains exactly one
+            colorbar axis for the three panels, and its label forwards.
+        """
+        fig, axes = plt.subplots(1, 3)
+        try:
+            sc = axes[0].scatter([0, 1], [0, 1], c=[1.0, 2.0])
+            cbar = colorbar_legend(sc, list(axes), label="t")
+            assert isinstance(cbar, Colorbar), f"expected Colorbar, got {type(cbar)}"
+            assert cbar.ax.get_ylabel() == "t", (
+                f"label should forward, got {cbar.ax.get_ylabel()!r}"
+            )
+            cbar_axes = [a for a in fig.axes if a.get_label() == "<colorbar>"]
+            assert len(cbar_axes) == 1, (
+                f"one shared colorbar axis expected, got {len(cbar_axes)}"
+            )
+        finally:
+            plt.close(fig)
+
+    def test_two_dimensional_ndarray_of_axes_spans(self):
+        """A 2-D ndarray of axes (from `plt.subplots(2, 2)`) spans correctly (#389).
+
+        Test scenario:
+            The natural grid handle is a 2-D ndarray; the figure is inferred by
+            flattening it (not indexing a row), so one shared colorbar is drawn
+            with the label forwarded.
+        """
+        fig, axes = plt.subplots(2, 2)
+        try:
+            sc = axes[0, 0].imshow([[1.0, 2.0], [3.0, 4.0]])
+            cbar = colorbar_legend(sc, axes, label="q")
+            assert isinstance(cbar, Colorbar), f"expected Colorbar, got {type(cbar)}"
+            assert cbar.ax.get_ylabel() == "q", (
+                f"label should forward, got {cbar.ax.get_ylabel()!r}"
+            )
+        finally:
+            plt.close(fig)
+
+    def test_empty_sequence_raises_valueerror(self):
+        """An empty axes sequence raises the clear `ValueError`, not `IndexError` (#389)."""
+        fig, ax = plt.subplots()
+        try:
+            sc = ax.imshow([[1.0, 2.0], [3.0, 4.0]])
+            with pytest.raises(ValueError, match="empty sequence"):
+                colorbar_legend(sc, [])
+        finally:
+            plt.close(fig)
+
 
 class TestHistogramLegend:
     """Tests for cleopatra.styling.styles.histogram_legend (T5.3c)."""
