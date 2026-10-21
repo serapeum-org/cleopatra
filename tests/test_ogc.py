@@ -1725,7 +1725,7 @@ class TestCredentialsAreNotInTheRepr:
         provider = WMSProvider(
             url="https://example.org/wms",
             layers="ortho",
-            extra_params={"token": "S3CRET-IN-A-LOG"},
+            extra_params={"token": "S3CRET-IN-A-LOG"},  # gitleaks:allow
         )
 
         with caplog.at_level(logging.INFO, logger=__name__):
