@@ -152,13 +152,16 @@ class TestPieGlyphPlot:
         glyph.plot(ax=ax)
         glyph.plot(ax=ax)
         assert len(ax.patches) == 2, "re-plot should replace, not stack, the wedges"
+        # the label + percent texts must be cleared too, not only the wedges
+        assert len(ax.texts) == 4, "re-plot should clear the prior labels/percents"
 
     def test_compose_overlays_other_glyph_on_shared_axes(self):
-        """compose=True keeps the other glyph's wedges on a shared axes."""
+        """compose=True keeps the other glyph's wedges and labels on a shared axes."""
         fig, ax = plt.subplots()
         PieGlyph(["a", "b"], [1.0, 1.0]).plot(ax=ax)
         PieGlyph(["c", "d"], [1.0, 1.0]).plot(ax=ax, compose=True)
         assert len(ax.patches) == 4, "compose should overlay, keeping both glyphs' wedges"
+        assert len(ax.texts) == 8, "compose keeps both glyphs' labels/percents"
 
     def test_uses_construction_axes_when_plot_ax_omitted(self):
         """An axes given at construction is used when plot() gets no ax."""
