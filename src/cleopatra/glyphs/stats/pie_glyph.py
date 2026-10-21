@@ -67,8 +67,10 @@ class PieGlyph(Glyph):
             `palette` (qualitative palette name, default `"category12"`),
             `autopct` (per-wedge percentage format, default `"%1.1f%%"`; set
             None to hide), `add_legend` (draw a disjoint category->colour
-            legend instead of wedge labels, default False), plus the shared
-            styling options (`title`, `figsize`, ...).
+            legend instead of wedge labels, default False), plus `title` and
+            `figsize`. The cartesian axis-styling options inherited from the
+            shared defaults (`xlabel`, `ylabel`, the tick-size keys, `grid_alpha`)
+            are accepted but **inert** -- a pie has no x/y axes to label.
 
     Raises:
         ValueError: If `values` is not 1-D, if the lengths differ, if the
