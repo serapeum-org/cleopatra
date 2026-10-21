@@ -28,8 +28,8 @@ def resolve_categories(categories: Sequence, values: Any) -> tuple[list[str], np
             of values, in the given order.
 
     Raises:
-        ValueError: If `values` is not 1-D, if the two lengths differ, or if
-            either is empty.
+        ValueError: If `values` is not 1-D, if the two lengths differ, if
+            either is empty, or if any value is non-finite (NaN or inf).
 
     Examples:
         - A simple pair is normalised to labels and a float array:
@@ -54,6 +54,11 @@ def resolve_categories(categories: Sequence, values: Any) -> tuple[list[str], np
         )
     if vals.size == 0:
         raise ValueError("categories and values must be non-empty.")
+    # Reject NaN / inf up front: a non-finite bar is drawn silently and a
+    # non-finite pie wedge only fails later inside matplotlib with a cryptic
+    # message, so catch it here with a clear one.
+    if not np.isfinite(vals).all():
+        raise ValueError("values must be finite (no NaN or inf).")
     return labels, vals
 
 

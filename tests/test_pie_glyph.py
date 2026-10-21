@@ -12,6 +12,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import numpy as np
 import pytest
 from matplotlib.colors import to_hex
 from matplotlib.figure import Figure
@@ -51,6 +52,13 @@ class TestPieGlyphConstruction:
         """All-zero values (zero total) raise."""
         with pytest.raises(ValueError, match="sum to zero"):
             PieGlyph(["a", "b"], [0.0, 0.0])
+
+    def test_non_finite_values_raise(self):
+        """NaN or inf values are rejected at construction, not late in matplotlib."""
+        with pytest.raises(ValueError, match="finite"):
+            PieGlyph(["a", "b"], [1.0, np.nan])
+        with pytest.raises(ValueError, match="finite"):
+            PieGlyph(["a", "b"], [1.0, np.inf])
 
 
 class TestPieGlyphPlot:

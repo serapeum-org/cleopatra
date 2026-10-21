@@ -53,6 +53,13 @@ class TestBarGlyphConstruction:
         with pytest.raises(ValueError, match="1-D"):
             BarGlyph(["a", "b"], [[1.0], [2.0]])
 
+    def test_non_finite_values_raise(self):
+        """NaN or inf values are rejected at construction, not drawn silently."""
+        with pytest.raises(ValueError, match="finite"):
+            BarGlyph(["a", "b"], [1.0, np.nan])
+        with pytest.raises(ValueError, match="finite"):
+            BarGlyph(["a", "b"], [1.0, np.inf])
+
 
 class TestBarGlyphPlot:
     """Rendering behaviour of BarGlyph.plot."""
