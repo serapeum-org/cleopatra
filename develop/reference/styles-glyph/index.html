@@ -7899,7 +7899,8 @@ unrecognised name.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/cleopatra/styling/styles.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1794">1794</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1793">1793</a></span>
+<span class="normal"><a href="#__codelineno-0-1794">1794</a></span>
 <span class="normal"><a href="#__codelineno-0-1795">1795</a></span>
 <span class="normal"><a href="#__codelineno-0-1796">1796</a></span>
 <span class="normal"><a href="#__codelineno-0-1797">1797</a></span>
@@ -8019,129 +8020,128 @@ unrecognised name.</p>
 <span class="normal"><a href="#__codelineno-0-1911">1911</a></span>
 <span class="normal"><a href="#__codelineno-0-1912">1912</a></span>
 <span class="normal"><a href="#__codelineno-0-1913">1913</a></span>
-<span class="normal"><a href="#__codelineno-0-1914">1914</a></span>
-<span class="normal"><a href="#__codelineno-0-1915">1915</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1794" name="__codelineno-0-1794"></a><span class="k">def</span><span class="w"> </span><span class="nf">classify</span><span class="p">(</span>
-<a id="__codelineno-0-1795" name="__codelineno-0-1795"></a>    <span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
-<a id="__codelineno-0-1796" name="__codelineno-0-1796"></a>    <span class="n">scheme</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
-<a id="__codelineno-0-1797" name="__codelineno-0-1797"></a>    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
-<a id="__codelineno-0-1798" name="__codelineno-0-1798"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">colors</span><span class="o">.</span><span class="n">BoundaryNorm</span><span class="p">]:</span>
-<a id="__codelineno-0-1799" name="__codelineno-0-1799"></a><span class="w">    </span><span class="sd">"""Bin a continuous array into discrete colour classes.</span>
-<a id="__codelineno-0-1800" name="__codelineno-0-1800"></a>
-<a id="__codelineno-0-1801" name="__codelineno-0-1801"></a><span class="sd">    The shared building block behind categorical (classified) colouring:</span>
-<a id="__codelineno-0-1802" name="__codelineno-0-1802"></a><span class="sd">    it turns a continuous data column into an array of bin edges plus a</span>
-<a id="__codelineno-0-1803" name="__codelineno-0-1803"></a><span class="sd">    matching `matplotlib.colors.BoundaryNorm`, so any colour-by-value glyph</span>
-<a id="__codelineno-0-1804" name="__codelineno-0-1804"></a><span class="sd">    can render a stepped colorbar / class legend instead of a continuous</span>
-<a id="__codelineno-0-1805" name="__codelineno-0-1805"></a><span class="sd">    ramp. It is the classification counterpart to `Scale` and</span>
-<a id="__codelineno-0-1806" name="__codelineno-0-1806"></a><span class="sd">    `MidpointNormalize`.</span>
-<a id="__codelineno-0-1807" name="__codelineno-0-1807"></a>
-<a id="__codelineno-0-1808" name="__codelineno-0-1808"></a><span class="sd">    The numpy-only schemes (no dependency beyond numpy) are:</span>
-<a id="__codelineno-0-1809" name="__codelineno-0-1809"></a>
-<a id="__codelineno-0-1810" name="__codelineno-0-1810"></a><span class="sd">    * `"quantiles"` — `k` equal-count classes via</span>
-<a id="__codelineno-0-1811" name="__codelineno-0-1811"></a><span class="sd">      `np.quantile(values, np.linspace(0, 1, k + 1))`.</span>
-<a id="__codelineno-0-1812" name="__codelineno-0-1812"></a><span class="sd">    * `"equal_interval"` — `k` equal-width classes spanning the data range.</span>
-<a id="__codelineno-0-1813" name="__codelineno-0-1813"></a><span class="sd">    * `"percentiles"` — `k` equal-count classes via `np.percentile` on the</span>
-<a id="__codelineno-0-1814" name="__codelineno-0-1814"></a><span class="sd">      same evenly-spaced probabilities; numerically equivalent to</span>
-<a id="__codelineno-0-1815" name="__codelineno-0-1815"></a><span class="sd">      `"quantiles"` (it differs only in the `[0, 100]` vs `[0, 1]`</span>
-<a id="__codelineno-0-1816" name="__codelineno-0-1816"></a><span class="sd">      convention) and is kept as a familiar alias.</span>
-<a id="__codelineno-0-1817" name="__codelineno-0-1817"></a><span class="sd">    * `"std_mean"` — fixed breaks at `mean + nσ` for `n` in</span>
-<a id="__codelineno-0-1818" name="__codelineno-0-1818"></a><span class="sd">      `(-2, -1, 0, 1, 2)`, clipped to the data range. `k` is **ignored**</span>
-<a id="__codelineno-0-1819" name="__codelineno-0-1819"></a><span class="sd">      for this scheme (the number of classes follows from the multiples).</span>
-<a id="__codelineno-0-1820" name="__codelineno-0-1820"></a>
-<a id="__codelineno-0-1821" name="__codelineno-0-1821"></a><span class="sd">    The Jenks-family schemes `"fisher_jenks"` and `"natural_breaks"` are</span>
-<a id="__codelineno-0-1822" name="__codelineno-0-1822"></a><span class="sd">    computed by the native Fisher-Jenks optimisation — the exact dynamic</span>
-<a id="__codelineno-0-1823" name="__codelineno-0-1823"></a><span class="sd">    program that minimises the within-class sum of squared deviations. Both</span>
-<a id="__codelineno-0-1824" name="__codelineno-0-1824"></a><span class="sd">    names are aliases for the same algorithm. No dependency beyond numpy.</span>
-<a id="__codelineno-0-1825" name="__codelineno-0-1825"></a>
-<a id="__codelineno-0-1826" name="__codelineno-0-1826"></a><span class="sd">    A non-string `scheme` is treated as an explicit, already-chosen</span>
-<a id="__codelineno-0-1827" name="__codelineno-0-1827"></a><span class="sd">    sequence of bin edges (sorted ascending); `k` is ignored.</span>
-<a id="__codelineno-0-1828" name="__codelineno-0-1828"></a>
-<a id="__codelineno-0-1829" name="__codelineno-0-1829"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-1830" name="__codelineno-0-1830"></a><span class="sd">        values: The data to classify. Non-finite entries (`NaN` / `inf`)</span>
-<a id="__codelineno-0-1831" name="__codelineno-0-1831"></a><span class="sd">            are ignored when computing the edges. Can be any array-like.</span>
-<a id="__codelineno-0-1832" name="__codelineno-0-1832"></a><span class="sd">        scheme: A scheme name (see above, case-insensitive) **or** an</span>
-<a id="__codelineno-0-1833" name="__codelineno-0-1833"></a><span class="sd">            explicit sequence of bin edges to use verbatim.</span>
-<a id="__codelineno-0-1834" name="__codelineno-0-1834"></a><span class="sd">        k: The number of classes for the count/width schemes. Must be</span>
-<a id="__codelineno-0-1835" name="__codelineno-0-1835"></a><span class="sd">            `&gt;= 1`. Default is 5. Ignored for `"std_mean"` and for an</span>
-<a id="__codelineno-0-1836" name="__codelineno-0-1836"></a><span class="sd">            explicit edge sequence.</span>
-<a id="__codelineno-0-1837" name="__codelineno-0-1837"></a>
-<a id="__codelineno-0-1838" name="__codelineno-0-1838"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-1839" name="__codelineno-0-1839"></a><span class="sd">        tuple[np.ndarray, matplotlib.colors.BoundaryNorm]: The sorted,</span>
-<a id="__codelineno-0-1840" name="__codelineno-0-1840"></a><span class="sd">            de-duplicated bin edges (length = classes + 1) and a</span>
-<a id="__codelineno-0-1841" name="__codelineno-0-1841"></a><span class="sd">            `BoundaryNorm` built from them (with `ncolors=256`, matching</span>
-<a id="__codelineno-0-1842" name="__codelineno-0-1842"></a><span class="sd">            the package's other boundary norms). The realised class count</span>
-<a id="__codelineno-0-1843" name="__codelineno-0-1843"></a><span class="sd">            can be **fewer than `k`** when the data has too few distinct</span>
-<a id="__codelineno-0-1844" name="__codelineno-0-1844"></a><span class="sd">            values to support `k` classes — coincident edges are collapsed,</span>
-<a id="__codelineno-0-1845" name="__codelineno-0-1845"></a><span class="sd">            so the returned edges are always strictly increasing.</span>
-<a id="__codelineno-0-1846" name="__codelineno-0-1846"></a>
-<a id="__codelineno-0-1847" name="__codelineno-0-1847"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-1848" name="__codelineno-0-1848"></a><span class="sd">        ValueError: For a **named** scheme, if `values` has no finite entries</span>
-<a id="__codelineno-0-1849" name="__codelineno-0-1849"></a><span class="sd">            or `k &lt; 1` (an explicit edge sequence needs neither, so it accepts</span>
-<a id="__codelineno-0-1850" name="__codelineno-0-1850"></a><span class="sd">            empty / all-non-finite `values`); if fewer than two distinct edges</span>
-<a id="__codelineno-0-1851" name="__codelineno-0-1851"></a><span class="sd">            result (the data or the edges have no spread); or if `scheme` is an</span>
-<a id="__codelineno-0-1852" name="__codelineno-0-1852"></a><span class="sd">            unrecognised name.</span>
-<a id="__codelineno-0-1853" name="__codelineno-0-1853"></a>
-<a id="__codelineno-0-1854" name="__codelineno-0-1854"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-1855" name="__codelineno-0-1855"></a><span class="sd">        - Equal-interval edges on a 0–10 ramp:</span>
-<a id="__codelineno-0-1856" name="__codelineno-0-1856"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-1857" name="__codelineno-0-1857"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-1858" name="__codelineno-0-1858"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.styles import classify</span>
-<a id="__codelineno-0-1859" name="__codelineno-0-1859"></a><span class="sd">            &gt;&gt;&gt; edges, norm = classify(np.arange(11.0), "equal_interval", k=5)</span>
-<a id="__codelineno-0-1860" name="__codelineno-0-1860"></a><span class="sd">            &gt;&gt;&gt; [float(e) for e in edges]</span>
-<a id="__codelineno-0-1861" name="__codelineno-0-1861"></a><span class="sd">            [0.0, 2.0, 4.0, 6.0, 8.0, 10.0]</span>
-<a id="__codelineno-0-1862" name="__codelineno-0-1862"></a><span class="sd">            &gt;&gt;&gt; [float(b) for b in norm.boundaries]</span>
-<a id="__codelineno-0-1863" name="__codelineno-0-1863"></a><span class="sd">            [0.0, 2.0, 4.0, 6.0, 8.0, 10.0]</span>
-<a id="__codelineno-0-1864" name="__codelineno-0-1864"></a>
-<a id="__codelineno-0-1865" name="__codelineno-0-1865"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-1866" name="__codelineno-0-1866"></a><span class="sd">        - Quantile edges put equal counts in each class:</span>
-<a id="__codelineno-0-1867" name="__codelineno-0-1867"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-1868" name="__codelineno-0-1868"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-1869" name="__codelineno-0-1869"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.styles import classify</span>
-<a id="__codelineno-0-1870" name="__codelineno-0-1870"></a><span class="sd">            &gt;&gt;&gt; edges, _ = classify(np.arange(100.0), "quantiles", k=4)</span>
-<a id="__codelineno-0-1871" name="__codelineno-0-1871"></a><span class="sd">            &gt;&gt;&gt; [float(e) for e in edges]</span>
-<a id="__codelineno-0-1872" name="__codelineno-0-1872"></a><span class="sd">            [0.0, 24.75, 49.5, 74.25, 99.0]</span>
-<a id="__codelineno-0-1873" name="__codelineno-0-1873"></a>
-<a id="__codelineno-0-1874" name="__codelineno-0-1874"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-1875" name="__codelineno-0-1875"></a><span class="sd">        - An explicit edge sequence is used verbatim (sorted):</span>
-<a id="__codelineno-0-1876" name="__codelineno-0-1876"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-1877" name="__codelineno-0-1877"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
-<a id="__codelineno-0-1878" name="__codelineno-0-1878"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.styles import classify</span>
-<a id="__codelineno-0-1879" name="__codelineno-0-1879"></a><span class="sd">            &gt;&gt;&gt; edges, _ = classify(np.arange(11.0), [10.0, 0.0, 5.0])</span>
-<a id="__codelineno-0-1880" name="__codelineno-0-1880"></a><span class="sd">            &gt;&gt;&gt; [float(e) for e in edges]</span>
-<a id="__codelineno-0-1881" name="__codelineno-0-1881"></a><span class="sd">            [0.0, 5.0, 10.0]</span>
-<a id="__codelineno-0-1882" name="__codelineno-0-1882"></a>
-<a id="__codelineno-0-1883" name="__codelineno-0-1883"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-1884" name="__codelineno-0-1884"></a><span class="sd">        - An unknown scheme name is rejected:</span>
-<a id="__codelineno-0-1885" name="__codelineno-0-1885"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-1886" name="__codelineno-0-1886"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.styles import classify</span>
-<a id="__codelineno-0-1887" name="__codelineno-0-1887"></a><span class="sd">            &gt;&gt;&gt; classify([1.0, 2.0, 3.0], "rainbow")</span>
-<a id="__codelineno-0-1888" name="__codelineno-0-1888"></a><span class="sd">            Traceback (most recent call last):</span>
-<a id="__codelineno-0-1889" name="__codelineno-0-1889"></a><span class="sd">                ...</span>
-<a id="__codelineno-0-1890" name="__codelineno-0-1890"></a><span class="sd">            ValueError: Unknown classification scheme 'rainbow'. ...</span>
-<a id="__codelineno-0-1891" name="__codelineno-0-1891"></a>
-<a id="__codelineno-0-1892" name="__codelineno-0-1892"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-1893" name="__codelineno-0-1893"></a><span class="sd">    """</span>
-<a id="__codelineno-0-1894" name="__codelineno-0-1894"></a>    <span class="n">finite</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-<a id="__codelineno-0-1895" name="__codelineno-0-1895"></a>    <span class="n">finite</span> <span class="o">=</span> <span class="n">finite</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">finite</span><span class="p">)]</span>
-<a id="__codelineno-0-1896" name="__codelineno-0-1896"></a>
-<a id="__codelineno-0-1897" name="__codelineno-0-1897"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">scheme</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-<a id="__codelineno-0-1898" name="__codelineno-0-1898"></a>        <span class="c1"># A named scheme derives the edges from the data, so it needs values.</span>
-<a id="__codelineno-0-1899" name="__codelineno-0-1899"></a>        <span class="k">if</span> <span class="n">finite</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-1900" name="__codelineno-0-1900"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Cannot classify: `values` has no finite entries to bin."</span><span class="p">)</span>
-<a id="__codelineno-0-1901" name="__codelineno-0-1901"></a>        <span class="n">edges</span> <span class="o">=</span> <span class="n">_scheme_edges</span><span class="p">(</span><span class="n">finite</span><span class="p">,</span> <span class="n">scheme</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
-<a id="__codelineno-0-1902" name="__codelineno-0-1902"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-1903" name="__codelineno-0-1903"></a>        <span class="c1"># An explicit sequence of bin edges supplied by the caller: the edges are</span>
-<a id="__codelineno-0-1904" name="__codelineno-0-1904"></a>        <span class="c1"># given, so `values` are irrelevant and may be empty / all-non-finite</span>
-<a id="__codelineno-0-1905" name="__codelineno-0-1905"></a>        <span class="c1"># (e.g. a fully masked facet panel that shares stack-wide edges).</span>
-<a id="__codelineno-0-1906" name="__codelineno-0-1906"></a>        <span class="n">edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">scheme</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
-<a id="__codelineno-0-1907" name="__codelineno-0-1907"></a>
-<a id="__codelineno-0-1908" name="__codelineno-0-1908"></a>    <span class="n">edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span>
-<a id="__codelineno-0-1909" name="__codelineno-0-1909"></a>    <span class="k">if</span> <span class="n">edges</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
-<a id="__codelineno-0-1910" name="__codelineno-0-1910"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-1911" name="__codelineno-0-1911"></a>            <span class="s2">"Cannot classify: the data has no spread (fewer than two "</span>
-<a id="__codelineno-0-1912" name="__codelineno-0-1912"></a>            <span class="s2">"distinct bin edges). Pin explicit edges or widen the data."</span>
-<a id="__codelineno-0-1913" name="__codelineno-0-1913"></a>        <span class="p">)</span>
-<a id="__codelineno-0-1914" name="__codelineno-0-1914"></a>    <span class="n">norm</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">BoundaryNorm</span><span class="p">(</span><span class="n">boundaries</span><span class="o">=</span><span class="n">edges</span><span class="p">,</span> <span class="n">ncolors</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span>
-<a id="__codelineno-0-1915" name="__codelineno-0-1915"></a>    <span class="k">return</span> <span class="n">edges</span><span class="p">,</span> <span class="n">norm</span>
+<span class="normal"><a href="#__codelineno-0-1914">1914</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1793" name="__codelineno-0-1793"></a><span class="k">def</span><span class="w"> </span><span class="nf">classify</span><span class="p">(</span>
+<a id="__codelineno-0-1794" name="__codelineno-0-1794"></a>    <span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+<a id="__codelineno-0-1795" name="__codelineno-0-1795"></a>    <span class="n">scheme</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+<a id="__codelineno-0-1796" name="__codelineno-0-1796"></a>    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+<a id="__codelineno-0-1797" name="__codelineno-0-1797"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">colors</span><span class="o">.</span><span class="n">BoundaryNorm</span><span class="p">]:</span>
+<a id="__codelineno-0-1798" name="__codelineno-0-1798"></a><span class="w">    </span><span class="sd">"""Bin a continuous array into discrete colour classes.</span>
+<a id="__codelineno-0-1799" name="__codelineno-0-1799"></a>
+<a id="__codelineno-0-1800" name="__codelineno-0-1800"></a><span class="sd">    The shared building block behind categorical (classified) colouring:</span>
+<a id="__codelineno-0-1801" name="__codelineno-0-1801"></a><span class="sd">    it turns a continuous data column into an array of bin edges plus a</span>
+<a id="__codelineno-0-1802" name="__codelineno-0-1802"></a><span class="sd">    matching `matplotlib.colors.BoundaryNorm`, so any colour-by-value glyph</span>
+<a id="__codelineno-0-1803" name="__codelineno-0-1803"></a><span class="sd">    can render a stepped colorbar / class legend instead of a continuous</span>
+<a id="__codelineno-0-1804" name="__codelineno-0-1804"></a><span class="sd">    ramp. It is the classification counterpart to `Scale` and</span>
+<a id="__codelineno-0-1805" name="__codelineno-0-1805"></a><span class="sd">    `MidpointNormalize`.</span>
+<a id="__codelineno-0-1806" name="__codelineno-0-1806"></a>
+<a id="__codelineno-0-1807" name="__codelineno-0-1807"></a><span class="sd">    The numpy-only schemes (no dependency beyond numpy) are:</span>
+<a id="__codelineno-0-1808" name="__codelineno-0-1808"></a>
+<a id="__codelineno-0-1809" name="__codelineno-0-1809"></a><span class="sd">    * `"quantiles"` — `k` equal-count classes via</span>
+<a id="__codelineno-0-1810" name="__codelineno-0-1810"></a><span class="sd">      `np.quantile(values, np.linspace(0, 1, k + 1))`.</span>
+<a id="__codelineno-0-1811" name="__codelineno-0-1811"></a><span class="sd">    * `"equal_interval"` — `k` equal-width classes spanning the data range.</span>
+<a id="__codelineno-0-1812" name="__codelineno-0-1812"></a><span class="sd">    * `"percentiles"` — `k` equal-count classes via `np.percentile` on the</span>
+<a id="__codelineno-0-1813" name="__codelineno-0-1813"></a><span class="sd">      same evenly-spaced probabilities; numerically equivalent to</span>
+<a id="__codelineno-0-1814" name="__codelineno-0-1814"></a><span class="sd">      `"quantiles"` (it differs only in the `[0, 100]` vs `[0, 1]`</span>
+<a id="__codelineno-0-1815" name="__codelineno-0-1815"></a><span class="sd">      convention) and is kept as a familiar alias.</span>
+<a id="__codelineno-0-1816" name="__codelineno-0-1816"></a><span class="sd">    * `"std_mean"` — fixed breaks at `mean + nσ` for `n` in</span>
+<a id="__codelineno-0-1817" name="__codelineno-0-1817"></a><span class="sd">      `(-2, -1, 0, 1, 2)`, clipped to the data range. `k` is **ignored**</span>
+<a id="__codelineno-0-1818" name="__codelineno-0-1818"></a><span class="sd">      for this scheme (the number of classes follows from the multiples).</span>
+<a id="__codelineno-0-1819" name="__codelineno-0-1819"></a>
+<a id="__codelineno-0-1820" name="__codelineno-0-1820"></a><span class="sd">    The Jenks-family schemes `"fisher_jenks"` and `"natural_breaks"` are</span>
+<a id="__codelineno-0-1821" name="__codelineno-0-1821"></a><span class="sd">    computed by the native Fisher-Jenks optimisation — the exact dynamic</span>
+<a id="__codelineno-0-1822" name="__codelineno-0-1822"></a><span class="sd">    program that minimises the within-class sum of squared deviations. Both</span>
+<a id="__codelineno-0-1823" name="__codelineno-0-1823"></a><span class="sd">    names are aliases for the same algorithm. No dependency beyond numpy.</span>
+<a id="__codelineno-0-1824" name="__codelineno-0-1824"></a>
+<a id="__codelineno-0-1825" name="__codelineno-0-1825"></a><span class="sd">    A non-string `scheme` is treated as an explicit, already-chosen</span>
+<a id="__codelineno-0-1826" name="__codelineno-0-1826"></a><span class="sd">    sequence of bin edges (sorted ascending); `k` is ignored.</span>
+<a id="__codelineno-0-1827" name="__codelineno-0-1827"></a>
+<a id="__codelineno-0-1828" name="__codelineno-0-1828"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-1829" name="__codelineno-0-1829"></a><span class="sd">        values: The data to classify. Non-finite entries (`NaN` / `inf`)</span>
+<a id="__codelineno-0-1830" name="__codelineno-0-1830"></a><span class="sd">            are ignored when computing the edges. Can be any array-like.</span>
+<a id="__codelineno-0-1831" name="__codelineno-0-1831"></a><span class="sd">        scheme: A scheme name (see above, case-insensitive) **or** an</span>
+<a id="__codelineno-0-1832" name="__codelineno-0-1832"></a><span class="sd">            explicit sequence of bin edges to use verbatim.</span>
+<a id="__codelineno-0-1833" name="__codelineno-0-1833"></a><span class="sd">        k: The number of classes for the count/width schemes. Must be</span>
+<a id="__codelineno-0-1834" name="__codelineno-0-1834"></a><span class="sd">            `&gt;= 1`. Default is 5. Ignored for `"std_mean"` and for an</span>
+<a id="__codelineno-0-1835" name="__codelineno-0-1835"></a><span class="sd">            explicit edge sequence.</span>
+<a id="__codelineno-0-1836" name="__codelineno-0-1836"></a>
+<a id="__codelineno-0-1837" name="__codelineno-0-1837"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-1838" name="__codelineno-0-1838"></a><span class="sd">        tuple[np.ndarray, matplotlib.colors.BoundaryNorm]: The sorted,</span>
+<a id="__codelineno-0-1839" name="__codelineno-0-1839"></a><span class="sd">            de-duplicated bin edges (length = classes + 1) and a</span>
+<a id="__codelineno-0-1840" name="__codelineno-0-1840"></a><span class="sd">            `BoundaryNorm` built from them (with `ncolors=256`, matching</span>
+<a id="__codelineno-0-1841" name="__codelineno-0-1841"></a><span class="sd">            the package's other boundary norms). The realised class count</span>
+<a id="__codelineno-0-1842" name="__codelineno-0-1842"></a><span class="sd">            can be **fewer than `k`** when the data has too few distinct</span>
+<a id="__codelineno-0-1843" name="__codelineno-0-1843"></a><span class="sd">            values to support `k` classes — coincident edges are collapsed,</span>
+<a id="__codelineno-0-1844" name="__codelineno-0-1844"></a><span class="sd">            so the returned edges are always strictly increasing.</span>
+<a id="__codelineno-0-1845" name="__codelineno-0-1845"></a>
+<a id="__codelineno-0-1846" name="__codelineno-0-1846"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-0-1847" name="__codelineno-0-1847"></a><span class="sd">        ValueError: For a **named** scheme, if `values` has no finite entries</span>
+<a id="__codelineno-0-1848" name="__codelineno-0-1848"></a><span class="sd">            or `k &lt; 1` (an explicit edge sequence needs neither, so it accepts</span>
+<a id="__codelineno-0-1849" name="__codelineno-0-1849"></a><span class="sd">            empty / all-non-finite `values`); if fewer than two distinct edges</span>
+<a id="__codelineno-0-1850" name="__codelineno-0-1850"></a><span class="sd">            result (the data or the edges have no spread); or if `scheme` is an</span>
+<a id="__codelineno-0-1851" name="__codelineno-0-1851"></a><span class="sd">            unrecognised name.</span>
+<a id="__codelineno-0-1852" name="__codelineno-0-1852"></a>
+<a id="__codelineno-0-1853" name="__codelineno-0-1853"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-1854" name="__codelineno-0-1854"></a><span class="sd">        - Equal-interval edges on a 0–10 ramp:</span>
+<a id="__codelineno-0-1855" name="__codelineno-0-1855"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-1856" name="__codelineno-0-1856"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-1857" name="__codelineno-0-1857"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.styles import classify</span>
+<a id="__codelineno-0-1858" name="__codelineno-0-1858"></a><span class="sd">            &gt;&gt;&gt; edges, norm = classify(np.arange(11.0), "equal_interval", k=5)</span>
+<a id="__codelineno-0-1859" name="__codelineno-0-1859"></a><span class="sd">            &gt;&gt;&gt; [float(e) for e in edges]</span>
+<a id="__codelineno-0-1860" name="__codelineno-0-1860"></a><span class="sd">            [0.0, 2.0, 4.0, 6.0, 8.0, 10.0]</span>
+<a id="__codelineno-0-1861" name="__codelineno-0-1861"></a><span class="sd">            &gt;&gt;&gt; [float(b) for b in norm.boundaries]</span>
+<a id="__codelineno-0-1862" name="__codelineno-0-1862"></a><span class="sd">            [0.0, 2.0, 4.0, 6.0, 8.0, 10.0]</span>
+<a id="__codelineno-0-1863" name="__codelineno-0-1863"></a>
+<a id="__codelineno-0-1864" name="__codelineno-0-1864"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-1865" name="__codelineno-0-1865"></a><span class="sd">        - Quantile edges put equal counts in each class:</span>
+<a id="__codelineno-0-1866" name="__codelineno-0-1866"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-1867" name="__codelineno-0-1867"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-1868" name="__codelineno-0-1868"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.styles import classify</span>
+<a id="__codelineno-0-1869" name="__codelineno-0-1869"></a><span class="sd">            &gt;&gt;&gt; edges, _ = classify(np.arange(100.0), "quantiles", k=4)</span>
+<a id="__codelineno-0-1870" name="__codelineno-0-1870"></a><span class="sd">            &gt;&gt;&gt; [float(e) for e in edges]</span>
+<a id="__codelineno-0-1871" name="__codelineno-0-1871"></a><span class="sd">            [0.0, 24.75, 49.5, 74.25, 99.0]</span>
+<a id="__codelineno-0-1872" name="__codelineno-0-1872"></a>
+<a id="__codelineno-0-1873" name="__codelineno-0-1873"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-1874" name="__codelineno-0-1874"></a><span class="sd">        - An explicit edge sequence is used verbatim (sorted):</span>
+<a id="__codelineno-0-1875" name="__codelineno-0-1875"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-1876" name="__codelineno-0-1876"></a><span class="sd">            &gt;&gt;&gt; import numpy as np</span>
+<a id="__codelineno-0-1877" name="__codelineno-0-1877"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.styles import classify</span>
+<a id="__codelineno-0-1878" name="__codelineno-0-1878"></a><span class="sd">            &gt;&gt;&gt; edges, _ = classify(np.arange(11.0), [10.0, 0.0, 5.0])</span>
+<a id="__codelineno-0-1879" name="__codelineno-0-1879"></a><span class="sd">            &gt;&gt;&gt; [float(e) for e in edges]</span>
+<a id="__codelineno-0-1880" name="__codelineno-0-1880"></a><span class="sd">            [0.0, 5.0, 10.0]</span>
+<a id="__codelineno-0-1881" name="__codelineno-0-1881"></a>
+<a id="__codelineno-0-1882" name="__codelineno-0-1882"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-1883" name="__codelineno-0-1883"></a><span class="sd">        - An unknown scheme name is rejected:</span>
+<a id="__codelineno-0-1884" name="__codelineno-0-1884"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-1885" name="__codelineno-0-1885"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.styles import classify</span>
+<a id="__codelineno-0-1886" name="__codelineno-0-1886"></a><span class="sd">            &gt;&gt;&gt; classify([1.0, 2.0, 3.0], "rainbow")</span>
+<a id="__codelineno-0-1887" name="__codelineno-0-1887"></a><span class="sd">            Traceback (most recent call last):</span>
+<a id="__codelineno-0-1888" name="__codelineno-0-1888"></a><span class="sd">                ...</span>
+<a id="__codelineno-0-1889" name="__codelineno-0-1889"></a><span class="sd">            ValueError: Unknown classification scheme 'rainbow'. ...</span>
+<a id="__codelineno-0-1890" name="__codelineno-0-1890"></a>
+<a id="__codelineno-0-1891" name="__codelineno-0-1891"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-1892" name="__codelineno-0-1892"></a><span class="sd">    """</span>
+<a id="__codelineno-0-1893" name="__codelineno-0-1893"></a>    <span class="n">finite</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<a id="__codelineno-0-1894" name="__codelineno-0-1894"></a>    <span class="n">finite</span> <span class="o">=</span> <span class="n">finite</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">finite</span><span class="p">)]</span>
+<a id="__codelineno-0-1895" name="__codelineno-0-1895"></a>
+<a id="__codelineno-0-1896" name="__codelineno-0-1896"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">scheme</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+<a id="__codelineno-0-1897" name="__codelineno-0-1897"></a>        <span class="c1"># A named scheme derives the edges from the data, so it needs values.</span>
+<a id="__codelineno-0-1898" name="__codelineno-0-1898"></a>        <span class="k">if</span> <span class="n">finite</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-1899" name="__codelineno-0-1899"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Cannot classify: `values` has no finite entries to bin."</span><span class="p">)</span>
+<a id="__codelineno-0-1900" name="__codelineno-0-1900"></a>        <span class="n">edges</span> <span class="o">=</span> <span class="n">_scheme_edges</span><span class="p">(</span><span class="n">finite</span><span class="p">,</span> <span class="n">scheme</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+<a id="__codelineno-0-1901" name="__codelineno-0-1901"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-1902" name="__codelineno-0-1902"></a>        <span class="c1"># An explicit sequence of bin edges supplied by the caller: the edges are</span>
+<a id="__codelineno-0-1903" name="__codelineno-0-1903"></a>        <span class="c1"># given, so `values` are irrelevant and may be empty / all-non-finite</span>
+<a id="__codelineno-0-1904" name="__codelineno-0-1904"></a>        <span class="c1"># (e.g. a fully masked facet panel that shares stack-wide edges).</span>
+<a id="__codelineno-0-1905" name="__codelineno-0-1905"></a>        <span class="n">edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">scheme</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
+<a id="__codelineno-0-1906" name="__codelineno-0-1906"></a>
+<a id="__codelineno-0-1907" name="__codelineno-0-1907"></a>    <span class="n">edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span>
+<a id="__codelineno-0-1908" name="__codelineno-0-1908"></a>    <span class="k">if</span> <span class="n">edges</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+<a id="__codelineno-0-1909" name="__codelineno-0-1909"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-1910" name="__codelineno-0-1910"></a>            <span class="s2">"Cannot classify: the data has no spread (fewer than two "</span>
+<a id="__codelineno-0-1911" name="__codelineno-0-1911"></a>            <span class="s2">"distinct bin edges). Pin explicit edges or widen the data."</span>
+<a id="__codelineno-0-1912" name="__codelineno-0-1912"></a>        <span class="p">)</span>
+<a id="__codelineno-0-1913" name="__codelineno-0-1913"></a>    <span class="n">norm</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">BoundaryNorm</span><span class="p">(</span><span class="n">boundaries</span><span class="o">=</span><span class="n">edges</span><span class="p">,</span> <span class="n">ncolors</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span>
+<a id="__codelineno-0-1914" name="__codelineno-0-1914"></a>    <span class="k">return</span> <span class="n">edges</span><span class="p">,</span> <span class="n">norm</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -9803,8 +9803,7 @@ colorbar_legend: A full colorbar with tick marks, for a single layer.</p>
 <span class="normal"><a href="#__codelineno-0-1707">1707</a></span>
 <span class="normal"><a href="#__codelineno-0-1708">1708</a></span>
 <span class="normal"><a href="#__codelineno-0-1709">1709</a></span>
-<span class="normal"><a href="#__codelineno-0-1710">1710</a></span>
-<span class="normal"><a href="#__codelineno-0-1711">1711</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1519" name="__codelineno-0-1519"></a><span class="k">def</span><span class="w"> </span><span class="nf">swatch_legend</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-1710">1710</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1519" name="__codelineno-0-1519"></a><span class="k">def</span><span class="w"> </span><span class="nf">swatch_legend</span><span class="p">(</span>
 <a id="__codelineno-0-1520" name="__codelineno-0-1520"></a>    <span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span><span class="p">,</span>
 <a id="__codelineno-0-1521" name="__codelineno-0-1521"></a>    <span class="n">cmap</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">colors</span><span class="o">.</span><span class="n">Colormap</span><span class="p">,</span>
 <a id="__codelineno-0-1522" name="__codelineno-0-1522"></a>    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -9978,25 +9977,24 @@ colorbar_legend: A full colorbar with tick marks, for a single layer.</p>
 <a id="__codelineno-0-1690" name="__codelineno-0-1690"></a>        <span class="k">try</span><span class="p">:</span>
 <a id="__codelineno-0-1691" name="__codelineno-0-1691"></a>            <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
 <a id="__codelineno-0-1692" name="__codelineno-0-1692"></a>            <span class="n">bb</span> <span class="o">=</span> <span class="n">swatch</span><span class="o">.</span><span class="n">get_tightbbox</span><span class="p">(</span><span class="n">cast</span><span class="p">(</span><span class="n">Any</span><span class="p">,</span> <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="p">)</span><span class="o">.</span><span class="n">get_renderer</span><span class="p">())</span>
-<a id="__codelineno-0-1693" name="__codelineno-0-1693"></a>            <span class="k">if</span> <span class="n">bb</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-1694" name="__codelineno-0-1694"></a>                <span class="n">inv</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="o">.</span><span class="n">inverted</span><span class="p">()</span>
-<a id="__codelineno-0-1695" name="__codelineno-0-1695"></a>                <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="n">inv</span><span class="o">.</span><span class="n">transform</span><span class="p">((</span><span class="n">bb</span><span class="o">.</span><span class="n">x0</span><span class="p">,</span> <span class="n">bb</span><span class="o">.</span><span class="n">y0</span><span class="p">))</span>
-<a id="__codelineno-0-1696" name="__codelineno-0-1696"></a>                <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="n">inv</span><span class="o">.</span><span class="n">transform</span><span class="p">((</span><span class="n">bb</span><span class="o">.</span><span class="n">x1</span><span class="p">,</span> <span class="n">bb</span><span class="o">.</span><span class="n">y1</span><span class="p">))</span>
-<a id="__codelineno-0-1697" name="__codelineno-0-1697"></a>        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># pragma: no cover - renderer unavailable on some backends</span>
-<a id="__codelineno-0-1698" name="__codelineno-0-1698"></a>            <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="n">bx0</span><span class="p">,</span> <span class="n">by0</span> <span class="o">-</span> <span class="mf">0.06</span><span class="p">,</span> <span class="n">bx0</span> <span class="o">+</span> <span class="n">bw</span><span class="p">,</span> <span class="n">by0</span> <span class="o">+</span> <span class="n">bh</span>
-<a id="__codelineno-0-1699" name="__codelineno-0-1699"></a>        <span class="n">pad</span> <span class="o">=</span> <span class="mf">0.012</span>
-<a id="__codelineno-0-1700" name="__codelineno-0-1700"></a>        <span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span>
-<a id="__codelineno-0-1701" name="__codelineno-0-1701"></a>            <span class="n">Rectangle</span><span class="p">(</span>
-<a id="__codelineno-0-1702" name="__codelineno-0-1702"></a>                <span class="p">(</span><span class="n">x0</span> <span class="o">-</span> <span class="n">pad</span><span class="p">,</span> <span class="n">y0</span> <span class="o">-</span> <span class="n">pad</span><span class="p">),</span>
-<a id="__codelineno-0-1703" name="__codelineno-0-1703"></a>                <span class="p">(</span><span class="n">x1</span> <span class="o">-</span> <span class="n">x0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">pad</span><span class="p">,</span>
-<a id="__codelineno-0-1704" name="__codelineno-0-1704"></a>                <span class="p">(</span><span class="n">y1</span> <span class="o">-</span> <span class="n">y0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">pad</span><span class="p">,</span>
-<a id="__codelineno-0-1705" name="__codelineno-0-1705"></a>                <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span>
-<a id="__codelineno-0-1706" name="__codelineno-0-1706"></a>                <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-<a id="__codelineno-0-1707" name="__codelineno-0-1707"></a>                <span class="n">clip_on</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-1708" name="__codelineno-0-1708"></a>                <span class="o">**</span><span class="n">kw</span><span class="p">,</span>
-<a id="__codelineno-0-1709" name="__codelineno-0-1709"></a>            <span class="p">)</span>
-<a id="__codelineno-0-1710" name="__codelineno-0-1710"></a>        <span class="p">)</span>
-<a id="__codelineno-0-1711" name="__codelineno-0-1711"></a>    <span class="k">return</span> <span class="n">swatch</span>
+<a id="__codelineno-0-1693" name="__codelineno-0-1693"></a>            <span class="n">inv</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="o">.</span><span class="n">inverted</span><span class="p">()</span>
+<a id="__codelineno-0-1694" name="__codelineno-0-1694"></a>            <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span> <span class="o">=</span> <span class="n">inv</span><span class="o">.</span><span class="n">transform</span><span class="p">((</span><span class="n">bb</span><span class="o">.</span><span class="n">x0</span><span class="p">,</span> <span class="n">bb</span><span class="o">.</span><span class="n">y0</span><span class="p">))</span>
+<a id="__codelineno-0-1695" name="__codelineno-0-1695"></a>            <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="n">inv</span><span class="o">.</span><span class="n">transform</span><span class="p">((</span><span class="n">bb</span><span class="o">.</span><span class="n">x1</span><span class="p">,</span> <span class="n">bb</span><span class="o">.</span><span class="n">y1</span><span class="p">))</span>
+<a id="__codelineno-0-1696" name="__codelineno-0-1696"></a>        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># pragma: no cover - renderer unavailable on some backends</span>
+<a id="__codelineno-0-1697" name="__codelineno-0-1697"></a>            <span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="n">bx0</span><span class="p">,</span> <span class="n">by0</span> <span class="o">-</span> <span class="mf">0.06</span><span class="p">,</span> <span class="n">bx0</span> <span class="o">+</span> <span class="n">bw</span><span class="p">,</span> <span class="n">by0</span> <span class="o">+</span> <span class="n">bh</span>
+<a id="__codelineno-0-1698" name="__codelineno-0-1698"></a>        <span class="n">pad</span> <span class="o">=</span> <span class="mf">0.012</span>
+<a id="__codelineno-0-1699" name="__codelineno-0-1699"></a>        <span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span>
+<a id="__codelineno-0-1700" name="__codelineno-0-1700"></a>            <span class="n">Rectangle</span><span class="p">(</span>
+<a id="__codelineno-0-1701" name="__codelineno-0-1701"></a>                <span class="p">(</span><span class="n">x0</span> <span class="o">-</span> <span class="n">pad</span><span class="p">,</span> <span class="n">y0</span> <span class="o">-</span> <span class="n">pad</span><span class="p">),</span>
+<a id="__codelineno-0-1702" name="__codelineno-0-1702"></a>                <span class="p">(</span><span class="n">x1</span> <span class="o">-</span> <span class="n">x0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">pad</span><span class="p">,</span>
+<a id="__codelineno-0-1703" name="__codelineno-0-1703"></a>                <span class="p">(</span><span class="n">y1</span> <span class="o">-</span> <span class="n">y0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">pad</span><span class="p">,</span>
+<a id="__codelineno-0-1704" name="__codelineno-0-1704"></a>                <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span>
+<a id="__codelineno-0-1705" name="__codelineno-0-1705"></a>                <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+<a id="__codelineno-0-1706" name="__codelineno-0-1706"></a>                <span class="n">clip_on</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-1707" name="__codelineno-0-1707"></a>                <span class="o">**</span><span class="n">kw</span><span class="p">,</span>
+<a id="__codelineno-0-1708" name="__codelineno-0-1708"></a>            <span class="p">)</span>
+<a id="__codelineno-0-1709" name="__codelineno-0-1709"></a>        <span class="p">)</span>
+<a id="__codelineno-0-1710" name="__codelineno-0-1710"></a>    <span class="k">return</span> <span class="n">swatch</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -11628,7 +11626,8 @@ Defaults to <code>"black"</code>, matching the haze style; pass e.g.
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/cleopatra/styling/styles.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1714">1714</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1713">1713</a></span>
+<span class="normal"><a href="#__codelineno-0-1714">1714</a></span>
 <span class="normal"><a href="#__codelineno-0-1715">1715</a></span>
 <span class="normal"><a href="#__codelineno-0-1716">1716</a></span>
 <span class="normal"><a href="#__codelineno-0-1717">1717</a></span>
@@ -11683,64 +11682,63 @@ Defaults to <code>"black"</code>, matching the haze style; pass e.g.
 <span class="normal"><a href="#__codelineno-0-1766">1766</a></span>
 <span class="normal"><a href="#__codelineno-0-1767">1767</a></span>
 <span class="normal"><a href="#__codelineno-0-1768">1768</a></span>
-<span class="normal"><a href="#__codelineno-0-1769">1769</a></span>
-<span class="normal"><a href="#__codelineno-0-1770">1770</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1714" name="__codelineno-0-1714"></a><span class="k">def</span><span class="w"> </span><span class="nf">apply_blank_canvas</span><span class="p">(</span><span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span><span class="p">,</span> <span class="n">facecolor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"black"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
-<a id="__codelineno-0-1715" name="__codelineno-0-1715"></a><span class="w">    </span><span class="sd">"""Strip an axes down to a chrome-free canvas: no ticks, spines, or frame.</span>
-<a id="__codelineno-0-1716" name="__codelineno-0-1716"></a>
-<a id="__codelineno-0-1717" name="__codelineno-0-1717"></a><span class="sd">    Turns off every axis decoration (ticks, tick labels, spines) and sets</span>
-<a id="__codelineno-0-1718" name="__codelineno-0-1718"></a><span class="sd">    both the axes' and its figure's background colour, leaving nothing but</span>
-<a id="__codelineno-0-1719" name="__codelineno-0-1719"></a><span class="sd">    the data itself -- the minimal look CAMS-style globe animations</span>
-<a id="__codelineno-0-1720" name="__codelineno-0-1720"></a><span class="sd">    use (no coordinate frame, just the plotted field on black). This is a</span>
-<a id="__codelineno-0-1721" name="__codelineno-0-1721"></a><span class="sd">    generic chrome primitive: it doesn't know about any projection or</span>
-<a id="__codelineno-0-1722" name="__codelineno-0-1722"></a><span class="sd">    colormap, so it composes with a plain flat axes, an orthographic globe</span>
-<a id="__codelineno-0-1723" name="__codelineno-0-1723"></a><span class="sd">    (`apply_projection_frame`), or any other cleopatra styling.</span>
-<a id="__codelineno-0-1724" name="__codelineno-0-1724"></a>
-<a id="__codelineno-0-1725" name="__codelineno-0-1725"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-1726" name="__codelineno-0-1726"></a><span class="sd">        ax: The axes to strip down.</span>
-<a id="__codelineno-0-1727" name="__codelineno-0-1727"></a><span class="sd">        facecolor: Background colour for both `ax` and its parent `Figure`.</span>
-<a id="__codelineno-0-1728" name="__codelineno-0-1728"></a><span class="sd">            Defaults to `"black"`, matching the haze style; pass e.g.</span>
-<a id="__codelineno-0-1729" name="__codelineno-0-1729"></a><span class="sd">            `"white"` or `"none"` for a different look.</span>
-<a id="__codelineno-0-1730" name="__codelineno-0-1730"></a>
-<a id="__codelineno-0-1731" name="__codelineno-0-1731"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-1732" name="__codelineno-0-1732"></a><span class="sd">        Axes: The same `ax`, for chaining.</span>
-<a id="__codelineno-0-1733" name="__codelineno-0-1733"></a>
-<a id="__codelineno-0-1734" name="__codelineno-0-1734"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-1735" name="__codelineno-0-1735"></a><span class="sd">        - Ticks and spines are removed, and the background is set:</span>
-<a id="__codelineno-0-1736" name="__codelineno-0-1736"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-1737" name="__codelineno-0-1737"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-1738" name="__codelineno-0-1738"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.styles import apply_blank_canvas</span>
-<a id="__codelineno-0-1739" name="__codelineno-0-1739"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-1740" name="__codelineno-0-1740"></a><span class="sd">            &gt;&gt;&gt; _ = apply_blank_canvas(ax)</span>
-<a id="__codelineno-0-1741" name="__codelineno-0-1741"></a><span class="sd">            &gt;&gt;&gt; ax.get_xticks().size</span>
-<a id="__codelineno-0-1742" name="__codelineno-0-1742"></a><span class="sd">            0</span>
-<a id="__codelineno-0-1743" name="__codelineno-0-1743"></a><span class="sd">            &gt;&gt;&gt; any(s.get_visible() for s in ax.spines.values())</span>
-<a id="__codelineno-0-1744" name="__codelineno-0-1744"></a><span class="sd">            False</span>
-<a id="__codelineno-0-1745" name="__codelineno-0-1745"></a><span class="sd">            &gt;&gt;&gt; ax.get_facecolor()</span>
-<a id="__codelineno-0-1746" name="__codelineno-0-1746"></a><span class="sd">            (0.0, 0.0, 0.0, 1.0)</span>
-<a id="__codelineno-0-1747" name="__codelineno-0-1747"></a>
-<a id="__codelineno-0-1748" name="__codelineno-0-1748"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-1749" name="__codelineno-0-1749"></a><span class="sd">        - A custom `facecolor` is applied to both the axes and the figure:</span>
-<a id="__codelineno-0-1750" name="__codelineno-0-1750"></a><span class="sd">            ```python</span>
-<a id="__codelineno-0-1751" name="__codelineno-0-1751"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
-<a id="__codelineno-0-1752" name="__codelineno-0-1752"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.styles import apply_blank_canvas</span>
-<a id="__codelineno-0-1753" name="__codelineno-0-1753"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
-<a id="__codelineno-0-1754" name="__codelineno-0-1754"></a><span class="sd">            &gt;&gt;&gt; _ = apply_blank_canvas(ax, facecolor="navy")</span>
-<a id="__codelineno-0-1755" name="__codelineno-0-1755"></a><span class="sd">            &gt;&gt;&gt; ax.get_facecolor()</span>
-<a id="__codelineno-0-1756" name="__codelineno-0-1756"></a><span class="sd">            (0.0, 0.0, 0.5019607843137255, 1.0)</span>
-<a id="__codelineno-0-1757" name="__codelineno-0-1757"></a>
-<a id="__codelineno-0-1758" name="__codelineno-0-1758"></a><span class="sd">            ```</span>
-<a id="__codelineno-0-1759" name="__codelineno-0-1759"></a>
-<a id="__codelineno-0-1760" name="__codelineno-0-1760"></a><span class="sd">    See Also:</span>
-<a id="__codelineno-0-1761" name="__codelineno-0-1761"></a><span class="sd">        cleopatra.basemap.geo.REFERENCE_MAP_STYLES: A less minimal chrome preset</span>
-<a id="__codelineno-0-1762" name="__codelineno-0-1762"></a><span class="sd">            (visible coastlines, ticks, and a frame) for a flat map.</span>
-<a id="__codelineno-0-1763" name="__codelineno-0-1763"></a><span class="sd">    """</span>
-<a id="__codelineno-0-1764" name="__codelineno-0-1764"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
-<a id="__codelineno-0-1765" name="__codelineno-0-1765"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
-<a id="__codelineno-0-1766" name="__codelineno-0-1766"></a>    <span class="k">for</span> <span class="n">spine</span> <span class="ow">in</span> <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
-<a id="__codelineno-0-1767" name="__codelineno-0-1767"></a>        <span class="n">spine</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-<a id="__codelineno-0-1768" name="__codelineno-0-1768"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="n">facecolor</span><span class="p">)</span>
-<a id="__codelineno-0-1769" name="__codelineno-0-1769"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="n">facecolor</span><span class="p">)</span>
-<a id="__codelineno-0-1770" name="__codelineno-0-1770"></a>    <span class="k">return</span> <span class="n">ax</span>
+<span class="normal"><a href="#__codelineno-0-1769">1769</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1713" name="__codelineno-0-1713"></a><span class="k">def</span><span class="w"> </span><span class="nf">apply_blank_canvas</span><span class="p">(</span><span class="n">ax</span><span class="p">:</span> <span class="n">Axes</span><span class="p">,</span> <span class="n">facecolor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"black"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Axes</span><span class="p">:</span>
+<a id="__codelineno-0-1714" name="__codelineno-0-1714"></a><span class="w">    </span><span class="sd">"""Strip an axes down to a chrome-free canvas: no ticks, spines, or frame.</span>
+<a id="__codelineno-0-1715" name="__codelineno-0-1715"></a>
+<a id="__codelineno-0-1716" name="__codelineno-0-1716"></a><span class="sd">    Turns off every axis decoration (ticks, tick labels, spines) and sets</span>
+<a id="__codelineno-0-1717" name="__codelineno-0-1717"></a><span class="sd">    both the axes' and its figure's background colour, leaving nothing but</span>
+<a id="__codelineno-0-1718" name="__codelineno-0-1718"></a><span class="sd">    the data itself -- the minimal look CAMS-style globe animations</span>
+<a id="__codelineno-0-1719" name="__codelineno-0-1719"></a><span class="sd">    use (no coordinate frame, just the plotted field on black). This is a</span>
+<a id="__codelineno-0-1720" name="__codelineno-0-1720"></a><span class="sd">    generic chrome primitive: it doesn't know about any projection or</span>
+<a id="__codelineno-0-1721" name="__codelineno-0-1721"></a><span class="sd">    colormap, so it composes with a plain flat axes, an orthographic globe</span>
+<a id="__codelineno-0-1722" name="__codelineno-0-1722"></a><span class="sd">    (`apply_projection_frame`), or any other cleopatra styling.</span>
+<a id="__codelineno-0-1723" name="__codelineno-0-1723"></a>
+<a id="__codelineno-0-1724" name="__codelineno-0-1724"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-1725" name="__codelineno-0-1725"></a><span class="sd">        ax: The axes to strip down.</span>
+<a id="__codelineno-0-1726" name="__codelineno-0-1726"></a><span class="sd">        facecolor: Background colour for both `ax` and its parent `Figure`.</span>
+<a id="__codelineno-0-1727" name="__codelineno-0-1727"></a><span class="sd">            Defaults to `"black"`, matching the haze style; pass e.g.</span>
+<a id="__codelineno-0-1728" name="__codelineno-0-1728"></a><span class="sd">            `"white"` or `"none"` for a different look.</span>
+<a id="__codelineno-0-1729" name="__codelineno-0-1729"></a>
+<a id="__codelineno-0-1730" name="__codelineno-0-1730"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-1731" name="__codelineno-0-1731"></a><span class="sd">        Axes: The same `ax`, for chaining.</span>
+<a id="__codelineno-0-1732" name="__codelineno-0-1732"></a>
+<a id="__codelineno-0-1733" name="__codelineno-0-1733"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-1734" name="__codelineno-0-1734"></a><span class="sd">        - Ticks and spines are removed, and the background is set:</span>
+<a id="__codelineno-0-1735" name="__codelineno-0-1735"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-1736" name="__codelineno-0-1736"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-1737" name="__codelineno-0-1737"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.styles import apply_blank_canvas</span>
+<a id="__codelineno-0-1738" name="__codelineno-0-1738"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-1739" name="__codelineno-0-1739"></a><span class="sd">            &gt;&gt;&gt; _ = apply_blank_canvas(ax)</span>
+<a id="__codelineno-0-1740" name="__codelineno-0-1740"></a><span class="sd">            &gt;&gt;&gt; ax.get_xticks().size</span>
+<a id="__codelineno-0-1741" name="__codelineno-0-1741"></a><span class="sd">            0</span>
+<a id="__codelineno-0-1742" name="__codelineno-0-1742"></a><span class="sd">            &gt;&gt;&gt; any(s.get_visible() for s in ax.spines.values())</span>
+<a id="__codelineno-0-1743" name="__codelineno-0-1743"></a><span class="sd">            False</span>
+<a id="__codelineno-0-1744" name="__codelineno-0-1744"></a><span class="sd">            &gt;&gt;&gt; ax.get_facecolor()</span>
+<a id="__codelineno-0-1745" name="__codelineno-0-1745"></a><span class="sd">            (0.0, 0.0, 0.0, 1.0)</span>
+<a id="__codelineno-0-1746" name="__codelineno-0-1746"></a>
+<a id="__codelineno-0-1747" name="__codelineno-0-1747"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-1748" name="__codelineno-0-1748"></a><span class="sd">        - A custom `facecolor` is applied to both the axes and the figure:</span>
+<a id="__codelineno-0-1749" name="__codelineno-0-1749"></a><span class="sd">            ```python</span>
+<a id="__codelineno-0-1750" name="__codelineno-0-1750"></a><span class="sd">            &gt;&gt;&gt; import matplotlib.pyplot as plt</span>
+<a id="__codelineno-0-1751" name="__codelineno-0-1751"></a><span class="sd">            &gt;&gt;&gt; from cleopatra.styling.styles import apply_blank_canvas</span>
+<a id="__codelineno-0-1752" name="__codelineno-0-1752"></a><span class="sd">            &gt;&gt;&gt; fig, ax = plt.subplots()</span>
+<a id="__codelineno-0-1753" name="__codelineno-0-1753"></a><span class="sd">            &gt;&gt;&gt; _ = apply_blank_canvas(ax, facecolor="navy")</span>
+<a id="__codelineno-0-1754" name="__codelineno-0-1754"></a><span class="sd">            &gt;&gt;&gt; ax.get_facecolor()</span>
+<a id="__codelineno-0-1755" name="__codelineno-0-1755"></a><span class="sd">            (0.0, 0.0, 0.5019607843137255, 1.0)</span>
+<a id="__codelineno-0-1756" name="__codelineno-0-1756"></a>
+<a id="__codelineno-0-1757" name="__codelineno-0-1757"></a><span class="sd">            ```</span>
+<a id="__codelineno-0-1758" name="__codelineno-0-1758"></a>
+<a id="__codelineno-0-1759" name="__codelineno-0-1759"></a><span class="sd">    See Also:</span>
+<a id="__codelineno-0-1760" name="__codelineno-0-1760"></a><span class="sd">        cleopatra.basemap.geo.REFERENCE_MAP_STYLES: A less minimal chrome preset</span>
+<a id="__codelineno-0-1761" name="__codelineno-0-1761"></a><span class="sd">            (visible coastlines, ticks, and a frame) for a flat map.</span>
+<a id="__codelineno-0-1762" name="__codelineno-0-1762"></a><span class="sd">    """</span>
+<a id="__codelineno-0-1763" name="__codelineno-0-1763"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
+<a id="__codelineno-0-1764" name="__codelineno-0-1764"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+<a id="__codelineno-0-1765" name="__codelineno-0-1765"></a>    <span class="k">for</span> <span class="n">spine</span> <span class="ow">in</span> <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+<a id="__codelineno-0-1766" name="__codelineno-0-1766"></a>        <span class="n">spine</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-0-1767" name="__codelineno-0-1767"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="n">facecolor</span><span class="p">)</span>
+<a id="__codelineno-0-1768" name="__codelineno-0-1768"></a>    <span class="n">ax</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="n">facecolor</span><span class="p">)</span>
+<a id="__codelineno-0-1769" name="__codelineno-0-1769"></a>    <span class="k">return</span> <span class="n">ax</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
