@@ -16,13 +16,36 @@ from matplotlib.image import AxesImage
 from matplotlib.lines import Line2D
 from PIL import Image, UnidentifiedImageError
 
-from cleopatra.styling.palettes import CAMS_AOD_COLORMAPS, FLAME_COLORMAPS, HAZE_COLORMAPS  # noqa: F401
+from cleopatra.styling.palettes import CAMS_AOD_COLORMAPS, FLAME_COLORMAPS, HAZE_COLORMAPS
 from cleopatra.styling.perceptual import perceptual_colormap
 from cleopatra.styling.styles import (
     disjoint_legend,
     swatch_extend_prefixes,
     swatch_legend,
 )
+
+__all__ = [
+    "CAMS_AOD_COLORMAPS",
+    "FLAME_COLORMAPS",
+    "HAZE_COLORMAPS",
+    "GLOW_OPTION_KEYS",
+    "DATA_STYLES",
+    "Colors",
+    "add_line_glow",
+    "alpha_rgba",
+    "alpha_scaled_image",
+    "alpha_scaled_mesh",
+    "apply_data_style",
+    "build_log_norm",
+    "category_boundaries",
+    "convert_units",
+    "resolve_colormap",
+    "resolve_glow_options",
+    "resolve_single_layer_style",
+    "resolve_style_norm",
+    "resolve_style_overrides",
+    "style_for_parameter",
+]
 
 
 def _require_cmap(action: str) -> None:
