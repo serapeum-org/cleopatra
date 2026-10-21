@@ -39,14 +39,14 @@ jobs:
           verify-lock: true
 
       - name: Build wheel
-        run: uv run --active --frozen --no-build python -m build --wheel --outdir dist/
+        run: uv run --active --frozen --no-build --no-sync python -m build --wheel --outdir dist/
 
       - name: Verify package layout in wheel
         # A src-layout or packaging regression that dropped a subpackage would
         # still build an installable but empty wheel; check that the package
         # root and each top-level subpackage are present.
         run: |
-          LISTING=$(uv run --active --frozen --no-build python -m zipfile -l dist/*.whl)
+          LISTING=$(uv run --active --frozen --no-build --no-sync python -m zipfile -l dist/*.whl)
           echo "$LISTING" | grep "cleopatra/__init__.py"
           echo "$LISTING" | grep "cleopatra/glyphs/__init__.py"
           echo "$LISTING" | grep "cleopatra/styling/__init__.py"

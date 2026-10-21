@@ -78,7 +78,7 @@ jobs:
         # a GUI window; -p no:cacheprovider disables the pytest cache plugin.
         env:
           MPLBACKEND: Agg
-        run: uv run --active --frozen --no-build --extra tiles --extra science-colors pytest --doctest-modules src/cleopatra -p no:cacheprovider
+        run: uv run --active --frozen --no-build --no-sync --extra tiles --extra science-colors pytest --doctest-modules src/cleopatra -p no:cacheprovider
 
   # The repo's secret gate. gitleaks is the single secret scanner. There is a
   # local gitleaks pre-commit hook, but that only scans staged diffs; this job
