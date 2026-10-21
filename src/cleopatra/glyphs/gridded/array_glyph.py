@@ -5273,7 +5273,15 @@ class ArrayGlyph(GeoMixin, Glyph):
             # Only re-lay-out a figure cleopatra created; a caller's figure is
             # theirs to arrange.
             if owns_figure:
-                fig.tight_layout()
+                if span_shared_bar and cbar is not None:
+                    # The shared bar is a non-gridspec `make_axes` artist;
+                    # `tight_layout` re-expands the gridspec panels back over it
+                    # (and warns that the result "might be incorrect").
+                    # Constrained layout places the panels and the spanning bar
+                    # together in a gutter, without overlap or the warning.
+                    fig.set_layout_engine("constrained")
+                else:
+                    fig.tight_layout()
         except Exception:
             # Roll back what cleopatra created: close a figure it owns; on a
             # caller's host, remove the subplots it added (but never touch
