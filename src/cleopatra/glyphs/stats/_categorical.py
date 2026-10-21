@@ -79,7 +79,8 @@ def resolve_category_colors(
         list: Exactly `n` colours, in category order.
 
     Raises:
-        ValueError: If `colors` is given and its length is not `n`.
+        ValueError: If `colors` is given and its length is not `n`, or if
+            `palette` is not a registered palette name.
 
     Examples:
         - Palette swatches are cycled to the requested length:
@@ -105,5 +106,10 @@ def resolve_category_colors(
                 f"colors ({len(colors)}) must match the number of categories ({n})."
             )
         return colors
-    swatches = list(get_palette(palette).colors)
+    try:
+        swatches = list(get_palette(palette).colors)
+    except KeyError as exc:
+        # get_palette raises KeyError for an unknown name; re-raise as ValueError
+        # so callers see the same exception type as every other validation here.
+        raise ValueError(f"unknown palette {palette!r}.") from exc
     return [swatches[i % len(swatches)] for i in range(n)]

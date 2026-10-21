@@ -105,6 +105,11 @@ class TestBarGlyphPlot:
         with pytest.raises(ValueError, match="must match the number of categories"):
             BarGlyph(["a", "b"], [1.0, 2.0]).plot(colors=["#f00"])
 
+    def test_unknown_palette_raises_valueerror(self):
+        """An unknown palette name raises ValueError, not a bare KeyError."""
+        with pytest.raises(ValueError, match="unknown palette"):
+            BarGlyph(["a", "b"], [1.0, 2.0], palette="does_not_exist").plot()
+
     def test_horizontal_draws_barh(self):
         """horizontal=True draws bars whose widths (not heights) carry the values."""
         _, _, bars = BarGlyph(["a", "b"], [3.0, 7.0], horizontal=True).plot()
