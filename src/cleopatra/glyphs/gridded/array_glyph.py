@@ -4989,7 +4989,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 is smaller than `nrows x ncols`.
         """
         if isinstance(axes, SubplotSpec):
-            host = cast(GridSpec, axes.get_gridspec()).figure
+            host = cast(Any, axes.get_gridspec()).figure
             if host is None:
                 raise ValueError(
                     "the supplied SubplotSpec is not attached to a figure; build "
@@ -4999,7 +4999,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 nrows, ncols, subplot_spec=axes
             )
         else:
-            host = cast(GridSpec, axes).figure
+            host = cast(Any, axes).figure
             if host is None:
                 raise ValueError(
                     "the supplied grid spec is not attached to a figure; build it "

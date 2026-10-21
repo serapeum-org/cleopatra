@@ -24,6 +24,7 @@ on:
 jobs:
   build-wheel:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -61,6 +62,7 @@ jobs:
   test-wheel-core:
     needs: build-wheel
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -107,6 +109,7 @@ jobs:
   test-wheel-extras:
     needs: build-wheel
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:

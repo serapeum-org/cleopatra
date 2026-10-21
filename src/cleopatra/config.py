@@ -15,8 +15,6 @@ discoverable place:
 import logging
 import os
 from pathlib import Path
-from typing import cast
-
 import matplotlib
 
 logger = logging.getLogger(__name__)
@@ -161,4 +159,4 @@ def is_notebook() -> bool:
     # Only Jupyter / qtconsole report "ZMQInteractiveShell"; a terminal IPython
     # ("TerminalInteractiveShell") or any other environment is not a notebook.
     shell = get_ipython().__class__.__name__
-    return cast(bool, shell == "ZMQInteractiveShell")
+    return shell == "ZMQInteractiveShell"
