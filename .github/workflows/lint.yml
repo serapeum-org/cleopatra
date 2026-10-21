@@ -70,7 +70,7 @@ jobs:
         with:
           version: '0.12.1'
           python-version: "3.12"
-          install-groups: "groups: dev"
+          install-groups: "groups: dev, extras: tiles science-colors"
           verify-lock: true
 
       - name: Doctests (src)
@@ -78,7 +78,7 @@ jobs:
         # a GUI window; -p no:cacheprovider disables the pytest cache plugin.
         env:
           MPLBACKEND: Agg
-        run: uv run --active --frozen --no-build --extra tiles --extra science-colors pytest --doctest-modules src/cleopatra -p no:cacheprovider
+        run: uv run --active --frozen --no-build --no-sync pytest --doctest-modules src/cleopatra -p no:cacheprovider
 
   # The repo's secret gate. gitleaks is the single secret scanner. There is a
   # local gitleaks pre-commit hook, but that only scans staged diffs; this job
