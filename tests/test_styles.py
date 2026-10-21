@@ -371,6 +371,29 @@ class TestColorbarLegend:
         with pytest.raises(ValueError, match="determine an axes"):
             colorbar_legend(sm)
 
+    def test_sequence_of_axes_spans_them(self):
+        """A sequence of axes makes one bar span them all (#389).
+
+        Test scenario:
+            Passing a list of axes draws a single colorbar that steals space
+            from every axes in the list, so the figure gains exactly one
+            colorbar axis for the three panels, and its label forwards.
+        """
+        fig, axes = plt.subplots(1, 3)
+        try:
+            sc = axes[0].scatter([0, 1], [0, 1], c=[1.0, 2.0])
+            cbar = colorbar_legend(sc, list(axes), label="t")
+            assert isinstance(cbar, Colorbar), f"expected Colorbar, got {type(cbar)}"
+            assert cbar.ax.get_ylabel() == "t", (
+                f"label should forward, got {cbar.ax.get_ylabel()!r}"
+            )
+            cbar_axes = [a for a in fig.axes if a.get_label() == "<colorbar>"]
+            assert len(cbar_axes) == 1, (
+                f"one shared colorbar axis expected, got {len(cbar_axes)}"
+            )
+        finally:
+            plt.close(fig)
+
 
 class TestHistogramLegend:
     """Tests for cleopatra.styling.styles.histogram_legend (T5.3c)."""
