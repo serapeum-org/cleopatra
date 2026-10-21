@@ -139,6 +139,21 @@ class TestPieGlyphPlot:
         out_fig, out_ax, _ = PieGlyph(["a", "b"], [1.0, 1.0]).plot(ax=ax)
         assert out_ax is ax and out_fig is fig
 
+    def test_replot_on_same_axes_replaces_not_stacks(self):
+        """Re-plotting the same glyph clears its prior wedges instead of stacking."""
+        fig, ax = plt.subplots()
+        glyph = PieGlyph(["a", "b"], [1.0, 1.0])
+        glyph.plot(ax=ax)
+        glyph.plot(ax=ax)
+        assert len(ax.patches) == 2, "re-plot should replace, not stack, the wedges"
+
+    def test_compose_overlays_other_glyph_on_shared_axes(self):
+        """compose=True keeps the other glyph's wedges on a shared axes."""
+        fig, ax = plt.subplots()
+        PieGlyph(["a", "b"], [1.0, 1.0]).plot(ax=ax)
+        PieGlyph(["c", "d"], [1.0, 1.0]).plot(ax=ax, compose=True)
+        assert len(ax.patches) == 4, "compose should overlay, keeping both glyphs' wedges"
+
     def test_uses_construction_axes_when_plot_ax_omitted(self):
         """An axes given at construction is used when plot() gets no ax."""
         fig, ax = plt.subplots()

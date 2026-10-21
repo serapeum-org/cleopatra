@@ -31,7 +31,12 @@ from matplotlib.axes import Axes
 from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 
-from cleopatra.glyphs.base.glyph import Glyph, _root_figure
+from cleopatra.glyphs.base.glyph import (
+    Glyph,
+    _clear_prior_render_artists,
+    _mark_render_artists,
+    _root_figure,
+)
 from cleopatra.glyphs.stats._categorical import (
     resolve_categories,
     resolve_category_colors,
@@ -120,6 +125,7 @@ class BarGlyph(Glyph):
         ylabel: str | None = None,
         colors: Sequence | None = None,
         add_legend: bool | None = None,
+        compose: bool = False,
     ) -> tuple[Figure, Axes, BarContainer]:
         """Draw the categorical bar chart.
 
@@ -134,6 +140,12 @@ class BarGlyph(Glyph):
                 construction, else the palette.
             add_legend: Draw a disjoint category->colour legend. Defaults to
                 None, which keeps the `add_legend` option set at construction.
+            compose: Draw *over* whatever is already on the axes instead of
+                replacing it, by default `False`. `False` clears every glyph's
+                prior render artists from the axes first (so a re-plot replaces
+                rather than stacks); `True` clears only this glyph's own, so the
+                bars layer onto a shared axes -- the same opt-in the other glyphs
+                expose.
 
         Returns:
             tuple[Figure, Axes, BarContainer]: The figure, the axes, and the
@@ -177,10 +189,12 @@ class BarGlyph(Glyph):
         palette_colors = resolve_category_colors(
             len(self.categories), chosen, opts["palette"]
         )
+        _clear_prior_render_artists(ax, self, compose=compose)
         if opts["horizontal"]:
             self.bars = ax.barh(self.categories, self.values, color=palette_colors)
         else:
             self.bars = ax.bar(self.categories, self.values, color=palette_colors)
+        _mark_render_artists(ax, self, *self.bars)
 
         if opts["title"]:
             ax.set_title(opts["title"], fontsize=opts["title_size"])

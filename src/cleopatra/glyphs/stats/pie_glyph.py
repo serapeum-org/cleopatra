@@ -26,7 +26,12 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.patches import Wedge
 
-from cleopatra.glyphs.base.glyph import Glyph, _root_figure
+from cleopatra.glyphs.base.glyph import (
+    Glyph,
+    _clear_prior_render_artists,
+    _mark_render_artists,
+    _root_figure,
+)
 from cleopatra.glyphs.stats._categorical import (
     resolve_categories,
     resolve_category_colors,
@@ -115,6 +120,7 @@ class PieGlyph(Glyph):
         colors: Sequence | None = None,
         autopct: str | None | _Unset = _UNSET,
         add_legend: bool | None = None,
+        compose: bool = False,
     ) -> tuple[Figure, Axes, list[Wedge]]:
         """Draw the categorical pie chart.
 
@@ -131,6 +137,11 @@ class PieGlyph(Glyph):
             add_legend: Draw a disjoint category->colour legend instead of
                 labelling the wedges. Defaults to None, which keeps the
                 `add_legend` option set at construction.
+            compose: Draw *over* whatever is already on the axes instead of
+                replacing it, by default `False`. `False` clears every glyph's
+                prior render artists first (so a re-plot replaces rather than
+                stacks the wedges/labels); `True` clears only this glyph's own,
+                so the pie layers onto a shared axes.
 
         Returns:
             tuple[Figure, Axes, list[Wedge]]: The figure, the axes, and the
@@ -167,10 +178,15 @@ class PieGlyph(Glyph):
         # them); without one, each wedge is labelled in place.
         labels = None if draw_legend else self.categories
 
-        wedges, *_ = ax.pie(
+        _clear_prior_render_artists(ax, self, compose=compose)
+        rendered = ax.pie(
             self.values, labels=labels, colors=palette_colors, autopct=pct
         )
-        self.wedges = wedges
+        self.wedges = rendered[0]
+        # `ax.pie` returns (wedges, texts) or (wedges, texts, autotexts); mark
+        # every artist it made so a re-plot clears the labels/percentages too,
+        # not just the wedges.
+        _mark_render_artists(ax, self, *(a for group in rendered for a in group))
         ax.set_aspect("equal")
 
         if opts["title"]:

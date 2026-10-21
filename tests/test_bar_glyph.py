@@ -138,6 +138,28 @@ class TestBarGlyphPlot:
         assert out_ax is ax, "the supplied axes should be used"
         assert out_fig is fig, "its figure should be returned"
 
+    def test_replot_on_same_axes_replaces_not_stacks(self):
+        """Re-plotting the same glyph clears its prior bars instead of stacking."""
+        fig, ax = plt.subplots()
+        glyph = BarGlyph(["a", "b", "c"], [1.0, 2.0, 3.0])
+        glyph.plot(ax=ax)
+        glyph.plot(ax=ax)
+        assert len(ax.patches) == 3, "re-plot should replace, not stack, the bars"
+
+    def test_default_replaces_other_glyph_on_shared_axes(self):
+        """A second bar glyph with no compose clears the first glyph's bars."""
+        fig, ax = plt.subplots()
+        BarGlyph(["a", "b"], [1.0, 2.0]).plot(ax=ax)
+        BarGlyph(["c", "d", "e"], [3.0, 4.0, 5.0]).plot(ax=ax)
+        assert len(ax.patches) == 3, "default clears the prior glyph's bars"
+
+    def test_compose_overlays_other_glyph_on_shared_axes(self):
+        """compose=True keeps the other glyph's bars on a shared axes."""
+        fig, ax = plt.subplots()
+        BarGlyph(["a", "b"], [1.0, 2.0]).plot(ax=ax)
+        BarGlyph(["c", "d"], [3.0, 4.0]).plot(ax=ax, compose=True)
+        assert len(ax.patches) == 4, "compose should overlay, keeping both glyphs' bars"
+
     def test_uses_construction_axes_when_plot_ax_omitted(self):
         """An axes given at construction is used when plot() gets no ax."""
         fig, ax = plt.subplots()
