@@ -3097,10 +3097,10 @@ class TestPlotVectorField:
         )
         assert ax.get_title() == "Flow", f"got title {ax.get_title()!r}"
 
-    def test_add_colorbar_false_suppresses_colorbar(self, triangle_glyph):
-        """add_colorbar=False keeps the figure to the single plot axes."""
+    def test_colorbar_false_suppresses_colorbar(self, triangle_glyph):
+        """colorbar=False keeps the figure to the single plot axes."""
         fig, ax, im = triangle_glyph.plot_vector_field(
-            np.array([1.0, 2.0]), np.array([0.0, 0.0]), add_colorbar=False
+            np.array([1.0, 2.0]), np.array([0.0, 0.0]), colorbar=False
         )
         assert len(fig.axes) == 1, "no colorbar axes should be added"
 

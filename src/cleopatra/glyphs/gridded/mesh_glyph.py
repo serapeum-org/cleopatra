@@ -1665,7 +1665,6 @@ class MeshGlyph(GeoMixin, Glyph):
         location: str = "face",
         ax: Any = None,
         title: str | None = None,
-        add_colorbar: bool | None = None,
         colorbar: bool | ColorBar | None = None,
         color: ColorScaling | None = None,
         contour: Contour | None = None,
@@ -1711,12 +1710,12 @@ class MeshGlyph(GeoMixin, Glyph):
                 figure/axes created by the delegate (honouring a `figsize=`
                 passed through `**kwargs`).
             title: Plot title, applied by the delegate.
-            add_colorbar: True draws the magnitude colorbar, False suppresses
-                it. Default None leaves the decision to the delegate's
-                contract: on for a standalone render, off under `compose=True`
-                unless `colorbar=` asks for one.
-            colorbar: Typed `ColorBar` spec (or `True`/`False`/`None`) for the
-                colorbar's placement, caption, and sizing.
+            colorbar: Draw the magnitude colorbar. `None` (default) leaves
+                the decision to the delegate's contract: on for a standalone
+                render, off under `compose=True`; `True` or a typed `ColorBar`
+                spec (placement / caption / sizing) always draws one, even
+                composing; `False` suppresses it -- the same contract as
+                `plot`.
             color: Colour-scale group object
                 (`cleopatra.styling.scaling.ColorScaling`) applied to the
                 magnitude, e.g. `ColorScaling.power(gamma=0.5)` -- the same
@@ -1975,7 +1974,6 @@ class MeshGlyph(GeoMixin, Glyph):
             kind=kind,
             ax=target_ax,
             title=title,
-            add_colorbar=add_colorbar,
             colorbar=colorbar,
             color=color,
             contour=contour,
