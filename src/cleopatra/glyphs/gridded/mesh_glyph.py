@@ -1826,6 +1826,17 @@ class MeshGlyph(GeoMixin, Glyph):
             raise ValueError(
                 f"u/v length ({len(u)}) does not match n_{location}s ({expected})."
             )
+        # The delegate's own strict check only sees **kwargs headed for its
+        # options dict; a key naming one of its constructor parameters (fig)
+        # would silently bind instead of raising, abandoning the caller's
+        # figure. Enforce the documented unknown-keys-raise contract here.
+        unknown = set(kwargs) - VectorGlyph.option_keys()
+        if unknown:
+            raise ValueError(
+                f"plot_vector_field got unknown option(s): "
+                f"{', '.join(sorted(unknown))}. Valid keys are the VectorGlyph "
+                f"options; bind a figure via ax= or at construction instead."
+            )
 
         if location == "face":
             centroids = self.face_centroids

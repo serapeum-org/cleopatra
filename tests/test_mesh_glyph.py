@@ -2684,11 +2684,27 @@ class TestPlotVectorField:
             )
 
     def test_unknown_option_kwarg_raises(self, triangle_glyph):
-        """A kwarg that is no VectorGlyph option raises, not silently ignored."""
-        with pytest.raises(ValueError):
+        """A kwarg that is no VectorGlyph option raises, naming the key."""
+        with pytest.raises(ValueError, match="bogus_option"):
             triangle_glyph.plot_vector_field(
                 np.array([1.0, 2.0]), np.array([0.0, 0.0]), bogus_option=1
             )
+
+    def test_fig_kwarg_rejected_not_swallowed(self, triangle_glyph):
+        """fig= through **kwargs raises instead of abandoning the figure.
+
+        Test scenario:
+            fig is a named VectorGlyph constructor parameter, not an option,
+            so without a mesh-side guard it slips past the strict
+            unknown-kwarg check and the caller's figure is silently left
+            empty. The documented contract is that unknown keys raise.
+        """
+        my_fig = plt.figure()
+        with pytest.raises(ValueError, match="fig"):
+            triangle_glyph.plot_vector_field(
+                np.array([1.0, 2.0]), np.array([0.0, 0.0]), fig=my_fig
+            )
+        assert len(my_fig.axes) == 0, "the rejected figure is left untouched"
 
     def test_partial_nan_component_still_renders(self, triangle_glyph):
         """A NaN in one face's component masks that arrow, not the render.
