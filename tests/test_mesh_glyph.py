@@ -18,6 +18,7 @@ from matplotlib.colors import to_rgba
 from matplotlib.quiver import Barbs, Quiver
 from matplotlib.text import Text
 
+import cleopatra.basemap.reference as refmod
 from cleopatra.glyphs.base.glyph import _stash_projection_frame
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
@@ -2651,6 +2652,34 @@ class TestPlotVectorField:
         )
         assert ax2 is ax
         assert len(ax.collections) == n_artists + 1, "outline stays, arrows add"
+
+    def test_compose_over_add_relief_backdrop(self, triangle_glyph, monkeypatch):
+        """Arrows compose over an add_relief backdrop (issue #397 DoD).
+
+        Test scenario:
+            reference.add_relief is spied to draw a real image artist, as the
+            delegation tests in test_geo do (the network fetch is out of
+            scope). The backdrop image and the mesh render must both survive
+            a composed vector render, with the arrows on the shared axes.
+        """
+        monkeypatch.setattr(
+            refmod,
+            "add_relief",
+            lambda ax, *a, **k: (
+                ax.imshow(np.zeros((2, 2)), extent=(0.0, 1.5, 0.0, 1.0)),
+                ax,
+            )[1],
+        )
+        fig, ax = triangle_glyph.plot(np.array([1.0, 2.0]))
+        triangle_glyph.add_relief("low")
+        assert len(ax.images) == 1, "the spied add_relief drew the backdrop"
+        backdrop = ax.images[0]
+        fig2, ax2, im = triangle_glyph.plot_vector_field(
+            np.array([0.3, -0.2]), np.array([0.1, 0.4]), compose=True
+        )
+        assert backdrop in ax.images, "the relief backdrop survives the overlay"
+        assert triangle_glyph.im.axes is ax, "the mesh render survives the overlay"
+        assert im in ax.collections, "the arrows landed on the shared axes"
 
     def test_plain_render_replaces_mesh(self, triangle_glyph):
         """compose=False keeps the replace-don't-orphan default."""
