@@ -2653,6 +2653,38 @@ class TestPlotVectorField:
         assert ax2 is ax
         assert len(ax.collections) == n_artists + 1, "outline stays, arrows add"
 
+    def test_node_location_composes_over_mesh(self, triangle_glyph):
+        """Node-located arrows compose over a filled mesh render.
+
+        Test scenario:
+            The node path and the compose path were only tested separately;
+            combined, the arrows must anchor at the nodes on the mesh's own
+            axes with the mesh render intact.
+        """
+        fig, ax = triangle_glyph.plot(np.array([1.0, 2.0]))
+        mesh_im = triangle_glyph.im
+        fig2, ax2, im = triangle_glyph.plot_vector_field(
+            np.ones(4), np.zeros(4), location="node", compose=True
+        )
+        assert ax2 is ax, "node-located arrows draw on the mesh axes"
+        assert im.N == 4, "one arrow per node"
+        assert mesh_im.axes is ax, "the mesh render survives the node overlay"
+
+    def test_face_quiver_on_mixed_mesh(self, mixed_glyph):
+        """The render path handles a mixed quad/triangle mesh end to end.
+
+        Test scenario:
+            Centroids of mixed meshes were covered property-level only; the
+            full render must draw one arrow per face, anchored at each face's
+            valid-node centroid, quad and triangles alike.
+        """
+        u = np.array([1.0, 0.5, -0.5])
+        v = np.array([0.0, 0.5, 1.0])
+        fig, ax, im = mixed_glyph.plot_vector_field(u, v)
+        assert im.N == 3, "one arrow per face, quad included"
+        anchors = np.column_stack([im.X, im.Y])
+        np.testing.assert_allclose(anchors, mixed_glyph.face_centroids)
+
     def test_compose_over_add_relief_backdrop(self, triangle_glyph, monkeypatch):
         """Arrows compose over an add_relief backdrop (issue #397 DoD).
 
