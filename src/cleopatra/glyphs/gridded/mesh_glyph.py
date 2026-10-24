@@ -1733,6 +1733,9 @@ class MeshGlyph(GeoMixin, Glyph):
                 `"face"`/`"node"`, `u`/`v` are not 1D of equal length matching
                 the location's element count, `thin` is not a positive
                 integer, or a `**kwargs` key is not a `VectorGlyph` option.
+                A rejected call raises before anything on the axes is
+                touched: the existing render -- mesh, arrows, and colorbars
+                alike -- survives unchanged.
 
         Examples:
             - Arrows at the face centroids of a two-triangle mesh:
