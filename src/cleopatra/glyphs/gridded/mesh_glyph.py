@@ -57,6 +57,7 @@ from cleopatra.glyphs.base.glyph import (
     _clear_projection_frame,
     _mark_render_artists,
     _restore_flat_axes,
+    _root_figure,
     _stash_projection_frame,
 )
 from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_faces
@@ -1849,7 +1850,7 @@ class MeshGlyph(GeoMixin, Glyph):
 
         if ax is not None:
             self.ax = ax
-            self.fig = ax.get_figure()
+            self.fig = _root_figure(ax)
         elif self.fig is not None and self.ax is None:
             # A figure was bound without an axes: draw into the caller's
             # figure (its first axes, or a fresh one), as `plot` does.
