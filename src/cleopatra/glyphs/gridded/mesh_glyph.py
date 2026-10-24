@@ -1737,6 +1737,10 @@ class MeshGlyph(GeoMixin, Glyph):
                 with `colorbar=True`) even when they live on another axes.
                 `False` keeps the replace-don't-orphan default every glyph
                 render has: the axes is cleared of all glyph artists first.
+                Either way the render applies the mesh convention of an equal
+                axes aspect, including to a foreign host it composes onto --
+                the same "a composed overlay still applies its own aspect"
+                contract `plot` documents.
             **kwargs: Overrides for the delegate `VectorGlyph`'s options
                 (`cmap`, `vmin`, `vmax`, `scale`, `cbar_label`, `figsize`,
                 ...). An unknown key raises `ValueError`.
