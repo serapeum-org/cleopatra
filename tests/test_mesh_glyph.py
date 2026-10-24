@@ -2643,6 +2643,83 @@ class TestPlotVectorField:
         quivers = [c for c in ax.collections if isinstance(c, Quiver)]
         assert quivers == [im], "an all-NaN re-render must keep the arrows"
 
+    def test_repeated_composed_colorbar_keeps_host_size(self, triangle_glyph):
+        """Re-rendering a composed field with its colorbar keeps the host size.
+
+        Test scenario:
+            Each compose=True, colorbar=True re-render replaces the previous
+            arrows and bar; the host axes position must be stable across the
+            replacements, not shrink monotonically as each new bar steals
+            space before the old one returns its own.
+        """
+        fig, ax = triangle_glyph.plot(np.array([1.0, 2.0]))
+        u, v = np.array([0.3, -0.2]), np.array([0.1, 0.4])
+        triangle_glyph.plot_vector_field(u, v, compose=True, colorbar=True)
+        first = np.array(ax.get_position().bounds)
+        for _ in range(3):
+            triangle_glyph.plot_vector_field(u, v, compose=True, colorbar=True)
+        np.testing.assert_allclose(
+            np.array(ax.get_position().bounds),
+            first,
+            atol=1e-3,
+            err_msg="repeated composed colorbar renders must not shrink the host",
+        )
+
+    def test_composed_recall_on_other_axes_does_not_stack(self, triangle_glyph):
+        """Switching ax= between composed calls never stacks two fields.
+
+        Test scenario:
+            The glyph tracks a single current field: compose on ax1, then
+            ax2, then back on ax1 must leave exactly the latest arrows alive
+            (on ax1) and none elsewhere -- not two stacked generations on ax1.
+        """
+        fig, (ax1, ax2) = plt.subplots(1, 2)
+        u, v = np.array([0.3, -0.2]), np.array([0.1, 0.4])
+        triangle_glyph.plot_vector_field(u, v, ax=ax1, compose=True)
+        triangle_glyph.plot_vector_field(u, v, ax=ax2, compose=True)
+        fig3, ax3, im3 = triangle_glyph.plot_vector_field(-u, -v, ax=ax1, compose=True)
+        quivers1 = [c for c in ax1.collections if isinstance(c, Quiver)]
+        assert quivers1 == [im3], "only the latest field lives on ax1"
+        quivers2 = [c for c in ax2.collections if isinstance(c, Quiver)]
+        assert quivers2 == [], "the ax2 generation was replaced, not orphaned"
+
+    def test_rejected_call_leaves_glyph_binding_unchanged(self, triangle_glyph):
+        """A rejected call does not rebind the glyph to the rejected target.
+
+        Test scenario:
+            After plot() bound the glyph to its own axes, a rejected
+            plot_vector_field(ax=other_ax, thin=0) must leave self.ax and
+            self.fig on the original render, or a later plot(data) silently
+            lands on the rejected target.
+        """
+        fig, ax = triangle_glyph.plot(np.array([1.0, 2.0]))
+        other_fig, other_ax = plt.subplots()
+        with pytest.raises(ValueError, match="thin must be a positive integer"):
+            triangle_glyph.plot_vector_field(
+                np.array([0.3, -0.2]), np.array([0.1, 0.4]), ax=other_ax, thin=0
+            )
+        assert triangle_glyph.ax is ax, "the glyph stays bound to its own axes"
+        assert triangle_glyph.fig is fig, "the glyph stays bound to its own figure"
+
+    def test_rejected_call_keeps_bound_empty_figure_empty(self):
+        """A rejected call adds no stray axes to a construction-bound figure.
+
+        Test scenario:
+            With an empty figure bound at construction, a rejected call must
+            not have created the draw-target axes before validation raised.
+        """
+        fig = plt.figure()
+        mg = MeshGlyph(
+            np.array([0.0, 1.0, 0.5, 1.5]),
+            np.array([0.0, 0.0, 1.0, 1.0]),
+            np.array([[0, 1, 2], [1, 3, 2]]),
+            fig=fig,
+        )
+        with pytest.raises(ValueError, match="thin must be a positive integer"):
+            mg.plot_vector_field(np.array([1.0, 2.0]), np.zeros(2), thin=0)
+        assert len(fig.axes) == 0, "the bound empty figure stays empty"
+        assert mg.ax is None, "no axes was bound by the rejected call"
+
     def test_compose_over_outline(self, quad_with_edges):
         """Arrows compose over a wireframe outline."""
         fig, ax = quad_with_edges.plot_outline()

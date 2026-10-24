@@ -57,11 +57,10 @@ from cleopatra.glyphs.base.glyph import (
     _clear_projection_frame,
     _mark_render_artists,
     _restore_flat_axes,
-    _root_figure,
     _stash_projection_frame,
 )
 from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_faces
-from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph
+from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph, _validate_thin
 from cleopatra.styling.colorbar import ColorBar, _resolve_colorbar
 from cleopatra.styling.colors import (
     category_boundaries,
@@ -257,6 +256,14 @@ class MeshGlyph(GeoMixin, Glyph):
         #: restored after the reset -- so a style survives a later plain
         #: `plot(data)` (sticky + clearable, like `ArrayGlyph`).
         self._style_state = self.default_options.get("style")
+        #: `(host_axes, pre-steal bounds)` captured when the most recent
+        #: composed `plot_vector_field` drew its own colorbar, else `None`.
+        #: On a multi-axes figure `create_color_bar` takes matplotlib's
+        #: `make_axes` path, whose `Colorbar.remove()` never hands the stolen
+        #: layout space back -- so when a composed re-render clears the
+        #: previous overlay bar, the host is restored from this record or
+        #: repeated re-renders would shrink it monotonically.
+        self._vector_host_bounds: tuple[Any, Any] | None = None
         #: Sticky `projection` preset (like `_style_state`): restored after the
         #: `plot()` options reset so a constructor-time `projection=` survives a
         #: later plain `plot(data)`.
@@ -1711,10 +1718,12 @@ class MeshGlyph(GeoMixin, Glyph):
                 replacing it, by default `False`. `True` keeps the host
                 layers -- a filled `plot` render, a `plot_outline` wireframe,
                 or `add_tiles`/`add_relief` backdrops -- and layers the arrows
-                on top; a repeated composed call replaces only the previous
-                arrows. `False` keeps the replace-don't-orphan default every
-                glyph render has: the axes is cleared of all glyph artists
-                first.
+                on top. The glyph tracks a single current field, so a
+                repeated composed call replaces the previous call's arrows
+                (and the colorbar they brought, if any -- ask for a new one
+                with `colorbar=True`) even when they live on another axes.
+                `False` keeps the replace-don't-orphan default every glyph
+                render has: the axes is cleared of all glyph artists first.
             **kwargs: Overrides for the delegate `VectorGlyph`'s options
                 (`cmap`, `vmin`, `vmax`, `scale`, `cbar_label`, `figsize`,
                 ...). An unknown key raises `ValueError`.
@@ -1844,6 +1853,22 @@ class MeshGlyph(GeoMixin, Glyph):
                 f"{', '.join(sorted(unknown))}. Valid keys are the VectorGlyph "
                 f"options; bind a figure via ax= or at construction instead."
             )
+        # Hoist the remaining delegate-side validations so every documented
+        # rejection fires before any glyph state, figure, or artist is
+        # touched: thin (the delegate checks it only inside plot), the cmap
+        # name, and the all-NaN magnitude case, which the delegate's
+        # _resolve_limits rejects only when vmin/vmax are unpinned.
+        thin_value = 1 if thin is None else thin
+        _validate_thin(thin_value, kind)
+        if "cmap" in kwargs:
+            resolve_colormap(kwargs["cmap"])
+        if kwargs.get("vmin") is None or kwargs.get("vmax") is None:
+            if not np.isfinite(np.hypot(u, v)).any():
+                raise ValueError(
+                    "Cannot determine vmin/vmax: no finite values. Pass "
+                    "explicit vmin/vmax, or components with at least one "
+                    "finite entry."
+                )
 
         if location == "face":
             centroids = self.face_centroids
@@ -1851,37 +1876,61 @@ class MeshGlyph(GeoMixin, Glyph):
         else:
             anchor_x, anchor_y = self._node_x, self._node_y
 
+        # Resolve the render target locally; self.fig/self.ax are committed
+        # only after the delegate renders, so a failure between here and
+        # there never leaves the glyph rebound to a target it never drew on.
         if ax is not None:
-            self.ax = ax
-            self.fig = _root_figure(ax)
-        elif self.fig is not None and self.ax is None:
+            target_ax = ax
+        elif self.ax is not None:
+            target_ax = self.ax
+        elif self.fig is not None:
             # A figure was bound without an axes: draw into the caller's
-            # figure (its first axes, or a fresh one), as `plot` does.
-            self.ax = self.fig.axes[0] if self.fig.axes else self.fig.add_subplot(111)
-        # self.ax may still be None here; the delegate then creates the
-        # figure/axes (honouring a figsize= in kwargs) and the glyph adopts them.
+            # figure (its first axes, or a fresh one), as `plot` does. Runs
+            # after validation, so a rejected call adds no stray axes.
+            target_ax = (
+                self.fig.axes[0] if self.fig.axes else self.fig.add_subplot(111)
+            )
+        else:
+            # The delegate creates the figure/axes (honouring a figsize= in
+            # kwargs) and the glyph adopts them on success.
+            target_ax = None
 
-        delegate = VectorGlyph(
-            anchor_x, anchor_y, u, v, thin=1 if thin is None else thin, **kwargs
+        # Each call builds a fresh delegate, which owns its own arrow
+        # artists, so a composed re-render drops the previous call's arrows
+        # itself (a non-composed render clears every glyph's artists anyway).
+        # The clear runs on the previous delegate's own axes -- the glyph
+        # tracks a single current field, so the old arrows are replaced even
+        # when the call targets a different axes -- and it runs BEFORE the
+        # new render: the old colorbar must give its layout space back before
+        # the new one takes its own, or repeated re-renders shrink the host
+        # monotonically. Every documented rejection was validated above, so
+        # a rejected call still never reaches this point.
+        # Constructed before the clear: the constructor is the delegate's
+        # last validation surface (e.g. the grouped-kwarg redirects), and it
+        # must reject while the previous arrows are still intact.
+        delegate = VectorGlyph(anchor_x, anchor_y, u, v, thin=thin_value, **kwargs)
+        prev = self._vector_field_glyph
+        if compose and prev is not None and prev.ax is not None:
+            _clear_prior_render_artists(prev.ax, prev, compose=True)
+            # On a multi-axes figure the overlay bar was created through
+            # matplotlib's make_axes path, whose Colorbar.remove() gives no
+            # layout space back -- restore the host to the pre-steal position
+            # recorded when that bar was drawn.
+            if self._vector_host_bounds is not None:
+                host_ax, host_bounds = self._vector_host_bounds
+                if host_ax is prev.ax:
+                    host_ax.set_position(host_bounds)
+        pre_bounds = (
+            target_ax.get_position().frozen() if target_ax is not None else None
         )
         fig, ax_out, im = delegate.plot(
             kind=kind,
-            ax=self.ax,
+            ax=target_ax,
             title=title,
             add_colorbar=add_colorbar,
             colorbar=colorbar,
             compose=compose,
         )
-        # Each call builds a fresh delegate, which owns its own arrow artists.
-        # A composed re-render must therefore drop the previous call's arrows
-        # itself, or the two fields would stack; a non-composed render clears
-        # every glyph's artists anyway. The clear runs only now, after the
-        # delegate validated and rendered, so a rejected call (bad thin=,
-        # unknown option, all-NaN components) raises with the previous arrows
-        # still intact -- the delegate's own validate-before-clearing
-        # invariant, upheld across the delegation boundary.
-        if compose and self._vector_field_glyph is not None:
-            _clear_prior_render_artists(ax_out, self._vector_field_glyph, compose=True)
         if not compose:
             # A previous plot(..., projection=...) leaves a globe boundary/
             # graticule and a frozen, axis-off view that the glyph artist
@@ -1907,6 +1956,11 @@ class MeshGlyph(GeoMixin, Glyph):
             self.im = None
             self._cbar = None
         self._vector_field_glyph = delegate
+        self._vector_host_bounds = (
+            (ax_out, pre_bounds)
+            if compose and delegate.cbar is not None and pre_bounds is not None
+            else None
+        )
         self.fig, self.ax = fig, ax_out
         ax_out.set_aspect("equal")
         return fig, ax_out, im
