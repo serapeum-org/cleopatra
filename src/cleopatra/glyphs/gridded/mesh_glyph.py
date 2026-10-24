@@ -68,7 +68,7 @@ from cleopatra.styling.colors import (
     resolve_single_layer_style,
     resolve_style_norm,
 )
-from cleopatra.styling.params import Contour, DataStyle
+from cleopatra.styling.params import Classify, Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import disjoint_legend
@@ -1667,6 +1667,9 @@ class MeshGlyph(GeoMixin, Glyph):
         title: str | None = None,
         add_colorbar: bool | None = None,
         colorbar: bool | ColorBar | None = None,
+        color: ColorScaling | None = None,
+        contour: Contour | None = None,
+        classify: Classify | None = None,
         compose: bool = False,
         **kwargs: Any,
     ) -> tuple[plt.Figure, plt.Axes, Any]:
@@ -1714,6 +1717,16 @@ class MeshGlyph(GeoMixin, Glyph):
                 unless `colorbar=` asks for one.
             colorbar: Typed `ColorBar` spec (or `True`/`False`/`None`) for the
                 colorbar's placement, caption, and sizing.
+            color: Colour-scale group object
+                (`cleopatra.styling.scaling.ColorScaling`) applied to the
+                magnitude, e.g. `ColorScaling.power(gamma=0.5)` -- the same
+                grouped parameter `plot` and `VectorGlyph.plot` take.
+            contour: Discretisation group object
+                (`cleopatra.styling.params.Contour`); `Contour(levels=N)`
+                discretises the magnitude colour norm.
+            classify: Classification group object
+                (`cleopatra.styling.params.Classify`) for scheme-based
+                magnitude classes, forwarded to the delegate unchanged.
             compose: Draw *over* whatever is already on the axes instead of
                 replacing it, by default `False`. `True` keeps the host
                 layers -- a filled `plot` render, a `plot_outline` wireframe,
@@ -1929,6 +1942,9 @@ class MeshGlyph(GeoMixin, Glyph):
             title=title,
             add_colorbar=add_colorbar,
             colorbar=colorbar,
+            color=color,
+            contour=contour,
+            classify=classify,
             compose=compose,
         )
         if not compose:

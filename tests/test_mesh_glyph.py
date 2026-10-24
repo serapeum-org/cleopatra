@@ -14,7 +14,7 @@ import warnings
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
-from matplotlib.colors import to_rgba
+from matplotlib.colors import BoundaryNorm, PowerNorm, to_rgba
 from matplotlib.quiver import Barbs, Quiver
 from matplotlib.text import Text
 
@@ -2837,6 +2837,38 @@ class TestPlotVectorField:
             np.array([0.3, -0.2]), np.array([0.1, 0.4]), compose=True
         )
         assert triangle_glyph.im is mesh_im
+
+    def test_grouped_color_scaling_supported(self, triangle_glyph):
+        """color=ColorScaling.power applies a non-linear magnitude norm.
+
+        Test scenario:
+            The grouped colour-scale parameter must reach the delegate, or
+            non-linear magnitude mapping is unreachable from the mesh API.
+        """
+        fig, ax, im = triangle_glyph.plot_vector_field(
+            np.array([0.3, -0.2]),
+            np.array([0.1, 0.4]),
+            color=ColorScaling.power(gamma=0.5),
+        )
+        assert isinstance(im.norm, PowerNorm), (
+            f"the power colour scale should reach the arrows, got {im.norm!r}"
+        )
+
+    def test_loose_grouped_key_redirect_is_followable(self, triangle_glyph):
+        """The levels= redirect names contour=, and following it works.
+
+        Test scenario:
+            A loose levels= kwarg is rejected with a redirect to
+            contour=Contour(levels=...); that advice must be followable on
+            this method, not bounce into a second unknown-option error.
+        """
+        u, v = np.array([0.3, -0.2]), np.array([0.1, 0.4])
+        with pytest.raises(ValueError, match=r"contour=Contour\(levels=\.\.\.\)"):
+            triangle_glyph.plot_vector_field(u, v, levels=5)
+        fig, ax, im = triangle_glyph.plot_vector_field(u, v, contour=Contour(levels=5))
+        assert isinstance(im.norm, BoundaryNorm), (
+            f"the discretised magnitude norm should apply, got {im.norm!r}"
+        )
 
     def test_option_kwargs_forwarded(self, triangle_glyph):
         """VectorGlyph option overrides (cmap) pass through **kwargs."""
