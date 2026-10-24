@@ -2838,6 +2838,20 @@ class TestPlotVectorField:
         )
         assert triangle_glyph.im is mesh_im
 
+    def test_density_kwarg_rejected_as_dead(self, triangle_glyph):
+        """density= raises instead of being silently dead.
+
+        Test scenario:
+            density only affects streamplot, which this method refuses, so a
+            density= here could never act; a silent no-op would mislead (the
+            delegate warns about the mirrored thin-on-streamplot case for the
+            same reason). The error points at thin=.
+        """
+        with pytest.raises(ValueError, match="density.*thin"):
+            triangle_glyph.plot_vector_field(
+                np.array([1.0, 2.0]), np.array([0.0, 0.0]), density=5.0
+            )
+
     def test_grouped_color_scaling_supported(self, triangle_glyph):
         """color=ColorScaling.power applies a non-linear magnitude norm.
 

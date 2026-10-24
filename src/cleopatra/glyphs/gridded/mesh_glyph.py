@@ -1866,6 +1866,15 @@ class MeshGlyph(GeoMixin, Glyph):
                 f"{', '.join(sorted(unknown))}. Valid keys are the VectorGlyph "
                 f"options; bind a figure via ax= or at construction instead."
             )
+        if "density" in kwargs:
+            # density only affects streamplot, which this method refuses, so
+            # accepting it would be a silent no-op (the delegate warns about
+            # the mirrored thin-on-streamplot case for the same reason).
+            raise ValueError(
+                "density only affects kind='streamplot', which an "
+                "unstructured mesh does not support; use thin= to control "
+                "arrow density."
+            )
         # Hoist the remaining delegate-side validations so every documented
         # rejection fires before any glyph state, figure, or artist is
         # touched: thin (the delegate checks it only inside plot), the cmap
