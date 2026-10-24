@@ -1690,6 +1690,10 @@ class MeshGlyph(GeoMixin, Glyph):
             thin: Draw every `thin`-th element so a large mesh stays legible;
                 `None` (the default) draws them all. Must be a positive
                 integer.
+            location: Mesh element location the components live on:
+                `"face"` (the default) anchors one arrow per face at its
+                vertex centroid (`face_centroids`); `"node"` anchors one
+                arrow per node at the node coordinates.
             ax: Axes to draw on. If None, resolution priority is the axes
                 bound at construction or by a previous render > an axes
                 derived from a figure bound at construction > a new
