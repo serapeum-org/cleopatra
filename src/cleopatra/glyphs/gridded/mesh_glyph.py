@@ -1673,7 +1673,11 @@ class MeshGlyph(GeoMixin, Glyph):
 
         The field is drawn in the mesh's native (flat) coordinates: a
         `projection` preset applied by `plot` reprojects only the mesh render,
-        so combine a vector field with the plain mesh, not the globe.
+        so combine a vector field with the plain mesh, not the globe. A
+        *replacing* render (`compose=False`) after a globe `plot` therefore
+        removes the globe frame and restores the flat view -- the same
+        contract as `plot` with the projection cleared -- while a composed
+        overlay leaves the host frame untouched.
 
         Args:
             u: 1D x-components, one per face (`location="face"`) or per node
@@ -1875,6 +1879,25 @@ class MeshGlyph(GeoMixin, Glyph):
         # invariant, upheld across the delegation boundary.
         if compose and self._vector_field_glyph is not None:
             _clear_prior_render_artists(ax_out, self._vector_field_glyph, compose=True)
+        if not compose:
+            # A previous plot(..., projection=...) leaves a globe boundary/
+            # graticule and a frozen, axis-off view that the glyph artist
+            # registry never touches (the frame is tracked separately, see
+            # _stash_projection_frame). A replacing vector render is a
+            # non-projection render, so undo the frame exactly as plot() does
+            # when projection is cleared -- otherwise the flat-coordinate
+            # arrows sit invisibly inside the projected, axis-off viewport.
+            # Runs after the delegate rendered, so a rejected call leaves the
+            # globe render fully intact.
+            if _clear_projection_frame(ax_out):
+                _restore_flat_axes(
+                    ax_out,
+                    float(self._node_x.min()),
+                    float(self._node_x.max()),
+                    float(self._node_y.min()),
+                    float(self._node_y.max()),
+                    aspect="equal",
+                )
         self._vector_field_glyph = delegate
         self.fig, self.ax = fig, ax_out
         ax_out.set_aspect("equal")

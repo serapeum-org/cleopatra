@@ -18,6 +18,7 @@ from matplotlib.colors import to_rgba
 from matplotlib.quiver import Barbs, Quiver
 from matplotlib.text import Text
 
+from cleopatra.glyphs.base.glyph import _stash_projection_frame
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
 from cleopatra.styling.colorbar import ColorBar
@@ -2563,6 +2564,60 @@ class TestPlotVectorField:
         fig, ax, im = triangle_glyph.plot_vector_field(-u, -v, compose=True)
         quivers = [c for c in ax.collections if isinstance(c, Quiver)]
         assert quivers == [im], "only the latest arrow set remains on the axes"
+
+    @staticmethod
+    def _frame_axes():
+        """An axes carrying a stashed projection frame and its frozen view.
+
+        Mimics what `plot(..., projection="globe")` leaves behind: a boundary
+        artist tracked on `_cleo_projection_frame` (not in the glyph artist
+        registry), limits frozen to the orthographic radius, and the axis
+        turned off.
+        """
+        fig, ax = plt.subplots()
+        boundary = plt.Circle((0.0, 0.0), 6.4e6, fill=False)
+        ax.add_patch(boundary)
+        ax.set_xlim(-7e6, 7e6)
+        ax.set_ylim(-7e6, 7e6)
+        ax.set_axis_off()
+        _stash_projection_frame(ax, [boundary])
+        return fig, ax, boundary
+
+    def test_non_composed_render_restores_flat_view_after_projection(
+        self, triangle_glyph
+    ):
+        """A replacing vector render undoes a prior projection frame.
+
+        Test scenario:
+            After a globe render the axes holds a frame and a frozen,
+            axis-off, metre-scale view. A non-composed plot_vector_field is a
+            non-projection render, so -- like plot(projection=None) -- it must
+            remove the frame and re-frame the axes over the flat node bounds,
+            or the degree-scale arrows render as an invisible speck.
+        """
+        fig, ax, boundary = self._frame_axes()
+        fig2, ax2, im = triangle_glyph.plot_vector_field(
+            np.array([1.0, 2.0]), np.array([0.0, 0.0]), ax=ax
+        )
+        assert boundary not in ax.patches, "the projection frame is removed"
+        assert ax.axison, "the frozen axis-off state is undone"
+        assert ax.get_xlim()[1] < 100, (
+            f"the view is re-framed over the node bounds, got {ax.get_xlim()}"
+        )
+
+    def test_composed_render_leaves_projection_frame(self, triangle_glyph):
+        """compose=True leaves a host projection frame alone (documented).
+
+        Test scenario:
+            The docstring tells callers to combine vector fields with the
+            plain mesh, not the globe; a composed overlay must still not
+            destroy the host's frame behind its back.
+        """
+        fig, ax, boundary = self._frame_axes()
+        triangle_glyph.plot_vector_field(
+            np.array([1.0, 2.0]), np.array([0.0, 0.0]), ax=ax, compose=True
+        )
+        assert boundary in ax.patches, "a composed overlay keeps the host frame"
 
     def test_failed_composed_recall_keeps_previous_arrows(self, triangle_glyph):
         """A composed re-render that fails validation must not wipe the arrows.
