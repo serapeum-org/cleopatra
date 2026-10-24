@@ -1790,7 +1790,12 @@ class MeshGlyph(GeoMixin, Glyph):
             host_ax.set_position(host_bounds)
 
     def _finish_vector_render(
-        self, delegate: VectorGlyph, fig: Any, ax_out: Any, compose: bool, pre_bounds: Any
+        self,
+        delegate: VectorGlyph,
+        fig: Any,
+        ax_out: Any,
+        compose: bool,
+        pre_bounds: Any,
     ) -> None:
         """Commit glyph state after a successful vector render.
 

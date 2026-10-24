@@ -3119,7 +3119,9 @@ class TestPlotVectorField:
         """Plain lists of ints are accepted and coerced to float arrays."""
         fig, ax, im = triangle_glyph.plot_vector_field([1, 2], [0, 0])
         assert im.N == 2, "list components render one arrow per face"
-        assert im.U.dtype == np.float64, f"components coerce to float64, got {im.U.dtype}"
+        assert im.U.dtype == np.float64, (
+            f"components coerce to float64, got {im.U.dtype}"
+        )
 
     def test_nan_centroid_face_renders_without_error(self):
         """A mesh with an all-padding face renders; its anchor is just NaN."""
