@@ -2661,6 +2661,20 @@ class TestPlotVectorField:
         )
         assert mesh_im.axes is None, "the mesh render is cleared, not orphaned"
 
+    def test_plain_render_resets_stale_mesh_references(self, triangle_glyph):
+        """compose=False resets im/_cbar instead of leaving removed artists.
+
+        Test scenario:
+            A replacing vector render clears the mesh mappable and colorbar
+            from the axes; the glyph's references must not keep pointing at
+            those removed artists -- the same reset plot_outline performs.
+        """
+        triangle_glyph.plot(np.array([1.0, 2.0]))
+        assert triangle_glyph.im is not None, "the mesh render set a mappable"
+        triangle_glyph.plot_vector_field(np.array([0.3, -0.2]), np.array([0.1, 0.4]))
+        assert triangle_glyph.im is None, "a replacing render resets im"
+        assert triangle_glyph._cbar is None, "a replacing render resets _cbar"
+
     def test_explicit_ax_is_used_and_adopted(self, triangle_glyph):
         """An explicit ax= is drawn on and bound to the glyph."""
         fig, host_ax = plt.subplots()

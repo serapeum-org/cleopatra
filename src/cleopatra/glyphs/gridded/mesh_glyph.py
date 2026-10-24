@@ -1716,8 +1716,11 @@ class MeshGlyph(GeoMixin, Glyph):
 
         Returns:
             tuple[Figure, Axes, Any]: The figure, the axes, and the `Quiver`
-                or `Barbs` mappable (e.g. for `Axes.quiverkey`). The mesh's
-                own `im` (the scalar mappable from `plot`) is left untouched.
+                or `Barbs` mappable (e.g. for `Axes.quiverkey`). Under
+                `compose=True` the mesh's own `im` (the scalar mappable from
+                `plot`) is left untouched; a replacing render clears the mesh
+                artists from the axes and resets `im` and the colorbar
+                reference to `None`, as `plot_outline` does.
 
         Raises:
             ValueError: If `kind` is not `"quiver"`/`"barbs"` (including the
@@ -1898,6 +1901,11 @@ class MeshGlyph(GeoMixin, Glyph):
                     float(self._node_y.max()),
                     aspect="equal",
                 )
+            # The replacing render just cleared the mesh mappable and its
+            # colorbar from the axes; drop the references too so they do not
+            # point at removed artists (the same reset plot_outline performs).
+            self.im = None
+            self._cbar = None
         self._vector_field_glyph = delegate
         self.fig, self.ax = fig, ax_out
         ax_out.set_aspect("equal")
