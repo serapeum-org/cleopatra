@@ -1758,10 +1758,13 @@ class MeshGlyph(GeoMixin, Glyph):
                 explicit `"streamplot"` refusal), `location` is not
                 `"face"`/`"node"`, `u`/`v` are not 1D of equal length matching
                 the location's element count, `thin` is not a positive
-                integer, or a `**kwargs` key is not a `VectorGlyph` option.
-                A rejected call raises before anything on the axes is
+                integer, a `**kwargs` key is not a `VectorGlyph` option,
+                `density` is passed (a streamplot-only option -- use `thin=`),
+                or the magnitude has no finite values while `vmin`/`vmax` are
+                not both given. A rejected call raises before anything is
                 touched: the existing render -- mesh, arrows, and colorbars
-                alike -- survives unchanged.
+                alike -- and the glyph's bound figure/axes all survive
+                unchanged.
 
         Examples:
             - Arrows at the face centroids of a two-triangle mesh:
@@ -1810,6 +1813,24 @@ class MeshGlyph(GeoMixin, Glyph):
                 ... )
                 >>> float(im.get_array().max())
                 5.0
+
+                ```
+            - A grouped colour scale applies a non-linear magnitude norm:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
+                >>> from cleopatra.styling.scaling import ColorScaling
+                >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
+                >>> node_y = np.array([0.0, 0.0, 1.0, 1.0])
+                >>> faces = np.array([[0, 1, 2], [1, 3, 2]])
+                >>> mg = MeshGlyph(node_x, node_y, faces)
+                >>> fig, ax, im = mg.plot_vector_field(
+                ...     np.array([0.3, -0.2]),
+                ...     np.array([0.1, 0.4]),
+                ...     color=ColorScaling.power(gamma=0.5),
+                ... )
+                >>> im.norm.gamma
+                0.5
 
                 ```
             - `streamplot` is refused with an actionable message:
