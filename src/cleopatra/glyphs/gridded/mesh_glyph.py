@@ -501,6 +501,11 @@ class MeshGlyph(GeoMixin, Glyph):
                        [1.66666667, 0.33333333]])
 
                 ```
+
+        See Also:
+            plot_vector_field: Anchors face-located `(u, v)` arrows at these
+                centroids.
+            nodes_per_face: The per-face valid-node counts the mean divides by.
         """
         if self._cached_face_centroids is None:
             valid = self._face_nodes != self._fill_value
@@ -1782,6 +1787,14 @@ class MeshGlyph(GeoMixin, Glyph):
                 ValueError: kind='streamplot' is not supported on an unstructured mesh: ...
 
                 ```
+
+        See Also:
+            cleopatra.glyphs.gridded.vector_glyph.VectorGlyph: The delegate
+                that renders the arrows/barbs and owns the `thin`/colorbar
+                machinery; use it directly for gridded fields (including
+                `streamplot`).
+            face_centroids: The anchors used for face-located components.
+            plot: The scalar mesh render a field is typically composed over.
         """
         if kind not in MESH_VECTOR_KINDS:
             if kind == "streamplot":
