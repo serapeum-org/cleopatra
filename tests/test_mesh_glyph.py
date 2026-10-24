@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from matplotlib.colors import to_rgba
+from matplotlib.quiver import Barbs, Quiver
 from matplotlib.text import Text
 
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
@@ -2475,6 +2476,25 @@ class TestFaceCentroids:
         """Repeated access returns the same cached array object."""
         assert triangle_glyph.face_centroids is triangle_glyph.face_centroids
 
+    def test_custom_fill_value(self):
+        """A non-default fill_value is excluded from the centroid mean.
+
+        Test scenario:
+            A triangle padded with fill_value=99 must average only its three
+            real vertices; treating 99 as a node index would crash or skew.
+        """
+        mg = MeshGlyph(
+            np.array([0.0, 1.0, 0.5]),
+            np.array([0.0, 0.0, 1.0]),
+            np.array([[0, 1, 2, 99]]),
+            fill_value=99,
+        )
+        np.testing.assert_allclose(
+            mg.face_centroids,
+            np.array([[0.5, 1.0 / 3.0]]),
+            err_msg="fill entries must not contribute to the centroid",
+        )
+
 
 class TestPlotVectorField:
     """Tests for MeshGlyph.plot_vector_field (quiver/barbs on the mesh)."""
@@ -2497,8 +2517,6 @@ class TestPlotVectorField:
 
     def test_barbs_kind(self, triangle_glyph):
         """kind='barbs' renders a Barbs mappable carrying the magnitude."""
-        from matplotlib.quiver import Barbs
-
         fig, ax, im = triangle_glyph.plot_vector_field(
             np.array([3.0, 0.0]), np.array([4.0, 0.0]), kind="barbs"
         )
@@ -2539,8 +2557,6 @@ class TestPlotVectorField:
 
     def test_composed_recall_replaces_arrows_not_stacks(self, triangle_glyph):
         """A second composed call replaces the previous arrows."""
-        from matplotlib.quiver import Quiver
-
         triangle_glyph.plot(np.array([1.0, 2.0]))
         u, v = np.array([0.3, -0.2]), np.array([0.1, 0.4])
         triangle_glyph.plot_vector_field(u, v, compose=True)
@@ -2650,3 +2666,146 @@ class TestPlotVectorField:
             triangle_glyph.plot_vector_field(
                 np.array([1.0, 2.0]), np.array([0.0, 0.0]), bogus_option=1
             )
+
+    def test_partial_nan_component_still_renders(self, triangle_glyph):
+        """A NaN in one face's component masks that arrow, not the render.
+
+        Test scenario:
+            u = [NaN, 1.0] keeps both anchors but the first magnitude is
+            masked; the finite face still scales the colour range.
+        """
+        fig, ax, im = triangle_glyph.plot_vector_field(
+            np.array([np.nan, 1.0]), np.array([0.0, 1.0])
+        )
+        assert im.N == 2, "both anchors are kept; NaN masks, it does not drop"
+        mag = im.get_array()
+        assert np.ma.is_masked(mag[0]), "the NaN face's magnitude is masked"
+        assert float(mag[1]) == pytest.approx(np.sqrt(2.0)), (
+            f"finite magnitude should be hypot(1, 1), got {mag[1]}"
+        )
+
+    def test_all_nan_components_raise(self, triangle_glyph):
+        """All-NaN components raise instead of rendering an unmapped field.
+
+        Test scenario:
+            With no finite magnitude the delegate cannot derive vmin/vmax,
+            and the actionable shared error surfaces to the caller.
+        """
+        with pytest.raises(ValueError, match="no finite values"):
+            triangle_glyph.plot_vector_field(np.full(2, np.nan), np.full(2, np.nan))
+
+    def test_fig_bound_empty_figure_creates_axes(self, triangle_glyph):
+        """A construction-bound empty figure gains an axes and is drawn into.
+
+        Test scenario:
+            MeshGlyph(..., fig=empty_fig).plot_vector_field(...) must draw
+            into that figure (first axes created on demand) rather than
+            opening a new one -- the same contract plot() has.
+        """
+        fig = plt.figure()
+        mg = MeshGlyph(
+            np.array([0.0, 1.0, 0.5, 1.5]),
+            np.array([0.0, 0.0, 1.0, 1.0]),
+            np.array([[0, 1, 2], [1, 3, 2]]),
+            fig=fig,
+        )
+        fig_out, ax, im = mg.plot_vector_field(
+            np.array([1.0, 2.0]), np.array([0.0, 0.0])
+        )
+        assert fig_out is fig, "the bound figure is drawn into, not replaced"
+        assert len(fig.axes) == 2, "main axes + colorbar axes on the bound figure"
+
+    def test_fig_bound_with_axes_draws_into_first(self, triangle_glyph):
+        """A construction-bound figure with an axes reuses that axes."""
+        fig, host_ax = plt.subplots()
+        mg = MeshGlyph(
+            np.array([0.0, 1.0, 0.5, 1.5]),
+            np.array([0.0, 0.0, 1.0, 1.0]),
+            np.array([[0, 1, 2], [1, 3, 2]]),
+            fig=fig,
+        )
+        fig_out, ax, im = mg.plot_vector_field(
+            np.array([1.0, 2.0]), np.array([0.0, 0.0])
+        )
+        assert ax is host_ax, "the bound figure's first axes is reused"
+
+    def test_scale_option_forwarded(self, triangle_glyph):
+        """The delegate's quiver scale= option passes through **kwargs."""
+        fig, ax, im = triangle_glyph.plot_vector_field(
+            np.array([1.0, 2.0]), np.array([0.0, 0.0]), scale=50.0
+        )
+        assert im.scale == 50.0, f"quiver scale should be 50.0, got {im.scale}"
+
+    def test_figsize_option_on_fresh_figure(self, triangle_glyph):
+        """figsize= through **kwargs sizes the delegate-created figure."""
+        fig, ax, im = triangle_glyph.plot_vector_field(
+            np.array([1.0, 2.0]), np.array([0.0, 0.0]), figsize=(4, 3)
+        )
+        assert tuple(fig.get_size_inches()) == (4.0, 3.0), (
+            f"figsize should be honoured, got {tuple(fig.get_size_inches())}"
+        )
+
+    def test_title_applied(self, triangle_glyph):
+        """title= is applied to the axes by the delegate."""
+        fig, ax, im = triangle_glyph.plot_vector_field(
+            np.array([1.0, 2.0]), np.array([0.0, 0.0]), title="Flow"
+        )
+        assert ax.get_title() == "Flow", f"got title {ax.get_title()!r}"
+
+    def test_add_colorbar_false_suppresses_colorbar(self, triangle_glyph):
+        """add_colorbar=False keeps the figure to the single plot axes."""
+        fig, ax, im = triangle_glyph.plot_vector_field(
+            np.array([1.0, 2.0]), np.array([0.0, 0.0]), add_colorbar=False
+        )
+        assert len(fig.axes) == 1, "no colorbar axes should be added"
+
+    def test_compose_colorbar_true_draws_overlay_bar(self, triangle_glyph):
+        """colorbar=True under compose asks the overlay's own bar back."""
+        fig, ax = triangle_glyph.plot(np.array([1.0, 2.0]))
+        n_axes = len(fig.axes)
+        fig2, ax2, im = triangle_glyph.plot_vector_field(
+            np.array([1.0, 2.0]), np.array([0.0, 0.0]), compose=True, colorbar=True
+        )
+        assert len(fig2.axes) == n_axes + 1, (
+            "an explicitly requested overlay colorbar is drawn even composing"
+        )
+
+    def test_list_components_coerced_to_float(self, triangle_glyph):
+        """Plain lists of ints are accepted and coerced to float arrays."""
+        fig, ax, im = triangle_glyph.plot_vector_field([1, 2], [0, 0])
+        assert im.N == 2, "list components render one arrow per face"
+        assert im.U.dtype == np.float64, f"components coerce to float64, got {im.U.dtype}"
+
+    def test_nan_centroid_face_renders_without_error(self):
+        """A mesh with an all-padding face renders; its anchor is just NaN."""
+        mg = MeshGlyph(
+            np.array([0.0, 1.0, 0.5]),
+            np.array([0.0, 0.0, 1.0]),
+            np.array([[0, 1, 2], [-1, -1, -1]]),
+            fill_value=-1,
+        )
+        fig, ax, im = mg.plot_vector_field(np.array([1.0, 1.0]), np.array([0.0, 1.0]))
+        assert im.N == 2, "the NaN-anchored arrow is kept (and simply not drawn)"
+
+    def test_node_location_with_thin(self, triangle_glyph):
+        """thin strides node anchors too: 4 nodes at thin=3 keep nodes 0 and 3."""
+        fig, ax, im = triangle_glyph.plot_vector_field(
+            np.ones(4), np.zeros(4), location="node", thin=3
+        )
+        assert im.N == 2, f"thin=3 on 4 nodes keeps anchors 0 and 3, got {im.N}"
+
+    def test_delegate_replaced_per_call(self, triangle_glyph):
+        """Each call builds a fresh delegate tracked on the glyph.
+
+        Test scenario:
+            The private delegate reference is what lets a composed re-render
+            clear the previous arrows; it must be set and replaced per call.
+        """
+        assert triangle_glyph._vector_field_glyph is None, "no delegate before a render"
+        triangle_glyph.plot_vector_field(np.array([1.0, 2.0]), np.array([0.0, 0.0]))
+        first = triangle_glyph._vector_field_glyph
+        assert first is not None, "the delegate is tracked after a render"
+        triangle_glyph.plot_vector_field(np.array([2.0, 1.0]), np.array([0.0, 0.0]))
+        assert triangle_glyph._vector_field_glyph is not first, (
+            "a new render builds and tracks a fresh delegate"
+        )
