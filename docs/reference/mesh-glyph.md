@@ -122,6 +122,29 @@ fig, ax = mg.plot(
 )
 ```
 
+### Vector Field (Quiver / Barbs)
+
+Render a 2-component vector field — e.g. depth-averaged velocities from a
+hydrodynamic model — anchored at the face centroids (`location="face"`) or at
+the nodes (`location="node"`). Arrows are coloured by the vector magnitude,
+and `thin=` decimates a dense mesh so the field stays legible:
+
+```python
+# standalone: arrows with a magnitude colorbar
+fig, ax, im = mg.plot_vector_field(ucx, ucy, kind="quiver", thin=4)
+
+# or composed over a filled mesh render
+fig, ax = mg.plot(water_level)
+fig, ax, im = mg.plot_vector_field(ucx, ucy, compose=True)
+
+# wind barbs at the nodes
+fig, ax, im = mg.plot_vector_field(u_node, v_node, kind="barbs", location="node")
+```
+
+`streamplot` is refused on an unstructured mesh (streamline tracing needs a
+regular grid) — resample the field to a grid and use
+[`VectorGlyph`](vector-glyph.md) directly instead.
+
 ### Animation
 
 ```python

@@ -2441,3 +2441,212 @@ class TestMeshGlyphCompose:
         for method in (MeshGlyph.plot, MeshGlyph.animate, MeshGlyph.plot_outline):
             params = inspect.signature(method).parameters
             assert "compose" in params, f"{method.__name__} should expose compose"
+
+
+class TestFaceCentroids:
+    """Tests for the MeshGlyph.face_centroids property."""
+
+    def test_triangle_centroids(self, triangle_glyph):
+        """Each triangle centroid is the mean of its three vertices."""
+        expected = np.array([[0.5, 1.0 / 3.0], [1.0, 2.0 / 3.0]])
+        np.testing.assert_allclose(triangle_glyph.face_centroids, expected)
+
+    def test_mixed_mesh_averages_only_valid_nodes(self, mixed_glyph):
+        """A padded face's centroid ignores the fill entries."""
+        centroids = mixed_glyph.face_centroids
+        assert centroids.shape == (3, 2), "one (x, y) row per face"
+        np.testing.assert_allclose(centroids[0], [0.5, 0.5])  # quad
+        np.testing.assert_allclose(centroids[1], [5.0 / 3.0, 1.0 / 3.0])  # tri
+        np.testing.assert_allclose(centroids[2], [4.0 / 3.0, 2.0 / 3.0])  # tri
+
+    def test_empty_face_yields_nan_row(self):
+        """A face with no valid nodes gets a NaN centroid, not a crash."""
+        mg = MeshGlyph(
+            np.array([0.0, 1.0, 0.5]),
+            np.array([0.0, 0.0, 1.0]),
+            np.array([[0, 1, 2], [-1, -1, -1]]),
+            fill_value=-1,
+        )
+        centroids = mg.face_centroids
+        assert np.all(np.isfinite(centroids[0])), "valid face stays finite"
+        assert np.all(np.isnan(centroids[1])), "empty face is NaN, not garbage"
+
+    def test_centroids_are_cached(self, triangle_glyph):
+        """Repeated access returns the same cached array object."""
+        assert triangle_glyph.face_centroids is triangle_glyph.face_centroids
+
+
+class TestPlotVectorField:
+    """Tests for MeshGlyph.plot_vector_field (quiver/barbs on the mesh)."""
+
+    def test_face_quiver_anchors_at_centroids(self, triangle_glyph):
+        """Face-located arrows are anchored at the face centroids."""
+        u, v = np.array([0.3, -0.2]), np.array([0.1, 0.4])
+        fig, ax, im = triangle_glyph.plot_vector_field(u, v)
+        assert im.N == 2, "one arrow per face"
+        anchors = np.column_stack([im.X, im.Y])
+        np.testing.assert_allclose(anchors, triangle_glyph.face_centroids)
+
+    def test_node_location_anchors_at_nodes(self, triangle_glyph):
+        """Node-located arrows are anchored at the mesh nodes."""
+        u, v = np.ones(4), np.zeros(4)
+        fig, ax, im = triangle_glyph.plot_vector_field(u, v, location="node")
+        assert im.N == 4, "one arrow per node"
+        np.testing.assert_allclose(im.X, triangle_glyph.node_x)
+        np.testing.assert_allclose(im.Y, triangle_glyph.node_y)
+
+    def test_barbs_kind(self, triangle_glyph):
+        """kind='barbs' renders a Barbs mappable carrying the magnitude."""
+        from matplotlib.quiver import Barbs
+
+        fig, ax, im = triangle_glyph.plot_vector_field(
+            np.array([3.0, 0.0]), np.array([4.0, 0.0]), kind="barbs"
+        )
+        assert isinstance(im, Barbs), "barbs kind should return a Barbs artist"
+        assert float(im.get_array().max()) == pytest.approx(5.0)
+
+    def test_magnitude_colouring(self, triangle_glyph):
+        """The mappable's array is the vector magnitude hypot(u, v)."""
+        u, v = np.array([3.0, 0.0]), np.array([4.0, 1.0])
+        fig, ax, im = triangle_glyph.plot_vector_field(u, v)
+        np.testing.assert_allclose(im.get_array(), np.hypot(u, v))
+
+    def test_thin_reduces_arrow_count(self, triangle_glyph):
+        """thin=2 keeps every other anchor."""
+        fig, ax, im = triangle_glyph.plot_vector_field(
+            np.array([1.0, 2.0]), np.array([0.0, 0.0]), thin=2
+        )
+        assert im.N == 1, "thin=2 on 2 faces keeps 1 arrow"
+
+    def test_standalone_draws_colorbar(self, triangle_glyph):
+        """A standalone render brings its own magnitude colorbar."""
+        fig, ax, im = triangle_glyph.plot_vector_field(
+            np.array([1.0, 2.0]), np.array([0.0, 0.0])
+        )
+        assert len(fig.axes) == 2, "main axes + colorbar axes"
+
+    def test_compose_over_plot_keeps_mesh_and_adds_no_colorbar(self, triangle_glyph):
+        """compose=True layers arrows over the mesh render on the same axes."""
+        fig, ax = triangle_glyph.plot(np.array([1.0, 2.0]))
+        mesh_im = triangle_glyph.im
+        n_axes = len(fig.axes)
+        fig2, ax2, im = triangle_glyph.plot_vector_field(
+            np.array([0.3, -0.2]), np.array([0.1, 0.4]), compose=True
+        )
+        assert ax2 is ax, "arrows draw on the mesh's own axes"
+        assert mesh_im.axes is ax, "the mesh render survives the overlay"
+        assert len(fig2.axes) == n_axes, "a composed overlay adds no colorbar"
+
+    def test_composed_recall_replaces_arrows_not_stacks(self, triangle_glyph):
+        """A second composed call replaces the previous arrows."""
+        from matplotlib.quiver import Quiver
+
+        triangle_glyph.plot(np.array([1.0, 2.0]))
+        u, v = np.array([0.3, -0.2]), np.array([0.1, 0.4])
+        triangle_glyph.plot_vector_field(u, v, compose=True)
+        fig, ax, im = triangle_glyph.plot_vector_field(-u, -v, compose=True)
+        quivers = [c for c in ax.collections if isinstance(c, Quiver)]
+        assert quivers == [im], "only the latest arrow set remains on the axes"
+
+    def test_compose_over_outline(self, quad_with_edges):
+        """Arrows compose over a wireframe outline."""
+        fig, ax = quad_with_edges.plot_outline()
+        n_artists = len(ax.collections)
+        fig2, ax2, im = quad_with_edges.plot_vector_field(
+            np.array([1.0]), np.array([1.0]), compose=True
+        )
+        assert ax2 is ax
+        assert len(ax.collections) == n_artists + 1, "outline stays, arrows add"
+
+    def test_plain_render_replaces_mesh(self, triangle_glyph):
+        """compose=False keeps the replace-don't-orphan default."""
+        triangle_glyph.plot(np.array([1.0, 2.0]))
+        mesh_im = triangle_glyph.im
+        fig, ax, im = triangle_glyph.plot_vector_field(
+            np.array([0.3, -0.2]), np.array([0.1, 0.4])
+        )
+        assert mesh_im.axes is None, "the mesh render is cleared, not orphaned"
+
+    def test_explicit_ax_is_used_and_adopted(self, triangle_glyph):
+        """An explicit ax= is drawn on and bound to the glyph."""
+        fig, host_ax = plt.subplots()
+        fig2, ax2, im = triangle_glyph.plot_vector_field(
+            np.array([1.0, 2.0]), np.array([0.0, 0.0]), ax=host_ax
+        )
+        assert ax2 is host_ax
+        assert triangle_glyph.ax is host_ax
+
+    def test_aspect_is_equal(self, triangle_glyph):
+        """The vector render keeps the mesh convention of equal aspect."""
+        fig, ax, im = triangle_glyph.plot_vector_field(
+            np.array([1.0, 2.0]), np.array([0.0, 0.0])
+        )
+        assert ax.get_aspect() == 1.0
+
+    def test_mesh_im_left_untouched(self, triangle_glyph):
+        """plot_vector_field does not overwrite the mesh's scalar mappable."""
+        triangle_glyph.plot(np.array([1.0, 2.0]))
+        mesh_im = triangle_glyph.im
+        triangle_glyph.plot_vector_field(
+            np.array([0.3, -0.2]), np.array([0.1, 0.4]), compose=True
+        )
+        assert triangle_glyph.im is mesh_im
+
+    def test_option_kwargs_forwarded(self, triangle_glyph):
+        """VectorGlyph option overrides (cmap) pass through **kwargs."""
+        fig, ax, im = triangle_glyph.plot_vector_field(
+            np.array([1.0, 2.0]), np.array([0.0, 0.0]), cmap="viridis"
+        )
+        assert im.get_cmap().name == "viridis"
+
+    def test_streamplot_refused(self, triangle_glyph):
+        """kind='streamplot' raises the documented, actionable error."""
+        with pytest.raises(ValueError, match="streamplot.*unstructured"):
+            triangle_glyph.plot_vector_field(
+                np.array([1.0, 2.0]), np.array([0.0, 0.0]), kind="streamplot"
+            )
+
+    def test_unknown_kind_raises(self, triangle_glyph):
+        """An unknown kind raises with the accepted kinds listed."""
+        with pytest.raises(ValueError, match="unknown vector kind.*quiver, barbs"):
+            triangle_glyph.plot_vector_field(
+                np.array([1.0, 2.0]), np.array([0.0, 0.0]), kind="spirograph"
+            )
+
+    def test_bad_location_raises(self, triangle_glyph):
+        """An unknown location raises ValueError."""
+        with pytest.raises(ValueError, match="location='edge'"):
+            triangle_glyph.plot_vector_field(
+                np.array([1.0, 2.0]), np.array([0.0, 0.0]), location="edge"
+            )
+
+    def test_length_mismatch_raises(self, triangle_glyph):
+        """u/v whose length matches neither faces nor nodes raise."""
+        with pytest.raises(ValueError, match="does not match n_faces"):
+            triangle_glyph.plot_vector_field(np.ones(3), np.ones(3))
+        with pytest.raises(ValueError, match="does not match n_nodes"):
+            triangle_glyph.plot_vector_field(np.ones(2), np.ones(2), location="node")
+
+    def test_uv_shape_mismatch_raises(self, triangle_glyph):
+        """u and v of different lengths raise before any render."""
+        with pytest.raises(ValueError, match="same shape"):
+            triangle_glyph.plot_vector_field(np.ones(2), np.ones(3))
+
+    def test_non_1d_components_raise(self, triangle_glyph):
+        """2D component arrays are rejected."""
+        with pytest.raises(ValueError, match="must be 1D"):
+            triangle_glyph.plot_vector_field(np.ones((2, 1)), np.ones((2, 1)))
+
+    def test_bad_thin_raises(self, triangle_glyph):
+        """A non-positive thin raises via the delegate's validation."""
+        with pytest.raises(ValueError, match="thin must be a positive integer"):
+            triangle_glyph.plot_vector_field(
+                np.array([1.0, 2.0]), np.array([0.0, 0.0]), thin=0
+            )
+
+    def test_unknown_option_kwarg_raises(self, triangle_glyph):
+        """A kwarg that is no VectorGlyph option raises, not silently ignored."""
+        with pytest.raises(ValueError):
+            triangle_glyph.plot_vector_field(
+                np.array([1.0, 2.0]), np.array([0.0, 0.0]), bogus_option=1
+            )
