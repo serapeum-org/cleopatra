@@ -1819,11 +1819,6 @@ class MeshGlyph(GeoMixin, Glyph):
                 f"unknown vector kind {kind!r}; expected one of "
                 f"{', '.join(MESH_VECTOR_KINDS)}."
             )
-        if location not in ("face", "node"):
-            raise ValueError(
-                f"Vector components not supported for location='{location}'. "
-                f"Use 'face' or 'node'."
-            )
         u = np.asarray(u, dtype=np.float64)
         v = np.asarray(v, dtype=np.float64)
         if u.ndim != 1 or v.ndim != 1:
@@ -1832,11 +1827,8 @@ class MeshGlyph(GeoMixin, Glyph):
             raise ValueError(
                 f"u and v must have the same shape, got {u.shape} and {v.shape}."
             )
-        expected = self.n_faces if location == "face" else self.n_nodes
-        if len(u) != expected:
-            raise ValueError(
-                f"u/v length ({len(u)}) does not match n_{location}s ({expected})."
-            )
+        # v mirrors u's shape, so validating u validates both.
+        self._validate_location_and_data(u, location)
         # The delegate's own strict check only sees **kwargs headed for its
         # options dict; a key naming one of its constructor parameters (fig)
         # would silently bind instead of raising, abandoning the caller's
