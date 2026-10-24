@@ -1655,6 +1655,183 @@ class MeshGlyph(GeoMixin, Glyph):
 
         return self.fig, self.ax
 
+    def _validate_vector_field(
+        self,
+        kind: str,
+        location: str,
+        u: np.ndarray,
+        v: np.ndarray,
+        thin: int | None,
+        kwargs: dict[str, Any],
+    ) -> tuple[np.ndarray, np.ndarray, int]:
+        """Run every documented `plot_vector_field` rejection up front.
+
+        Hoists the delegate-side validations (thin, the cmap name, the
+        all-NaN magnitude case that `Glyph._resolve_limits` rejects only when
+        `vmin`/`vmax` are unpinned) next to the mesh-side ones, so every
+        rejection in the method's Raises section fires before any glyph
+        state, figure, or artist is touched.
+
+        Args:
+            kind: The requested vector kind.
+            location: `"face"` or `"node"`.
+            u: Raw x-components as passed by the caller.
+            v: Raw y-components, same length and location as `u`.
+            thin: The decimation step, or `None` for all elements.
+            kwargs: The loose option overrides headed for the delegate.
+
+        Returns:
+            tuple[np.ndarray, np.ndarray, int]: `u` and `v` as 1D float64
+                arrays, and the resolved thinning step (`1` for `None`).
+
+        Raises:
+            ValueError: Per the `plot_vector_field` Raises contract.
+        """
+        if kind not in MESH_VECTOR_KINDS:
+            if kind == "streamplot":
+                raise ValueError(
+                    "kind='streamplot' is not supported on an unstructured "
+                    "mesh: streamline tracing needs a regular grid. Resample "
+                    "the field to a grid and use "
+                    "cleopatra.glyphs.gridded.vector_glyph.VectorGlyph."
+                )
+            raise ValueError(
+                f"unknown vector kind {kind!r}; expected one of "
+                f"{', '.join(MESH_VECTOR_KINDS)}."
+            )
+        u = np.asarray(u, dtype=np.float64)
+        v = np.asarray(v, dtype=np.float64)
+        if u.ndim != 1 or v.ndim != 1:
+            raise ValueError(f"u and v must be 1D, got {u.ndim}D and {v.ndim}D.")
+        if u.shape != v.shape:
+            raise ValueError(
+                f"u and v must have the same shape, got {u.shape} and {v.shape}."
+            )
+        # v mirrors u's shape, so validating u validates both.
+        self._validate_location_and_data(u, location)
+        # The delegate's own strict check only sees **kwargs headed for its
+        # options dict; a key naming one of its constructor parameters (fig)
+        # would silently bind instead of raising, abandoning the caller's
+        # figure. Enforce the documented unknown-keys-raise contract here.
+        unknown = set(kwargs) - VectorGlyph.option_keys()
+        if unknown:
+            raise ValueError(
+                f"plot_vector_field got unknown option(s): "
+                f"{', '.join(sorted(unknown))}. Valid keys are the VectorGlyph "
+                f"options; bind a figure via ax= or at construction instead."
+            )
+        if "density" in kwargs:
+            # density only affects streamplot, which this method refuses, so
+            # accepting it would be a silent no-op (the delegate warns about
+            # the mirrored thin-on-streamplot case for the same reason).
+            raise ValueError(
+                "density only affects kind='streamplot', which an "
+                "unstructured mesh does not support; use thin= to control "
+                "arrow density."
+            )
+        thin_value = 1 if thin is None else thin
+        _validate_thin(thin_value, kind)
+        if "cmap" in kwargs:
+            resolve_colormap(kwargs["cmap"])
+        if kwargs.get("vmin") is None or kwargs.get("vmax") is None:
+            if not np.isfinite(np.hypot(u, v)).any():
+                raise ValueError(
+                    "Cannot determine vmin/vmax: no finite values. Pass "
+                    "explicit vmin/vmax, or components with at least one "
+                    "finite entry."
+                )
+        return u, v, thin_value
+
+    def _resolve_vector_target_ax(self, ax: Any) -> Any:
+        """Resolve the axes a vector render should draw on, without binding it.
+
+        `self.fig`/`self.ax` are committed only after the delegate renders
+        (see `_finish_vector_render`), so a failure between resolution and
+        render never leaves the glyph rebound to a target it never drew on.
+
+        Args:
+            ax: The caller's explicit axes, or `None`.
+
+        Returns:
+            The target axes, or `None` when the delegate should create the
+            figure/axes itself (honouring a `figsize=` in its options).
+        """
+        if ax is not None:
+            return ax
+        if self.ax is not None:
+            return self.ax
+        if self.fig is not None:
+            # A figure was bound without an axes: draw into the caller's
+            # figure (its first axes, or a fresh one), as `plot` does. Runs
+            # after validation, so a rejected call adds no stray axes.
+            return self.fig.axes[0] if self.fig.axes else self.fig.add_subplot(111)
+        return None
+
+    def _clear_previous_vector_field(self) -> None:
+        """Drop the previous composed vector render's artists and layout steal.
+
+        Each `plot_vector_field` call builds a fresh delegate that owns its
+        own arrow artists, so a composed re-render removes the previous
+        call's arrows itself -- on the previous delegate's own axes, since
+        the glyph tracks a single current field that replaces across axes.
+        The overlay colorbar's layout steal is undone from
+        `_vector_host_bounds`, because on a multi-axes figure the bar was
+        created through matplotlib's `make_axes` path, whose
+        `Colorbar.remove()` gives no layout space back.
+        """
+        prev = self._vector_field_glyph
+        if prev is None or prev.ax is None:
+            return
+        _clear_prior_render_artists(prev.ax, prev, compose=True)
+        # host axes == prev.ax by construction: the pair is stored together
+        # with the delegate in _finish_vector_render.
+        if self._vector_host_bounds is not None:
+            host_ax, host_bounds = self._vector_host_bounds
+            host_ax.set_position(host_bounds)
+
+    def _finish_vector_render(
+        self, delegate: VectorGlyph, fig: Any, ax_out: Any, compose: bool, pre_bounds: Any
+    ) -> None:
+        """Commit glyph state after a successful vector render.
+
+        A replacing render additionally undoes a projection frame a previous
+        `plot(..., projection=...)` left behind -- the frame and its frozen,
+        axis-off view are tracked separately from the glyph artist registry,
+        and a vector render is a non-projection render, so it restores the
+        flat view exactly as `plot` does when the projection is cleared --
+        and resets `im`/`_cbar`, whose artists the replacing render just
+        removed (the same reset `plot_outline` performs).
+
+        Args:
+            delegate: The `VectorGlyph` that just rendered.
+            fig: The figure the delegate drew into.
+            ax_out: The axes the delegate drew on.
+            compose: Whether this was a composed (overlay) render.
+            pre_bounds: The host's position captured before the render, kept
+                on `_vector_host_bounds` when the composed overlay drew its
+                own colorbar so the next clear can undo the layout steal.
+        """
+        if not compose:
+            if _clear_projection_frame(ax_out):
+                _restore_flat_axes(
+                    ax_out,
+                    float(self._node_x.min()),
+                    float(self._node_x.max()),
+                    float(self._node_y.min()),
+                    float(self._node_y.max()),
+                    aspect="equal",
+                )
+            self.im = None
+            self._cbar = None
+        self._vector_field_glyph = delegate
+        self._vector_host_bounds = (
+            (ax_out, pre_bounds)
+            if compose and delegate.cbar is not None and pre_bounds is not None
+            else None
+        )
+        self.fig, self.ax = fig, ax_out
+        ax_out.set_aspect("equal")
+
     def plot_vector_field(
         self,
         u: np.ndarray,
@@ -1857,64 +2034,9 @@ class MeshGlyph(GeoMixin, Glyph):
             face_centroids: The anchors used for face-located components.
             plot: The scalar mesh render a field is typically composed over.
         """
-        if kind not in MESH_VECTOR_KINDS:
-            if kind == "streamplot":
-                raise ValueError(
-                    "kind='streamplot' is not supported on an unstructured "
-                    "mesh: streamline tracing needs a regular grid. Resample "
-                    "the field to a grid and use "
-                    "cleopatra.glyphs.gridded.vector_glyph.VectorGlyph."
-                )
-            raise ValueError(
-                f"unknown vector kind {kind!r}; expected one of "
-                f"{', '.join(MESH_VECTOR_KINDS)}."
-            )
-        u = np.asarray(u, dtype=np.float64)
-        v = np.asarray(v, dtype=np.float64)
-        if u.ndim != 1 or v.ndim != 1:
-            raise ValueError(f"u and v must be 1D, got {u.ndim}D and {v.ndim}D.")
-        if u.shape != v.shape:
-            raise ValueError(
-                f"u and v must have the same shape, got {u.shape} and {v.shape}."
-            )
-        # v mirrors u's shape, so validating u validates both.
-        self._validate_location_and_data(u, location)
-        # The delegate's own strict check only sees **kwargs headed for its
-        # options dict; a key naming one of its constructor parameters (fig)
-        # would silently bind instead of raising, abandoning the caller's
-        # figure. Enforce the documented unknown-keys-raise contract here.
-        unknown = set(kwargs) - VectorGlyph.option_keys()
-        if unknown:
-            raise ValueError(
-                f"plot_vector_field got unknown option(s): "
-                f"{', '.join(sorted(unknown))}. Valid keys are the VectorGlyph "
-                f"options; bind a figure via ax= or at construction instead."
-            )
-        if "density" in kwargs:
-            # density only affects streamplot, which this method refuses, so
-            # accepting it would be a silent no-op (the delegate warns about
-            # the mirrored thin-on-streamplot case for the same reason).
-            raise ValueError(
-                "density only affects kind='streamplot', which an "
-                "unstructured mesh does not support; use thin= to control "
-                "arrow density."
-            )
-        # Hoist the remaining delegate-side validations so every documented
-        # rejection fires before any glyph state, figure, or artist is
-        # touched: thin (the delegate checks it only inside plot), the cmap
-        # name, and the all-NaN magnitude case, which the delegate's
-        # _resolve_limits rejects only when vmin/vmax are unpinned.
-        thin_value = 1 if thin is None else thin
-        _validate_thin(thin_value, kind)
-        if "cmap" in kwargs:
-            resolve_colormap(kwargs["cmap"])
-        if kwargs.get("vmin") is None or kwargs.get("vmax") is None:
-            if not np.isfinite(np.hypot(u, v)).any():
-                raise ValueError(
-                    "Cannot determine vmin/vmax: no finite values. Pass "
-                    "explicit vmin/vmax, or components with at least one "
-                    "finite entry."
-                )
+        u, v, thin_value = self._validate_vector_field(
+            kind, location, u, v, thin, kwargs
+        )
 
         if location == "face":
             centroids = self.face_centroids
@@ -1922,51 +2044,17 @@ class MeshGlyph(GeoMixin, Glyph):
         else:
             anchor_x, anchor_y = self._node_x, self._node_y
 
-        # Resolve the render target locally; self.fig/self.ax are committed
-        # only after the delegate renders, so a failure between here and
-        # there never leaves the glyph rebound to a target it never drew on.
-        if ax is not None:
-            target_ax = ax
-        elif self.ax is not None:
-            target_ax = self.ax
-        elif self.fig is not None:
-            # A figure was bound without an axes: draw into the caller's
-            # figure (its first axes, or a fresh one), as `plot` does. Runs
-            # after validation, so a rejected call adds no stray axes.
-            target_ax = (
-                self.fig.axes[0] if self.fig.axes else self.fig.add_subplot(111)
-            )
-        else:
-            # The delegate creates the figure/axes (honouring a figsize= in
-            # kwargs) and the glyph adopts them on success.
-            target_ax = None
+        target_ax = self._resolve_vector_target_ax(ax)
 
-        # Each call builds a fresh delegate, which owns its own arrow
-        # artists, so a composed re-render drops the previous call's arrows
-        # itself (a non-composed render clears every glyph's artists anyway).
-        # The clear runs on the previous delegate's own axes -- the glyph
-        # tracks a single current field, so the old arrows are replaced even
-        # when the call targets a different axes -- and it runs BEFORE the
-        # new render: the old colorbar must give its layout space back before
-        # the new one takes its own, or repeated re-renders shrink the host
-        # monotonically. Every documented rejection was validated above, so
-        # a rejected call still never reaches this point.
-        # Constructed before the clear: the constructor is the delegate's
-        # last validation surface (e.g. the grouped-kwarg redirects), and it
-        # must reject while the previous arrows are still intact.
+        # The delegate is constructed before the previous-arrows clear: the
+        # constructor is its last validation surface (e.g. the grouped-kwarg
+        # redirects), and it must reject while the previous arrows are still
+        # intact. The clear itself runs BEFORE the new render so the old
+        # overlay colorbar gives its layout space back before the new one
+        # takes its own.
         delegate = VectorGlyph(anchor_x, anchor_y, u, v, thin=thin_value, **kwargs)
-        prev = self._vector_field_glyph
-        if compose and prev is not None and prev.ax is not None:
-            _clear_prior_render_artists(prev.ax, prev, compose=True)
-            # On a multi-axes figure the overlay bar was created through
-            # matplotlib's make_axes path, whose Colorbar.remove() gives no
-            # layout space back -- restore the host to the pre-steal position
-            # recorded when that bar was drawn.
-            # host axes == prev.ax by construction: the pair is stored
-            # together with the delegate in the success tail below.
-            if self._vector_host_bounds is not None:
-                host_ax, host_bounds = self._vector_host_bounds
-                host_ax.set_position(host_bounds)
+        if compose:
+            self._clear_previous_vector_field()
         pre_bounds = (
             target_ax.get_position().frozen() if target_ax is not None else None
         )
@@ -1980,38 +2068,7 @@ class MeshGlyph(GeoMixin, Glyph):
             classify=classify,
             compose=compose,
         )
-        if not compose:
-            # A previous plot(..., projection=...) leaves a globe boundary/
-            # graticule and a frozen, axis-off view that the glyph artist
-            # registry never touches (the frame is tracked separately, see
-            # _stash_projection_frame). A replacing vector render is a
-            # non-projection render, so undo the frame exactly as plot() does
-            # when projection is cleared -- otherwise the flat-coordinate
-            # arrows sit invisibly inside the projected, axis-off viewport.
-            # Runs after the delegate rendered, so a rejected call leaves the
-            # globe render fully intact.
-            if _clear_projection_frame(ax_out):
-                _restore_flat_axes(
-                    ax_out,
-                    float(self._node_x.min()),
-                    float(self._node_x.max()),
-                    float(self._node_y.min()),
-                    float(self._node_y.max()),
-                    aspect="equal",
-                )
-            # The replacing render just cleared the mesh mappable and its
-            # colorbar from the axes; drop the references too so they do not
-            # point at removed artists (the same reset plot_outline performs).
-            self.im = None
-            self._cbar = None
-        self._vector_field_glyph = delegate
-        self._vector_host_bounds = (
-            (ax_out, pre_bounds)
-            if compose and delegate.cbar is not None and pre_bounds is not None
-            else None
-        )
-        self.fig, self.ax = fig, ax_out
-        ax_out.set_aspect("equal")
+        self._finish_vector_render(delegate, fig, ax_out, compose, pre_bounds)
         return fig, ax_out, im
 
     def _build_edge_segments(self) -> np.ndarray:
