@@ -1843,13 +1843,6 @@ class MeshGlyph(GeoMixin, Glyph):
         # self.ax may still be None here; the delegate then creates the
         # figure/axes (honouring a figsize= in kwargs) and the glyph adopts them.
 
-        # Each call builds a fresh delegate, which owns its own arrow artists.
-        # A composed re-render must therefore drop the previous call's arrows
-        # itself, or the two fields would stack; a non-composed render clears
-        # every glyph's artists anyway.
-        if compose and self._vector_field_glyph is not None and self.ax is not None:
-            _clear_prior_render_artists(self.ax, self._vector_field_glyph, compose=True)
-
         delegate = VectorGlyph(
             anchor_x, anchor_y, u, v, thin=1 if thin is None else thin, **kwargs
         )
@@ -1861,6 +1854,16 @@ class MeshGlyph(GeoMixin, Glyph):
             colorbar=colorbar,
             compose=compose,
         )
+        # Each call builds a fresh delegate, which owns its own arrow artists.
+        # A composed re-render must therefore drop the previous call's arrows
+        # itself, or the two fields would stack; a non-composed render clears
+        # every glyph's artists anyway. The clear runs only now, after the
+        # delegate validated and rendered, so a rejected call (bad thin=,
+        # unknown option, all-NaN components) raises with the previous arrows
+        # still intact -- the delegate's own validate-before-clearing
+        # invariant, upheld across the delegation boundary.
+        if compose and self._vector_field_glyph is not None:
+            _clear_prior_render_artists(ax_out, self._vector_field_glyph, compose=True)
         self._vector_field_glyph = delegate
         self.fig, self.ax = fig, ax_out
         ax_out.set_aspect("equal")

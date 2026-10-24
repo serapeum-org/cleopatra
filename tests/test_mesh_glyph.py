@@ -2564,6 +2564,29 @@ class TestPlotVectorField:
         quivers = [c for c in ax.collections if isinstance(c, Quiver)]
         assert quivers == [im], "only the latest arrow set remains on the axes"
 
+    def test_failed_composed_recall_keeps_previous_arrows(self, triangle_glyph):
+        """A composed re-render that fails validation must not wipe the arrows.
+
+        Test scenario:
+            After a successful composed render, a second composed call that
+            the delegate rejects (thin=0; all-NaN components) raises -- and
+            the previous arrow set must still be on the axes afterwards,
+            honouring the delegate's own validate-before-clearing invariant.
+        """
+        triangle_glyph.plot(np.array([1.0, 2.0]))
+        u, v = np.array([0.3, -0.2]), np.array([0.1, 0.4])
+        fig, ax, im = triangle_glyph.plot_vector_field(u, v, compose=True)
+        with pytest.raises(ValueError, match="thin must be a positive integer"):
+            triangle_glyph.plot_vector_field(u, v, compose=True, thin=0)
+        quivers = [c for c in ax.collections if isinstance(c, Quiver)]
+        assert quivers == [im], "a failed thin= re-render must keep the arrows"
+        with pytest.raises(ValueError, match="no finite values"):
+            triangle_glyph.plot_vector_field(
+                np.full(2, np.nan), np.full(2, np.nan), compose=True
+            )
+        quivers = [c for c in ax.collections if isinstance(c, Quiver)]
+        assert quivers == [im], "an all-NaN re-render must keep the arrows"
+
     def test_compose_over_outline(self, quad_with_edges):
         """Arrows compose over a wireframe outline."""
         fig, ax = quad_with_edges.plot_outline()
