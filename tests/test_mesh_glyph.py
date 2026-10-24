@@ -2665,6 +2665,59 @@ class TestPlotVectorField:
             err_msg="repeated composed colorbar renders must not shrink the host",
         )
 
+    def test_dropping_the_composed_colorbar_restores_host_size(self, triangle_glyph):
+        """A later composed call without a bar gives the host its space back.
+
+        Test scenario:
+            After a composed render with colorbar=True shrank the host, a
+            composed re-render without a bar must restore the host to its
+            pre-steal position -- the shrink must not be one-shot sticky.
+        """
+        fig, ax = triangle_glyph.plot(np.array([1.0, 2.0]))
+        original = np.array(ax.get_position().bounds)
+        u, v = np.array([0.3, -0.2]), np.array([0.1, 0.4])
+        triangle_glyph.plot_vector_field(u, v, compose=True, colorbar=True)
+        triangle_glyph.plot_vector_field(u, v, compose=True)
+        np.testing.assert_allclose(
+            np.array(ax.get_position().bounds),
+            original,
+            atol=1e-3,
+            err_msg="dropping the overlay bar must return the stolen space",
+        )
+
+    def test_compose_applies_equal_aspect_to_foreign_host(self, triangle_glyph):
+        """Composing onto a foreign auto-aspect host applies equal aspect.
+
+        Test scenario:
+            The documented 'a composed overlay still applies its own aspect'
+            contract: a host axes with aspect='auto' ends at 1.0.
+        """
+        fig, host_ax = plt.subplots()
+        host_ax.set_aspect("auto")
+        triangle_glyph.plot_vector_field(
+            np.array([1.0, 2.0]), np.zeros(2), ax=host_ax, compose=True
+        )
+        assert host_ax.get_aspect() == 1.0, (
+            f"the overlay applies equal aspect, got {host_ax.get_aspect()!r}"
+        )
+
+    def test_all_nan_components_render_with_pinned_limits(self, triangle_glyph):
+        """All-NaN components render when vmin and vmax are both pinned.
+
+        Test scenario:
+            The hoisted all-NaN check mirrors Glyph._resolve_limits, which
+            rejects only when it must derive the limits itself; explicit
+            vmin= and vmax= keep the delegate's semantics of rendering a
+            fully-masked field.
+        """
+        fig, ax, im = triangle_glyph.plot_vector_field(
+            np.full(2, np.nan), np.full(2, np.nan), vmin=0.0, vmax=1.0
+        )
+        assert im.N == 2, "both (fully masked) anchors are kept"
+        assert bool(np.all(np.ma.getmaskarray(im.get_array()))), (
+            "the magnitudes are fully masked, not fabricated"
+        )
+
     def test_composed_recall_on_other_axes_does_not_stack(self, triangle_glyph):
         """Switching ax= between composed calls never stacks two fields.
 

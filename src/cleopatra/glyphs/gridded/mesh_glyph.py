@@ -1942,10 +1942,11 @@ class MeshGlyph(GeoMixin, Glyph):
             # matplotlib's make_axes path, whose Colorbar.remove() gives no
             # layout space back -- restore the host to the pre-steal position
             # recorded when that bar was drawn.
+            # host axes == prev.ax by construction: the pair is stored
+            # together with the delegate in the success tail below.
             if self._vector_host_bounds is not None:
                 host_ax, host_bounds = self._vector_host_bounds
-                if host_ax is prev.ax:
-                    host_ax.set_position(host_bounds)
+                host_ax.set_position(host_bounds)
         pre_bounds = (
             target_ax.get_position().frozen() if target_ax is not None else None
         )
