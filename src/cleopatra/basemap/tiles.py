@@ -106,6 +106,16 @@ def _require_tiles_extra() -> None:
         raise ImportError(_TILES_EXTRA_HINT)
 
 
+def _require_positive_int(name: str, value: int) -> None:
+    """Raise `ValueError` unless `value` is a positive, non-bool int.
+
+    Shared by `stitch_basemap` and `add_tiles` so the `max_tiles` /
+    `min_tiles_across` check (and its message) stays identical at both sites.
+    """
+    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+        raise ValueError(f"{name} must be a positive int, got {value!r}.")
+
+
 class Tile(NamedTuple):
     """An XYZ web-map tile: column `x`, row `y`, at zoom level `z`.
 
@@ -1139,16 +1149,8 @@ def stitch_basemap(
     """
     _require_tiles_extra()
 
-    if not isinstance(max_tiles, int) or isinstance(max_tiles, bool) or max_tiles < 1:
-        raise ValueError(f"max_tiles must be a positive int, got {max_tiles!r}.")
-    if (
-        not isinstance(min_tiles_across, int)
-        or isinstance(min_tiles_across, bool)
-        or min_tiles_across < 1
-    ):
-        raise ValueError(
-            f"min_tiles_across must be a positive int, got {min_tiles_across!r}."
-        )
+    _require_positive_int("max_tiles", max_tiles)
+    _require_positive_int("min_tiles_across", min_tiles_across)
 
     west, south, east, north = bbox
     south = max(south, -85.06)
@@ -1300,16 +1302,8 @@ def add_tiles(
     # stitch_basemap validates these too, but add_tiles checks them up front so
     # its historical error precedence (parameter errors before the extent guards)
     # is preserved -- see tests test_max_tiles/min_tiles_across_validated_before_extent_guard.
-    if not isinstance(max_tiles, int) or isinstance(max_tiles, bool) or max_tiles < 1:
-        raise ValueError(f"max_tiles must be a positive int, got {max_tiles!r}.")
-    if (
-        not isinstance(min_tiles_across, int)
-        or isinstance(min_tiles_across, bool)
-        or min_tiles_across < 1
-    ):
-        raise ValueError(
-            f"min_tiles_across must be a positive int, got {min_tiles_across!r}."
-        )
+    _require_positive_int("max_tiles", max_tiles)
+    _require_positive_int("min_tiles_across", min_tiles_across)
 
     x0, x1 = ax.get_xlim()
     y0, y1 = ax.get_ylim()
