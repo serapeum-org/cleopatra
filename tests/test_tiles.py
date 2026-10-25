@@ -654,12 +654,23 @@ class TestAddTilesDelegatesToStitchBasemap:
     def test_add_tiles_calls_stitch_basemap_with_reprojected_bbox(self, mock_ax):
         """add_tiles reprojects the axes extent to 4326 and delegates to stitch_basemap."""
         fake_image = np.zeros((256, 256, 4), dtype=np.uint8)
+        sentinel = get_provider("CartoDB.Positron")
         with patch.object(
             tiles_mod,
             "stitch_basemap",
             return_value=(fake_image, (1000000.0, 6000000.0, 1200000.0, 6200000.0)),
         ) as mock_stitch:
-            add_tiles(mock_ax, crs=3857, zoom=7, max_tiles=64, min_tiles_across=3)
+            add_tiles(
+                mock_ax,
+                source=sentinel,
+                crs=3857,
+                zoom=7,
+                max_tiles=64,
+                min_tiles_across=3,
+                timeout=42,
+                retries=5,
+                user_agent="my-app/1.0",
+            )
         assert mock_stitch.call_count == 1, (
             "add_tiles delegates the fetch to stitch_basemap"
         )
@@ -667,6 +678,12 @@ class TestAddTilesDelegatesToStitchBasemap:
         assert kwargs["zoom"] == 7, "zoom is forwarded"
         assert kwargs["max_tiles"] == 64, "max_tiles is forwarded"
         assert kwargs["min_tiles_across"] == 3, "min_tiles_across is forwarded"
+        assert kwargs["timeout"] == 42, "timeout is forwarded"
+        assert kwargs["retries"] == 5, "retries is forwarded"
+        assert kwargs["user_agent"] == "my-app/1.0", "user_agent is forwarded"
+        assert kwargs["provider"] is sentinel, (
+            "the resolved provider object is forwarded (and reused for attribution)"
+        )
         bbox = mock_stitch.call_args.args[0]
         assert len(bbox) == 4, "the bbox is a (w, s, e, n) 4326 tuple"
         assert -85.06 <= bbox[1] <= bbox[3] <= 85.06, (
