@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.44.0 (2026-10-25)
+
+
+- fix(ci): exclude other-extra markers in pure-wheel extras job (#399)
+- fix(ci): exclude other-extra markers in pure-wheel extras job
+- Each extras job installs only one optional extra but ran the full
+test suite, so tiles-marked tests failed in the science-colors
+job (no pyproj) and vice versa. Add an exclude_marker field to
+the matrix so each job skips tests needing the other extra.
+- feat(mesh_glyph): add plot_vector_field quiver/barbs on the mesh (#398)
+- Render a 2-component vector field on an unstructured mesh as quiver
+(default) or barbs, coloured by vector magnitude, delegating to the
+existing VectorGlyph so thin= decimation, the magnitude-colorbar
+contract, and the replace-don't-orphan artist bookkeeping are shared
+rather than reimplemented.
+- - anchor face-located components at the new MeshGlyph.face_centroids
+  property (mean of each face's valid non-fill nodes; NaN for a fully
+  padded face) and node-located components at the nodes
+- expose the grouped colour parameters (color/contour/classify) and
+  compose= overlay semantics; a repeated composed call replaces the
+  previous arrows instead of stacking a second field
+- refuse kind="streamplot" and the dead density= option with an
+  actionable error, and validate every rejection before any glyph,
+  figure, or artist state is touched
+- keep the pipeline safe across re-renders: restore host bounds on a
+  later composed call, reset the flat view when a render replaces a
+  globe, and preserve prior arrows when a composed re-render fails
+- decompose the method into validate/resolve/clear/finish pipeline
+  helpers and fold add_colorbar into the colorbar parameter
+- Closes #397
+
 ## 0.43.0 (2026-10-21)
 
 
