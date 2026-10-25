@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.45.0 (2026-10-25)
+
+
+- feat(basemap.tiles): add headless stitch_basemap(bbox) -> (image, extent) (#402)
+- Tile fetching was only available bound to a matplotlib axes (add_tiles), and the
+bbox->tiles enumerator (_tiles_for_bbox) was private, so a non-matplotlib
+renderer wanting the stitched image headlessly had to compose the publics and
+reach a private helper that can break on any refactor.
+- - Add stitch_basemap(bbox, provider=None, *, zoom="auto", max_tiles=...,
+  min_tiles_across=..., timeout=, retries=, user_agent=) -> (image, extent): the
+  axes-free core that enumerates tiles for an EPSG:4326 bbox at the chosen zoom,
+  fetches and stitches them, and returns the (H, W, 4) uint8 RGBA mosaic plus its
+  (west, south, east, north) EPSG:3857 extent.
+- Refactor add_tiles into a thin wrapper: reproject the axes extent to 4326,
+  delegate to stitch_basemap, reproject the returned extent to the axes CRS, then
+  imshow. Provider/zoom validation is shared via a _require_positive_int helper so
+  the max_tiles/min_tiles_across message lives once; add_tiles keeps the guard up
+  front to preserve its historical error precedence.
+- No behaviour change to add_tiles (full tiles suite green) and no new dependency --
+it is the existing add_tiles internals exposed before the imshow step. Covered to
+100% line and branch on tiles.py: image/extent passthrough, auto vs explicit zoom,
+min_tiles_across forwarding, max_tiles zoom-reduction, no-tiles error, string and
+object provider resolution, invalid-parameter guards, and the add_tiles delegation
+contract.
+- Closes #401
+
 ## 0.44.0 (2026-10-25)
 
 
