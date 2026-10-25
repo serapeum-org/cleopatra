@@ -3,6 +3,9 @@
 Provides `add_tiles` -- a single entry point that fetches XYZ web
 tiles for the current axes extent, stitches them into a composite image
 with Pillow, and renders the image underneath the existing data layer.
+For the headless case (no axes), `stitch_basemap` returns the same stitched
+image and its Web-Mercator extent as data, for a non-matplotlib renderer to
+drape or composite; `add_tiles` is a thin wrapper over it.
 
 The implementation is a pure-Python port of the `pyramids.basemap`
 module (basemap.py + tiles.py). It supports any XYZ provider listed in
@@ -1059,6 +1062,146 @@ def stitch_tiles(
     return image, extent_3857
 
 
+def stitch_basemap(
+    bbox: tuple[float, float, float, float],
+    provider: Any | None = None,
+    *,
+    zoom: int | str = "auto",
+    max_tiles: int = MAX_TILES,
+    min_tiles_across: int = 2,
+    timeout: int = 10,
+    retries: int = 2,
+    user_agent: str | None = None,
+) -> tuple[np.ndarray, tuple[float, float, float, float]]:
+    """Fetch and stitch a web-tile basemap for a bbox, headless (no axes).
+
+    The axes-free core of `add_tiles`: enumerate the XYZ tiles covering an
+    EPSG:4326 bounding box at the chosen zoom, fetch them, and stitch them into
+    one image, returning the image and its Web-Mercator extent as *data*. A
+    non-matplotlib renderer (a 3-D/PyVista tier, deck.gl, a headless export) can
+    drape or composite the result itself; `add_tiles` is the thin matplotlib
+    wrapper that calls this and `imshow`s the result.
+
+    Args:
+        bbox: `(west, south, east, north)` in EPSG:4326 decimal degrees.
+            Latitude is clipped to the Web-Mercator limit (+/-85.06). A
+            `west > east` box is treated as antimeridian-crossing (see
+            `_tiles_for_bbox`).
+        provider: Tile provider. `None` defaults to `OpenStreetMap.Mapnik`; a
+            dot-separated string such as `"CartoDB.Positron"` is resolved via
+            `get_provider`; an `xyzservices.TileProvider` (or any object with
+            `build_url(x=, y=, z=)`, e.g. `cleopatra.basemap.ogc.WMSProvider`)
+            is used directly.
+        zoom: `"auto"` derives a level from `bbox` via `auto_zoom`; an int must
+            be in `[0, 19]`.
+        max_tiles: Cap on tiles to fetch; if the chosen zoom needs more, the
+            zoom is stepped down until the count fits (or reaches 0). Must be a
+            positive int.
+        min_tiles_across: Floor for the automatic zoom, forwarded to `auto_zoom`
+            when `zoom="auto"` (ignored for an explicit `zoom=`).
+        timeout: Per-tile HTTP timeout in seconds.
+        retries: Per-tile retry count.
+        user_agent: `User-Agent` header for tile requests; `None` uses
+            `USER_AGENT`.
+
+    Returns:
+        tuple[numpy.ndarray, tuple[float, float, float, float]]: `(image,
+        extent)` where `image` is an `(H, W, 4)` uint8 RGBA mosaic and `extent`
+        is `(west, south, east, north)` in EPSG:3857 metres -- the mosaic's
+        tile-snapped coverage, which is at least the requested `bbox`.
+
+    Raises:
+        ImportError: If the `[tiles]` extra is not installed.
+        ValueError: If `max_tiles`/`min_tiles_across` is not a positive int,
+            `zoom` is not `"auto"` or an int in `[0, 19]`, or no tiles cover
+            `bbox` at the resolved zoom.
+        ConnectionError: If tiles cannot be fetched from the provider.
+
+    Examples:
+        - Stitch a basemap for a Berlin bbox (downloads tiles, so skipped here);
+            the extent comes back in EPSG:3857:
+            ```python
+            >>> from cleopatra.basemap.tiles import stitch_basemap
+            >>> image, extent = stitch_basemap((13.0, 52.4, 13.6, 52.6))  # doctest: +SKIP
+            >>> image.shape[2], len(extent)  # (H, W, 4) RGBA, 4-tuple extent  # doctest: +SKIP
+            (4, 4)
+
+            ```
+        - An out-of-range zoom is rejected before any tiles are fetched:
+            ```python
+            >>> from cleopatra.basemap.tiles import stitch_basemap
+            >>> stitch_basemap((13.0, 52.4, 13.6, 52.6), zoom=25)
+            Traceback (most recent call last):
+                ...
+            ValueError: zoom must be 0-19, got 25
+
+            ```
+    """
+    _require_tiles_extra()
+
+    if not isinstance(max_tiles, int) or isinstance(max_tiles, bool) or max_tiles < 1:
+        raise ValueError(f"max_tiles must be a positive int, got {max_tiles!r}.")
+    if (
+        not isinstance(min_tiles_across, int)
+        or isinstance(min_tiles_across, bool)
+        or min_tiles_across < 1
+    ):
+        raise ValueError(
+            f"min_tiles_across must be a positive int, got {min_tiles_across!r}."
+        )
+
+    west, south, east, north = bbox
+    south = max(south, -85.06)
+    north = min(north, 85.06)
+    bounds_4326 = (west, south, east, north)
+
+    if zoom == "auto":
+        tile_zoom = auto_zoom(bounds_4326, min_tiles_across=min_tiles_across)
+    else:
+        try:
+            tile_zoom = int(zoom)
+        except (ValueError, TypeError) as e:
+            raise ValueError(f"zoom must be 'auto' or int 0-19, got {zoom!r}") from e
+        if not 0 <= tile_zoom <= 19:
+            raise ValueError(f"zoom must be 0-19, got {tile_zoom}")
+
+    if isinstance(provider, str) or provider is None:
+        resolved = get_provider(provider)
+    else:
+        resolved = provider
+
+    original_zoom = tile_zoom
+    tiles = _tiles_for_bbox(west, south, east, north, zoom=tile_zoom)
+    while len(tiles) > max_tiles and tile_zoom > 0:
+        tile_zoom -= 1
+        tiles = _tiles_for_bbox(west, south, east, north, zoom=tile_zoom)
+
+    if tile_zoom != original_zoom:
+        logger.warning(
+            "Zoom reduced from %d to %d (extent requires > %d tiles).",
+            original_zoom,
+            tile_zoom,
+            max_tiles,
+        )
+
+    if not tiles:
+        raise ValueError(
+            f"No tiles found for bounds {bounds_4326} at zoom "
+            f"{tile_zoom}. The extent may be outside valid tile "
+            f"coverage."
+        )
+
+    tile_data = fetch_tiles(
+        tiles,
+        resolved,
+        timeout=timeout,
+        retries=retries,
+        user_agent=user_agent if user_agent is not None else USER_AGENT,
+    )
+    image, extent_3857 = stitch_tiles(tile_data, tiles, tile_zoom)
+    return image, extent_3857
+
+
 def add_tiles(
     ax: Any,
     source: Any | None = None,
@@ -1154,18 +1297,6 @@ def add_tiles(
             f"ax must be a matplotlib.axes.Axes instance, got {type(ax).__name__}"
         )
 
-    if not isinstance(max_tiles, int) or isinstance(max_tiles, bool) or max_tiles < 1:
-        raise ValueError(f"max_tiles must be a positive int, got {max_tiles!r}.")
-
-    if (
-        not isinstance(min_tiles_across, int)
-        or isinstance(min_tiles_across, bool)
-        or min_tiles_across < 1
-    ):
-        raise ValueError(
-            f"min_tiles_across must be a positive int, got {min_tiles_across!r}."
-        )
-
     x0, x1 = ax.get_xlim()
     y0, y1 = ax.get_ylim()
     west, east = min(x0, x1), max(x0, x1)
@@ -1216,51 +1347,16 @@ def add_tiles(
             "Web Mercator domain."
         )
 
-    s4326 = max(s4326, -85.06)
-    n4326 = min(n4326, 85.06)
-
-    bounds_4326 = (w4326, s4326, e4326, n4326)
-
-    if zoom == "auto":
-        tile_zoom = auto_zoom(bounds_4326, min_tiles_across=min_tiles_across)
-    else:
-        try:
-            tile_zoom = int(zoom)
-        except (ValueError, TypeError) as e:
-            raise ValueError(f"zoom must be 'auto' or int 0-19, got {zoom!r}") from e
-        if not 0 <= tile_zoom <= 19:
-            raise ValueError(f"zoom must be 0-19, got {tile_zoom}")
-
-    original_zoom = tile_zoom
-    tiles = _tiles_for_bbox(w4326, s4326, e4326, n4326, zoom=tile_zoom)
-
-    while len(tiles) > max_tiles and tile_zoom > 0:
-        tile_zoom -= 1
-        tiles = _tiles_for_bbox(w4326, s4326, e4326, n4326, zoom=tile_zoom)
-
-    if tile_zoom != original_zoom:
-        logger.warning(
-            "Zoom reduced from %d to %d (extent requires > %d tiles).",
-            original_zoom,
-            tile_zoom,
-            max_tiles,
-        )
-
-    if not tiles:
-        raise ValueError(
-            f"No tiles found for bounds {bounds_4326} at zoom "
-            f"{tile_zoom}. The extent may be outside valid tile "
-            f"coverage."
-        )
-
-    tile_data = fetch_tiles(
-        tiles,
-        provider,
+    image, extent_3857 = stitch_basemap(
+        (w4326, s4326, e4326, n4326),
+        provider=provider,
+        zoom=zoom,
+        max_tiles=max_tiles,
+        min_tiles_across=min_tiles_across,
         timeout=timeout,
         retries=retries,
-        user_agent=user_agent if user_agent is not None else USER_AGENT,
+        user_agent=user_agent,
     )
-    image, extent_3857 = stitch_tiles(tile_data, tiles, tile_zoom)
 
     if is_3857:
         extent = extent_3857
