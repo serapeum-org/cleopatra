@@ -1133,8 +1133,8 @@ def stitch_basemap(
             ```python
             >>> from cleopatra.basemap.tiles import stitch_basemap
             >>> image, extent = stitch_basemap((13.0, 52.4, 13.6, 52.6))  # doctest: +SKIP
-            >>> image.shape[2], len(extent)  # (H, W, 4) RGBA, 4-tuple extent  # doctest: +SKIP
-            (4, 4)
+            >>> image.ndim, image.shape[-1], len(extent)  # H x W x 4 RGBA; 4-tuple extent  # doctest: +SKIP
+            (3, 4, 4)
 
             ```
         - An out-of-range zoom is rejected before any tiles are fetched:
