@@ -24,6 +24,13 @@ Examples:
         >>> fig, ax = mg.plot_outline(color="blue", linewidth=0.5)
 
         ```
+    - Overlay a face-located vector field, anchored at the face centroids:
+        ```python
+        >>> fig, ax, im = mg.plot_vector_field(
+        ...     np.array([0.3, -0.2]), np.array([0.1, 0.4]), compose=True
+        ... )
+
+        ```
 """
 
 from __future__ import annotations
@@ -53,6 +60,7 @@ from cleopatra.glyphs.base.glyph import (
     _stash_projection_frame,
 )
 from cleopatra.glyphs.base.hillshade import resolve_hillshade, shade_faces
+from cleopatra.glyphs.gridded.vector_glyph import VectorGlyph, _validate_thin
 from cleopatra.styling.colorbar import ColorBar, _resolve_colorbar
 from cleopatra.styling.colors import (
     category_boundaries,
@@ -60,7 +68,7 @@ from cleopatra.styling.colors import (
     resolve_single_layer_style,
     resolve_style_norm,
 )
-from cleopatra.styling.params import Contour, DataStyle
+from cleopatra.styling.params import Classify, Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 from cleopatra.styling.styles import disjoint_legend
@@ -80,6 +88,11 @@ MESH_DEFAULT_OPTIONS = {
     "projection": None,
 }
 MESH_DEFAULT_OPTIONS = STYLE_DEFAULTS | MESH_DEFAULT_OPTIONS
+
+#: Vector kinds `plot_vector_field` dispatches to `VectorGlyph` with.
+#: `streamplot` is deliberately absent: streamline tracing needs a regular
+#: grid, which an unstructured mesh does not have (see `plot_vector_field`).
+MESH_VECTOR_KINDS = ("quiver", "barbs")
 
 
 class MeshGlyph(GeoMixin, Glyph):
@@ -212,6 +225,13 @@ class MeshGlyph(GeoMixin, Glyph):
         self._cached_triangulation: mtri.Triangulation | None = None
         self._cached_tri_array: np.ndarray | None = None
         self._cached_nodes_per_face: np.ndarray | None = None
+        self._cached_face_centroids: np.ndarray | None = None
+        #: Delegate `VectorGlyph` from the most recent `plot_vector_field`
+        #: call; `None` before the first. Each call builds a fresh delegate
+        #: (which owns its own arrow artists), so this reference is what lets
+        #: a composed re-render clear the previous call's arrows instead of
+        #: stacking a second field on top.
+        self._vector_field_glyph: VectorGlyph | None = None
         self._cbar: Colorbar | None = None
         #: Colour-mapped artist from the most recent `plot` call (the
         #: `tripcolor`/`tricontour(f)` mappable); `None` before first render.
@@ -236,6 +256,14 @@ class MeshGlyph(GeoMixin, Glyph):
         #: restored after the reset -- so a style survives a later plain
         #: `plot(data)` (sticky + clearable, like `ArrayGlyph`).
         self._style_state = self.default_options.get("style")
+        #: `(host_axes, pre-steal bounds)` captured when the most recent
+        #: composed `plot_vector_field` drew its own colorbar, else `None`.
+        #: On a multi-axes figure `create_color_bar` takes matplotlib's
+        #: `make_axes` path, whose `Colorbar.remove()` never hands the stolen
+        #: layout space back -- so when a composed re-render clears the
+        #: previous overlay bar, the host is restored from this record or
+        #: repeated re-renders would shrink it monotonically.
+        self._vector_host_bounds: tuple[Any, Any] | None = None
         #: Sticky `projection` preset (like `_style_state`): restored after the
         #: `plot()` options reset so a constructor-time `projection=` survives a
         #: later plain `plot(data)`.
@@ -437,6 +465,65 @@ class MeshGlyph(GeoMixin, Glyph):
                 self._face_nodes != self._fill_value, axis=1
             ).astype(np.intp)
         return self._cached_nodes_per_face
+
+    @property
+    def face_centroids(self) -> np.ndarray:
+        """Face centroids: the mean of each face's valid node coordinates.
+
+        The centroid is the arithmetic mean of the face's valid (non-fill)
+        vertices -- the vertex centroid, not the area centroid. For the
+        convex, well-shaped cells of a typical UGRID mesh the two are close,
+        and the vertex centroid is what `plot_vector_field` anchors
+        face-located arrows at. A face with no valid nodes yields a NaN row.
+
+        Returns:
+            np.ndarray: `(n_faces, 2)` float array of `(x, y)` centroids, in
+                face order.
+
+        Examples:
+            - The centroid of a triangle is the mean of its three vertices:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
+                >>> mg = MeshGlyph(
+                ...     np.array([0.0, 1.0, 0.5]),
+                ...     np.array([0.0, 0.0, 1.0]),
+                ...     np.array([[0, 1, 2]]),
+                ... )
+                >>> mg.face_centroids
+                array([[0.5       , 0.33333333]])
+
+                ```
+            - A mixed mesh averages only each face's valid nodes:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
+                >>> mg = MeshGlyph(
+                ...     np.array([0.0, 1.0, 2.0, 0.0, 1.0, 2.0]),
+                ...     np.array([0.0, 0.0, 0.0, 1.0, 1.0, 1.0]),
+                ...     np.array([[0, 1, 4, 3], [1, 2, 5, -1]]),
+                ...     fill_value=-1,
+                ... )
+                >>> mg.face_centroids
+                array([[0.5       , 0.5       ],
+                       [1.66666667, 0.33333333]])
+
+                ```
+
+        See Also:
+            plot_vector_field: Anchors face-located `(u, v)` arrows at these
+                centroids.
+            nodes_per_face: The per-face valid-node counts the mean divides by.
+        """
+        if self._cached_face_centroids is None:
+            valid = self._face_nodes != self._fill_value
+            safe_idx = np.where(valid, self._face_nodes, 0)
+            counts = self.nodes_per_face.astype(np.float64)
+            with np.errstate(invalid="ignore", divide="ignore"):
+                cx = np.where(valid, self._node_x[safe_idx], 0.0).sum(axis=1) / counts
+                cy = np.where(valid, self._node_y[safe_idx], 0.0).sum(axis=1) / counts
+            self._cached_face_centroids = np.column_stack([cx, cy])
+        return self._cached_face_centroids
 
     @property
     def triangulation(self) -> mtri.Triangulation:
@@ -1567,6 +1654,427 @@ class MeshGlyph(GeoMixin, Glyph):
         _mark_render_artists(self.ax, self, lc)
 
         return self.fig, self.ax
+
+    def _validate_vector_field(
+        self,
+        kind: str,
+        location: str,
+        u: np.ndarray,
+        v: np.ndarray,
+        thin: int | None,
+        kwargs: dict[str, Any],
+    ) -> tuple[np.ndarray, np.ndarray, int]:
+        """Run every documented `plot_vector_field` rejection up front.
+
+        Hoists the delegate-side validations (thin, the cmap name, the
+        all-NaN magnitude case that `Glyph._resolve_limits` rejects only when
+        `vmin`/`vmax` are unpinned) next to the mesh-side ones, so every
+        rejection in the method's Raises section fires before any glyph
+        state, figure, or artist is touched.
+
+        Args:
+            kind: The requested vector kind.
+            location: `"face"` or `"node"`.
+            u: Raw x-components as passed by the caller.
+            v: Raw y-components, same length and location as `u`.
+            thin: The decimation step, or `None` for all elements.
+            kwargs: The loose option overrides headed for the delegate.
+
+        Returns:
+            tuple[np.ndarray, np.ndarray, int]: `u` and `v` as 1D float64
+                arrays, and the resolved thinning step (`1` for `None`).
+
+        Raises:
+            ValueError: Per the `plot_vector_field` Raises contract.
+        """
+        if kind not in MESH_VECTOR_KINDS:
+            if kind == "streamplot":
+                raise ValueError(
+                    "kind='streamplot' is not supported on an unstructured "
+                    "mesh: streamline tracing needs a regular grid. Resample "
+                    "the field to a grid and use "
+                    "cleopatra.glyphs.gridded.vector_glyph.VectorGlyph."
+                )
+            raise ValueError(
+                f"unknown vector kind {kind!r}; expected one of "
+                f"{', '.join(MESH_VECTOR_KINDS)}."
+            )
+        u = np.asarray(u, dtype=np.float64)
+        v = np.asarray(v, dtype=np.float64)
+        if u.ndim != 1 or v.ndim != 1:
+            raise ValueError(f"u and v must be 1D, got {u.ndim}D and {v.ndim}D.")
+        if u.shape != v.shape:
+            raise ValueError(
+                f"u and v must have the same shape, got {u.shape} and {v.shape}."
+            )
+        # v mirrors u's shape, so validating u validates both.
+        self._validate_location_and_data(u, location)
+        # The delegate's own strict check only sees **kwargs headed for its
+        # options dict; a key naming one of its constructor parameters (fig)
+        # would silently bind instead of raising, abandoning the caller's
+        # figure. Enforce the documented unknown-keys-raise contract here.
+        unknown = set(kwargs) - VectorGlyph.option_keys()
+        if unknown:
+            raise ValueError(
+                f"plot_vector_field got unknown option(s): "
+                f"{', '.join(sorted(unknown))}. Valid keys are the VectorGlyph "
+                f"options; bind a figure via ax= or at construction instead."
+            )
+        if "density" in kwargs:
+            # density only affects streamplot, which this method refuses, so
+            # accepting it would be a silent no-op (the delegate warns about
+            # the mirrored thin-on-streamplot case for the same reason).
+            raise ValueError(
+                "density only affects kind='streamplot', which an "
+                "unstructured mesh does not support; use thin= to control "
+                "arrow density."
+            )
+        thin_value = 1 if thin is None else thin
+        _validate_thin(thin_value, kind)
+        if "cmap" in kwargs:
+            resolve_colormap(kwargs["cmap"])
+        if kwargs.get("vmin") is None or kwargs.get("vmax") is None:
+            if not np.isfinite(np.hypot(u, v)).any():
+                raise ValueError(
+                    "Cannot determine vmin/vmax: no finite values. Pass "
+                    "explicit vmin/vmax, or components with at least one "
+                    "finite entry."
+                )
+        return u, v, thin_value
+
+    def _resolve_vector_target_ax(self, ax: Any) -> Any:
+        """Resolve the axes a vector render should draw on, without binding it.
+
+        `self.fig`/`self.ax` are committed only after the delegate renders
+        (see `_finish_vector_render`), so a failure between resolution and
+        render never leaves the glyph rebound to a target it never drew on.
+
+        Args:
+            ax: The caller's explicit axes, or `None`.
+
+        Returns:
+            The target axes, or `None` when the delegate should create the
+            figure/axes itself (honouring a `figsize=` in its options).
+        """
+        if ax is not None:
+            return ax
+        if self.ax is not None:
+            return self.ax
+        if self.fig is not None:
+            # A figure was bound without an axes: draw into the caller's
+            # figure (its first axes, or a fresh one), as `plot` does. Runs
+            # after validation, so a rejected call adds no stray axes.
+            return self.fig.axes[0] if self.fig.axes else self.fig.add_subplot(111)
+        return None
+
+    def _clear_previous_vector_field(self) -> None:
+        """Drop the previous composed vector render's artists and layout steal.
+
+        Each `plot_vector_field` call builds a fresh delegate that owns its
+        own arrow artists, so a composed re-render removes the previous
+        call's arrows itself -- on the previous delegate's own axes, since
+        the glyph tracks a single current field that replaces across axes.
+        The overlay colorbar's layout steal is undone from
+        `_vector_host_bounds`, because on a multi-axes figure the bar was
+        created through matplotlib's `make_axes` path, whose
+        `Colorbar.remove()` gives no layout space back.
+        """
+        prev = self._vector_field_glyph
+        if prev is None or prev.ax is None:
+            return
+        _clear_prior_render_artists(prev.ax, prev, compose=True)
+        # host axes == prev.ax by construction: the pair is stored together
+        # with the delegate in _finish_vector_render.
+        if self._vector_host_bounds is not None:
+            host_ax, host_bounds = self._vector_host_bounds
+            host_ax.set_position(host_bounds)
+
+    def _finish_vector_render(
+        self,
+        delegate: VectorGlyph,
+        fig: Any,
+        ax_out: Any,
+        compose: bool,
+        pre_bounds: Any,
+    ) -> None:
+        """Commit glyph state after a successful vector render.
+
+        A replacing render additionally undoes a projection frame a previous
+        `plot(..., projection=...)` left behind -- the frame and its frozen,
+        axis-off view are tracked separately from the glyph artist registry,
+        and a vector render is a non-projection render, so it restores the
+        flat view exactly as `plot` does when the projection is cleared --
+        and resets `im`/`_cbar`, whose artists the replacing render just
+        removed (the same reset `plot_outline` performs).
+
+        Args:
+            delegate: The `VectorGlyph` that just rendered.
+            fig: The figure the delegate drew into.
+            ax_out: The axes the delegate drew on.
+            compose: Whether this was a composed (overlay) render.
+            pre_bounds: The host's position captured before the render, kept
+                on `_vector_host_bounds` when the composed overlay drew its
+                own colorbar so the next clear can undo the layout steal.
+        """
+        if not compose:
+            if _clear_projection_frame(ax_out):
+                _restore_flat_axes(
+                    ax_out,
+                    float(self._node_x.min()),
+                    float(self._node_x.max()),
+                    float(self._node_y.min()),
+                    float(self._node_y.max()),
+                    aspect="equal",
+                )
+            self.im = None
+            self._cbar = None
+        self._vector_field_glyph = delegate
+        self._vector_host_bounds = (
+            (ax_out, pre_bounds)
+            if compose and delegate.cbar is not None and pre_bounds is not None
+            else None
+        )
+        self.fig, self.ax = fig, ax_out
+        ax_out.set_aspect("equal")
+
+    def plot_vector_field(
+        self,
+        u: np.ndarray,
+        v: np.ndarray,
+        *,
+        kind: str = "quiver",
+        thin: int | None = None,
+        location: str = "face",
+        ax: Any = None,
+        title: str | None = None,
+        colorbar: bool | ColorBar | None = None,
+        color: ColorScaling | None = None,
+        contour: Contour | None = None,
+        classify: Classify | None = None,
+        compose: bool = False,
+        **kwargs: Any,
+    ) -> tuple[plt.Figure, plt.Axes, Any]:
+        """Plot a `(u, v)` vector field anchored on the mesh.
+
+        Face-located components (`location="face"`) draw one arrow per face,
+        anchored at the face's vertex centroid (`face_centroids`); node-located
+        components anchor at the nodes themselves. Rendering delegates to
+        `cleopatra.glyphs.gridded.vector_glyph.VectorGlyph`, so the arrows are
+        coloured by the vector magnitude `hypot(u, v)` through the shared
+        scalar-mapping pipeline, with the same colorbar behaviour.
+
+        The field is drawn in the mesh's native (flat) coordinates: a
+        `projection` preset applied by `plot` reprojects only the mesh render,
+        so combine a vector field with the plain mesh, not the globe. A
+        *replacing* render (`compose=False`) after a globe `plot` therefore
+        removes the globe frame and restores the flat view -- the same
+        contract as `plot` with the projection cleared -- while a composed
+        overlay leaves the host frame untouched.
+
+        Args:
+            u: 1D x-components, one per face (`location="face"`) or per node
+                (`location="node"`).
+            v: 1D y-components, same length and location as `u`.
+            kind: `"quiver"` (arrows, the default) or `"barbs"`.
+                `"streamplot"` is refused: streamline tracing needs a regular
+                grid, which an unstructured mesh does not have -- resample the
+                field to a grid and use `VectorGlyph` directly instead.
+            thin: Draw every `thin`-th element so a large mesh stays legible;
+                `None` (the default) draws them all. Must be a positive
+                integer.
+            location: Mesh element location the components live on:
+                `"face"` (the default) anchors one arrow per face at its
+                vertex centroid (`face_centroids`); `"node"` anchors one
+                arrow per node at the node coordinates.
+            ax: Axes to draw on. If None, resolution priority is the axes
+                bound at construction or by a previous render > an axes
+                derived from a figure bound at construction > a new
+                figure/axes created by the delegate (honouring a `figsize=`
+                passed through `**kwargs`).
+            title: Plot title, applied by the delegate.
+            colorbar: Draw the magnitude colorbar. `None` (default) leaves
+                the decision to the delegate's contract: on for a standalone
+                render, off under `compose=True`; `True` or a typed `ColorBar`
+                spec (placement / caption / sizing) always draws one, even
+                composing; `False` suppresses it -- the same contract as
+                `plot`.
+            color: Colour-scale group object
+                (`cleopatra.styling.scaling.ColorScaling`) applied to the
+                magnitude, e.g. `ColorScaling.power(gamma=0.5)` -- the same
+                grouped parameter `plot` and `VectorGlyph.plot` take.
+            contour: Discretisation group object
+                (`cleopatra.styling.params.Contour`); `Contour(levels=N)`
+                discretises the magnitude colour norm.
+            classify: Classification group object
+                (`cleopatra.styling.params.Classify`) for scheme-based
+                magnitude classes, forwarded to the delegate unchanged.
+            compose: Draw *over* whatever is already on the axes instead of
+                replacing it, by default `False`. `True` keeps the host
+                layers -- a filled `plot` render, a `plot_outline` wireframe,
+                or `add_tiles`/`add_relief` backdrops -- and layers the arrows
+                on top. The glyph tracks a single current field, so a
+                repeated composed call replaces the previous call's arrows
+                (and the colorbar they brought, if any -- ask for a new one
+                with `colorbar=True`) even when they live on another axes.
+                `False` keeps the replace-don't-orphan default every glyph
+                render has: the axes is cleared of all glyph artists first.
+                Either way the render applies the mesh convention of an equal
+                axes aspect, including to a foreign host it composes onto --
+                the same "a composed overlay still applies its own aspect"
+                contract `plot` documents.
+            **kwargs: Overrides for the delegate `VectorGlyph`'s options
+                (`cmap`, `vmin`, `vmax`, `scale`, `cbar_label`, `figsize`,
+                ...). An unknown key raises `ValueError`.
+
+        Returns:
+            tuple[Figure, Axes, Any]: The figure, the axes, and the `Quiver`
+                or `Barbs` mappable (e.g. for `Axes.quiverkey`). Under
+                `compose=True` the mesh's own `im` (the scalar mappable from
+                `plot`) is left untouched; a replacing render clears the mesh
+                artists from the axes and resets `im` and the colorbar
+                reference to `None`, as `plot_outline` does.
+
+        Raises:
+            ValueError: If `kind` is not `"quiver"`/`"barbs"` (including the
+                explicit `"streamplot"` refusal), `location` is not
+                `"face"`/`"node"`, `u`/`v` are not 1D of equal length matching
+                the location's element count, `thin` is not a positive
+                integer, a `**kwargs` key is not a `VectorGlyph` option,
+                `density` is passed (a streamplot-only option -- use `thin=`),
+                or the magnitude has no finite values while `vmin`/`vmax` are
+                not both given. A rejected call raises before anything is
+                touched: the existing render -- mesh, arrows, and colorbars
+                alike -- and the glyph's bound figure/axes all survive
+                unchanged.
+
+        Examples:
+            - Arrows at the face centroids of a two-triangle mesh:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
+                >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
+                >>> node_y = np.array([0.0, 0.0, 1.0, 1.0])
+                >>> faces = np.array([[0, 1, 2], [1, 3, 2]])
+                >>> mg = MeshGlyph(node_x, node_y, faces)
+                >>> fig, ax, im = mg.plot_vector_field(
+                ...     np.array([0.3, -0.2]), np.array([0.1, 0.4])
+                ... )
+                >>> im.N
+                2
+
+                ```
+            - Compose the field over a filled mesh render; the host layers
+                and colorbar stay, and the arrows bring no second colorbar:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
+                >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
+                >>> node_y = np.array([0.0, 0.0, 1.0, 1.0])
+                >>> faces = np.array([[0, 1, 2], [1, 3, 2]])
+                >>> mg = MeshGlyph(node_x, node_y, faces)
+                >>> fig, ax = mg.plot(np.array([1.0, 2.0]))
+                >>> n_axes = len(fig.axes)
+                >>> fig2, ax2, im = mg.plot_vector_field(
+                ...     np.array([0.3, -0.2]), np.array([0.1, 0.4]), compose=True
+                ... )
+                >>> ax2 is ax and len(fig2.axes) == n_axes
+                True
+
+                ```
+            - Node-located components as wind barbs:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
+                >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
+                >>> node_y = np.array([0.0, 0.0, 1.0, 1.0])
+                >>> faces = np.array([[0, 1, 2], [1, 3, 2]])
+                >>> mg = MeshGlyph(node_x, node_y, faces)
+                >>> fig, ax, im = mg.plot_vector_field(
+                ...     np.full(4, 5.0), np.zeros(4), kind="barbs", location="node"
+                ... )
+                >>> float(im.get_array().max())
+                5.0
+
+                ```
+            - A grouped colour scale applies a non-linear magnitude norm:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
+                >>> from cleopatra.styling.scaling import ColorScaling
+                >>> node_x = np.array([0.0, 1.0, 0.5, 1.5])
+                >>> node_y = np.array([0.0, 0.0, 1.0, 1.0])
+                >>> faces = np.array([[0, 1, 2], [1, 3, 2]])
+                >>> mg = MeshGlyph(node_x, node_y, faces)
+                >>> fig, ax, im = mg.plot_vector_field(
+                ...     np.array([0.3, -0.2]),
+                ...     np.array([0.1, 0.4]),
+                ...     color=ColorScaling.power(gamma=0.5),
+                ... )
+                >>> im.norm.gamma
+                0.5
+
+                ```
+            - `streamplot` is refused with an actionable message:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.gridded.mesh_glyph import MeshGlyph
+                >>> mg = MeshGlyph(
+                ...     np.array([0.0, 1.0, 0.5]),
+                ...     np.array([0.0, 0.0, 1.0]),
+                ...     np.array([[0, 1, 2]]),
+                ... )
+                >>> mg.plot_vector_field(np.array([1.0]), np.array([1.0]),
+                ...                      kind="streamplot")
+                Traceback (most recent call last):
+                    ...
+                ValueError: kind='streamplot' is not supported on an unstructured mesh: ...
+
+                ```
+
+        See Also:
+            cleopatra.glyphs.gridded.vector_glyph.VectorGlyph: The delegate
+                that renders the arrows/barbs and owns the `thin`/colorbar
+                machinery; use it directly for gridded fields (including
+                `streamplot`).
+            face_centroids: The anchors used for face-located components.
+            plot: The scalar mesh render a field is typically composed over.
+        """
+        u, v, thin_value = self._validate_vector_field(
+            kind, location, u, v, thin, kwargs
+        )
+
+        if location == "face":
+            centroids = self.face_centroids
+            anchor_x, anchor_y = centroids[:, 0], centroids[:, 1]
+        else:
+            anchor_x, anchor_y = self._node_x, self._node_y
+
+        target_ax = self._resolve_vector_target_ax(ax)
+
+        # The delegate is constructed before the previous-arrows clear: the
+        # constructor is its last validation surface (e.g. the grouped-kwarg
+        # redirects), and it must reject while the previous arrows are still
+        # intact. The clear itself runs BEFORE the new render so the old
+        # overlay colorbar gives its layout space back before the new one
+        # takes its own.
+        delegate = VectorGlyph(anchor_x, anchor_y, u, v, thin=thin_value, **kwargs)
+        if compose:
+            self._clear_previous_vector_field()
+        pre_bounds = (
+            target_ax.get_position().frozen() if target_ax is not None else None
+        )
+        fig, ax_out, im = delegate.plot(
+            kind=kind,
+            ax=target_ax,
+            title=title,
+            colorbar=colorbar,
+            color=color,
+            contour=contour,
+            classify=classify,
+            compose=compose,
+        )
+        self._finish_vector_render(delegate, fig, ax_out, compose, pre_bounds)
+        return fig, ax_out, im
 
     def _build_edge_segments(self) -> np.ndarray:
         """Build line segments for wireframe rendering.
