@@ -526,6 +526,26 @@ class TestAddTilesIntegration:
         with pytest.raises(ValueError, match="min_tiles_across must be a positive int"):
             add_tiles(mock_ax, crs=3857, min_tiles_across=bad)
 
+    def test_max_tiles_validated_before_extent_guard(self):
+        """`max_tiles` is rejected before the no-data-extent guard (error precedence)."""
+        fig, ax = plt.subplots()
+        try:
+            with pytest.raises(ValueError, match="max_tiles must be a positive int"):
+                add_tiles(ax, crs=3857, max_tiles=-5)
+        finally:
+            plt.close(fig)
+
+    def test_min_tiles_across_validated_before_extent_guard(self):
+        """`min_tiles_across` is rejected before the no-data-extent guard (precedence)."""
+        fig, ax = plt.subplots()
+        try:
+            with pytest.raises(
+                ValueError, match="min_tiles_across must be a positive int"
+            ):
+                add_tiles(ax, crs=3857, min_tiles_across=-5)
+        finally:
+            plt.close(fig)
+
 
 class TestStitchBasemap:
     """Tests for the headless `stitch_basemap` (mocked HTTP layer)."""

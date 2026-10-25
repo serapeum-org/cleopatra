@@ -1297,6 +1297,20 @@ def add_tiles(
             f"ax must be a matplotlib.axes.Axes instance, got {type(ax).__name__}"
         )
 
+    # stitch_basemap validates these too, but add_tiles checks them up front so
+    # its historical error precedence (parameter errors before the extent guards)
+    # is preserved -- see tests test_max_tiles/min_tiles_across_validated_before_extent_guard.
+    if not isinstance(max_tiles, int) or isinstance(max_tiles, bool) or max_tiles < 1:
+        raise ValueError(f"max_tiles must be a positive int, got {max_tiles!r}.")
+    if (
+        not isinstance(min_tiles_across, int)
+        or isinstance(min_tiles_across, bool)
+        or min_tiles_across < 1
+    ):
+        raise ValueError(
+            f"min_tiles_across must be a positive int, got {min_tiles_across!r}."
+        )
+
     x0, x1 = ax.get_xlim()
     y0, y1 = ax.get_ylim()
     west, east = min(x0, x1), max(x0, x1)
