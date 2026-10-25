@@ -114,8 +114,8 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.13"]
         extra:
-          - { name: tiles, pip_extra: "tiles", module: "cleopatra.basemap.tiles" }
-          - { name: science-colors, pip_extra: "science-colors", module: "cleopatra.styling.colors" }
+          - { name: tiles, pip_extra: "tiles", module: "cleopatra.basemap.tiles", exclude_marker: "science_colors" }
+          - { name: science-colors, pip_extra: "science-colors", module: "cleopatra.styling.colors", exclude_marker: "tiles" }
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -151,4 +151,4 @@ jobs:
 
       - name: Run the suite with the [${{ matrix.extra.name }}] extra present
         shell: bash
-        run: pytest -vvv -sv tests/ || [ $? -eq 5 ]
+        run: pytest -vvv -sv -m "not ${{ matrix.extra.exclude_marker }}" tests/ || [ $? -eq 5 ]
