@@ -597,6 +597,14 @@ class TestStitchBasemap:
             "the exact provider object should reach fetch_tiles"
         )
 
+    def test_string_provider_resolved_before_fetch(self, _patch_tiles):
+        """A dot-separated string provider is resolved via get_provider, then fetched."""
+        _zoom, mock_fetch, _stitch = _patch_tiles
+        stitch_basemap(self._BBOX, provider="CartoDB.Positron")
+        assert mock_fetch.call_args.args[1] is get_provider("CartoDB.Positron"), (
+            "the string should be resolved via get_provider before fetching"
+        )
+
     def test_max_tiles_reduces_zoom(self):
         """Zoom steps down when the chosen level needs more than `max_tiles`."""
         fake_image = np.zeros((256, 256, 4), dtype=np.uint8)
@@ -654,7 +662,6 @@ class TestAddTilesDelegatesToStitchBasemap:
     def test_add_tiles_calls_stitch_basemap_with_reprojected_bbox(self, mock_ax):
         """add_tiles reprojects the axes extent to 4326 and delegates to stitch_basemap."""
         fake_image = np.zeros((256, 256, 4), dtype=np.uint8)
-        sentinel = get_provider("CartoDB.Positron")
         with patch.object(
             tiles_mod,
             "stitch_basemap",
@@ -662,7 +669,7 @@ class TestAddTilesDelegatesToStitchBasemap:
         ) as mock_stitch:
             add_tiles(
                 mock_ax,
-                source=sentinel,
+                source="CartoDB.Positron",
                 crs=3857,
                 zoom=7,
                 max_tiles=64,
@@ -681,8 +688,9 @@ class TestAddTilesDelegatesToStitchBasemap:
         assert kwargs["timeout"] == 42, "timeout is forwarded"
         assert kwargs["retries"] == 5, "retries is forwarded"
         assert kwargs["user_agent"] == "my-app/1.0", "user_agent is forwarded"
-        assert kwargs["provider"] is sentinel, (
-            "the resolved provider object is forwarded (and reused for attribution)"
+        assert kwargs["provider"] is get_provider("CartoDB.Positron"), (
+            "the string source is resolved to a provider object and forwarded "
+            "(get_provider is cached, so identity proves resolution happened)"
         )
         bbox = mock_stitch.call_args.args[0]
         assert len(bbox) == 4, "the bbox is a (w, s, e, n) 4326 tuple"
