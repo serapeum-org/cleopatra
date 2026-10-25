@@ -44,6 +44,7 @@ from cleopatra.basemap.tiles import (
     fetch_tiles,
     get_provider,
     mercator_to_equirectangular,
+    stitch_basemap,
     stitch_tiles,
     world_texture,
 )
@@ -524,6 +525,178 @@ class TestAddTilesIntegration:
         """
         with pytest.raises(ValueError, match="min_tiles_across must be a positive int"):
             add_tiles(mock_ax, crs=3857, min_tiles_across=bad)
+
+    def test_max_tiles_validated_before_extent_guard(self):
+        """`max_tiles` is rejected before the no-data-extent guard (error precedence)."""
+        fig, ax = plt.subplots()
+        try:
+            with pytest.raises(ValueError, match="max_tiles must be a positive int"):
+                add_tiles(ax, crs=3857, max_tiles=-5)
+        finally:
+            plt.close(fig)
+
+    def test_min_tiles_across_validated_before_extent_guard(self):
+        """`min_tiles_across` is rejected before the no-data-extent guard (precedence)."""
+        fig, ax = plt.subplots()
+        try:
+            with pytest.raises(
+                ValueError, match="min_tiles_across must be a positive int"
+            ):
+                add_tiles(ax, crs=3857, min_tiles_across=-5)
+        finally:
+            plt.close(fig)
+
+
+class TestStitchBasemap:
+    """Tests for the headless `stitch_basemap` (mocked HTTP layer)."""
+
+    _BBOX = (13.0, 52.4, 13.6, 52.6)  # Berlin, EPSG:4326
+
+    def test_returns_image_and_extent_unchanged(self, _patch_tiles):
+        """The stitched image and its EPSG:3857 extent are returned as-is."""
+        image, extent = stitch_basemap(self._BBOX)
+        assert image.shape == (256, 256, 4), f"RGBA mosaic expected, got {image.shape}"
+        assert extent == (1000000.0, 6000000.0, 1200000.0, 6200000.0), (
+            f"extent should be the stitch_tiles 3857 bounds verbatim, got {extent}"
+        )
+
+    def test_runs_the_fetch_stitch_pipeline(self, _patch_tiles):
+        """auto_zoom, fetch_tiles and stitch_tiles are each invoked once."""
+        mock_zoom, mock_fetch, mock_stitch = _patch_tiles
+        stitch_basemap(self._BBOX)
+        assert mock_zoom.call_count == 1, "auto_zoom runs for zoom='auto'"
+        assert mock_fetch.call_count == 1, "fetch_tiles runs once"
+        assert mock_stitch.call_count == 1, "stitch_tiles runs once"
+
+    def test_auto_zoom_receives_min_tiles_across(self, _patch_tiles):
+        """`min_tiles_across` is forwarded to `auto_zoom` for zoom='auto'."""
+        mock_zoom, _fetch, _stitch = _patch_tiles
+        stitch_basemap(self._BBOX, min_tiles_across=4)
+        assert mock_zoom.call_args.kwargs["min_tiles_across"] == 4, (
+            "min_tiles_across should reach auto_zoom"
+        )
+
+    def test_explicit_zoom_skips_auto_zoom(self, _patch_tiles):
+        """An explicit `zoom=` bypasses `auto_zoom` and sets the tile level."""
+        mock_zoom, _fetch, _stitch = _patch_tiles
+        with patch.object(
+            tiles_mod,
+            "_tiles_for_bbox",
+            return_value=[Tile(0, 0, 8)],
+        ) as mock_tiles:
+            stitch_basemap(self._BBOX, zoom=8)
+        assert mock_zoom.call_count == 0, "auto_zoom must not run for an explicit zoom"
+        assert mock_tiles.call_args.kwargs["zoom"] == 8, "the explicit zoom is used"
+
+    def test_provider_object_passed_through_to_fetch(self, _patch_tiles):
+        """A provider object is forwarded to fetch_tiles without re-resolution."""
+        _zoom, mock_fetch, _stitch = _patch_tiles
+        sentinel = get_provider("CartoDB.Positron")
+        stitch_basemap(self._BBOX, provider=sentinel)
+        assert mock_fetch.call_args.args[1] is sentinel, (
+            "the exact provider object should reach fetch_tiles"
+        )
+
+    def test_string_provider_resolved_before_fetch(self, _patch_tiles):
+        """A dot-separated string provider is resolved via get_provider, then fetched."""
+        _zoom, mock_fetch, _stitch = _patch_tiles
+        stitch_basemap(self._BBOX, provider="CartoDB.Positron")
+        assert mock_fetch.call_args.args[1] is get_provider("CartoDB.Positron"), (
+            "the string should be resolved via get_provider before fetching"
+        )
+
+    def test_max_tiles_reduces_zoom(self):
+        """Zoom steps down when the chosen level needs more than `max_tiles`."""
+        fake_image = np.zeros((256, 256, 4), dtype=np.uint8)
+        many_tiles = [Tile(x=i, y=j, z=10) for i in range(20) for j in range(20)]
+        few_tiles = [Tile(x=i, y=j, z=9) for i in range(10) for j in range(10)]
+        with (
+            patch.object(tiles_mod, "auto_zoom", return_value=10),
+            patch.object(
+                tiles_mod, "fetch_tiles", return_value={Tile(0, 0, 9): _make_tile_png()}
+            ),
+            patch.object(
+                tiles_mod,
+                "stitch_tiles",
+                return_value=(fake_image, (0.0, 0.0, 1.0, 1.0)),
+            ),
+            patch.object(
+                tiles_mod, "_tiles_for_bbox", side_effect=[many_tiles, few_tiles]
+            ) as mock_tiles,
+        ):
+            stitch_basemap(self._BBOX)
+        zooms = [c.kwargs["zoom"] for c in mock_tiles.call_args_list]
+        assert zooms == [10, 9], f"zoom should step 10 -> 9, got {zooms}"
+
+    def test_no_tiles_raises(self):
+        """An extent with no covering tiles raises a clear ValueError."""
+        with (
+            patch.object(tiles_mod, "auto_zoom", return_value=5),
+            patch.object(tiles_mod, "_tiles_for_bbox", return_value=[]),
+        ):
+            with pytest.raises(ValueError, match="No tiles found"):
+                stitch_basemap(self._BBOX)
+
+    @pytest.mark.parametrize("bad_zoom", [25, -1, 20, "x", None])
+    def test_invalid_zoom_raises(self, bad_zoom):
+        """`zoom` must be 'auto' or an int in [0, 19]; rejected before any fetch."""
+        with pytest.raises(ValueError, match="zoom must be"):
+            stitch_basemap(self._BBOX, zoom=bad_zoom)
+
+    @pytest.mark.parametrize("bad", [0, -1, 2.5, True, "8"])
+    def test_invalid_max_tiles_raises(self, bad):
+        """`max_tiles` must be a positive int."""
+        with pytest.raises(ValueError, match="max_tiles must be a positive int"):
+            stitch_basemap(self._BBOX, max_tiles=bad)
+
+    @pytest.mark.parametrize("bad", [0, -1, 2.5, True, "8", None])
+    def test_invalid_min_tiles_across_raises(self, bad):
+        """`min_tiles_across` must be a positive int."""
+        with pytest.raises(ValueError, match="min_tiles_across must be a positive int"):
+            stitch_basemap(self._BBOX, min_tiles_across=bad)
+
+
+class TestAddTilesDelegatesToStitchBasemap:
+    """`add_tiles` is a thin wrapper over `stitch_basemap`."""
+
+    def test_add_tiles_calls_stitch_basemap_with_reprojected_bbox(self, mock_ax):
+        """add_tiles reprojects the axes extent to 4326 and delegates to stitch_basemap."""
+        fake_image = np.zeros((256, 256, 4), dtype=np.uint8)
+        with patch.object(
+            tiles_mod,
+            "stitch_basemap",
+            return_value=(fake_image, (1000000.0, 6000000.0, 1200000.0, 6200000.0)),
+        ) as mock_stitch:
+            add_tiles(
+                mock_ax,
+                source="CartoDB.Positron",
+                crs=3857,
+                zoom=7,
+                max_tiles=64,
+                min_tiles_across=3,
+                timeout=42,
+                retries=5,
+                user_agent="my-app/1.0",
+            )
+        assert mock_stitch.call_count == 1, (
+            "add_tiles delegates the fetch to stitch_basemap"
+        )
+        kwargs = mock_stitch.call_args.kwargs
+        assert kwargs["zoom"] == 7, "zoom is forwarded"
+        assert kwargs["max_tiles"] == 64, "max_tiles is forwarded"
+        assert kwargs["min_tiles_across"] == 3, "min_tiles_across is forwarded"
+        assert kwargs["timeout"] == 42, "timeout is forwarded"
+        assert kwargs["retries"] == 5, "retries is forwarded"
+        assert kwargs["user_agent"] == "my-app/1.0", "user_agent is forwarded"
+        assert kwargs["provider"] is get_provider("CartoDB.Positron"), (
+            "the string source is resolved to a provider object and forwarded "
+            "(get_provider is cached, so identity proves resolution happened)"
+        )
+        bbox = mock_stitch.call_args.args[0]
+        assert len(bbox) == 4, "the bbox is a (w, s, e, n) 4326 tuple"
+        assert -85.06 <= bbox[1] <= bbox[3] <= 85.06, (
+            "latitudes are Web-Mercator-clipped"
+        )
 
 
 class TestRequireTilesExtra:
