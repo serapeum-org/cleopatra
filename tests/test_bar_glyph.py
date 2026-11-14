@@ -117,6 +117,19 @@ class TestBarGlyphPlot:
         with pytest.raises(ValueError, match="must match the number of categories"):
             glyph.plot(colors=["#f00"])
 
+    def test_bare_color_string_rejected(self):
+        """A bare colour string for colors raises TypeError, not a length error.
+
+        Test scenario:
+            `colors="red"` for two categories would otherwise pass a naive
+            length check (`list("red")` has length 3, still wrong, but for
+            a 3-category chart it would silently "pass") and fail later
+            inside matplotlib with a confusing error.
+        """
+        glyph = BarGlyph(["a", "b"], [1.0, 2.0])
+        with pytest.raises(TypeError, match="not a bare"):
+            glyph.plot(colors="red")
+
     def test_unknown_palette_raises_valueerror(self):
         """An unknown palette name raises ValueError, not a bare KeyError."""
         glyph = BarGlyph(["a", "b"], [1.0, 2.0], palette="does_not_exist")

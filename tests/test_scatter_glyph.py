@@ -121,6 +121,19 @@ class TestScatterGlyphInit:
         with pytest.raises(ValueError, match="must match the number of points"):
             ScatterGlyph(*xy, colors=["red", "green"])
 
+    def test_bare_color_string_rejected(self, xy):
+        """A bare colour string for colors raises TypeError, not a length error.
+
+        Test scenario:
+            `colors="red"` is a plausible typo for `flat_color="red"`.
+            `list("red")` would silently yield `['r', 'e', 'd']` -- a
+            length-3 sequence that, for a 4-point scatter, would otherwise
+            only fail deep inside matplotlib with a confusing error. The
+            shared `validate_color_sequence` helper rejects it up front.
+        """
+        with pytest.raises(TypeError, match="not a bare"):
+            ScatterGlyph(*xy, colors="red")
+
     def test_colors_and_values_mutually_exclusive(self, xy, values):
         """Passing both colors and values raises ValueError.
 

@@ -13,6 +13,7 @@ from typing import Any
 
 import numpy as np
 
+from cleopatra.styling.colors import validate_color_sequence
 from cleopatra.styling.palettes import get_palette
 
 
@@ -81,6 +82,8 @@ def resolve_category_colors(n: int, colors: Sequence | None, palette: str) -> li
         list: Exactly `n` colours, in category order.
 
     Raises:
+        TypeError: If `colors` is given as a bare `str`/`bytes` rather than a
+            sequence of colours.
         ValueError: If `colors` is given and its length is not `n`, or if
             `palette` is not a registered palette name.
 
@@ -102,12 +105,7 @@ def resolve_category_colors(n: int, colors: Sequence | None, palette: str) -> li
             ```
     """
     if colors is not None:
-        colors = list(colors)
-        if len(colors) != n:
-            raise ValueError(
-                f"colors ({len(colors)}) must match the number of categories ({n})."
-            )
-        return colors
+        return validate_color_sequence(colors, n, param="colors", noun="categories")
     try:
         swatches = list(get_palette(palette).colors)
     except KeyError as exc:

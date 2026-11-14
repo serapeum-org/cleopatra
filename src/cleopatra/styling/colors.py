@@ -49,6 +49,7 @@ __all__ = [
     "resolve_style_norm",
     "resolve_style_overrides",
     "style_for_parameter",
+    "validate_color_sequence",
 ]
 
 
@@ -147,6 +148,63 @@ def resolve_colormap(
                 f"{param}={cmap!r} is not a known namespaced colormap: {exc}"
             ) from exc
     return mpl.colormaps[cmap]
+
+
+def validate_color_sequence(
+    colors: Sequence, n: int, *, param: str = "colors", noun: str = "items"
+) -> list:
+    """Coerce an explicit per-item colour sequence and validate its length.
+
+    Rejects a bare colour `str`/`bytes` before the length check. Without this,
+    `list("red")` silently yields `['r', 'e', 'd']` -- a length-3 "sequence" that
+    passes a length check against 3 items and only fails later, deep inside
+    matplotlib, with an error that names neither `param` nor the actual mistake
+    (a flat colour string where a sequence, or a one-item list, was meant).
+
+    Args:
+        colors: The candidate sequence, one colour per item.
+        n: The number of items (points, categories, ...) the sequence must match.
+        param: Name of the calling keyword, woven into error messages so a bad
+            value names the offending argument.
+        noun: Plural noun for what `n` counts (e.g. `"points"`,
+            `"categories"`), woven into the length-mismatch message.
+
+    Returns:
+        list: `colors` coerced to a list, unchanged otherwise.
+
+    Raises:
+        TypeError: If `colors` is a bare `str`/`bytes` rather than a sequence
+            of colours.
+        ValueError: If the coerced list's length does not equal `n`.
+
+    Examples:
+        - A matching sequence is returned as a list:
+            ```python
+            >>> from cleopatra.styling.colors import validate_color_sequence
+            >>> validate_color_sequence(["red", "green"], 2)
+            ['red', 'green']
+
+            ```
+        - A bare string raises TypeError instead of silently exploding later:
+            ```python
+            >>> validate_color_sequence("red", 3, param="colors")
+            Traceback (most recent call last):
+                ...
+            TypeError: colors must be a sequence of colours, not a bare 'red'; wrap a single colour in a list, e.g. ['red'].
+
+            ```
+    """
+    if isinstance(colors, (str, bytes)):
+        raise TypeError(
+            f"{param} must be a sequence of colours, not a bare {colors!r}; "
+            f"wrap a single colour in a list, e.g. [{colors!r}]."
+        )
+    colors = list(colors)
+    if len(colors) != n:
+        raise ValueError(
+            f"{param} ({len(colors)}) must match the number of {noun} ({n})."
+        )
+    return colors
 
 
 def add_line_glow(

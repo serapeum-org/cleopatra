@@ -48,7 +48,7 @@ from cleopatra.styling.colorbar import (
     ColorBar,
     _resolve_colorbar,
 )
-from cleopatra.styling.colors import resolve_colormap
+from cleopatra.styling.colors import resolve_colormap, validate_color_sequence
 from cleopatra.styling.params import Classify, Contour
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import CLASSIFY_OPTIONS, resolve_sizes, size_legend
@@ -129,6 +129,8 @@ class ScatterGlyph(GeoMixin, Glyph):
             options control the `sizes` mapping and its legend.
 
     Raises:
+        TypeError: If `colors` is given as a bare `str`/`bytes` rather than a
+            sequence of per-point colours.
         ValueError: If `x` and `y` (or `values` / `sizes` / `colors`, when
             given) have mismatched lengths, or if `values` is given together
             with `colors` or with `flat_color`.
@@ -240,12 +242,9 @@ class ScatterGlyph(GeoMixin, Glyph):
                     "explicit per-point colour, values is a scalar mapped "
                     "through a colormap."
                 )
-            colors = list(colors)
-            if len(colors) != self.x.shape[0]:
-                raise ValueError(
-                    f"colors ({len(colors)}) must match the number of points "
-                    f"({self.x.shape[0]})."
-                )
+            colors = validate_color_sequence(
+                colors, self.x.shape[0], param="colors", noun="points"
+            )
         self.values = values
         self.sizes = sizes
         self.colors = colors
