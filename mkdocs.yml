@@ -108,6 +108,8 @@ nav:
     - Glyph (base): reference/glyph.md
     - Render options (grouped params): reference/render-options.md
     - HistogramGlyph: reference/histogram-glyph.md
+    - BarGlyph: reference/bar-glyph.md
+    - PieGlyph: reference/pie-glyph.md
     - ArrayGlyph: reference/array-glyph.md
     - MeshGlyph: reference/mesh-glyph.md
     - ScatterGlyph: reference/scatter-glyph.md

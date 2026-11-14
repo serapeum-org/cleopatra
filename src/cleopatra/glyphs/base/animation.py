@@ -934,7 +934,7 @@ def to_bytes(anim: FuncAnimation, fmt: str = "gif", fps: int = 2, **kwargs) -> b
         fmt: Output format — any member of `SUPPORTED_VIDEO_FORMAT` (e.g.
             `"gif"`, `"mp4"`, `"webp"`). A leading dot is tolerated.
         fps: Frames per second. Default is 2.
-        **kwargs: Extra keyword arguments forwarded to `save_animation`
+        **kwargs (Any): Extra keyword arguments forwarded to `save_animation`
             (e.g. `crf`, `codec`, `loop`).
 
     Returns:
@@ -1018,7 +1018,7 @@ def to_gif(anim: FuncAnimation, fps: int = 2, **kwargs) -> bytes:
     Args:
         anim: The animation to render.
         fps: Frames per second. Default is 2.
-        **kwargs: Extra keyword arguments forwarded to `save_animation`
+        **kwargs (Any): Extra keyword arguments forwarded to `save_animation`
             (e.g. `optimize`, `loop`).
 
     Returns:
@@ -1080,7 +1080,7 @@ def to_mp4(anim: FuncAnimation, fps: int = 2, **kwargs) -> bytes:
     Args:
         anim: The animation to render.
         fps: Frames per second. Default is 2.
-        **kwargs: Extra keyword arguments forwarded to `save_animation`
+        **kwargs (Any): Extra keyword arguments forwarded to `save_animation`
             (e.g. `crf`, `bitrate`, `codec`, `preset`).
 
     Returns:
@@ -1169,7 +1169,7 @@ def _read_video_frames(src: str, **kwargs) -> tuple[dict, Generator[bytes, None,
 
     Args:
         src: Path to the video.
-        **kwargs: Passed through to `imageio_ffmpeg.read_frames` (e.g.
+        **kwargs (Any): Passed through to `imageio_ffmpeg.read_frames` (e.g.
             `output_params`).
 
     Returns:

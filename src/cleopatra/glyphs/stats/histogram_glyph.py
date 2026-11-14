@@ -191,7 +191,7 @@ class HistogramGlyph(WatermarkMixin):
                 ``ax`` argument is omitted. Note these renderers take ``ax``
                 per call but never ``fig`` — the figure is bound here, at
                 construction.
-            **kwargs: Additional keyword arguments to customize the histogram appearance.
+            **kwargs (Any): Additional keyword arguments to customize the histogram appearance.
                 Supported arguments include:
                 - figsize: Figure size as (width, height) in inches, by default (5, 5).
                 - bins: Number of histogram bins, by default 15.
@@ -270,7 +270,7 @@ class HistogramGlyph(WatermarkMixin):
         self._default_options = options_dict
 
     @property
-    def values(self):
+    def values(self) -> np.ndarray | list:
         """Get the numerical values to be plotted.
 
         Returns:
@@ -424,7 +424,7 @@ class HistogramGlyph(WatermarkMixin):
                 shared axes (e.g. several distributions on one axes). The
                 histogram still applies its own axis framing (labels, grid) to
                 that axes either way.
-            **kwargs: Additional keyword arguments to customize the histogram appearance.
+            **kwargs (Any): Additional keyword arguments to customize the histogram appearance.
                 These will override any options set during initialization.
                 Supported arguments include:
                 - figsize: Figure size as (width, height) in inches, by default (5, 5).
@@ -783,7 +783,7 @@ class HistogramGlyph(WatermarkMixin):
             compose: Draw *over* whatever is already on the axes instead of
                 replacing it, by default `False`. `True` clears only this
                 glyph's own prior artists, so it layers onto a shared axes.
-            **kwargs: Forwarded to `Axes.boxplot`.
+            **kwargs (Any): Forwarded to `Axes.boxplot`.
 
         Returns:
             Tuple[Figure, Axes, Dict]: The figure, the axes, and the
@@ -861,7 +861,7 @@ class HistogramGlyph(WatermarkMixin):
             compose: Draw *over* whatever is already on the axes instead of
                 replacing it, by default `False`. `True` clears only this
                 glyph's own prior artists, so it layers onto a shared axes.
-            **kwargs: Forwarded to `Axes.boxplot`.
+            **kwargs (Any): Forwarded to `Axes.boxplot`.
 
         Returns:
             Tuple[Figure, Axes, Dict]: The figure, the axes, and the
@@ -949,14 +949,14 @@ class HistogramGlyph(WatermarkMixin):
                 construction, and a brand-new figure/axes is created
                 when none is available. `fig` is a construction-time
                 binding, not a parameter here.
-            cmap: Colormap name or object. Defaults to the `cmap`
+            cmap (str or Colormap): Colormap name or object. Defaults to the `cmap`
                 option.
             vmin: Lower colour limit. Defaults to the data minimum.
             vmax: Upper colour limit. Defaults to the data maximum.
             compose: Draw *over* whatever is already on the axes instead of
                 replacing it, by default `False`. `True` clears only this
                 glyph's own prior artists, so it layers onto a shared axes.
-            **kwargs: Forwarded to `Axes.bar`.
+            **kwargs (Any): Forwarded to `Axes.bar`.
 
         Returns:
             Tuple[Figure, Axes, BarContainer]: The figure, the axes, and

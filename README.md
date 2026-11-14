@@ -12,8 +12,9 @@
 ![GitHub Repo stars](https://img.shields.io/github/stars/serapeum-org/cleopatra?style=social)
 
 **Cleopatra** is a matplotlib utility package for visualizing 2D/3D numpy arrays, unstructured meshes, point clouds,
-vector fields, polygons, lines, and statistical distributions. It targets scientific and research users working with
-geospatial and raster data, providing a high-level API over matplotlib with sensible defaults and rich customization.
+vector fields, polygons, lines, categorical bar/pie charts, and statistical distributions. It targets scientific and
+research users working with geospatial and raster data, providing a high-level API over matplotlib with sensible
+defaults and rich customization.
 
 For the package's boundaries — what belongs here and what does not — see [`SCOPE.md`](SCOPE.md).
 
@@ -41,8 +42,10 @@ graph TD
         hexbin_glyph["<b>hexbin_glyph</b><br/>HexbinGlyph<br/>hexagonal binning"]
     end
 
-    subgraph standalone["Standalone"]
+    subgraph standalone["Standalone stats / categorical"]
         histogram_glyph["<b>histogram_glyph</b><br/>HistogramGlyph<br/>histogram · boxplot · multiboxplot · stripes"]
+        bar_glyph["<b>bar_glyph</b><br/>BarGlyph<br/>categorical bars · stacked / grouped"]
+        pie_glyph["<b>pie_glyph</b><br/>PieGlyph<br/>categorical pie wedges"]
     end
 
     subgraph support["Supporting utilities"]
@@ -59,6 +62,7 @@ graph TD
     end
 
     array_glyph & mesh_glyph & scatter_glyph & vector_glyph & flow_glyph & line_glyph & polygon_glyph & kde_glyph ==>|extends| glyph
+    histogram_glyph & bar_glyph & pie_glyph ==>|extends| glyph
     array_glyph & mesh_glyph & scatter_glyph & vector_glyph & flow_glyph & polygon_glyph -.->|mixes in| geo
     geo -->|basemap tiles| tiles
     geo -->|coastlines · relief| reference
@@ -71,7 +75,9 @@ graph TD
 - The user-facing visualizers all subclass `Glyph` and share its colour-mapping/colorbar pipeline — `array_glyph`
   (`ArrayGlyph`, `FacetGrid`), `mesh_glyph` (`MeshGlyph`), `scatter_glyph` (`ScatterGlyph`), `vector_glyph`
   (`VectorGlyph`), `flow_glyph` (`FlowGlyph`), `line_glyph` (`LineGlyph`), `polygon_glyph` (`PolygonGlyph`),
-  `kde_glyph` (`KDEGlyph`), and `hexbin_glyph` (`HexbinGlyph`). `histogram_glyph` (`HistogramGlyph`) stands alone.
+  `kde_glyph` (`KDEGlyph`), and `hexbin_glyph` (`HexbinGlyph`). The statistical / categorical charts —
+  `histogram_glyph` (`HistogramGlyph`), `bar_glyph` (`BarGlyph`), and `pie_glyph` (`PieGlyph`) — stand alone (they
+  subclass `Glyph` but do not mix in `GeoMixin`).
 - `geo` provides `GeoMixin`, mixed into the seven geographic visualizers — `array_glyph`, `mesh_glyph`,
   `scatter_glyph`, `vector_glyph`, `flow_glyph`, `polygon_glyph`, and `hexbin_glyph` (not `line_glyph`, `kde_glyph`,
   or `histogram_glyph`) — adding a
@@ -99,7 +105,7 @@ graph TD
 
 <p align="center">
   <img src="docs/images/array_glyph/array-plot.png" width="45%" alt="Array Plot" />
-  <img src="docs/images/array_glyph/animated_array.gif" width="45%" alt="Animated Array" />
+  <img src="docs/images/array_glyph/display-cell-values.png" width="45%" alt="Array with cell values" />
 </p>
 
 ### MeshGlyph -- Unstructured Mesh Visualization
@@ -121,6 +127,15 @@ graph TD
   <img src="docs/images/histogram_glyph/one-histogram.png" width="45%" alt="Histogram" />
   <img src="docs/images/histogram_glyph/three-histogram.png" width="45%" alt="Multi-Histogram" />
 </p>
+
+### BarGlyph -- Categorical Bar Charts
+- Draw one bar per category from a `(categories, values)` pair, coloured from the shared palette system.
+- Pass a 2D `(n_categories, n_series)` block with `mode="stacked"` or `mode="grouped"` for multi-series charts, and
+  `horizontal=True` for `barh`. (For a numeric bar of a single series, use `LineGlyph.bar`.)
+
+### PieGlyph -- Categorical Pie Charts
+- Draw one wedge per category, sized by each value's share of the total, with per-wedge percentage labels or a
+  category legend. Negative or all-zero values are rejected.
 
 ### ScatterGlyph -- Point Clouds
 - Plot 2D point clouds, colour-mapped by a per-point `values` array with a matching colorbar.

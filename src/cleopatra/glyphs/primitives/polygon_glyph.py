@@ -100,7 +100,7 @@ class PolygonGlyph(GeoMixin, Glyph):
             given. Default is None (outline-only).
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
-        **kwargs: Override any key in `POLYGON_DEFAULT_OPTIONS`
+        **kwargs (Any): Override any key in `POLYGON_DEFAULT_OPTIONS`
             (e.g. `edgecolor`, `linewidth`, `cmap`, `vmin`, `vmax`,
             `levels`, `color_scale`, `ticks_spacing`, `cbar_label`,
             `figsize`, `title`). `facecolor` fills the polygons in a flat

@@ -63,7 +63,7 @@ class PieGlyph(Glyph):
             number of categories). Default None draws from the palette.
         ax: Pre-existing axes to draw on. Default None.
         fig: Pre-existing figure. Default None.
-        **kwargs: Construction-time overrides for `PIE_DEFAULT_OPTIONS`:
+        **kwargs (Any): Construction-time overrides for `PIE_DEFAULT_OPTIONS`:
             `palette` (qualitative palette name, default `"category12"`),
             `autopct` (per-wedge percentage format, default `"%1.1f%%"`; set
             None to hide), `add_legend` (draw a disjoint category->colour

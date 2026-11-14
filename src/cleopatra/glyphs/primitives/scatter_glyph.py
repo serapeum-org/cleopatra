@@ -111,7 +111,7 @@ class ScatterGlyph(GeoMixin, Glyph):
             Default is None.
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
-        **kwargs: Override any key in `SCATTER_DEFAULT_OPTIONS`
+        **kwargs (Any): Override any key in `SCATTER_DEFAULT_OPTIONS`
             (e.g. `marker`, `point_size`, `cmap`, `vmin`, `vmax`,
             `levels`, `color_scale`, `ticks_spacing`, `cbar_label`,
             `figsize`, `title`). `flat_color` sets a single flat colour for
