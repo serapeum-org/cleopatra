@@ -431,16 +431,24 @@ class BarGlyph(Glyph):
     def _stacked_baselines(self) -> list[np.ndarray]:
         """Return the running baseline (bottom/left) for each stacked series.
 
-        Series `j` starts at the sum of series `0..j-1`, so the first series
-        rests on zero and each later one rests on the stack below it.
+        Positive and negative segments accumulate on separate baselines, per
+        category: a positive value rests on the running positive total and a
+        negative value on the running negative total, so within one category the
+        positive segments stack upward from zero and the negative ones stack
+        downward from zero without overlapping. For all-positive (or
+        all-negative) data this is the plain cumulative stack.
 
         Returns:
             list[np.ndarray]: One baseline array per series, in series order.
         """
         n_cat, n_series = self.values.shape
         baselines = []
-        running = np.zeros(n_cat)
+        pos = np.zeros(n_cat)
+        neg = np.zeros(n_cat)
         for j in range(n_series):
-            baselines.append(running.copy())
-            running = running + self.values[:, j]
+            seg = self.values[:, j]
+            is_pos = seg >= 0
+            baselines.append(np.where(is_pos, pos, neg))
+            pos = pos + np.where(is_pos, seg, 0.0)
+            neg = neg + np.where(is_pos, 0.0, seg)
         return baselines

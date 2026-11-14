@@ -281,6 +281,25 @@ class TestBarGlyphMultiSeries:
             "series 1 rests on top of series 0"
         )
 
+    def test_stacked_mixed_signs_do_not_overlap(self):
+        """A negative series stacks downward from 0, not over the positive one."""
+        values = np.array([[5.0, -3.0]])
+        _, _, bars = BarGlyph(["a"], values, mode="stacked").plot()
+        assert bars[0][0].get_y() == 0.0, "positive series 0 rests on zero"
+        assert bars[1][0].get_y() == 0.0, (
+            "negative series 1 must start at zero and grow down, not sit on series 0"
+        )
+        assert bars[1][0].get_height() == -3.0, "its height keeps the negative sign"
+
+    def test_stacked_mixed_signs_accumulate_per_sign(self):
+        """Successive same-sign segments stack on their own running baseline."""
+        values = np.array([[2.0, 3.0, -1.0, -4.0]])
+        _, _, bars = BarGlyph(["a"], values, mode="stacked").plot()
+        bottoms = [b[0].get_y() for b in bars]
+        assert bottoms == [0.0, 2.0, 0.0, -1.0], (
+            f"positive segments stack from 0 upward, negatives from 0 down, got {bottoms}"
+        )
+
     def test_grouped_splits_width_among_series(self):
         """A grouped chart splits the width into one sub-bar per series."""
         _, _, bars = BarGlyph(
