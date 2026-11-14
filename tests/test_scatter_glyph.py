@@ -131,6 +131,18 @@ class TestScatterGlyphInit:
         with pytest.raises(ValueError, match="mutually exclusive"):
             ScatterGlyph(*xy, values=values, colors=["red", "green", "blue", "yellow"])
 
+    def test_flat_color_and_values_mutually_exclusive(self, xy, values):
+        """Passing both flat_color and values raises ValueError.
+
+        Test scenario:
+            Without this guard, flat_color was silently dropped in favour of
+            the values-driven colormap path -- the same kind of conflict
+            colors/values is already guarded against, so flat_color/values
+            must raise too rather than resolve one option in silence.
+        """
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            ScatterGlyph(*xy, values=values, flat_color="red")
+
 
 class TestScatterGlyphPlot:
     """Tests for ScatterGlyph.plot."""

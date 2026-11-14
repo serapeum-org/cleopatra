@@ -114,10 +114,11 @@ class ScatterGlyph(GeoMixin, Glyph):
             (e.g. `marker`, `point_size`, `cmap`, `vmin`, `vmax`,
             `levels`, `color_scale`, `ticks_spacing`, `cbar_label`,
             `figsize`, `title`). `flat_color` sets a single flat colour for
-            the uncoloured path (no `values`, no `colors`) -- a plain colour
-            string/tuple, kept distinct from `plot`'s grouped `color=`
-            (a `ColorScaling`), which is for value-driven mapping only.
-            `alpha` sets marker opacity (default `1.0`). Set
+            the uncoloured path -- a plain colour string/tuple, kept
+            distinct from `plot`'s grouped `color=` (a `ColorScaling`),
+            which is for value-driven mapping only. Mutually exclusive with
+            `values`, the same way `colors` is. `alpha` sets marker opacity
+            (default `1.0`). Set
             `add_colorbar=False` to suppress the per-glyph colorbar (default
             True) for shared-axes composition where the host owns a single
             aggregated colorbar. The `size_limits` (min/max marker area in
@@ -129,8 +130,8 @@ class ScatterGlyph(GeoMixin, Glyph):
 
     Raises:
         ValueError: If `x` and `y` (or `values` / `sizes` / `colors`, when
-            given) have mismatched lengths, or if both `values` and `colors`
-            are given.
+            given) have mismatched lengths, or if `values` is given together
+            with `colors` or with `flat_color`.
 
     Examples:
         - Colour points by value and read back the mapped array:
@@ -219,6 +220,12 @@ class ScatterGlyph(GeoMixin, Glyph):
             if values.shape != self.x.shape:
                 raise ValueError(
                     f"values must match x/y shape {self.x.shape}, got {values.shape}."
+                )
+            if self.default_options["flat_color"] is not None:
+                raise ValueError(
+                    "flat_color and values are mutually exclusive: flat_color is a "
+                    "single explicit colour, values is a scalar mapped through a "
+                    "colormap."
                 )
         if sizes is not None:
             sizes = np.asarray(sizes)
