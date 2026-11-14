@@ -96,7 +96,7 @@ class BarGlyph(Glyph):
             for a 1-D chart, whose legend is labelled per category.
         ax: Pre-existing axes to draw on. Default None.
         fig: Pre-existing figure. Default None.
-        **kwargs: Construction-time overrides for `BAR_DEFAULT_OPTIONS`:
+        **kwargs (Any): Construction-time overrides for `BAR_DEFAULT_OPTIONS`:
             `palette` (qualitative palette name for single-series bars, default
             `"category12"`), `cmap` (sequential colormap sampled per series for
             a multi-series chart, default `"viridis"`), `horizontal` (draw

@@ -12,8 +12,8 @@
 
 **cleopatra** is a Python package providing a fast and flexible way to visualize data using matplotlib.
 It provides a high-level API over matplotlib for 2-D/3-D `numpy` arrays, unstructured meshes, point clouds,
-vector fields, polygons, lines, and statistical distributions — plotting, animating, and displaying data with
-sensible scientific defaults.
+vector fields, polygons, lines, categorical bar/pie charts, and statistical distributions — plotting, animating,
+and displaying data with sensible scientific defaults.
 
 For the package's boundaries — what belongs here and what does not — see the [Scope](scope.md) page.
 
@@ -41,8 +41,10 @@ graph TD
         hexbin_glyph["<b>hexbin_glyph</b><br/>HexbinGlyph<br/>hexagonal binning"]
     end
 
-    subgraph standalone["Standalone"]
+    subgraph standalone["Standalone stats / categorical"]
         histogram_glyph["<b>histogram_glyph</b><br/>HistogramGlyph<br/>histogram · boxplot · multiboxplot · stripes"]
+        bar_glyph["<b>bar_glyph</b><br/>BarGlyph<br/>categorical bars · stacked / grouped"]
+        pie_glyph["<b>pie_glyph</b><br/>PieGlyph<br/>categorical pie wedges"]
     end
 
     subgraph support["Supporting utilities"]
@@ -59,6 +61,7 @@ graph TD
     end
 
     array_glyph & mesh_glyph & scatter_glyph & vector_glyph & flow_glyph & line_glyph & polygon_glyph & kde_glyph ==>|extends| glyph
+    histogram_glyph & bar_glyph & pie_glyph ==>|extends| glyph
     array_glyph & mesh_glyph & scatter_glyph & vector_glyph & flow_glyph & polygon_glyph -.->|mixes in| geo
     geo -->|basemap tiles| tiles
     geo -->|coastlines · relief| reference
@@ -71,8 +74,9 @@ graph TD
 - The user-facing visualizers all subclass `Glyph` and share its colour-mapping / colorbar pipeline —
   `array_glyph` (`ArrayGlyph`, `FacetGrid`), `mesh_glyph` (`MeshGlyph`), `scatter_glyph` (`ScatterGlyph`),
   `vector_glyph` (`VectorGlyph`), `flow_glyph` (`FlowGlyph`), `line_glyph` (`LineGlyph`), `polygon_glyph`
-  (`PolygonGlyph`), `kde_glyph` (`KDEGlyph`), and `hexbin_glyph` (`HexbinGlyph`). `histogram_glyph`
-  (`HistogramGlyph`) stands alone.
+  (`PolygonGlyph`), `kde_glyph` (`KDEGlyph`), and `hexbin_glyph` (`HexbinGlyph`). The statistical / categorical
+  charts — `histogram_glyph` (`HistogramGlyph`), `bar_glyph` (`BarGlyph`), and `pie_glyph` (`PieGlyph`) — stand
+  alone (they subclass `Glyph` but do not mix in `GeoMixin`).
 - `geo` provides `GeoMixin`, mixed into the seven geographic visualizers (`array_glyph`, `mesh_glyph`,
   `scatter_glyph`, `vector_glyph`, `flow_glyph`, `polygon_glyph`, `hexbin_glyph` — not `line_glyph`, `kde_glyph`, or
   `histogram_glyph`), adding a settable `crs` and one-call basemap helpers on the glyph's own axes:
@@ -120,6 +124,21 @@ See the [MeshGlyph reference](reference/mesh-glyph.md).
 - Boxplots, grouped multi-boxplots, and warming-stripe bands.
 
 See the [HistogramGlyph reference](reference/histogram-glyph.md).
+
+### `BarGlyph` — categorical bar charts
+
+- One bar per category from a `(categories, values)` pair, coloured from the shared palette system.
+- 2-D `(n_categories, n_series)` values with `mode="stacked"`/`"grouped"` for multi-series charts, and
+  `horizontal=True` for `barh`. (For a numeric single-series bar, use `LineGlyph.bar`.)
+
+See the [BarGlyph reference](reference/bar-glyph.md).
+
+### `PieGlyph` — categorical pie charts
+
+- One wedge per category, sized by each value's share of the total, with per-wedge percentage labels or a
+  category legend. Negative or all-zero values are rejected.
+
+See the [PieGlyph reference](reference/pie-glyph.md).
 
 ### `ScatterGlyph` — point clouds
 
