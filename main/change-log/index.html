@@ -2523,6 +2523,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0460-2026-11-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.46.0 (2026-11-14)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0450-2026-10-25" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3443,6 +3454,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0460-2026-11-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.46.0 (2026-11-14)
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#0450-2026-10-25" class="md-nav__link">
@@ -4366,6 +4388,99 @@
 
 
 <h1 id="changelog"><a class="toclink" href="#changelog">Changelog</a><a class="headerlink" href="#changelog" title="Permanent link">#</a></h1>
+<h2 id="0460-2026-11-14"><a class="toclink" href="#0460-2026-11-14">0.46.0 (2026-11-14)</a><a class="headerlink" href="#0460-2026-11-14" title="Permanent link">#</a></h2>
+<ul>
+<li>chore(ci): stop publishing docs on every PR and prune gh-pages versions (#412)</li>
+<li>
+<p>Unbounded gh-pages growth came from publishing a versioned docs build on                                         <br />
+  every PR and never retiring superseded releases. Replace per-PR                                                  <br />
+  publishing with a strict build gate and add a release-retention prune, so                                        <br />
+  gh-pages only ever carries the latest main + a bounded set of releases.                                            </p>
+</li>
+<li>
+<p>ci: convert the per-PR deploy job into a build-strict gate that runs                                           <br />
+<code>mkdocs build --strict</code> without publishing; make deploy-main and                                               <br />
+    deploy-release depend on it                                                                                      </p>
+</li>
+<li>ci: add a "Prune superseded documentation versions" step that keeps the                                        <br />
+    N most recent releases via mike and deletes the rest                                                             </li>
+<li>ci: surface persistent prune failures instead of masking them, and                                             <br />
+    avoid a head SIGPIPE when listing versions                                                                       </li>
+<li>docs: make the whole site build clean under --strict (griffe docstring                                         <br />
+    types, Other Parameters placement, return annotations, dead image                                              <br />
+    embeds removed)                                                                                                  </li>
+<li>docs(kde-glyph): correct plot/apply_style return types and the                                                 <br />
+    hillshade/style parameter documentation                                                                          </li>
+<li>docs: document the new BarGlyph and PieGlyph classes across reference                                          <br />
+    pages, README, and the docs home; add them to the mkdocs nav                                                     </li>
+<li>docs(contributing): make the local gh-pages ref cleanup idempotent                                               </li>
+</ul>
+<p>Closes #404
+- feat(glyphs): allow a flat colour on ScatterGlyph, LineGlyph and PolygonGlyph (#411)
+- BarGlyph already took a colors= sequence for explicit per-category                                               <br />
+  colours, but the primitive glyphs had no equivalent -- a scatter, line                                           <br />
+  or polygon layer could only be drawn in the matplotlib default colour                                            <br />
+  cycle, since color= on plot() is reserved for the grouped ColorScaling                                           <br />
+  object used for value-driven mapping.                                                                              </p>
+<ul>
+<li>Add flat_color/alpha and a per-point colors sequence to ScatterGlyph                                             </li>
+<li>Add facecolor/alpha to PolygonGlyph, preserving the outline-only                                               <br />
+    default when no values is given                                                                                  </li>
+<li>Document that LineGlyph already supports a flat colour via its plain                                           <br />
+    color= parameter, no code change needed there                                                                    </li>
+<li>Guard every colour-source combination (values/colors/flat_color on                                             <br />
+    ScatterGlyph, values/facecolor on PolygonGlyph) with a ValueError                                              <br />
+    instead of silently dropping one option                                                                          </li>
+<li>Add validate_single_color and validate_color_sequence helpers                                                  <br />
+    (cleopatra.styling.colors), built on matplotlib's is_color_like, and                                           <br />
+    reuse them from BarGlyph's existing colour validation                                                            </li>
+<li>Add flat-colour examples to the scatter and polygon reference docs                                               </li>
+<li>Bump tornado to 6.6.1 to close CVE-2026-126347 in a transitive                                                 <br />
+    dev dependency                                                                                                   </li>
+</ul>
+<p>Closes #405
+- feat(bar_glyph): add width/alpha options and stacked/grouped multi-series bars (#410)
+- Extend BarGlyph beyond the single-series, fixed-width categorical chart                                        <br />
+  to cover the two shapes that previously had no cleopatra equivalent and                                        <br />
+  raised a hard ValueError.                                                                                        </p>
+<ul>
+<li>add <code>width</code> and <code>alpha</code> options: <code>width</code> sets bar thickness (maps to                                         <br />
+    Axes.bar width when vertical, Axes.barh height when horizontal), with                                        <br />
+    matplotlib's 0.8 kept as the default so existing charts are unchanged;                                       <br />
+<code>alpha</code> forwards to the drawn bars                                                                             </li>
+<li>accept a 2-D <code>(n_categories, n_series)</code> values block with                                                    <br />
+<code>mode="stacked"</code> or <code>mode="grouped"</code>: stacked segments accumulate on                                         <br />
+    separate positive/negative baselines so mixed-sign series never                                              <br />
+    overlap, grouped sub-bars split <code>width</code> and centre on each category,                                         <br />
+    and both compose with <code>horizontal=True</code>                                                                        </li>
+<li>colour series one-per-series, set via <code>colors</code> or sampled from a                                             <br />
+    sequential <code>cmap</code> (default <code>viridis</code>, so an odd count's middle series                                        <br />
+    is not washed out); <code>add_legend</code> and <code>series_labels</code> label the series                                          </li>
+<li>validate strictly: a 2-D block requires a multi-series <code>mode</code>, a                                             <br />
+    multi-series <code>mode</code> requires 2-D, and <code>series_labels</code> is rejected on a                                       <br />
+    1-D chart rather than silently dropped                                                                         </li>
+<li>keep the 1-D single-series path and PieGlyph's shared helpers unchanged                                        </li>
+</ul>
+<p>Closes #408, #407
+- fix(histogram_glyph): accept a single colour across the stats glyph renderers (#409)
+- A single colour is itself a sequence — a name/hex string is a sequence of
+characters, an RGB/RGBA tuple a sequence of channels — so the per-series
+colour indexing (<code>color[i]</code>, <code>palette[i % len(palette)]</code>) read it element
+by element, pairing series 0 with its first character/channel. A bare
+<code>color="slategray"</code> raised <code>ValueError: 's' is not a valid color value</code>.
+- - Normalise a single colour to a one-element sequence (detected with
+  <code>matplotlib.colors.is_color_like</code>) in a shared <code>_color_sequence()</code> helper
+  used by <code>histogram</code>, <code>boxplot</code> and <code>multiboxplot</code>, so a bare string, hex
+  string, or RGB/RGBA tuple fills a single-series render in every renderer
+- Leave colour sequences untouched: a multi-series list still maps one
+  colour per series/box, and a single colour for multi-series 2D data now
+  raises the clear "number of colors" mismatch instead of mis-indexing
+- Document the accepted <code>color</code> shapes, noting that for an RGBA tuple the
+  separate <code>alpha</code> option overrides the tuple's 4th channel
+- Add tests covering the string, hex, RGB/RGBA tuple, one-element list,
+  multi-series sequence, the 2D rejection, and the box renderers
+- Bump tornado 6.6 -&gt; 6.6.1 to clear CVE-2026-126347 (transitive dev dep)
+- Closes #406</p>
 <h2 id="0450-2026-10-25"><a class="toclink" href="#0450-2026-10-25">0.45.0 (2026-10-25)</a><a class="headerlink" href="#0450-2026-10-25" title="Permanent link">#</a></h2>
 <ul>
 <li>feat(basemap.tiles): add headless stitch_basemap(bbox) -&gt; (image, extent) (#402)</li>
