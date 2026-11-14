@@ -194,10 +194,10 @@ class TestAddPointLabels:
 
 
 def test_add_tiles_delegates(monkeypatch):
-    """add_tiles forwards self.ax and arguments to tiles.add_tiles."""
+    """add_tiles forwards self.ax and arguments to tiles._add_tiles."""
     seen = {}
     monkeypatch.setattr(
-        tilesmod, "add_tiles", lambda ax, *a, **k: seen.update(ax=ax, a=a, k=k) or ax
+        tilesmod, "_add_tiles", lambda ax, *a, **k: seen.update(ax=ax, a=a, k=k) or ax
     )
     fig, ax = plt.subplots()
     _Dummy(ax).add_tiles(crs=3857)
@@ -222,7 +222,9 @@ def test_crs_defaults_to_self_crs_when_omitted(monkeypatch):
     plt.close(fig)
 
     seen.clear()
-    monkeypatch.setattr(tilesmod, "add_tiles", lambda ax, *a, **k: seen.update(k) or ax)
+    monkeypatch.setattr(
+        tilesmod, "_add_tiles", lambda ax, *a, **k: seen.update(k) or ax
+    )
     fig, ax = plt.subplots()
     glyph = _Dummy(ax)
     glyph.crs = "EPSG:3857"
@@ -289,7 +291,7 @@ def test_basemap_kwargs_helper():
 
 
 @pytest.mark.parametrize(
-    "fn", [tilesmod.add_tiles, refmod.add_features, refmod.add_relief]
+    "fn", [tilesmod._add_tiles, refmod.add_features, refmod.add_relief]
 )
 def test_crs_is_keyword_only_in_helpers(fn):
     """crs is keyword-only in add_tiles/add_features/add_relief, not positional."""

@@ -3,7 +3,7 @@
 The package root deliberately re-exports nothing: import the public
 classes/functions from their submodules, e.g.
 `from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph`,
-`from cleopatra.basemap.tiles import add_tiles`,
+`from cleopatra.basemap.tiles import stitch_basemap`,
 `from cleopatra.config import Config`.
 
 Subpackages: `glyphs` (the chart-type building blocks), `styling` (colour/

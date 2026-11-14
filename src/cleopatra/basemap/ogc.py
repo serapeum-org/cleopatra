@@ -13,9 +13,10 @@ through the same public entry point an XYZ provider does:
 
 ```python
 from cleopatra.basemap.ogc import WMSProvider
-from cleopatra.basemap.tiles import add_tiles
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 
-add_tiles(ax, WMSProvider(url="https://example.org/wms", layers="ortho"))
+glyph = ArrayGlyph(array)  # array: your 2-D data, plotted in EPSG:3857
+glyph.add_tiles(WMSProvider(url="https://example.org/wms", layers="ortho"))
 ```
 
 Both are checked at construction rather than mid-render, and both are hashable,
@@ -841,7 +842,7 @@ class WMTSProvider:
 
     See Also:
         WMSProvider: The same idea for a WMS `GetMap` service.
-        cleopatra.basemap.tiles.add_tiles: The renderer both feed.
+        cleopatra.basemap.tiles._add_tiles: The renderer both feed.
     """
 
     url: str
@@ -1356,7 +1357,7 @@ class WMSProvider:
 
     See Also:
         WMTSProvider: The same idea for a WMTS `GetTile` service.
-        cleopatra.basemap.tiles.add_tiles: The renderer both feed.
+        cleopatra.basemap.tiles._add_tiles: The renderer both feed.
     """
 
     url: str

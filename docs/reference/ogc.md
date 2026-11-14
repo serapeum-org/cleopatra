@@ -19,19 +19,26 @@ Importing this module is free; the `cleopatra[tiles]` extra is needed only to re
 
 ## Usage
 
+A provider is passed as the `source` of the `add_tiles` glyph method
+(`cleopatra.basemap.geo.GeoMixin`, inherited by every geographic glyph):
+
 ```python
+import numpy as np
 import matplotlib
+
 matplotlib.use("Agg")  # any backend; Agg shown for headless rendering
-import matplotlib.pyplot as plt
 
 from cleopatra.basemap.ogc import WMSProvider, WMTSProvider
-from cleopatra.basemap.tiles import add_tiles
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 
-fig, ax = plt.subplots()
-ax.plot([1_000_000.0, 1_200_000.0], [6_000_000.0, 6_200_000.0])
+glyph = ArrayGlyph(
+    np.random.random((20, 20)),
+    extent=[1_000_000.0, 1_200_000.0, 6_000_000.0, 6_200_000.0],
+)
+glyph.plot()
 
 # a WMTS service, KVP endpoint
-add_tiles(ax, WMTSProvider(
+glyph.add_tiles(WMTSProvider(
     url="https://example.org/wmts",
     layer="TrueColor",
     tile_matrix_set="GoogleMapsCompatible",
@@ -40,7 +47,7 @@ add_tiles(ax, WMTSProvider(
 ), crs=3857)
 
 # a WMS service: one GetMap per tile
-add_tiles(ax, WMSProvider(
+glyph.add_tiles(WMSProvider(
     url="https://example.org/wms",
     layers="ortho",
     attribution="Ortho provider",

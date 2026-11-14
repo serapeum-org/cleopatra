@@ -236,7 +236,7 @@ graph TD
 ```bash
 pip install cleopatra
 
-# with the optional web-tile basemap support (cleopatra.basemap.tiles.add_tiles)
+# with the optional web-tile basemap support (the add_tiles glyph method)
 pip install "cleopatra[tiles]"
 ```
 

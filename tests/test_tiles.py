@@ -31,6 +31,7 @@ from cleopatra.basemap import tiles as tiles_mod  # noqa: E402
 from cleopatra.basemap.tiles import (
     MAX_TILES,
     Tile,
+    _add_tiles,
     _densify_and_reproject_bounds,
     _lonlat_to_tile_xy,
     _looks_like_image,
@@ -38,7 +39,6 @@ from cleopatra.basemap.tiles import (
     _require_tiles_extra,
     _tile_xy_bounds,
     _tiles_for_bbox,
-    add_tiles,
     auto_zoom,
     fetch_single_tile,
     fetch_tiles,
@@ -153,7 +153,7 @@ class TestAddTilesValidation:
         ax.get_xlim.return_value = (0.0, 1.0)
         ax.get_ylim.return_value = (0.0, 1.0)
         with pytest.raises(ValueError, match="no data extent"):
-            add_tiles(ax)
+            _add_tiles(ax)
 
     @pytest.mark.parametrize(
         "bad_ax",
@@ -163,7 +163,7 @@ class TestAddTilesValidation:
     def test_raises_on_invalid_ax_type(self, bad_ax):
         """Non-axes objects raise `TypeError`."""
         with pytest.raises(TypeError, match="matplotlib.axes.Axes"):
-            add_tiles(bad_ax)
+            _add_tiles(bad_ax)
 
     @pytest.mark.parametrize(
         "bad_zoom",
@@ -177,7 +177,7 @@ class TestAddTilesValidation:
         ax.get_ylim.return_value = (6000000.0, 6200000.0)
         ax.get_aspect.return_value = "auto"
         with pytest.raises(ValueError, match="zoom"):
-            add_tiles(ax, crs=3857, zoom=bad_zoom)
+            _add_tiles(ax, crs=3857, zoom=bad_zoom)
 
     def test_invalid_source_string_raises_value_error(self):
         """A bogus source string raises `ValueError`."""
@@ -185,7 +185,7 @@ class TestAddTilesValidation:
         ax.get_xlim.return_value = (1000000.0, 1200000.0)
         ax.get_ylim.return_value = (6000000.0, 6200000.0)
         with pytest.raises(ValueError, match="Unknown tile provider"):
-            add_tiles(ax, crs=3857, source="Bogus.NotARealProvider")
+            _add_tiles(ax, crs=3857, source="Bogus.NotARealProvider")
 
     def test_missing_extras_raises_import_error(self, monkeypatch):
         """If the tiles extra is unavailable, `ImportError` is raised."""
@@ -194,7 +194,7 @@ class TestAddTilesValidation:
         ax.get_xlim.return_value = (1000000.0, 1200000.0)
         ax.get_ylim.return_value = (6000000.0, 6200000.0)
         with pytest.raises(ImportError, match=r"cleopatra\[tiles\]"):
-            add_tiles(ax)
+            _add_tiles(ax)
 
 
 @pytest.fixture
@@ -249,19 +249,19 @@ class TestAddTilesBehaviour:
 
     def test_default_source_renders_image(self, mock_ax, _patch_tiles):
         """`source=None` -> default provider; imshow is called once."""
-        result = add_tiles(mock_ax)
+        result = _add_tiles(mock_ax)
         mock_ax.imshow.assert_called_once()
         assert result is mock_ax
 
     def test_default_crs_is_3857(self, mock_ax, _patch_tiles):
         """`crs=None` treats the data as Web Mercator (no error)."""
-        result = add_tiles(mock_ax, crs=None)
+        result = _add_tiles(mock_ax, crs=None)
         mock_ax.imshow.assert_called_once()
         assert result is mock_ax
 
     def test_string_source_renders(self, mock_ax, _patch_tiles):
         """`source="CartoDB.Positron"` resolves and renders."""
-        result = add_tiles(mock_ax, source="CartoDB.Positron")
+        result = _add_tiles(mock_ax, source="CartoDB.Positron")
         mock_ax.imshow.assert_called_once()
         assert result is mock_ax
 
@@ -269,7 +269,7 @@ class TestAddTilesBehaviour:
         """`crs=4326` works end-to-end (no GDAL warping needed)."""
         mock_ax.get_xlim.return_value = (10.0, 11.0)
         mock_ax.get_ylim.return_value = (50.0, 51.0)
-        add_tiles(mock_ax, crs=4326)
+        _add_tiles(mock_ax, crs=4326)
         mock_ax.imshow.assert_called_once()
 
     def test_nonmercator_imshow_uses_mosaic_reprojected_bounds(
@@ -279,7 +279,7 @@ class TestAddTilesBehaviour:
         coverage, not the raw data bounds (issue #176)."""
         mock_ax.get_xlim.return_value = (10.0, 11.0)
         mock_ax.get_ylim.return_value = (50.0, 51.0)
-        add_tiles(mock_ax, crs=4326)
+        _add_tiles(mock_ax, crs=4326)
         # Independent expected value: the mocked mosaic 3857 bounds
         # (1e6, 6e6, 1.2e6, 6.2e6) reproject to these EPSG:4326 [w, e, s, n]
         # degrees (precomputed, not re-derived from the production helper).
@@ -311,7 +311,7 @@ class TestAddTilesBehaviour:
                 ),
             ),
         ):
-            add_tiles(mock_ax, crs=ortho)
+            _add_tiles(mock_ax, crs=ortho)
         mock_ax.imshow.assert_called_once()
         got = mock_ax.imshow.call_args.kwargs["extent"]
         assert got == [
@@ -339,46 +339,46 @@ class TestAddTilesBehaviour:
                 return_value=(np.zeros((256, 256, 4), dtype=np.uint8), mosaic_3857),
             ),
         ):
-            add_tiles(mock_ax, crs=4326)
+            _add_tiles(mock_ax, crs=4326)
         west, east, south, north = mock_ax.imshow.call_args.kwargs["extent"]
         assert west <= 10.0 and east >= 11.0 and south <= 50.0 and north >= 51.0, (
             f"mosaic extent {(west, east, south, north)} should envelop the data bounds"
         )
 
     def test_min_tiles_across_forwarded_to_auto_zoom(self, mock_ax, _patch_tiles):
-        """`add_tiles(min_tiles_across=...)` is forwarded to `auto_zoom` for zoom='auto'."""
+        """`_add_tiles(min_tiles_across=...)` is forwarded to `auto_zoom` for zoom='auto'."""
         mock_zoom, _fetch, _stitch = _patch_tiles
-        add_tiles(mock_ax, crs=3857, min_tiles_across=6)
+        _add_tiles(mock_ax, crs=3857, min_tiles_across=6)
         mock_zoom.assert_called_once()
         assert mock_zoom.call_args.kwargs.get("min_tiles_across") == 6
 
     def test_explicit_zoom_ignores_min_tiles_across(self, mock_ax, _patch_tiles):
         """An explicit `zoom=` bypasses `auto_zoom` (and thus `min_tiles_across`)."""
         mock_zoom, _fetch, _stitch = _patch_tiles
-        add_tiles(mock_ax, crs=3857, zoom=5, min_tiles_across=6)
+        _add_tiles(mock_ax, crs=3857, zoom=5, min_tiles_across=6)
         mock_zoom.assert_not_called()
 
     def test_axes_limits_are_restored(self, mock_ax, _patch_tiles):
         """`set_xlim` / `set_ylim` are called with the original limits."""
-        add_tiles(mock_ax, crs=3857)
+        _add_tiles(mock_ax, crs=3857)
         mock_ax.set_xlim.assert_called_once_with((1000000.0, 1200000.0))
         mock_ax.set_ylim.assert_called_once_with((6000000.0, 6200000.0))
 
     def test_attribution_false_skips_text(self, mock_ax, _patch_tiles):
         """`attribution=False` -> `ax.text` is never called."""
-        add_tiles(mock_ax, crs=3857, attribution=False)
+        _add_tiles(mock_ax, crs=3857, attribution=False)
         mock_ax.text.assert_not_called()
 
     def test_custom_attribution_string(self, mock_ax, _patch_tiles):
         """`attribution="Custom"` -> exact string is written to axes."""
-        add_tiles(mock_ax, crs=3857, attribution="Custom Attribution")
+        _add_tiles(mock_ax, crs=3857, attribution="Custom Attribution")
         mock_ax.text.assert_called_once()
         call_args = mock_ax.text.call_args
         assert call_args[0][2] == "Custom Attribution"
 
     def test_imshow_receives_alpha_and_zorder(self, mock_ax, _patch_tiles):
         """Custom `alpha` and `zorder` are forwarded to `imshow`."""
-        add_tiles(mock_ax, crs=3857, alpha=0.5, zorder=-2)
+        _add_tiles(mock_ax, crs=3857, alpha=0.5, zorder=-2)
         call_kwargs = mock_ax.imshow.call_args[1]
         assert call_kwargs["alpha"] == 0.5
         assert call_kwargs["zorder"] == -2
@@ -388,13 +388,13 @@ class TestAddTilesBehaviour:
         from cleopatra.basemap.tiles import USER_AGENT
 
         _, mock_fetch, _ = _patch_tiles
-        add_tiles(mock_ax, crs=3857)
+        _add_tiles(mock_ax, crs=3857)
         assert mock_fetch.call_args.kwargs.get("user_agent") == USER_AGENT
 
     def test_custom_user_agent_propagates_to_fetch_tiles(self, mock_ax, _patch_tiles):
-        """`add_tiles(user_agent=...)` is forwarded verbatim to `fetch_tiles`."""
+        """`_add_tiles(user_agent=...)` is forwarded verbatim to `fetch_tiles`."""
         _, mock_fetch, _ = _patch_tiles
-        add_tiles(mock_ax, crs=3857, user_agent="myapp/1.0 (+https://example.test)")
+        _add_tiles(mock_ax, crs=3857, user_agent="myapp/1.0 (+https://example.test)")
         assert (
             mock_fetch.call_args.kwargs.get("user_agent")
             == "myapp/1.0 (+https://example.test)"
@@ -429,7 +429,7 @@ class TestAddTilesIntegration:
                     ),
                 ),
             ):
-                add_tiles(ax, crs=3857)
+                _add_tiles(ax, crs=3857)
 
             out = tmp_path / "tiles.png"
             fig.savefig(out)
@@ -471,7 +471,7 @@ class TestAddTilesIntegration:
                 side_effect=[many_tiles, few_tiles],
             ) as mock_tiles,
         ):
-            add_tiles(mock_ax, crs=3857)
+            _add_tiles(mock_ax, crs=3857)
 
         calls = mock_tiles.call_args_list
         assert len(calls) == 2
@@ -500,7 +500,7 @@ class TestAddTilesIntegration:
                 tiles_mod, "_tiles_for_bbox", side_effect=[many_tiles]
             ) as mock_tiles,
         ):
-            add_tiles(mock_ax, crs=3857, max_tiles=500)
+            _add_tiles(mock_ax, crs=3857, max_tiles=500)
 
         # Only one call: 400 <= max_tiles=500, so no reduction.
         assert len(mock_tiles.call_args_list) == 1
@@ -514,7 +514,7 @@ class TestAddTilesIntegration:
             bad: A value that should be rejected.
         """
         with pytest.raises(ValueError, match="max_tiles must be a positive int"):
-            add_tiles(mock_ax, crs=3857, max_tiles=bad)
+            _add_tiles(mock_ax, crs=3857, max_tiles=bad)
 
     @pytest.mark.parametrize("bad", [0, -1, 2.5, True, "8", None])
     def test_invalid_min_tiles_across_raises(self, mock_ax, bad):
@@ -524,14 +524,14 @@ class TestAddTilesIntegration:
             bad: A value that should be rejected.
         """
         with pytest.raises(ValueError, match="min_tiles_across must be a positive int"):
-            add_tiles(mock_ax, crs=3857, min_tiles_across=bad)
+            _add_tiles(mock_ax, crs=3857, min_tiles_across=bad)
 
     def test_max_tiles_validated_before_extent_guard(self):
         """`max_tiles` is rejected before the no-data-extent guard (error precedence)."""
         fig, ax = plt.subplots()
         try:
             with pytest.raises(ValueError, match="max_tiles must be a positive int"):
-                add_tiles(ax, crs=3857, max_tiles=-5)
+                _add_tiles(ax, crs=3857, max_tiles=-5)
         finally:
             plt.close(fig)
 
@@ -542,7 +542,7 @@ class TestAddTilesIntegration:
             with pytest.raises(
                 ValueError, match="min_tiles_across must be a positive int"
             ):
-                add_tiles(ax, crs=3857, min_tiles_across=-5)
+                _add_tiles(ax, crs=3857, min_tiles_across=-5)
         finally:
             plt.close(fig)
 
@@ -667,7 +667,7 @@ class TestAddTilesDelegatesToStitchBasemap:
             "stitch_basemap",
             return_value=(fake_image, (1000000.0, 6000000.0, 1200000.0, 6200000.0)),
         ) as mock_stitch:
-            add_tiles(
+            _add_tiles(
                 mock_ax,
                 source="CartoDB.Positron",
                 crs=3857,
@@ -1365,7 +1365,7 @@ class TestAddTilesAdditionalValidation:
         ax.get_xlim.return_value = (1000000.0, 1000000.0)
         ax.get_ylim.return_value = (6000000.0, 6200000.0)
         with pytest.raises(ValueError, match="zero-area"):
-            add_tiles(ax, crs=3857)
+            _add_tiles(ax, crs=3857)
 
     def test_invalid_crs_string_raises_value_error(self):
         """A bogus CRS string surfaces as `ValueError` from add_tiles."""
@@ -1373,16 +1373,16 @@ class TestAddTilesAdditionalValidation:
         ax.get_xlim.return_value = (10.0, 11.0)
         ax.get_ylim.return_value = (50.0, 51.0)
         with pytest.raises((ValueError, Exception)):
-            add_tiles(ax, crs="EPSG:NOT-A-REAL-CRS")
+            _add_tiles(ax, crs="EPSG:NOT-A-REAL-CRS")
 
     def test_zoom_integer_acceptable(self, mock_ax, _patch_tiles):
         """An explicit `zoom=5` is accepted and used downstream."""
-        result = add_tiles(mock_ax, crs=3857, zoom=5)
+        result = _add_tiles(mock_ax, crs=3857, zoom=5)
         assert result is mock_ax
 
     def test_attribution_true_strips_html_tags(self, mock_ax, _patch_tiles):
         """`attribution=True` strips HTML tags before placing the text."""
-        add_tiles(mock_ax, crs=3857, attribution=True)
+        _add_tiles(mock_ax, crs=3857, attribution=True)
         if mock_ax.text.called:
             placed_text = mock_ax.text.call_args[0][2]
             assert "<" not in placed_text, (
@@ -1396,7 +1396,7 @@ class TestAddTilesAdditionalValidation:
         provider = SimpleNamespace(
             attribution="&copy; <a href='x'>OpenStreetMap</a> &amp; contributors"
         )
-        add_tiles(mock_ax, source=provider, crs=3857, attribution=True)
+        _add_tiles(mock_ax, source=provider, crs=3857, attribution=True)
         mock_ax.text.assert_called_once()
         placed = mock_ax.text.call_args[0][2]
         assert placed == "© OpenStreetMap & contributors", (
@@ -1440,7 +1440,7 @@ class TestAddTilesProviderObject:
         import xyzservices.providers as xyz
 
         provider = xyz.OpenStreetMap.Mapnik
-        result = add_tiles(mock_ax, source=provider, crs=3857)
+        result = _add_tiles(mock_ax, source=provider, crs=3857)
         mock_ax.imshow.assert_called_once()
         assert result is mock_ax
 
@@ -1459,7 +1459,7 @@ class TestAddTilesCRSReprojectionFailure:
 
         monkeypatch.setattr(tiles_mod, "_densify_and_reproject_bounds", fake_reproject)
         with pytest.raises(RuntimeError, match="Some other failure"):
-            add_tiles(ax, crs=4326)
+            _add_tiles(ax, crs=4326)
 
     def test_4326_inf_after_back_transform_raises(self, monkeypatch):
         """A back-transform to EPSG:4326 returning Inf raises `ValueError`."""
@@ -1482,7 +1482,7 @@ class TestAddTilesCRSReprojectionFailure:
         # patch the class itself rather than a name on `cleopatra.basemap.tiles`.
         monkeypatch.setattr(pyproj.Transformer, "from_crs", staticmethod(fake_from_crs))
         with pytest.raises(ValueError, match="Web Mercator"):
-            add_tiles(ax, crs=3857)
+            _add_tiles(ax, crs=3857)
 
 
 class TestAddTilesEmptyTiles:
@@ -1495,7 +1495,7 @@ class TestAddTilesEmptyTiles:
             patch.object(tiles_mod, "_tiles_for_bbox", return_value=[]),
         ):
             with pytest.raises(ValueError, match="No tiles found"):
-                add_tiles(mock_ax, crs=3857)
+                _add_tiles(mock_ax, crs=3857)
 
 
 class TestAddTilesNearGlobalExtent:
@@ -1563,7 +1563,7 @@ class TestAddTilesNearGlobalExtent:
                 ),
             ) as mock_stitch,
         ):
-            add_tiles(near_global_ax, crs=3857, zoom=3)
+            _add_tiles(near_global_ax, crs=3857, zoom=3)
 
         tiles_passed = mock_stitch.call_args[0][1]
         xs = {t.x for t in tiles_passed}
@@ -1859,7 +1859,7 @@ class TestAttributionWithoutMetadata:
             axes, "no text was drawn" would also hold if `add_tiles` bailed
             out long before the attribution block ever ran.
         """
-        add_tiles(mock_ax, crs=3857, source=_BareProvider(), attribution=True)
+        _add_tiles(mock_ax, crs=3857, source=_BareProvider(), attribution=True)
 
         mock_ax.imshow.assert_called_once()
         mock_ax.text.assert_not_called()
@@ -1878,7 +1878,7 @@ class TestAttributionWithoutMetadata:
             '<a href="https://example.invalid">Tiles &amp; data</a>'
         )
 
-        add_tiles(mock_ax, crs=3857, source=provider, attribution=True)
+        _add_tiles(mock_ax, crs=3857, source=provider, attribution=True)
 
         mock_ax.text.assert_called_once()
         assert mock_ax.text.call_args[0][2] == "Tiles & data", (

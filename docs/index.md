@@ -198,7 +198,7 @@ See the [Geo basemap methods reference](reference/geo.md), [Tiles reference](ref
 
 ### `cleopatra.basemap.tiles` / `cleopatra.basemap.reference` — basemaps (optional)
 
-- `add_tiles(ax, ...)` overlays an XYZ web-tile basemap (OpenStreetMap, CartoDB, Esri, …) underneath your data —
+- the `add_tiles` glyph method overlays an XYZ web-tile basemap (OpenStreetMap, CartoDB, Esri, …) underneath your data —
   pure Python, no GDAL.
 - `reference.add_features` / `reference.add_relief` draw fixed public Natural Earth vector layers and a global
   hypsometric relief raster (the `cartopy` `ax.coastlines()` / `stock_img()` niche).

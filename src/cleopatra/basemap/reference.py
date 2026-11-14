@@ -3,7 +3,7 @@
 Two axes-level helpers that draw public cartographic reference data
 *underneath* your own plotted data -- the `cartopy`
 `GeoAxes.stock_img()` / `ax.coastlines()` niche, and the vector/raster
-sibling of `cleopatra.basemap.tiles.add_tiles`:
+sibling of `cleopatra.basemap.tiles._add_tiles`:
 
 * `add_relief` -- a global hypsometric relief image (the
     `stock_img()` analogue).
