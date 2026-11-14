@@ -182,6 +182,8 @@ class ScatterGlyph(GeoMixin, Glyph):
             `sizes` mapping (reusable by other size-encoding glyphs).
         cleopatra.styling.styles.size_legend: Builds the size legend drawn when
             `size_legend` is truthy.
+        cleopatra.glyphs.stats.bar_glyph.BarGlyph: Takes an explicit `colors=`
+            sequence the same way, one colour per category instead of per point.
     """
 
     #: Option keys this glyph accepts (see `Glyph.option_keys`/`filter_kwargs`).
