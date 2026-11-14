@@ -352,8 +352,9 @@ class TestHistogramSingleColour:
             "0.2 is not a valid color value" from `color[0]` instead.
         """
         data = np.random.default_rng(0).normal(size=(200, 3))
+        glyph = HistogramGlyph(data, color=(0.2, 0.5, 0.7))
         with pytest.raises(ValueError, match=r"number of colors") as exc:
-            HistogramGlyph(data, color=(0.2, 0.5, 0.7)).histogram(bins=10)
+            glyph.histogram(bins=10)
         assert "samples:3" in str(exc.value), (
             f"error should report the sample count: {exc.value}"
         )
