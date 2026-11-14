@@ -39,6 +39,7 @@ from matplotlib.colorbar import Colorbar
 from matplotlib.colors import Normalize
 from matplotlib.contour import QuadContourSet
 from matplotlib.figure import Figure
+from matplotlib.image import AxesImage
 from matplotlib.patches import Patch
 from matplotlib.path import Path as MplPath
 
@@ -340,7 +341,7 @@ class KDEGlyph(Glyph):
         hillshade: bool | dict | None | _Unset = _UNSET,
         add_colorbar: bool | None = None,
         title: str | None = None,
-    ) -> tuple[Figure, Axes, QuadContourSet]:
+    ) -> tuple[Figure, Axes, QuadContourSet | AxesImage]:
         """Apply a continuous `DATA_STYLES` preset by name, re-rendering in place.
 
         A discoverable wrapper over `plot(style=...)` for restyling an
@@ -357,7 +358,9 @@ class KDEGlyph(Glyph):
             title: Optional title, forwarded to `plot`.
 
         Returns:
-            tuple[Figure, Axes, QuadContourSet]: The `plot` result.
+            tuple[Figure, Axes, QuadContourSet | AxesImage]: The `plot` result
+                (the mappable is an `AxesImage` when hillshaded, else a
+                `QuadContourSet`).
 
         Raises:
             ValueError: If `style` is unknown, or is categorical (a density is
@@ -390,7 +393,7 @@ class KDEGlyph(Glyph):
         color: ColorScaling | None = None,
         contour: Contour | None = None,
         data_style: DataStyle | None = None,
-    ) -> tuple[Figure, Axes, QuadContourSet]:
+    ) -> tuple[Figure, Axes, QuadContourSet | AxesImage]:
         """Render the 2-D density as filled or line contours.
 
         Evaluates the KDE via `evaluate`, colours it through
@@ -414,27 +417,30 @@ class KDEGlyph(Glyph):
                 `add_colorbar=` argument still wins the on/off decision.
 
         Other Parameters:
-            hillshade (bool or dict): Relief-shade the density surface for this call (`True`
-                or an options dict; see `cleopatra.glyphs.base.hillshade`). Defaults to
-                None, which keeps the value set at construction. Accepting it
-                here mirrors `ArrayGlyph.plot`/`MeshGlyph.plot`, so `hillshade`
-                works the same way across all three glyphs.
-            style (str): Name of a continuous `cleopatra.styling.colors.DATA_STYLES` preset
-                to colour the density with (its cmap + norm; composes with
-                `hillshade`). The preset name is **sticky** -- once set it
-                persists into `default_options` and survives later plain
-                `plot()` calls (like `ArrayGlyph`), and `self.style` reads it
-                back; the resolved cmap is not persisted, so it never leaks.
-                Not passing `style` keeps the current preset; passing
-                `style=None` clears it back to the plain density colouring
-                (unlike `hillshade`, which reverts to its construction value).
-                A categorical preset has no meaning for a continuous density
-                and raises `ValueError`. Valid names:
-                `sorted(cleopatra.styling.colors.DATA_STYLES)`.
+            hillshade (bool or dict): Relief shading for the density surface.
+                `plot` takes no `hillshade` argument (and no `**kwargs`); set it
+                via `data_style=DataStyle(hillshade=...)`, at construction, or
+                through `apply_style(hillshade=...)`. `True` or an options dict
+                (see `cleopatra.glyphs.base.hillshade`); unset keeps the value
+                set at construction. When active the returned mappable is an
+                `AxesImage` rather than a `QuadContourSet`.
+            style (str): Name of a continuous `cleopatra.styling.colors.DATA_STYLES`
+                preset to colour the density with (its cmap + norm; composes with
+                `hillshade`). `plot` takes no `style` argument; set it via
+                `data_style=DataStyle(style=...)`, at construction, or through
+                `apply_style(style)`. The preset name is **sticky** -- once set it
+                persists into `default_options` and survives later plain `plot()`
+                calls (like `ArrayGlyph`), and `self.style` reads it back; the
+                resolved cmap is not persisted, so it never leaks. Clearing it
+                back to the plain density colouring is done with
+                `data_style=DataStyle(style=None)`. A categorical preset has no
+                meaning for a continuous density and raises `ValueError`. Valid
+                names: `sorted(cleopatra.styling.colors.DATA_STYLES)`.
 
         Returns:
-            tuple[Figure, Axes, QuadContourSet]: The figure, the axes, and
-                the contour set (the mappable the colorbar attaches to).
+            tuple[Figure, Axes, QuadContourSet | AxesImage]: The figure, the
+                axes, and the mappable the colorbar attaches to -- a
+                `QuadContourSet` normally, or an `AxesImage` when hillshaded.
 
         Raises:
             ValueError: If a coordinate has zero spread (via `evaluate`).
