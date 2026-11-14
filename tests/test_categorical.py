@@ -9,6 +9,7 @@ coverage for the validation branches and for the multi-series helpers
 
 from __future__ import annotations
 
+import matplotlib as mpl
 import numpy as np
 import pytest
 from matplotlib.colors import to_hex
@@ -145,11 +146,18 @@ class TestResolveSeriesColors:
         """A lone series samples the colormap's midpoint, not an endpoint.
 
         Test scenario:
-            With one series the sampler uses position 0.5 (a single call to
-            linspace would otherwise return the 0.0 endpoint for n == 1).
+            With one series the sampler must use position 0.5, not the 0.0
+            endpoint a plain ``np.linspace(0, 1, 1)`` would return.
         """
         out = resolve_series_colors(1, None, "viridis")
         assert len(out) == 1, f"expected 1 colour, got {len(out)}"
+        viridis = mpl.colormaps["viridis"]
+        assert to_hex(out[0]) == to_hex(viridis(0.5)), (
+            f"a lone series should be the colormap midpoint, got {to_hex(out[0])}"
+        )
+        assert to_hex(out[0]) != to_hex(viridis(0.0)), (
+            "a lone series must not collapse to the 0.0 endpoint"
+        )
 
 
 class TestResolveCategoryColors:

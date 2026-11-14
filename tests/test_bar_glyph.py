@@ -321,7 +321,7 @@ class TestBarGlyphMultiSeries:
         _, ax, _ = BarGlyph(["a", "b", "c"], self.VALUES, mode="stacked").plot()
         assert [t.get_text() for t in ax.get_xticklabels()] == ["a", "b", "c"]
 
-    def test_horizontal_stacked_composes(self):
+    def test_horizontal_stacked_geometry(self):
         """Horizontal stacking puts the running baseline on the left, labels on y."""
         _, ax, bars = BarGlyph(
             ["a", "b", "c"], self.VALUES, mode="stacked", horizontal=True
@@ -329,6 +329,24 @@ class TestBarGlyphMultiSeries:
         assert [b.get_width() for b in bars[0]] == [1.0, 3.0, 5.0]
         assert [b.get_x() for b in bars[1]] == [1.0, 3.0, 5.0], "series 1 starts at left"
         assert [t.get_text() for t in ax.get_yticklabels()] == ["a", "b", "c"]
+
+    def test_horizontal_grouped_offsets(self):
+        """Horizontal grouping offsets each series on the y axis, labels on y."""
+        _, ax, bars = BarGlyph(
+            ["a", "b", "c"], self.VALUES, mode="grouped", horizontal=True, width=0.8
+        ).plot()
+        assert float(bars[0][0].get_height()) == pytest.approx(0.4), "0.8 / 2 series"
+        assert float(bars[0][0].get_y()) == pytest.approx(-0.4), "series 0 below centre"
+        assert float(bars[1][0].get_y()) == pytest.approx(0.0), "series 1 above centre"
+        assert [b.get_width() for b in bars[0]] == [1.0, 3.0, 5.0], "widths carry values"
+        assert [t.get_text() for t in ax.get_yticklabels()] == ["a", "b", "c"]
+
+    def test_compose_layers_multi_series_glyphs(self):
+        """compose=True keeps a prior multi-series glyph's bars on a shared axes."""
+        fig, ax = plt.subplots()
+        BarGlyph(["a", "b", "c"], self.VALUES, mode="grouped").plot(ax=ax)
+        BarGlyph(["a", "b", "c"], self.VALUES, mode="stacked").plot(ax=ax, compose=True)
+        assert len(ax.containers) == 4, "two grouped + two stacked containers layered"
 
     def test_explicit_series_colors(self):
         """Explicit colours apply one per series, not per category."""
