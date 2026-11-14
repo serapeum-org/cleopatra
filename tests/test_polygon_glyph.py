@@ -74,6 +74,19 @@ class TestPolygonGlyphInit:
         with pytest.raises(ValueError, match="must match the number"):
             PolygonGlyph(polygons, values=np.array([1.0, 2.0, 3.0]))
 
+    def test_facecolor_and_values_mutually_exclusive(self, polygons):
+        """Passing both facecolor and values raises ValueError.
+
+        Test scenario:
+            Without this guard, facecolor was silently dropped in favour of
+            the values-driven colormap path -- the same kind of conflict
+            ScatterGlyph's colors/values and flat_color/values guard
+            against, so facecolor/values must raise too rather than resolve
+            one option in silence.
+        """
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            PolygonGlyph(polygons, values=np.array([10.0, 20.0]), facecolor="red")
+
     def test_2d_values_with_matching_row_count_raises(self, polygons):
         """A 2-D values array is rejected even when its row count matches.
 

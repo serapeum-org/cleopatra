@@ -107,14 +107,16 @@ class PolygonGlyph(GeoMixin, Glyph):
             colour when no `values` is given (a plain colour string/tuple,
             kept distinct from `plot`'s grouped `color=`, which maps
             `values` through a colormap); left at its default of `None`,
-            no-`values` polygons stay outline-only as before. `alpha` sets
-            the fill/edge opacity. Set `add_colorbar=False` to suppress the
-            per-glyph colorbar (default True) for shared-axes composition
-            where the host owns a single aggregated colorbar.
+            no-`values` polygons stay outline-only as before. Mutually
+            exclusive with `values`. `alpha` sets the fill/edge opacity.
+            Set `add_colorbar=False` to suppress the per-glyph colorbar
+            (default True) for shared-axes composition where the host
+            owns a single aggregated colorbar.
 
     Raises:
         ValueError: If `values` is given but its length does not match
-            the number of polygons.
+            the number of polygons, or if `values` is given together with
+            `facecolor`.
 
     Examples:
         - Inspect the value array carried by the collection:
@@ -162,6 +164,12 @@ class PolygonGlyph(GeoMixin, Glyph):
                 raise ValueError(
                     f"values shape {values.shape} must match the number of "
                     f"polygons ({len(self.polygons)},)."
+                )
+            if self.default_options["facecolor"] is not None:
+                raise ValueError(
+                    "facecolor and values are mutually exclusive: facecolor is a "
+                    "single explicit fill colour, values is a scalar mapped "
+                    "through a colormap."
                 )
         self.values = values
         self.cbar: Colorbar | None = None
