@@ -234,5 +234,3 @@ template = np.empty((10, 10))                       # shape template only
 glyph = ArrayGlyph(template)
 glyph.animate(time=time_labels, playback=Animation(data_getter=lambda i: time_series[i]))
 ```
-
-![Animation Example](../images/array_glyph/animated_array.gif)

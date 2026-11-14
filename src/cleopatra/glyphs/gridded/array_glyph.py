@@ -50,6 +50,7 @@ from matplotlib.gridspec import (
 )
 from matplotlib.patches import Rectangle
 from matplotlib.patheffects import withStroke
+from matplotlib.text import Text
 from matplotlib.ticker import MaxNLocator
 from PIL import Image
 
@@ -431,7 +432,7 @@ class PointOverlay:
         per-frame `set_offsets` updates without re-deriving them.
 
         Args:
-            ax: The matplotlib axes to draw on.
+            ax (Axes): The matplotlib axes to draw on.
 
         Returns:
             tuple: `(row, col, scatter, labels)` -- the point row and column
@@ -628,7 +629,7 @@ class FrameLabel:
             return [0.02, 0.95], True
         return self.location, False
 
-    def draw(self, ax, default_size: float):
+    def draw(self, ax, default_size: float) -> Text:
         """Draw the (blank) per-frame label text artist on `ax`.
 
         Owns the placement / transform / alignment logic derived from this
@@ -638,7 +639,7 @@ class FrameLabel:
         (`va="baseline"`).
 
         Args:
-            ax: The matplotlib axes to draw on.
+            ax (Axes): The matplotlib axes to draw on.
             default_size: Font size used when this label's own `size` is unset
                 (the glyph passes its `cbar_label_size`).
 
@@ -819,7 +820,7 @@ class ProgressBar:
         visible.
 
         Args:
-            ax: The matplotlib axes to draw on.
+            ax (Axes): The matplotlib axes to draw on.
 
         Returns:
             tuple: `(track, fill)` -- the full-length background `Rectangle` and
@@ -1767,7 +1768,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 figure is created at render time. Passing `fig` alone (no
                 `ax`) draws into that figure — its first axes, or a fresh
                 one if it has none.
-            **kwargs: Additional keyword arguments for customizing the plot.
+            **kwargs (Any): Additional keyword arguments for customizing the plot.
                 Supported arguments include:
                     figsize : tuple, optional
                         Figure size, by default (8, 8).
@@ -1817,7 +1818,9 @@ class ArrayGlyph(GeoMixin, Glyph):
                         Extra keyword arguments forwarded to
                         `fig.colorbar`; user keys win over cleopatra's
                         defaults on collision. Default None.
-            data_style: Grouped `style` / `hillshade` / `bands` / `alpha` / `alpha_range` options applied at
+
+        Other Parameters:
+            data_style (DataStyle): Grouped `style` / `hillshade` / `bands` / `alpha` / `alpha_range` options applied at
                 construction, e.g. `data_style=DataStyle(style="topography")`.
                 These are rejected as loose keywords, so the group is how they
                 are set here rather than on every `plot()` call; the value is
@@ -2023,7 +2026,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         self.contour_labels: list[Any] | None = None
 
     @property
-    def arr(self):
+    def arr(self) -> ma.MaskedArray:
         """The (masked) array held by the glyph.
 
         The array is stored as a `numpy.ma.MaskedArray`; cells matching
@@ -2309,7 +2312,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         return message
 
     @property
-    def exclude_value(self):
+    def exclude_value(self) -> float | list:
         """Value(s) treated as nodata and masked out of the array.
 
         Cells equal to `exclude_value` are masked so they are excluded
@@ -3248,7 +3251,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         Args:
             style: A `cleopatra.styling.colors.DATA_STYLES` preset name (see
                 `sorted(cleopatra.styling.colors.DATA_STYLES)`).
-            **kwargs: Forwarded to `plot` (e.g. `hillshade`). `compose=True` is
+            **kwargs (Any): Forwarded to `plot` (e.g. `hillshade`). `compose=True` is
                 the one keyword `plot` accepts that this method cannot: it
                 clears the axes before redrawing, so composing onto what is
                 already there is a contradiction and is rejected rather than
@@ -3787,7 +3790,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         Args:
             ax: matplotlib axes.
             arr: numpy array.
-            indices: array with columns, (row, col).
+            indices (np.ndarray): array with columns, (row, col).
             default_options_dict: default options dictionary after updating the options.
             extent: the glyph's `[left, right, bottom, top]` extent (matplotlib
                 order, as stored on `self.extent`) when the raster is drawn by
@@ -4143,7 +4146,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 On a `style=` preset, a placement `ColorBar` (or `True`) overrides
                 the swatch with a real colorbar; a colours-only `ColorBar` styles
                 the swatch in place (defaults < preset < explicit).
-            **kwargs: Additional keyword arguments for customizing the plot.
+            **kwargs (Any): Additional keyword arguments for customizing the plot.
 
                 Plot appearance:
                     title : str, optional
@@ -5164,7 +5167,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 (2) `compose=True` is only meaningful when there is a prior
                 cleopatra layer to preserve -- on a self-built grid the axes are
                 empty, so it just drops the colorbar for no benefit.
-            **kwargs: Forwarded to each subplot. Recognised keys
+            **kwargs (Any): Forwarded to each subplot. Recognised keys
                 include the same colour / colorbar / level kwargs as
                 `plot`. `vmin` / `vmax` win over the
                 stack-wide auto-computed limits. Prefer the typed
@@ -5712,7 +5715,7 @@ class ArrayGlyph(GeoMixin, Glyph):
                 animation draws none of its own unless the caller asks with
                 `colorbar=` or `add_colorbar=True`, so the host keeps the
                 geometry it had.
-            **kwargs: Additional keyword arguments for customizing the animation.
+            **kwargs (Any): Additional keyword arguments for customizing the animation.
 
                 Plot appearance:
                     title : str, optional
@@ -5873,7 +5876,6 @@ class ArrayGlyph(GeoMixin, Glyph):
         ... )
 
         ```
-        ![animated_array](./../images/array_glyph/animated_array.gif)
 
         Saving the animation to a file:
         ```python

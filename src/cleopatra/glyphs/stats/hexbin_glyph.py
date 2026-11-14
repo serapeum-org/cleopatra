@@ -113,7 +113,7 @@ class HexbinGlyph(GeoMixin, Glyph):
             is None (per-bin counts).
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
-        **kwargs: Override any key in `HEXBIN_DEFAULT_OPTIONS`: `gridsize`
+        **kwargs (Any): Override any key in `HEXBIN_DEFAULT_OPTIONS`: `gridsize`
             (int, or an `(nx, ny)` pair, default 50), `reduce`
             (`"count"` / `"mean"` / `"sum"` / `"min"` / `"max"` / `"std"`,
             or a callable; default `"mean"`; has no effect in counts mode,

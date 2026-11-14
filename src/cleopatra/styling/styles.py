@@ -970,7 +970,7 @@ def disjoint_legend(
             the same length as `colors`.
         edgecolor: Outline color for every swatch. Defaults to
             `"none"` (no border), matching cleopatra's flat look.
-        **kwargs: Forwarded verbatim to `Axes.legend` (e.g. `title`,
+        **kwargs (Any): Forwarded verbatim to `Axes.legend` (e.g. `title`,
             `loc`, `ncol`, `bbox_to_anchor`, `fontsize`).
 
     Returns:
@@ -1059,7 +1059,7 @@ def hatch_legend(
             (transparent), so only the pattern reads.
         edgecolor: Colour of the hatch strokes (and swatch border). Defaults
             to `"black"`.
-        **kwargs: Forwarded verbatim to `Axes.legend` (e.g. `title`, `loc`,
+        **kwargs (Any): Forwarded verbatim to `Axes.legend` (e.g. `title`, `loc`,
             `ncol`, `bbox_to_anchor`, `fontsize`).
 
     Returns:
@@ -1138,7 +1138,7 @@ def size_legend(
         color: Fill colour for every proxy marker. Defaults to a neutral
             grey (`"0.4"`) because the legend encodes size, not colour.
         marker: The marker style for the proxies. Defaults to `"o"`.
-        **kwargs: Forwarded verbatim to `Axes.legend` (e.g. `title`, `loc`,
+        **kwargs (Any): Forwarded verbatim to `Axes.legend` (e.g. `title`, `loc`,
             `labelspacing`, `bbox_to_anchor`).
 
     Returns:
@@ -1216,7 +1216,7 @@ def width_legend(
             `linewidths`.
         color: Colour for every proxy line. Defaults to a neutral grey
             (`"0.4"`) because the legend encodes width, not colour.
-        **kwargs: Forwarded verbatim to `Axes.legend` (e.g. `title`, `loc`,
+        **kwargs (Any): Forwarded verbatim to `Axes.legend` (e.g. `title`, `loc`,
             `labelspacing`, `bbox_to_anchor`).
 
     Returns:
@@ -1285,7 +1285,7 @@ def colorbar_legend(
             of facet panels) -- `Figure.colorbar` steals space from each.
             Defaults to the mappable's own axes. The parent figure is inferred
             from the axes used (the first, for a sequence).
-        **kwargs: Forwarded to `Figure.colorbar` (e.g. `label`,
+        **kwargs (Any): Forwarded to `Figure.colorbar` (e.g. `label`,
             `orientation`, `shrink`, `ticks`, `extend`).
 
     Returns:
@@ -1370,7 +1370,7 @@ def histogram_legend(
             Defaults to the mappable's array when `values` is None.
         mappable: Optional `ScalarMappable` to inherit `cmap`, `norm`,
             and (when `values` is None) the data array from.
-        cmap: Colormap name or object. Falls back to the mappable's
+        cmap (str or Colormap): Colormap name or object. Falls back to the mappable's
             cmap, then to matplotlib's default. Ignored when a
             `mappable` provides one and `cmap` is None.
         norm: Normalization for mapping bin centres to colours. Falls
@@ -1380,7 +1380,7 @@ def histogram_legend(
         orientation: `"vertical"` (bars rise with count) or
             `"horizontal"` (bars extend rightwards). Default is
             `"vertical"`.
-        **bar_kwargs: Forwarded to `Axes.bar` / `Axes.barh`
+        **bar_kwargs (Any): Forwarded to `Axes.bar` / `Axes.barh`
             (e.g. `edgecolor`, `alpha`).
 
     Returns:
@@ -1928,7 +1928,7 @@ def _categorical_is_null(value: Any, pd_isna) -> bool:
 
     Args:
         value: A single (already-flattened) scalar from `categorize`'s input.
-        pd_isna: ``pandas.isna`` resolved once by the caller, or ``None`` when
+        pd_isna (Callable or None): ``pandas.isna`` resolved once by the caller, or ``None`` when
             pandas is unavailable (its sentinels then cannot occur).
 
     Returns:

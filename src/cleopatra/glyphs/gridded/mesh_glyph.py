@@ -43,6 +43,7 @@ import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 import numpy as np
 from matplotlib.animation import FuncAnimation
+from matplotlib.cm import ScalarMappable
 from matplotlib.colorbar import Colorbar
 from matplotlib.colors import BoundaryNorm, ListedColormap
 
@@ -169,17 +170,19 @@ class MeshGlyph(GeoMixin, Glyph):
             fill_value: Padding value in `face_node_connectivity`. Default -1.
             edge_node_connectivity: Optional `(n_edges, 2)` node indices per
                 edge, used by the wireframe render. Default None.
-            fig: Pre-existing figure to bind. Default None. Passing `fig`
+            fig (Figure): Pre-existing figure to bind. Default None. Passing `fig`
                 alone (no `ax`) draws into that figure — its first axes, or
                 a fresh one if it has none.
-            ax: Pre-existing axes to bind. Default None.
-            data_style: Grouped `style` / `hillshade` options applied at
+            ax (Axes): Pre-existing axes to bind. Default None.
+            **kwargs (Any): Override any key in `MESH_DEFAULT_OPTIONS`.
+
+        Other Parameters:
+            data_style (DataStyle): Grouped `style` / `hillshade` options applied at
                 construction, e.g. `data_style=DataStyle(hillshade=True)`.
                 These are rejected as loose keywords, so the group is how they
                 are set here rather than on every `plot()` call; the value is
                 sticky across later calls (`plot()` restores it whenever the
                 call itself does not set one). Default None.
-            **kwargs: Override any key in `MESH_DEFAULT_OPTIONS`.
 
         Raises:
             ValueError: If the topology arrays are inconsistent, or if a
@@ -780,20 +783,20 @@ class MeshGlyph(GeoMixin, Glyph):
         norm=None,
         filled: bool = True,
         **render_kwargs,
-    ):
+    ) -> ScalarMappable:
         """Render mesh data on axes and return the mappable.
 
         Args:
-            ax: Matplotlib axes.
+            ax (Axes): Matplotlib axes.
             data: 1D data array.
             location: `"face"` or `"node"`.
             edgecolor: Edge color for face rendering.
-            norm: Color normalization.
+            norm (Normalize): Color normalization.
             filled: For node data, whether to draw filled contours
                 (`tricontourf`, the default) or line contours
                 (`tricontour`). Ignored for face data, which always uses
                 `tripcolor`.
-            **render_kwargs: Passed to tripcolor, tricontourf, or
+            **render_kwargs (Any): Passed to tripcolor, tricontourf, or
                 tricontour.
 
         Returns:
@@ -869,7 +872,7 @@ class MeshGlyph(GeoMixin, Glyph):
             edgecolor: Triangle edge colour.
             norm: Colour normalization, or `None` to use `vmin`/`vmax`.
             hillshade: Resolved hillshade settings.
-            **render_kwargs: Forwarded to `tripcolor`.
+            **render_kwargs (Any): Forwarded to `tripcolor`.
 
         Returns:
             The `tripcolor` mappable, with per-face colours set to the shaded
@@ -929,7 +932,7 @@ class MeshGlyph(GeoMixin, Glyph):
         Args:
             style: A `cleopatra.styling.colors.DATA_STYLES` preset name.
             data: Mesh data to render; defaults to the last-plotted data.
-            **kwargs: Forwarded to `plot` (e.g. `location`, `hillshade`).
+            **kwargs (Any): Forwarded to `plot` (e.g. `location`, `hillshade`).
 
         Returns:
             tuple[Figure, Axes]: The figure and axes drawn on.
@@ -1035,7 +1038,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 (`title=`, `xlabel=`, …) and its own aspect, but leaves the
                 host's existing title / ticks / labels and colorbar untouched
                 when you pass none.
-            **kwargs: Construction-time-style overrides for the non-grouped
+            **kwargs (Any): Construction-time-style overrides for the non-grouped
                 `default_options` (`cmap`, `vmin`, `vmax`, `title_size`,
                 `figsize`, …). The loose `ticks_spacing` / `cbar_*` keys
                 still work, but prefer `colorbar=ColorBar(...)`.
@@ -1408,7 +1411,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 explicit framing (`title=`, `xlabel=`, …) is still applied while
                 the host's existing framing is left intact, and `tight_layout` is
                 skipped so the host layout is preserved (see `plot`).
-            **kwargs: Override any key in `default_options` (cmap,
+            **kwargs (Any): Override any key in `default_options` (cmap,
                 vmin, vmax, color_scale, gamma, midpoint, figsize,
                 title, etc.). The loose `ticks_spacing` / `cbar_*` keys
                 still work, but prefer `colorbar=ColorBar(...)`.
@@ -1604,7 +1607,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 replacing it, by default `False`. `True` clears only this
                 glyph's own prior artists, so the wireframe overlays existing
                 content (see `plot`).
-            **kwargs: Additional keyword arguments passed to
+            **kwargs (Any): Additional keyword arguments passed to
                 `LineCollection`.
 
         Returns:
@@ -1922,7 +1925,7 @@ class MeshGlyph(GeoMixin, Glyph):
                 axes aspect, including to a foreign host it composes onto --
                 the same "a composed overlay still applies its own aspect"
                 contract `plot` documents.
-            **kwargs: Overrides for the delegate `VectorGlyph`'s options
+            **kwargs (Any): Overrides for the delegate `VectorGlyph`'s options
                 (`cmap`, `vmin`, `vmax`, `scale`, `cbar_label`, `figsize`,
                 ...). An unknown key raises `ValueError`.
 

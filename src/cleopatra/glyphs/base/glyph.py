@@ -832,7 +832,7 @@ class Glyph(WatermarkMixin):
             loose keyword for the same option — only `alpha` can, since every
             other `DataStyle` field is rejected as a loose keyword — the
             group is merged second and wins.
-        **kwargs: Override any key in `default_options`.
+        **kwargs (Any): Override any key in `default_options`.
 
     Raises:
         TypeError: If `data_style` is given and is not a `DataStyle`.
@@ -2558,7 +2558,7 @@ class Glyph(WatermarkMixin):
                 `pathlib.Path`). Extension determines format.
                 Supported: gif, mov, avi, mp4, webp.
             fps: Frames per second. Default is 2.
-            **kwargs: Additional keyword arguments forwarded to
+            **kwargs (Any): Additional keyword arguments forwarded to
                 `cleopatra.glyphs.base.animation.save_animation`, e.g. `crf`, `bitrate`,
                 `codec`, `preset`, `pix_fmt`, `dpi` (ffmpeg formats) or
                 `optimize`, `loop` and `quantize_method` (GIF/WebP).

@@ -116,7 +116,7 @@ class VectorGlyph(GeoMixin, Glyph):
         v: y-components of the vectors. Must broadcast against `x`/`y`.
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
-        **kwargs: Override any key in `VECTOR_DEFAULT_OPTIONS`
+        **kwargs (Any): Override any key in `VECTOR_DEFAULT_OPTIONS`
             (e.g. `density`, `scale`, `cmap`, `vmin`, `vmax`, `levels`,
             `color_scale`, `ticks_spacing`, `cbar_label`, `figsize`,
             `title`). Set `add_colorbar=False` to suppress the per-glyph
@@ -239,7 +239,7 @@ class VectorGlyph(GeoMixin, Glyph):
         contour: Contour | None = None,
         classify: Classify | None = None,
         compose: bool = False,
-    ):
+    ) -> tuple[Figure, Axes, Any]:
         """Render the vector field, coloured by magnitude.
 
         Dispatches to `Axes.quiver`, `Axes.barbs`, or `Axes.streamplot`
@@ -503,7 +503,7 @@ class VectorGlyph(GeoMixin, Glyph):
         with a text label, the standard legend for a quiver field.
 
         Args:
-            im: The `Quiver` artist returned by `plot(kind="quiver")`.
+            im (Quiver): The `Quiver` artist returned by `plot(kind="quiver")`.
             x: Key x-position in axes fraction coordinates.
                 Default is 0.9.
             y: Key y-position in axes fraction coordinates.
@@ -514,7 +514,7 @@ class VectorGlyph(GeoMixin, Glyph):
                 renders the numeric `value` as the label.
             labelpos: Side of the arrow for the label (`"N"`, `"S"`,
                 `"E"`, `"W"`). Default is `"E"`.
-            **kwargs: Forwarded to `Axes.quiverkey`.
+            **kwargs (Any): Forwarded to `Axes.quiverkey`.
 
         Returns:
             QuiverKey: The created key artist.

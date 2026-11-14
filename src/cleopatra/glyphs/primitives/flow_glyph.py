@@ -94,11 +94,7 @@ class FlowGlyph(GeoMixin, Glyph):
             option is used for every line. Default is None.
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
-        glow: Add a soft neon halo beneath the flow polylines (tracking their
-            width scaling). `True` uses the defaults; a dict overrides
-            `cleopatra.styling.colors.add_line_glow`'s `n_glow` / `alpha` /
-            `linewidth_step`. Default is False.
-        **kwargs: Override any key in `FLOW_DEFAULT_OPTIONS`: `width_limits`
+        **kwargs (Any): Override any key in `FLOW_DEFAULT_OPTIONS`: `width_limits`
             (min/max line width in points, default `(1, 5)`), `width_scale`
             (`"linear"` / `"log"` / `"sqrt"`, default `"linear"`),
             `draw_order` (`"input"` / `"width"`, default `"input"`; `"width"`
@@ -109,6 +105,12 @@ class FlowGlyph(GeoMixin, Glyph):
             `vmin`, `vmax`, `levels`, `color_scale`, `ticks_spacing`,
             `cbar_label`, `figsize`, `title`). Set `add_colorbar=False` to
             suppress the per-glyph colorbar (default True).
+
+    Other Parameters:
+        glow (bool or dict): Add a soft neon halo beneath the flow polylines (tracking their
+            width scaling). `True` uses the defaults; a dict overrides
+            `cleopatra.styling.colors.add_line_glow`'s `n_glow` / `alpha` /
+            `linewidth_step`. Default is False.
 
     Raises:
         ValueError: If `values` or `widths` lengths do not match the number

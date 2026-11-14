@@ -236,8 +236,8 @@ def make_diverging(
     to equal lightness first, so neither side visually dominates.
 
     Args:
-        low: Colour for the low end of the scale.
-        high: Colour for the high end of the scale.
+        low (color-like): Colour for the low end of the scale.
+        high (color-like): Colour for the high end of the scale.
         n: Total number of levels. Defaults to 256.
         center: The neutral midpoint colour. Defaults to a near-white grey.
         balance: If `True` (default), equalise the two endpoints' `L*` so the

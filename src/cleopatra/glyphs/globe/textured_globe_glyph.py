@@ -206,7 +206,7 @@ class TexturedGlobeGlyph(WatermarkMixin):
                 when `sun` is set.
             fig: Pre-existing matplotlib `Figure` to draw on when `draw`/`animate` are called without their own `ax`.
             ax: Pre-existing 3-D matplotlib `Axes` (`Axes3D`) to draw on. If given it must be a 3-D axes.
-            **kwargs: Render options overriding `DEFAULT_OPTIONS` (`figsize`, `elev`, `azim`, `background`). An
+            **kwargs (Any): Render options overriding `DEFAULT_OPTIONS` (`figsize`, `elev`, `azim`, `background`). An
                 unrecognised key raises `ValueError`.
 
         Raises:
@@ -801,7 +801,7 @@ class TexturedGlobeGlyph(WatermarkMixin):
                 `None` to render evenly. Omitted (default) inherits the value passed to `__init__`.
             ambient: Ambient floor for this call, overriding the instance's `ambient`. Omitted inherits the
                 constructor value. Always validated, but only affects the render when the effective `sun` is set.
-            **kwargs: Render options overriding the instance defaults for this call (`figsize`, `elev`, `azim`,
+            **kwargs (Any): Render options overriding the instance defaults for this call (`figsize`, `elev`, `azim`,
                 `background`). `figsize` applies only when a new figure is created; it is ignored when drawing onto
                 an existing (supplied or instance) axes. An unrecognised key raises `ValueError`.
 
@@ -899,7 +899,7 @@ class TexturedGlobeGlyph(WatermarkMixin):
                 constructor value; `None` renders evenly.
             ambient: Ambient floor forwarded to `draw` on every frame. Omitted inherits the constructor value.
             interval: Delay between frames in milliseconds (matplotlib playback hint).
-            **kwargs: Render options forwarded to `draw` on every frame (`figsize`, `elev`, `azim`, `background`).
+            **kwargs (Any): Render options forwarded to `draw` on every frame (`figsize`, `elev`, `azim`, `background`).
 
         Returns:
             matplotlib.animation.FuncAnimation: The animation, ready to save or embed.

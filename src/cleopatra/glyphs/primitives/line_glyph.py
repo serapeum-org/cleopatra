@@ -31,7 +31,10 @@ from __future__ import annotations
 
 import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.collections import PolyCollection
+from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
+from matplotlib.lines import Line2D
 
 from cleopatra.glyphs.base.glyph import Glyph, _root_figure
 from cleopatra.styling.colors import add_line_glow, resolve_glow_options
@@ -64,12 +67,14 @@ class LineGlyph(Glyph):
             n_series)` for multiple series.
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
-        glow: Add a soft neon halo beneath the plotted line(s). `True` uses the
-            defaults; a dict overrides `cleopatra.styling.colors.add_line_glow`'s
-            `n_glow` / `alpha` / `linewidth_step`. Default is False.
-        **kwargs: Override any key in `LINE_DEFAULT_OPTIONS`
+        **kwargs (Any): Override any key in `LINE_DEFAULT_OPTIONS`
             (e.g. `marker`, `linestyle`, `alpha`, `color_1`,
             `line_width`, `figsize`, `title`).
+
+    Other Parameters:
+        glow (bool or dict): Add a soft neon halo beneath the plotted line(s). `True` uses the
+            defaults; a dict overrides `cleopatra.styling.colors.add_line_glow`'s
+            `n_glow` / `alpha` / `linewidth_step`. Default is False.
 
     Raises:
         ValueError: If the length of `x` does not match the number of
@@ -148,7 +153,7 @@ class LineGlyph(Glyph):
         label: str | list[str] | None = None,
         color=None,
         **kwargs,
-    ):
+    ) -> tuple[Figure, Axes, list[Line2D]]:
         """Draw line/marker series with `Axes.plot`.
 
         Args:
@@ -157,8 +162,8 @@ class LineGlyph(Glyph):
             title: Plot title override.
             label: Legend label(s); a single string for 1D `y` or one
                 per series for 2D `y`.
-            color: Line colour. Defaults to the `color_1` option.
-            **kwargs: Forwarded to `Axes.plot`.
+            color (color-like): Line colour. Defaults to the `color_1` option.
+            **kwargs (Any): Forwarded to `Axes.plot`.
 
         Returns:
             tuple[Figure, Axes, list[Line2D]]: The figure, the axes, and
@@ -208,15 +213,15 @@ class LineGlyph(Glyph):
         title: str | None = None,
         color=None,
         **kwargs,
-    ):
+    ) -> tuple[Figure, Axes, BarContainer]:
         """Draw a bar chart of a single series with `Axes.bar`.
 
         Args:
             ax: Axes to draw on. Falls back to the construction axes or
                 a new figure/axes.
             title: Plot title override.
-            color: Bar colour. Defaults to the `color_1` option.
-            **kwargs: Forwarded to `Axes.bar`.
+            color (color-like): Bar colour. Defaults to the `color_1` option.
+            **kwargs (Any): Forwarded to `Axes.bar`.
 
         Returns:
             tuple[Figure, Axes, BarContainer]: The figure, the axes, and
@@ -257,7 +262,7 @@ class LineGlyph(Glyph):
         color=None,
         alpha: float | None = None,
         **kwargs,
-    ):
+    ) -> tuple[Figure, Axes, PolyCollection]:
         """Fill the band between `y` and `y2` with `Axes.fill_between`.
 
         Useful for envelopes and quantile spreads: `y` is the upper
@@ -270,10 +275,10 @@ class LineGlyph(Glyph):
             ax: Axes to draw on. Falls back to the construction axes or
                 a new figure/axes.
             title: Plot title override.
-            color: Fill colour. Defaults to the `color_1` option.
+            color (color-like): Fill colour. Defaults to the `color_1` option.
             alpha: Fill transparency. Defaults to `0.3` for a band look
                 (overrides the glyph's `alpha` option for the fill).
-            **kwargs: Forwarded to `Axes.fill_between`.
+            **kwargs (Any): Forwarded to `Axes.fill_between`.
 
         Returns:
             tuple[Figure, Axes, PolyCollection]: The figure, the axes,

@@ -37,6 +37,7 @@ from matplotlib.axes import Axes
 from matplotlib.cm import ScalarMappable
 from matplotlib.colorbar import Colorbar
 from matplotlib.colors import Normalize
+from matplotlib.contour import QuadContourSet
 from matplotlib.figure import Figure
 from matplotlib.patches import Patch
 from matplotlib.path import Path as MplPath
@@ -95,12 +96,7 @@ class KDEGlyph(Glyph):
             data coordinates. Default is None (no clipping).
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
-        data_style: Grouped `style` / `hillshade` options applied at
-            construction, e.g. `data_style=DataStyle(style="topography")`.
-            These are rejected as loose keywords, so the group is how they are
-            set here rather than on every `plot()` call; the value is sticky
-            across later calls. Default None.
-        **kwargs: Construction-time overrides for the non-grouped
+        **kwargs (Any): Construction-time overrides for the non-grouped
             `KDE_DEFAULT_OPTIONS`: `shade` (filled `contourf` vs line
             `contour`, default True), `bw_method` (None for Scott's rule,
             or a positive float bandwidth multiplier), `gridsize` (density
@@ -115,6 +111,13 @@ class KDEGlyph(Glyph):
             / `levels` / `style` keyword raises). `color` and `contour` are
             `plot()`-only; `data_style` may be given here as well, via the
             parameter above.
+
+    Other Parameters:
+        data_style (DataStyle): Grouped `style` / `hillshade` options applied at
+            construction, e.g. `data_style=DataStyle(style="topography")`.
+            These are rejected as loose keywords, so the group is how they are
+            set here rather than on every `plot()` call; the value is sticky
+            across later calls. Default None.
 
     Raises:
         ValueError: If `x` and `y` have mismatched shapes, if fewer than
@@ -337,7 +340,7 @@ class KDEGlyph(Glyph):
         hillshade: bool | dict | None | _Unset = _UNSET,
         add_colorbar: bool | None = None,
         title: str | None = None,
-    ):
+    ) -> tuple[Figure, Axes, QuadContourSet]:
         """Apply a continuous `DATA_STYLES` preset by name, re-rendering in place.
 
         A discoverable wrapper over `plot(style=...)` for restyling an
@@ -387,7 +390,7 @@ class KDEGlyph(Glyph):
         color: ColorScaling | None = None,
         contour: Contour | None = None,
         data_style: DataStyle | None = None,
-    ):
+    ) -> tuple[Figure, Axes, QuadContourSet]:
         """Render the 2-D density as filled or line contours.
 
         Evaluates the KDE via `evaluate`, colours it through
@@ -409,12 +412,14 @@ class KDEGlyph(Glyph):
                 **sticky** -- it persists into later plots, overriding a
                 construction-time `add_colorbar=False`; an explicit
                 `add_colorbar=` argument still wins the on/off decision.
-            hillshade: Relief-shade the density surface for this call (`True`
+
+        Other Parameters:
+            hillshade (bool or dict): Relief-shade the density surface for this call (`True`
                 or an options dict; see `cleopatra.glyphs.base.hillshade`). Defaults to
                 None, which keeps the value set at construction. Accepting it
                 here mirrors `ArrayGlyph.plot`/`MeshGlyph.plot`, so `hillshade`
                 works the same way across all three glyphs.
-            style: Name of a continuous `cleopatra.styling.colors.DATA_STYLES` preset
+            style (str): Name of a continuous `cleopatra.styling.colors.DATA_STYLES` preset
                 to colour the density with (its cmap + norm; composes with
                 `hillshade`). The preset name is **sticky** -- once set it
                 persists into `default_options` and survives later plain
