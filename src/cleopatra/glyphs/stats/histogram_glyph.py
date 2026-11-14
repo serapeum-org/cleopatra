@@ -562,14 +562,7 @@ class HistogramGlyph(WatermarkMixin):
         bins = []
         patches = []
         bins_val = self.default_options["bins"]
-        color = self.default_options["color"]
-        # A single colour (bar string, hex, or an RGB/RGBA tuple) is itself a
-        # sequence, so the per-series `color[i]` indexing below would otherwise
-        # read it element by element — pairing series 0 with its first
-        # character/channel. Wrap one colour as a one-element sequence so a
-        # single-series histogram colours correctly.
-        if is_color_like(color):
-            color = [color]
+        color = self._color_sequence()
         alpha = self.default_options["alpha"]
         rwidth = self.default_options["rwidth"]
         if self.values.ndim == 2:
@@ -606,6 +599,27 @@ class HistogramGlyph(WatermarkMixin):
         hist = {"n": n, "bins": bins, "patches": patches}
         _mark_render_artists(ax, self, *patches)
         return fig, ax, hist
+
+    def _color_sequence(self) -> list | tuple:
+        """Return the `color` option as a sequence of colours, one per series.
+
+        A single colour is itself a sequence — a bare name/hex string is a
+        sequence of characters, an RGB/RGBA tuple a sequence of channels — so
+        the per-series indexing in every renderer (`color[i]`,
+        `palette[i % len(palette)]`) would otherwise read it element by
+        element, pairing series 0 with its first character/channel. Wrapping a
+        single colour as a one-element list keeps a single-series render in
+        that colour, while an existing sequence of colours passes through
+        untouched.
+
+        Returns:
+            list | tuple: `[color]` when the option is one colour, else the
+                option unchanged.
+        """
+        color = self.default_options["color"]
+        if is_color_like(color):
+            return [color]
+        return color
 
     def _apply_options(self, kwargs: dict) -> None:
         """Validate per-call keyword options and apply them onto `default_options`.
@@ -809,7 +823,7 @@ class HistogramGlyph(WatermarkMixin):
         )
         ax.set_xticks(positions)
         ax.set_xticklabels(tick_labels)
-        palette = self.default_options["color"]
+        palette = self._color_sequence()
         for i, box in enumerate(bp["boxes"]):
             box.set_facecolor(palette[i % len(palette)])
             box.set_alpha(self.default_options["alpha"])
@@ -901,7 +915,7 @@ class HistogramGlyph(WatermarkMixin):
             patch_artist=True,
             **kwargs,
         )
-        palette = self.default_options["color"]
+        palette = self._color_sequence()
         for i, box in enumerate(bp["boxes"]):
             box.set_facecolor(palette[i % len(palette)])
             box.set_alpha(self.default_options["alpha"])

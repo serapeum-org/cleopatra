@@ -346,8 +346,10 @@ class TestHistogramSingleColour:
         Test scenario:
             A numeric RGB tuple is one colour, so for a 3-column dataset it is
             normalised to a one-element sequence and fails the existing
-            "number of colors" check with a clear message — rather than being
-            silently zipped channel-per-series.
+            "number of colors" check with a clear message. Before the fix the
+            tuple's length coincidentally matched the column count, slipped
+            past that check, and raised matplotlib's cryptic
+            "0.2 is not a valid color value" from `color[0]` instead.
         """
         data = np.random.default_rng(0).normal(size=(200, 3))
         with pytest.raises(ValueError, match=r"number of colors") as exc:
@@ -355,6 +357,47 @@ class TestHistogramSingleColour:
         assert "samples:3" in str(exc.value), (
             f"error should report the sample count: {exc.value}"
         )
+
+    @pytest.mark.parametrize("ndim", [1, 2])
+    def test_single_colour_fills_boxplot(self, ndim):
+        """A single colour fills every box, across 1D and 2D data.
+
+        Args:
+            ndim: Whether the data is a single 1D series (one box) or a
+                3-column 2D array (three boxes).
+
+        Test scenario:
+            `boxplot` reads the same `color` option as `histogram` and indexed
+            it per box, so a bare string used to raise
+            ``Invalid RGBA argument: 's'``. It must now fill every box in that
+            colour.
+        """
+        rng = np.random.default_rng(0)
+        data = rng.normal(size=200) if ndim == 1 else rng.normal(size=(200, 3))
+        fig, ax, bp = HistogramGlyph(data, color="slategray").boxplot()
+        expected = matplotlib.colors.to_rgba("slategray", 0.7)
+        assert len(bp["boxes"]) == (1 if ndim == 1 else 3)
+        for box in bp["boxes"]:
+            assert box.get_facecolor() == pytest.approx(expected), (
+                f"box should be slategray, got {box.get_facecolor()}"
+            )
+
+    def test_single_colour_fills_multiboxplot(self):
+        """A single colour fills every box in `multiboxplot` too.
+
+        Test scenario:
+            `multiboxplot` shares the per-box colour indexing, so a bare string
+            used to raise ``Invalid RGBA argument: 's'``. It must now fill all
+            three boxes of a 3-column dataset in that colour.
+        """
+        data = np.random.default_rng(0).normal(size=(200, 3))
+        fig, ax, bp = HistogramGlyph(data, color="slategray").multiboxplot()
+        expected = matplotlib.colors.to_rgba("slategray", 0.7)
+        assert len(bp["boxes"]) == 3
+        for box in bp["boxes"]:
+            assert box.get_facecolor() == pytest.approx(expected), (
+                f"box should be slategray, got {box.get_facecolor()}"
+            )
 
 
 class TestBoxplot:
