@@ -107,7 +107,8 @@ class ScatterGlyph(GeoMixin, Glyph):
             category. Drawn verbatim -- no colormap, no colorbar -- so it is
             for a caller that already has one colour per point (e.g. a
             categorical column mapped upstream), not for value-driven
-            mapping. Mutually exclusive with `values`. Default is None.
+            mapping. Mutually exclusive with `values` and with `flat_color`.
+            Default is None.
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
         **kwargs: Override any key in `SCATTER_DEFAULT_OPTIONS`
@@ -117,7 +118,7 @@ class ScatterGlyph(GeoMixin, Glyph):
             the uncoloured path -- a plain colour string/tuple, kept
             distinct from `plot`'s grouped `color=` (a `ColorScaling`),
             which is for value-driven mapping only. Mutually exclusive with
-            `values`, the same way `colors` is. `alpha` sets marker opacity
+            `values` and with `colors`. `alpha` sets marker opacity
             (default `1.0`). Set
             `add_colorbar=False` to suppress the per-glyph colorbar (default
             True) for shared-axes composition where the host owns a single
@@ -132,8 +133,8 @@ class ScatterGlyph(GeoMixin, Glyph):
         TypeError: If `colors` is given as a bare `str`/`bytes` rather than a
             sequence of per-point colours.
         ValueError: If `x` and `y` (or `values` / `sizes` / `colors`, when
-            given) have mismatched lengths, or if `values` is given together
-            with `colors` or with `flat_color`.
+            given) have mismatched lengths, or if more than one of `values`,
+            `colors`, and `flat_color` is given.
 
     Examples:
         - Colour points by value and read back the mapped array:
@@ -223,25 +224,34 @@ class ScatterGlyph(GeoMixin, Glyph):
                 raise ValueError(
                     f"values must match x/y shape {self.x.shape}, got {values.shape}."
                 )
-            if self.default_options["flat_color"] is not None:
-                raise ValueError(
-                    "flat_color and values are mutually exclusive: flat_color is a "
-                    "single explicit colour, values is a scalar mapped through a "
-                    "colormap."
-                )
         if sizes is not None:
             sizes = np.asarray(sizes)
             if sizes.shape != self.x.shape:
                 raise ValueError(
                     f"sizes must match x/y shape {self.x.shape}, got {sizes.shape}."
                 )
+        # `values`/`colors`/`flat_color` each drive point colour a different way
+        # (colormap / explicit sequence / single flat colour) -- at most one may
+        # be given, checked together rather than pairwise so a third colour
+        # source added later cannot reopen this gap the way `colors`+`flat_color`
+        # originally did.
+        given = [
+            name
+            for name, val in (
+                ("values", values),
+                ("colors", colors),
+                ("flat_color", self.default_options["flat_color"]),
+            )
+            if val is not None
+        ]
+        if len(given) > 1:
+            raise ValueError(
+                f"{' and '.join(given)} are mutually exclusive: values maps a "
+                "scalar through a colormap, colors is an explicit per-point "
+                "colour sequence, and flat_color is a single explicit colour -- "
+                "only one colour source may be given."
+            )
         if colors is not None:
-            if values is not None:
-                raise ValueError(
-                    "colors and values are mutually exclusive: colors is an "
-                    "explicit per-point colour, values is a scalar mapped "
-                    "through a colormap."
-                )
             colors = validate_color_sequence(
                 colors, self.x.shape[0], param="colors", noun="points"
             )
