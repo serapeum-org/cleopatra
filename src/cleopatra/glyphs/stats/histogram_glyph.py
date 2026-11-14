@@ -61,7 +61,7 @@ from collections.abc import Sequence
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
-from matplotlib.colors import Normalize
+from matplotlib.colors import Normalize, is_color_like
 from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 
@@ -195,8 +195,13 @@ class HistogramGlyph(WatermarkMixin):
                 Supported arguments include:
                 - figsize: Figure size as (width, height) in inches, by default (5, 5).
                 - bins: Number of histogram bins, by default 15.
-                - color: Colors for the histogram bars, by default ["#0504aa"].
-                    For 2D data, the number of colors should match the number of columns.
+                - color: Color(s) for the histogram bars, by default ["#0504aa"].
+                    A single color — a name or hex string (e.g. "slategray",
+                    "#3182bd") or an RGB/RGBA tuple — fills a single-series
+                    histogram; for an RGBA tuple the 4th (alpha) channel is
+                    overridden by the separate alpha option. For 2D data, pass
+                    one color per column; the number of colors must match the
+                    number of columns.
                 - alpha: Transparency of the histogram bars, by default 0.7.
                     Values range from 0 (transparent) to 1 (opaque).
                 - rwidth: Relative width of the bars, by default 0.85.
@@ -424,8 +429,13 @@ class HistogramGlyph(WatermarkMixin):
                 Supported arguments include:
                 - figsize: Figure size as (width, height) in inches, by default (5, 5).
                 - bins: Number of histogram bins, by default 15.
-                - color: Colors for the histogram bars, by default ["#0504aa"].
-                    For 2D data, the number of colors should match the number of columns.
+                - color: Color(s) for the histogram bars, by default ["#0504aa"].
+                    A single color — a name or hex string (e.g. "slategray",
+                    "#3182bd") or an RGB/RGBA tuple — fills a single-series
+                    histogram; for an RGBA tuple the 4th (alpha) channel is
+                    overridden by the separate alpha option. For 2D data, pass
+                    one color per column; the number of colors must match the
+                    number of columns.
                 - alpha: Transparency of the histogram bars, by default 0.7.
                     Values range from 0 (transparent) to 1 (opaque).
                 - rwidth: Relative width of the bars, by default 0.85.
@@ -500,6 +510,15 @@ class HistogramGlyph(WatermarkMixin):
 
                     ```
 
+                - Colour a single-series histogram with a bare colour string:
+
+                    ```python
+                    >>> fig, ax, hist = stat_plot.histogram(bins=10, color="slategray")
+                    >>> hist["patches"][0][0].get_facecolor()
+                    (0.4392156862745098, 0.5019607843137255, 0.5647058823529412, 0.7)
+
+                    ```
+
             - 2D data.
 
                 - Create a histogram with custom bin count and labels:
@@ -543,7 +562,7 @@ class HistogramGlyph(WatermarkMixin):
         bins = []
         patches = []
         bins_val = self.default_options["bins"]
-        color = self.default_options["color"]
+        color = self._color_sequence()
         alpha = self.default_options["alpha"]
         rwidth = self.default_options["rwidth"]
         if self.values.ndim == 2:
@@ -580,6 +599,27 @@ class HistogramGlyph(WatermarkMixin):
         hist = {"n": n, "bins": bins, "patches": patches}
         _mark_render_artists(ax, self, *patches)
         return fig, ax, hist
+
+    def _color_sequence(self) -> list | tuple:
+        """Return the `color` option as a sequence of colours, one per series.
+
+        A single colour is itself a sequence — a bare name/hex string is a
+        sequence of characters, an RGB/RGBA tuple a sequence of channels — so
+        the per-series indexing in every renderer (`color[i]`,
+        `palette[i % len(palette)]`) would otherwise read it element by
+        element, pairing series 0 with its first character/channel. Wrapping a
+        single colour as a one-element list keeps a single-series render in
+        that colour, while an existing sequence of colours passes through
+        untouched.
+
+        Returns:
+            list | tuple: `[color]` when the option is one colour, else the
+                option unchanged.
+        """
+        color = self.default_options["color"]
+        if is_color_like(color):
+            return [color]
+        return color
 
     def _apply_options(self, kwargs: dict) -> None:
         """Validate per-call keyword options and apply them onto `default_options`.
@@ -783,7 +823,7 @@ class HistogramGlyph(WatermarkMixin):
         )
         ax.set_xticks(positions)
         ax.set_xticklabels(tick_labels)
-        palette = self.default_options["color"]
+        palette = self._color_sequence()
         for i, box in enumerate(bp["boxes"]):
             box.set_facecolor(palette[i % len(palette)])
             box.set_alpha(self.default_options["alpha"])
@@ -875,7 +915,7 @@ class HistogramGlyph(WatermarkMixin):
             patch_artist=True,
             **kwargs,
         )
-        palette = self.default_options["color"]
+        palette = self._color_sequence()
         for i, box in enumerate(bp["boxes"]):
             box.set_facecolor(palette[i % len(palette)])
             box.set_alpha(self.default_options["alpha"])
