@@ -28,30 +28,38 @@ hint.
 
 ## Usage
 
+Web-tile basemaps are added through the `add_tiles` glyph method
+(`cleopatra.basemap.geo.GeoMixin`, inherited by every geographic glyph), which
+forwards to this module. For the headless case (no axes), use the public
+`stitch_basemap` to get the stitched image and its extent as data.
+
 ```python
+import numpy as np
 import matplotlib
+
 matplotlib.use("Agg")  # any backend; Agg shown for headless rendering
-import matplotlib.pyplot as plt
 
-from cleopatra.basemap.tiles import add_tiles
+from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 
-fig, ax = plt.subplots()
-# plot something in Web Mercator (EPSG:3857) coordinates ...
-ax.plot([1_000_000.0, 1_200_000.0], [6_000_000.0, 6_200_000.0])
+# a 2-D array positioned in Web Mercator (EPSG:3857) metres
+glyph = ArrayGlyph(
+    np.random.random((20, 20)),
+    extent=[1_000_000.0, 1_200_000.0, 6_000_000.0, 6_200_000.0],
+)
+glyph.plot()
 
-# ... and drop an OpenStreetMap basemap underneath it
-add_tiles(ax, crs=3857)
+# drop an OpenStreetMap basemap underneath the data
+glyph.add_tiles(crs=3857)
 
 # a different provider, a fixed zoom, a custom User-Agent (recommended in production):
-add_tiles(
-    ax,
+glyph.add_tiles(
     source="CartoDB.Positron",
     crs="EPSG:4326",
     zoom=8,
     user_agent="my-app/1.0 (+https://example.org)",
 )
 
-fig.savefig("map.png")
+glyph.fig.savefig("map.png")
 ```
 
 !!! note

@@ -20,7 +20,7 @@
 ### Optional dependencies — the `tiles` extra
 
 The geospatial basemap features need three extra packages: the web-tile basemap helper
-(`cleopatra.basemap.tiles.add_tiles`, including the OGC WMS/WMTS providers in
+(the `add_tiles` glyph method, including the OGC WMS/WMTS providers in
 `cleopatra.basemap.ogc`), the reference-data layers (`cleopatra.basemap.reference.add_relief`
 for relief PNG decoding, and `cleopatra.basemap.reference.add_features(..., crs=...)` for
 reprojection), the orthographic globe presets in `cleopatra.basemap.projection`, and CRS
@@ -56,7 +56,7 @@ dependencies.
 ```bash
 pip install cleopatra
 
-# with the optional web-tile basemap support (cleopatra.basemap.tiles.add_tiles)
+# with the optional web-tile basemap support (the add_tiles glyph method)
 pip install "cleopatra[tiles]"
 ```
 

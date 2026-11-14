@@ -9,7 +9,7 @@ importing the standalone helpers:
 - `crs` — a validated coordinate-reference-system property (int EPSG code, CRS
   string, or `None`); it defaults the `crs=` of `add_tiles` / `add_features` when
   you omit it, and is validated on assignment.
-- `add_tiles` → [`cleopatra.basemap.tiles.add_tiles`](tiles.md)
+- `add_tiles` → forwards to the internal `cleopatra.basemap.tiles._add_tiles`
 - `add_features` → [`cleopatra.basemap.reference.add_features`](reference-data.md)
 - `add_relief` → [`cleopatra.basemap.reference.add_relief`](reference-data.md)
 - `add_reference_map` — a one-call CAMS-style reference-map preset

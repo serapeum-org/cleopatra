@@ -37,9 +37,9 @@ from cleopatra.basemap.ogc import (
 from cleopatra.basemap.tiles import (
     _TILES_AVAILABLE,
     Tile,
+    _add_tiles,
     _redact_url,
     _tile_xy_bounds,
-    add_tiles,
     fetch_single_tile,
 )
 
@@ -2064,7 +2064,7 @@ class TestProvidersDriveAddTiles:
         ax.set_xlim(1_000_000.0, 1_200_000.0)
         ax.set_ylim(6_000_000.0, 6_200_000.0)
 
-        add_tiles(ax, provider, crs=3857, zoom=3)
+        _add_tiles(ax, provider, crs=3857, zoom=3)
 
         assert len(ax.images) == 1, f"no mosaic was drawn: {ax.images}"
         assert recorded_urls, "no tile was requested"
@@ -2095,7 +2095,7 @@ class TestProvidersDriveAddTiles:
         ax.set_xlim(1_000_000.0, 1_200_000.0)
         ax.set_ylim(6_000_000.0, 6_200_000.0)
 
-        add_tiles(ax, provider, crs=3857, zoom=3)
+        _add_tiles(ax, provider, crs=3857, zoom=3)
 
         assert all(marker in url for url in recorded_urls), (
             f"not every request was a {marker}: {recorded_urls[:2]}"
@@ -2122,7 +2122,7 @@ class TestProvidersDriveAddTiles:
         ax.set_xlim(1_000_000.0, 1_200_000.0)
         ax.set_ylim(6_000_000.0, 6_200_000.0)
 
-        add_tiles(ax, provider, crs=3857, zoom=3, attribution=True)
+        _add_tiles(ax, provider, crs=3857, zoom=3, attribution=True)
 
         drawn = [text.get_text() for text in ax.texts]
         assert drawn == [provider.attribution], f"attribution not drawn: {drawn}"
@@ -2150,7 +2150,7 @@ class TestProvidersDriveAddTiles:
         ax.set_xlim(1_000_000.0, 1_200_000.0)
         ax.set_ylim(6_000_000.0, 6_200_000.0)
 
-        add_tiles(ax, provider, crs=3857, zoom=8)
+        _add_tiles(ax, provider, crs=3857, zoom=8)
 
         assert recorded_urls, "no tile was requested"
         assert all("{" not in url for url in recorded_urls), (
@@ -2182,7 +2182,7 @@ class TestProvidersDriveAddTiles:
         ax.set_xlim(1_000_000.0, 1_200_000.0)
         ax.set_ylim(6_000_000.0, 6_200_000.0)
 
-        add_tiles(ax, provider, crs=3857, zoom=8)
+        _add_tiles(ax, provider, crs=3857, zoom=8)
 
         assert len(recorded_urls) > 1, f"expected a tile grid: {recorded_urls}"
         assert all(
@@ -2208,10 +2208,10 @@ class TestProvidersDriveAddTiles:
         fig, ax = plt.subplots()
         ax.set_xlim(1_000_000.0, 1_200_000.0)
         ax.set_ylim(6_000_000.0, 6_200_000.0)
-        add_tiles(ax, wms, crs=3857)
+        _add_tiles(ax, wms, crs=3857)
         default_count = len(recorded_urls)
 
-        add_tiles(ax, wms, crs=3857, min_tiles_across=1)
+        _add_tiles(ax, wms, crs=3857, min_tiles_across=1)
         floored_count = len(recorded_urls) - default_count
 
         assert default_count > 1, f"the default floor fetched {default_count} tiles"
@@ -2243,7 +2243,7 @@ class TestProvidersDriveAddTiles:
         ax.set_xlim(1_000_000.0, 1_200_000.0)
         ax.set_ylim(6_000_000.0, 6_200_000.0)
 
-        add_tiles(ax, provider, crs=3857, zoom=8)
+        _add_tiles(ax, provider, crs=3857, zoom=8)
 
         requested = {query_of(url)["WIDTH"][0] for url in recorded_urls_4px}
         assert requested == {"4"}, f"WIDTH was not the tile_size: {requested}"

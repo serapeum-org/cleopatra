@@ -157,7 +157,7 @@ from cleopatra.statistical_glyph import StatisticalGlyph
 # after
 from cleopatra.glyphs.gridded.array_glyph import ArrayGlyph
 from cleopatra.styling.colors import DATA_STYLES
-from cleopatra.basemap.tiles import add_tiles
+# add_tiles is now the ArrayGlyph.add_tiles glyph method, not a module import
 from cleopatra.glyphs.stats.histogram_glyph import HistogramGlyph   # note the class rename
 ```
 

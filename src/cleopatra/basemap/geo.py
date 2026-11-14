@@ -588,16 +588,16 @@ class GeoMixin:
     def add_tiles(self, *args: Any, ax: Any = None, **kwargs: Any) -> Any:
         """Overlay a web-tile basemap on the glyph's axes.
 
-        Thin wrapper over `cleopatra.basemap.tiles.add_tiles`; positional and
+        Thin wrapper over `cleopatra.basemap.tiles._add_tiles`; positional and
         keyword arguments are forwarded unchanged (e.g. `source`, `crs`,
         `zoom`, `alpha`). When `crs` is omitted it defaults to `self.crs`.
         Requires the `cleopatra[tiles]` extra.
 
         Args:
-            *args: Positional arguments for `cleopatra.basemap.tiles.add_tiles`
+            *args: Positional arguments for `cleopatra.basemap.tiles._add_tiles`
                 (after the axes).
             ax: Axes to draw on. Defaults to the glyph's `self.ax`.
-            **kwargs: Keyword arguments for `cleopatra.basemap.tiles.add_tiles`. A
+            **kwargs: Keyword arguments for `cleopatra.basemap.tiles._add_tiles`. A
                 `crs` keyword is defaulted to `self.crs` when omitted; an
                 explicit `crs=` overrides it.
 
@@ -611,10 +611,10 @@ class GeoMixin:
                 -- plot the other glyphs first (or pass `ax=`).
 
         See Also:
-            cleopatra.basemap.tiles.add_tiles: The underlying implementation and its
+            cleopatra.basemap.tiles._add_tiles: The underlying implementation and its
                 full parameter list.
         """
-        return tiles.add_tiles(
+        return tiles._add_tiles(
             self._basemap_axes(ax), *args, **self._basemap_kwargs(kwargs)
         )
 

@@ -1,11 +1,14 @@
 """Web-tile basemap helper for matplotlib axes.
 
-Provides `add_tiles` -- a single entry point that fetches XYZ web
-tiles for the current axes extent, stitches them into a composite image
-with Pillow, and renders the image underneath the existing data layer.
-For the headless case (no axes), `stitch_basemap` returns the same stitched
-image and its Web-Mercator extent as data, for a non-matplotlib renderer to
-drape or composite; `add_tiles` is a thin wrapper over it.
+The public entry point is the glyph method `add_tiles` -- exposed on every
+geographic glyph (`ArrayGlyph`, `MeshGlyph`, ...) through
+`cleopatra.basemap.geo.GeoMixin` -- which fetches XYZ web tiles for the current
+axes extent, stitches them into a composite image with Pillow, and renders the
+image underneath the existing data layer. It forwards to the internal
+`_add_tiles`, which does the matplotlib work. For the headless case (no axes),
+`stitch_basemap` returns the same stitched image and its Web-Mercator extent as
+data, for a non-matplotlib renderer to drape or composite; `_add_tiles` is a
+thin wrapper over it.
 
 The implementation is a pure-Python port of the `pyramids.basemap`
 module (basemap.py + tiles.py). It supports any XYZ provider listed in
@@ -33,7 +36,7 @@ Examples:
     >>> import matplotlib.pyplot as plt
     >>> fig, ax = plt.subplots()
     >>> _ = ax.plot([1000000.0, 1200000.0], [6000000.0, 6200000.0])
-    >>> _ = add_tiles(ax, source=None, crs=3857)  # doctest: +SKIP
+    >>> _ = _add_tiles(ax, source=None, crs=3857)  # doctest: +SKIP
 """
 
 from __future__ import annotations
@@ -67,7 +70,7 @@ logger = logging.getLogger(__name__)
 #: version and a contact URL so tile providers (OpenStreetMap in particular,
 #: whose usage policy requires an identifiable agent) can attribute and, if
 #: necessary, throttle or reach out about traffic. Override per call via the
-#: `user_agent` argument of `add_tiles`.
+#: `user_agent` argument of `_add_tiles`.
 USER_AGENT = f"cleopatra/{__version__} (+https://github.com/serapeum-org/cleopatra)"
 
 MAX_TILES = 256
@@ -85,7 +88,7 @@ _TILES_EXTRA_MODULES = ("xyzservices", "PIL", "pyproj")
 
 #: True when every `[tiles]`-extra dependency is importable. Probed with
 #: `importlib.util.find_spec` so importing this module does not pull
-#: those packages in when nobody calls `add_tiles`; the modules are
+#: those packages in when nobody calls `_add_tiles`; the modules are
 #: imported lazily inside the functions that use them.
 _TILES_AVAILABLE = all(
     importlib.util.find_spec(_m) is not None for _m in _TILES_EXTRA_MODULES
@@ -109,7 +112,7 @@ def _require_tiles_extra() -> None:
 def _require_positive_int(name: str, value: int) -> None:
     """Raise `ValueError` unless `value` is a positive, non-bool int.
 
-    Shared by `stitch_basemap` and `add_tiles` so the `max_tiles` /
+    Shared by `stitch_basemap` and `_add_tiles` so the `max_tiles` /
     `min_tiles_across` check (and its message) stays identical at both sites.
     """
     if not isinstance(value, int) or isinstance(value, bool) or value < 1:
@@ -288,7 +291,7 @@ def _tiles_for_bbox(
     `west > east` bbox is antimeridian-crossing (its west edge is
     numerically east of its east edge, e.g. 170 to -170): rather than an
     edge case to special-case away, this is a real, reachable input --
-    `add_tiles` normalises its bbox with `min`/`max` in its own *native*
+    `_add_tiles` normalises its bbox with `min`/`max` in its own *native*
     CRS, but a near-global Web Mercator extent can still reproject to a
     `west > east` pair in EPSG:4326, since the inverse transform wraps
     longitude at the +/-180 seam. Handled the same way
@@ -422,9 +425,9 @@ def auto_zoom(
     latitude as interchangeable; it does **not** account for Web
     Mercator's latitude distortion, so the result tends to be
     conservative (under-zoomed) for extents far from the equator. For
-    high-latitude data, pass an explicit `zoom=` to `add_tiles`
+    high-latitude data, pass an explicit `zoom=` to `_add_tiles`
     rather than relying on the auto value. The `MAX_TILES` cap in
-    `add_tiles` will still step the zoom back down if the chosen
+    `_add_tiles` will still step the zoom back down if the chosen
     level would require too many tiles.
 
     Args:
@@ -1085,11 +1088,11 @@ def stitch_basemap(
 ) -> tuple[np.ndarray, tuple[float, float, float, float]]:
     """Fetch and stitch a web-tile basemap for a bbox, headless (no axes).
 
-    The axes-free core of `add_tiles`: enumerate the XYZ tiles covering an
+    The axes-free core of `_add_tiles`: enumerate the XYZ tiles covering an
     EPSG:4326 bounding box at the chosen zoom, fetch them, and stitch them into
     one image, returning the image and its Web-Mercator extent as *data*. A
     non-matplotlib renderer (a 3-D/PyVista tier, deck.gl, a headless export) can
-    drape or composite the result itself; `add_tiles` is the thin matplotlib
+    drape or composite the result itself; `_add_tiles` is the thin matplotlib
     wrapper that calls this and `imshow`s the result.
 
     Args:
@@ -1204,7 +1207,7 @@ def stitch_basemap(
     return image, extent_3857
 
 
-def add_tiles(
+def _add_tiles(
     ax: Any,
     source: Any | None = None,
     *,
@@ -1220,7 +1223,14 @@ def add_tiles(
     max_tiles: int = MAX_TILES,
     min_tiles_across: int = 2,
 ) -> Any:
-    """Overlay a web-tile basemap on a matplotlib axes.
+    """Overlay a web-tile basemap on a matplotlib axes (internal implementation).
+
+    Prefer the public glyph method `cleopatra.basemap.geo.GeoMixin.add_tiles`,
+    exposed as `.add_tiles(...)` on every geographic glyph (`ArrayGlyph`,
+    `MeshGlyph`, `VectorGlyph`, `FlowGlyph`, `PolygonGlyph`, ...): it defaults
+    `crs=` from the glyph and forwards here. This underscore-prefixed function is
+    private -- call it directly only when you already hold a bare matplotlib
+    axes and no glyph.
 
     Fetches XYZ web tiles that cover the axes' current extent, stitches
     them into a single composite image, and renders the image below the
@@ -1289,7 +1299,7 @@ def add_tiles(
         >>> import matplotlib.pyplot as plt
         >>> fig, ax = plt.subplots()
         >>> _ = ax.plot([1000000.0, 1200000.0], [6000000.0, 6200000.0])
-        >>> _ = add_tiles(ax, crs=3857)  # doctest: +SKIP
+        >>> _ = _add_tiles(ax, crs=3857)  # doctest: +SKIP
     """
     _require_tiles_extra()
     from pyproj import Transformer
@@ -1299,7 +1309,7 @@ def add_tiles(
             f"ax must be a matplotlib.axes.Axes instance, got {type(ax).__name__}"
         )
 
-    # stitch_basemap validates these too, but add_tiles checks them up front so
+    # stitch_basemap validates these too, but _add_tiles checks them up front so
     # its historical error precedence (parameter errors before the extent guards)
     # is preserved -- see tests test_max_tiles/min_tiles_across_validated_before_extent_guard.
     _require_positive_int("max_tiles", max_tiles)
@@ -1580,11 +1590,11 @@ def world_texture(
 
     Args:
         provider: An `xyzservices` provider name (e.g. `"Esri.WorldImagery"`) or
-            a resolved `xyzservices.TileProvider`. Unlike `add_tiles` this
+            a resolved `xyzservices.TileProvider`. Unlike `_add_tiles` this
             needs a Mapping-like provider, because the disk cache is keyed on
             `provider.get("name", ...)` -- so the OGC providers in
             `cleopatra.basemap.ogc` raise `AttributeError` here and are
-            supported only through `add_tiles`;
+            supported only through `_add_tiles`;
             `None` uses the default (`OpenStreetMap.Mapnik`). A name is resolved
             by `get_provider`.
         zoom: Tile zoom level (0..6); the world grid is `2**zoom` tiles per side.
@@ -1631,7 +1641,7 @@ def world_texture(
         raise ValueError(
             f"n_lon and n_lat must be positive, got n_lon={n_lon}, n_lat={n_lat}"
         )
-    # Accept a name string or a resolved TileProvider, matching add_tiles.
+    # Accept a name string or a resolved TileProvider, matching _add_tiles.
     if isinstance(provider, str) or provider is None:
         resolved = get_provider(provider)
     else:
