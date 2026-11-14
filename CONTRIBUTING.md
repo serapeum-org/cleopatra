@@ -54,7 +54,7 @@ to develop, so you can skip it entirely:
 ```bash
 git remote set-branches origin main
 git fetch --prune origin
-git update-ref -d refs/remotes/origin/gh-pages
+git update-ref -d refs/remotes/origin/gh-pages 2>/dev/null || true  # no-op if already absent
 git gc --prune=now
 ```
 
