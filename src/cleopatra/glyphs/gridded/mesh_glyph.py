@@ -791,7 +791,7 @@ class MeshGlyph(GeoMixin, Glyph):
             data: 1D data array.
             location: `"face"` or `"node"`.
             edgecolor: Edge color for face rendering.
-            norm (Normalize): Color normalization.
+            norm (Normalize or None): Color normalization.
             filled: For node data, whether to draw filled contours
                 (`tricontourf`, the default) or line contours
                 (`tricontour`). Ignored for face data, which always uses

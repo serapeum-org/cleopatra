@@ -2312,7 +2312,7 @@ class ArrayGlyph(GeoMixin, Glyph):
         return message
 
     @property
-    def exclude_value(self) -> float | list:
+    def exclude_value(self) -> float | int | list | None:
         """Value(s) treated as nodata and masked out of the array.
 
         Cells equal to `exclude_value` are masked so they are excluded
