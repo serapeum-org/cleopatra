@@ -1,5 +1,97 @@
 # Changelog
 
+## 0.46.0 (2026-11-14)
+
+
+- chore(ci): stop publishing docs on every PR and prune gh-pages versions (#412)
+- Unbounded gh-pages growth came from publishing a versioned docs build on                                           
+  every PR and never retiring superseded releases. Replace per-PR                                                    
+  publishing with a strict build gate and add a release-retention prune, so                                          
+  gh-pages only ever carries the latest main + a bounded set of releases.                                            
+                                                                                                                     
+  - ci: convert the per-PR deploy job into a build-strict gate that runs                                             
+    `mkdocs build --strict` without publishing; make deploy-main and                                                 
+    deploy-release depend on it                                                                                      
+  - ci: add a "Prune superseded documentation versions" step that keeps the                                          
+    N most recent releases via mike and deletes the rest                                                             
+  - ci: surface persistent prune failures instead of masking them, and                                               
+    avoid a head SIGPIPE when listing versions                                                                       
+  - docs: make the whole site build clean under --strict (griffe docstring                                           
+    types, Other Parameters placement, return annotations, dead image                                                
+    embeds removed)                                                                                                  
+  - docs(kde-glyph): correct plot/apply_style return types and the                                                   
+    hillshade/style parameter documentation                                                                          
+  - docs: document the new BarGlyph and PieGlyph classes across reference                                            
+    pages, README, and the docs home; add them to the mkdocs nav                                                     
+  - docs(contributing): make the local gh-pages ref cleanup idempotent                                               
+                                                                                                                     
+  Closes #404
+- feat(glyphs): allow a flat colour on ScatterGlyph, LineGlyph and PolygonGlyph (#411)
+- BarGlyph already took a colors= sequence for explicit per-category                                                 
+  colours, but the primitive glyphs had no equivalent -- a scatter, line                                             
+  or polygon layer could only be drawn in the matplotlib default colour                                              
+  cycle, since color= on plot() is reserved for the grouped ColorScaling                                             
+  object used for value-driven mapping.                                                                              
+                                                                                                                     
+  - Add flat_color/alpha and a per-point colors sequence to ScatterGlyph                                             
+  - Add facecolor/alpha to PolygonGlyph, preserving the outline-only                                                 
+    default when no values is given                                                                                  
+  - Document that LineGlyph already supports a flat colour via its plain                                             
+    color= parameter, no code change needed there                                                                    
+  - Guard every colour-source combination (values/colors/flat_color on                                               
+    ScatterGlyph, values/facecolor on PolygonGlyph) with a ValueError                                                
+    instead of silently dropping one option                                                                          
+  - Add validate_single_color and validate_color_sequence helpers                                                    
+    (cleopatra.styling.colors), built on matplotlib's is_color_like, and                                             
+    reuse them from BarGlyph's existing colour validation                                                            
+  - Add flat-colour examples to the scatter and polygon reference docs                                               
+  - Bump tornado to 6.6.1 to close CVE-2026-126347 in a transitive                                                   
+    dev dependency                                                                                                   
+                                                                                                                     
+  Closes #405
+- feat(bar_glyph): add width/alpha options and stacked/grouped multi-series bars (#410)
+- Extend BarGlyph beyond the single-series, fixed-width categorical chart                                          
+  to cover the two shapes that previously had no cleopatra equivalent and                                          
+  raised a hard ValueError.                                                                                        
+                                                                                                                   
+  - add `width` and `alpha` options: `width` sets bar thickness (maps to                                           
+    Axes.bar width when vertical, Axes.barh height when horizontal), with                                          
+    matplotlib's 0.8 kept as the default so existing charts are unchanged;                                         
+    `alpha` forwards to the drawn bars                                                                             
+  - accept a 2-D `(n_categories, n_series)` values block with                                                      
+    `mode="stacked"` or `mode="grouped"`: stacked segments accumulate on                                           
+    separate positive/negative baselines so mixed-sign series never                                                
+    overlap, grouped sub-bars split `width` and centre on each category,                                           
+    and both compose with `horizontal=True`                                                                        
+  - colour series one-per-series, set via `colors` or sampled from a                                               
+    sequential `cmap` (default `viridis`, so an odd count's middle series                                          
+    is not washed out); `add_legend` and `series_labels` label the series                                          
+  - validate strictly: a 2-D block requires a multi-series `mode`, a                                               
+    multi-series `mode` requires 2-D, and `series_labels` is rejected on a                                         
+    1-D chart rather than silently dropped                                                                         
+  - keep the 1-D single-series path and PieGlyph's shared helpers unchanged                                        
+                                                                                                                   
+  Closes #408, #407
+- fix(histogram_glyph): accept a single colour across the stats glyph renderers (#409)
+- A single colour is itself a sequence — a name/hex string is a sequence of
+characters, an RGB/RGBA tuple a sequence of channels — so the per-series
+colour indexing (`color[i]`, `palette[i % len(palette)]`) read it element
+by element, pairing series 0 with its first character/channel. A bare
+`color="slategray"` raised `ValueError: 's' is not a valid color value`.
+- - Normalise a single colour to a one-element sequence (detected with
+  `matplotlib.colors.is_color_like`) in a shared `_color_sequence()` helper
+  used by `histogram`, `boxplot` and `multiboxplot`, so a bare string, hex
+  string, or RGB/RGBA tuple fills a single-series render in every renderer
+- Leave colour sequences untouched: a multi-series list still maps one
+  colour per series/box, and a single colour for multi-series 2D data now
+  raises the clear "number of colors" mismatch instead of mis-indexing
+- Document the accepted `color` shapes, noting that for an RGBA tuple the
+  separate `alpha` option overrides the tuple's 4th channel
+- Add tests covering the string, hex, RGB/RGBA tuple, one-element list,
+  multi-series sequence, the 2D rejection, and the box renderers
+- Bump tornado 6.6 -> 6.6.1 to clear CVE-2026-126347 (transitive dev dep)
+- Closes #406
+
 ## 0.45.0 (2026-10-25)
 
 
