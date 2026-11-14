@@ -48,10 +48,15 @@ class TestBarGlyphConstruction:
         with pytest.raises(ValueError, match="non-empty"):
             BarGlyph([], [])
 
-    def test_non_1d_values_raise(self):
-        """A 2-D values array raises ValueError."""
-        with pytest.raises(ValueError, match="1-D"):
-            BarGlyph(["a", "b"], [[1.0], [2.0]])
+    def test_2d_values_without_mode_raise(self):
+        """A 2-D values array with the default single mode raises ValueError."""
+        with pytest.raises(ValueError, match="mode='stacked' or mode='grouped'"):
+            BarGlyph(["a", "b"], [[1.0, 2.0], [3.0, 4.0]])
+
+    def test_3d_values_raise(self):
+        """A 3-D values array is rejected even with a multi-series mode."""
+        with pytest.raises(ValueError, match="2-D"):
+            BarGlyph(["a"], np.zeros((1, 2, 2)), mode="stacked")
 
     def test_non_finite_values_raise(self):
         """NaN or inf values are rejected at construction, not drawn silently."""
@@ -234,3 +239,132 @@ class TestBarGlyphPlot:
         assert ax3.get_xlabel() == "CX", (
             "override must not persist into a later plain plot"
         )
+
+
+class TestBarGlyphMultiSeries:
+    """Stacked and grouped multi-series rendering (2-D values)."""
+
+    VALUES = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+
+    def test_mode_required_for_2d(self):
+        """A 2-D values with the default single mode is refused."""
+        with pytest.raises(ValueError, match="mode='stacked' or mode='grouped'"):
+            BarGlyph(["a", "b", "c"], self.VALUES)
+
+    def test_multi_mode_rejected_for_1d(self):
+        """A multi-series mode with a 1-D values is refused."""
+        with pytest.raises(ValueError, match="needs a 2-D"):
+            BarGlyph(["a", "b"], [1.0, 2.0], mode="grouped")
+
+    def test_unknown_mode_raises(self):
+        """An unknown mode is rejected with a clear message."""
+        with pytest.raises(ValueError, match="must be 'single', 'stacked' or 'grouped'"):
+            BarGlyph(["a", "b", "c"], self.VALUES, mode="piled")
+
+    def test_row_count_must_match_categories(self):
+        """A 2-D values whose rows differ from the categories is refused."""
+        with pytest.raises(ValueError, match="number of value rows"):
+            BarGlyph(["a", "b"], self.VALUES, mode="stacked")
+
+    def test_stacked_returns_one_container_per_series(self):
+        """A stacked chart returns one BarContainer per series."""
+        _, _, bars = BarGlyph(["a", "b", "c"], self.VALUES, mode="stacked").plot()
+        assert isinstance(bars, list), "multi-series returns a list of containers"
+        assert len(bars) == 2, "one container per series"
+        assert all(isinstance(c, BarContainer) for c in bars)
+
+    def test_stacked_second_series_sits_on_the_first(self):
+        """The second stacked series' bottom equals the first series' heights."""
+        _, _, bars = BarGlyph(["a", "b", "c"], self.VALUES, mode="stacked").plot()
+        assert [b.get_height() for b in bars[0]] == [1.0, 3.0, 5.0]
+        assert [b.get_y() for b in bars[1]] == [1.0, 3.0, 5.0], (
+            "series 1 rests on top of series 0"
+        )
+
+    def test_grouped_splits_width_among_series(self):
+        """A grouped chart splits the width into one sub-bar per series."""
+        _, _, bars = BarGlyph(
+            ["a", "b", "c"], self.VALUES, mode="grouped", width=0.8
+        ).plot()
+        assert float(bars[0][0].get_width()) == pytest.approx(0.4), "0.8 / 2 series"
+
+    def test_grouped_sub_bars_are_offset_and_centred(self):
+        """Grouped sub-bars straddle each integer category position."""
+        _, _, bars = BarGlyph(
+            ["a", "b", "c"], self.VALUES, mode="grouped", width=0.8
+        ).plot()
+        # Category 0: series 0 at -0.2, series 1 at +0.2; left edge = centre - 0.2.
+        assert float(bars[0][0].get_x()) == pytest.approx(-0.4)
+        assert float(bars[1][0].get_x()) == pytest.approx(0.0)
+
+    def test_category_ticks_labelled(self):
+        """Category labels are placed on the category axis."""
+        _, ax, _ = BarGlyph(["a", "b", "c"], self.VALUES, mode="stacked").plot()
+        assert [t.get_text() for t in ax.get_xticklabels()] == ["a", "b", "c"]
+
+    def test_horizontal_stacked_composes(self):
+        """Horizontal stacking puts the running baseline on the left, labels on y."""
+        _, ax, bars = BarGlyph(
+            ["a", "b", "c"], self.VALUES, mode="stacked", horizontal=True
+        ).plot()
+        assert [b.get_width() for b in bars[0]] == [1.0, 3.0, 5.0]
+        assert [b.get_x() for b in bars[1]] == [1.0, 3.0, 5.0], "series 1 starts at left"
+        assert [t.get_text() for t in ax.get_yticklabels()] == ["a", "b", "c"]
+
+    def test_explicit_series_colors(self):
+        """Explicit colours apply one per series, not per category."""
+        _, _, bars = BarGlyph(["a", "b", "c"], self.VALUES, mode="grouped").plot(
+            colors=["#ff0000", "#00ff00"]
+        )
+        assert to_hex(bars[0][0].get_facecolor()) == "#ff0000"
+        assert to_hex(bars[1][0].get_facecolor()) == "#00ff00"
+        assert to_hex(bars[0][1].get_facecolor()) == "#ff0000", (
+            "a series keeps one colour across categories"
+        )
+
+    def test_series_colors_length_mismatch_raises(self):
+        """A per-series colour list of the wrong length is refused."""
+        glyph = BarGlyph(["a", "b", "c"], self.VALUES, mode="stacked")
+        with pytest.raises(ValueError, match="number of series"):
+            glyph.plot(colors=["#f00"])
+
+    def test_cmap_fallback_colours_the_series(self):
+        """With no explicit colours, series are sampled from cmap, one per series."""
+        _, _, bars = BarGlyph(
+            ["a", "b", "c"], self.VALUES, mode="grouped", cmap="viridis"
+        ).plot()
+        c0 = to_hex(bars[0][0].get_facecolor())
+        c1 = to_hex(bars[1][0].get_facecolor())
+        assert c0 != c1, "distinct series take distinct colormap samples"
+
+    def test_add_legend_labels_the_series(self):
+        """add_legend keys off the series_labels, one legend entry per series."""
+        _, ax, _ = BarGlyph(
+            ["a", "b", "c"], self.VALUES, mode="stacked", series_labels=["x", "y"]
+        ).plot(add_legend=True)
+        legend = ax.get_legend()
+        assert legend is not None
+        assert [t.get_text() for t in legend.get_texts()] == ["x", "y"]
+
+    def test_series_labels_default_when_unnamed(self):
+        """Without series_labels, the legend falls back to series 1, series 2."""
+        _, ax, _ = BarGlyph(["a", "b", "c"], self.VALUES, mode="grouped").plot(
+            add_legend=True
+        )
+        assert [t.get_text() for t in ax.get_legend().get_texts()] == [
+            "series 1",
+            "series 2",
+        ]
+
+    def test_series_labels_length_mismatch_raises(self):
+        """series_labels whose length differs from the series count is refused."""
+        with pytest.raises(ValueError, match="number of series"):
+            BarGlyph(["a", "b", "c"], self.VALUES, mode="stacked", series_labels=["x"])
+
+    def test_replot_multi_series_replaces_not_stacks(self):
+        """Re-plotting a multi-series glyph clears its prior bars."""
+        fig, ax = plt.subplots()
+        glyph = BarGlyph(["a", "b", "c"], self.VALUES, mode="grouped")
+        glyph.plot(ax=ax)
+        glyph.plot(ax=ax)
+        assert len(ax.containers) == 2, "two series' containers, not four, after re-plot"
