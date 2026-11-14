@@ -65,7 +65,7 @@ SCATTER_DEFAULT_OPTIONS = {
     "marker": "o",
     "point_size": 20,
     "flat_color": None,
-    "alpha": 1.0,
+    "alpha": 1.0,  # matplotlib's own scatter default -- a no-op on prior rendering
     "vmin": None,
     "vmax": None,
     "levels": None,

@@ -67,7 +67,7 @@ POLYGON_DEFAULT_OPTIONS = {
     "edgecolor": "none",
     "facecolor": None,
     "linewidth": 0.5,
-    "alpha": None,
+    "alpha": None,  # PolyCollection's own default -- a no-op on prior rendering
     "vmin": None,
     "vmax": None,
     "levels": None,
