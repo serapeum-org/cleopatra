@@ -36,14 +36,17 @@ jobs:
     # this job.
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
-        fetch-depth: 0
+        # A plain `mkdocs build` needs no git history (no mike, no
+        # git-revision-date plugin), so a shallow checkout is enough.
         persist-credentials: false
 
     # The same setup the deploy jobs get. mkdocs-deploy calls this action
     # internally with these inputs, so reusing it here keeps the gate and the
     # deploy on one environment; installing the toolchain by hand would let the
-    # two drift and defeat the point of gating.
-    - uses: serapeum-org/github-actions/actions/python-setup/uv@38c111084f99d5ff5f4a1e63bedce48fe33a10c0 # uv/v1.2.1
+    # two drift and defeat the point of gating. Pin the SAME python-setup/uv ref
+    # that mkdocs-deploy@mkdocs/v1.3.1 uses internally, so the gate and the
+    # deploy resolve dependencies with one uv version.
+    - uses: serapeum-org/github-actions/actions/python-setup/uv@e7eed59dddcd11280e26b46930dbe5bee8b746b1 # uv/v1.2.2
       with:
         python-version: '3.12'
         install-groups: 'groups: docs, extras: tiles science-colors'
@@ -52,6 +55,14 @@ jobs:
     # The setup action puts .venv on GITHUB_PATH, so call mkdocs straight from
     # it. Going back through `uv run` would re-enter dependency resolution for a
     # build whose environment is already installed.
+    #
+    # Scope of this gate: it catches nav / anchor / docstring warnings
+    # (`--strict` turns every MkDocs warning into an error). It does NOT execute
+    # notebooks (no notebooks-path here; mkdocs-jupyter renders committed outputs
+    # with execute=false), so a notebook-execution regression is still caught by
+    # the deploy jobs, not here. On the `workflow_run` release path the default
+    # checkout ref is the default branch, so the gate is a main-branch smoke test
+    # there rather than a check of the exact released tree.
     - name: Build docs with --strict
       run: mkdocs build --strict --site-dir /tmp/site
 
@@ -139,7 +150,13 @@ jobs:
     # Auth comes from the checkout above, the same way the deploy's own pushes
     # work. mike is on PATH because mkdocs-deploy's internal python-setup/uv puts
     # the virtualenv on GITHUB_PATH for subsequent steps in this job.
+    #
+    # continue-on-error: the release documentation has already been published by
+    # the deploy step above; pruning is best-effort cleanup whose only cost on
+    # failure is one extra stale version until the next release. It must never
+    # turn an otherwise-successful release into a failed workflow run.
     - name: Prune superseded documentation versions
+      continue-on-error: true
       env:
         KEEP_VERSION: ${{ github.event.release.tag_name || steps.version.outputs.tag }}
         RETAIN_RELEASES: '5'
@@ -150,23 +167,38 @@ jobs:
         fi
         # Re-sync, recompute and retry as a unit: a concurrent main deploy moves
         # gh-pages, which makes mike's fast-forward push lose the race, and the
-        # stale list computed against the old tip must not be reused.
+        # stale list computed against the old tip must not be reused. The fetch
+        # is inside the loop so a transient failure retries rather than aborting.
         for attempt in 1 2 3; do
-          git fetch origin gh-pages
+          if ! git fetch origin gh-pages; then
+            echo "::warning::git fetch gh-pages failed (attempt ${attempt}/3); retrying"
+            sleep $(( attempt * 3 ))
+            continue
+          fi
           git branch -f gh-pages FETCH_HEAD
 
+          # `awk '{print $1}'` takes the version id (first field); mike prints
+          # `<version> [aliases]` and our deploys set no custom `--title`, so the
+          # id is always field 1.
           mike list | awk '{print $1}' | sort -u > /tmp/mike-all
           # `sort -V` is load-bearing: a lexical sort ranks 0.9.0 above 0.11.0
-          # and would retain the wrong five. Only X.Y.Z entries count as
-          # releases, so `develop` and any alias-only row fall through to the
-          # delete set rather than consuming a retention slot.
-          grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' /tmp/mike-all \
+          # and would retain the wrong five. The `v?` tolerates a future
+          # `v`-prefixed tag; the filter is otherwise coupled to commitizen's
+          # `tool.commitizen.tag_format` (bare `$version` today). Only release
+          # ids count here, so `develop` and any alias-only row fall through to
+          # the delete set rather than consuming a retention slot. `|| true`
+          # keeps a no-match `grep` from aborting the step under `pipefail`.
+          { grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' /tmp/mike-all || true; } \
             | sort -rV | head -n "$RETAIN_RELEASES" > /tmp/mike-keep-releases
           # KEEP_VERSION is listed explicitly as a floor: the release that was
           # just deployed must survive even if it somehow sorts outside the top
-          # RETAIN_RELEASES.
+          # RETAIN_RELEASES. The keep-list and mike-all share one (lexical `sort
+          # -u`) collation so `comm -23` below pairs them correctly.
           { echo main; echo "$KEEP_VERSION"; cat /tmp/mike-keep-releases; } \
             | grep -v '^$' | sort -u > /tmp/mike-keep
+          # Blanket policy: anything not in the keep-list is deleted, so a
+          # version deployed out-of-band (a manual alias, a two-component tag)
+          # is reaped on the next release. Only `main` + semver releases survive.
           stale=$(comm -23 /tmp/mike-all /tmp/mike-keep | tr '\n' ' ')
 
           if [ -z "$stale" ]; then
