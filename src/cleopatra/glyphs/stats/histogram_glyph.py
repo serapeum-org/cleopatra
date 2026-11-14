@@ -61,7 +61,7 @@ from collections.abc import Sequence
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
-from matplotlib.colors import Normalize
+from matplotlib.colors import Normalize, is_color_like
 from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 
@@ -544,6 +544,13 @@ class HistogramGlyph(WatermarkMixin):
         patches = []
         bins_val = self.default_options["bins"]
         color = self.default_options["color"]
+        # A single colour (bar string, hex, or an RGB/RGBA tuple) is itself a
+        # sequence, so the per-series `color[i]` indexing below would otherwise
+        # read it element by element — pairing series 0 with its first
+        # character/channel. Wrap one colour as a one-element sequence so a
+        # single-series histogram colours correctly.
+        if is_color_like(color):
+            color = [color]
         alpha = self.default_options["alpha"]
         rwidth = self.default_options["rwidth"]
         if self.values.ndim == 2:

@@ -245,6 +245,85 @@ def test_histogram_multiple_sample():
     assert list(hist.keys()) == ["n", "bins", "patches"]
 
 
+class TestHistogramSingleColour:
+    """A single colour for a one-series histogram must colour the bars, not be
+    read character/channel by channel.
+
+    A colour is itself a sequence (a string of characters, an RGB(A) tuple of
+    channels), so the per-series ``color[i]`` indexing used to pair series 0
+    with element 0 — raising ``'#' is not a valid color value`` for a hex
+    string or ``object of type 'float' has no len()`` for an RGB tuple. A
+    single colour is now normalised to a one-element sequence first.
+    """
+
+    @staticmethod
+    def _values():
+        """Return a fixed 1D sample.
+
+        Returns:
+            np.ndarray: 200 normally distributed values seeded for reproducibility.
+        """
+        return np.random.default_rng(0).normal(size=200)
+
+    @pytest.mark.parametrize("color", ["slategray", "#3182bd"])
+    def test_single_colour_string_colours_the_bars(self, color):
+        """A bare colour string renders a single-series histogram in that colour.
+
+        Args:
+            color: A named colour and a hex colour, each a bare string.
+
+        Test scenario:
+            ``histogram(color=<str>)`` must render without raising and the bar
+            facecolour must match the requested colour at the default alpha.
+        """
+        fig, ax, hist = HistogramGlyph(self._values()).histogram(bins=10, color=color)
+        expected = matplotlib.colors.to_rgba(color, 0.7)
+        assert hist["patches"][0][0].get_facecolor() == expected, (
+            f"bars should be {color}, got {hist['patches'][0][0].get_facecolor()}"
+        )
+
+    def test_rgb_tuple_is_one_colour_not_three(self):
+        """An RGB tuple is treated as one colour, not a 3-element sequence.
+
+        Test scenario:
+            ``color=(0.2, 0.5, 0.7)`` must render a single-series histogram in
+            that colour rather than being indexed channel by channel.
+        """
+        fig, ax, hist = HistogramGlyph(self._values()).histogram(
+            bins=10, color=(0.2, 0.5, 0.7)
+        )
+        assert hist["patches"][0][0].get_facecolor() == (0.2, 0.5, 0.7, 0.7)
+
+    def test_one_element_colour_list_still_works(self):
+        """A one-element colour list keeps working unchanged.
+
+        Test scenario:
+            ``color=["slategray"]`` is already the correct single-series shape
+            and must continue to colour the bars.
+        """
+        fig, ax, hist = HistogramGlyph(self._values()).histogram(
+            bins=10, color=["slategray"]
+        )
+        assert len(hist["patches"]) == 1
+        assert hist["patches"][0][0].get_facecolor() == matplotlib.colors.to_rgba(
+            "slategray", 0.7
+        )
+
+    def test_multi_series_colour_sequence_applies_per_series(self):
+        """A sequence of colours still maps one colour per series for 2D data.
+
+        Test scenario:
+            A 3-column dataset with ``color=["red", "green", "blue"]`` must draw
+            three series, each bar container in its own colour.
+        """
+        data = np.random.default_rng(0).normal(size=(200, 3))
+        colors = ["red", "green", "blue"]
+        fig, ax, hist = HistogramGlyph(data, color=colors).histogram(bins=10)
+        assert len(hist["patches"]) == 3
+        for container, name in zip(hist["patches"], colors):
+            assert container[0].get_facecolor() == matplotlib.colors.to_rgba(name, 0.7)
+
+
 class TestBoxplot:
     """Tests for HistogramGlyph.boxplot (T7.3c)."""
 
