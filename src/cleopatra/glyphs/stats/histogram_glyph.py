@@ -195,11 +195,13 @@ class HistogramGlyph(WatermarkMixin):
                 Supported arguments include:
                 - figsize: Figure size as (width, height) in inches, by default (5, 5).
                 - bins: Number of histogram bins, by default 15.
-                - color: Colour(s) for the histogram bars, by default ["#0504aa"].
-                    A single colour — a name or hex string (e.g. "slategray",
+                - color: Color(s) for the histogram bars, by default ["#0504aa"].
+                    A single color — a name or hex string (e.g. "slategray",
                     "#3182bd") or an RGB/RGBA tuple — fills a single-series
-                    histogram. For 2D data, pass one colour per column; the
-                    number of colours must match the number of columns.
+                    histogram; for an RGBA tuple the 4th (alpha) channel is
+                    overridden by the separate alpha option. For 2D data, pass
+                    one color per column; the number of colors must match the
+                    number of columns.
                 - alpha: Transparency of the histogram bars, by default 0.7.
                     Values range from 0 (transparent) to 1 (opaque).
                 - rwidth: Relative width of the bars, by default 0.85.
@@ -427,11 +429,13 @@ class HistogramGlyph(WatermarkMixin):
                 Supported arguments include:
                 - figsize: Figure size as (width, height) in inches, by default (5, 5).
                 - bins: Number of histogram bins, by default 15.
-                - color: Colour(s) for the histogram bars, by default ["#0504aa"].
-                    A single colour — a name or hex string (e.g. "slategray",
+                - color: Color(s) for the histogram bars, by default ["#0504aa"].
+                    A single color — a name or hex string (e.g. "slategray",
                     "#3182bd") or an RGB/RGBA tuple — fills a single-series
-                    histogram. For 2D data, pass one colour per column; the
-                    number of colours must match the number of columns.
+                    histogram; for an RGBA tuple the 4th (alpha) channel is
+                    overridden by the separate alpha option. For 2D data, pass
+                    one color per column; the number of colors must match the
+                    number of columns.
                 - alpha: Transparency of the histogram bars, by default 0.7.
                     Values range from 0 (transparent) to 1 (opaque).
                 - rwidth: Relative width of the bars, by default 0.85.
