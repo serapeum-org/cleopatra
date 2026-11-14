@@ -35,7 +35,9 @@ class TestResolveCategories:
         """
         with pytest.raises(ValueError, match=r"values must be 1-D, got 2-D") as exc:
             resolve_categories(["a", "b"], [[1.0], [2.0]])
-        assert "2-D" in str(exc.value), f"message should name the rank, got: {exc.value}"
+        assert "2-D" in str(exc.value), (
+            f"message should name the rank, got: {exc.value}"
+        )
 
     def test_length_mismatch_raises(self):
         """Differing category / value counts raise, naming both counts.

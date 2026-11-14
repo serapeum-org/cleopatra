@@ -121,9 +121,7 @@ def resolve_series(categories: Sequence, values: Any) -> tuple[list[str], np.nda
     return labels, vals
 
 
-def resolve_series_colors(
-    n_series: int, colors: Sequence | None, cmap: Any
-) -> list:
+def resolve_series_colors(n_series: int, colors: Sequence | None, cmap: Any) -> list:
     """Return one colour per series for a multi-series bar chart.
 
     Unlike `resolve_category_colors` (one colour per *category*, from a
@@ -166,8 +164,7 @@ def resolve_series_colors(
         colors = list(colors)
         if len(colors) != n_series:
             raise ValueError(
-                f"colors ({len(colors)}) must match the number of series "
-                f"({n_series})."
+                f"colors ({len(colors)}) must match the number of series ({n_series})."
             )
         return colors
     cmap_obj = resolve_colormap(cmap)

@@ -65,7 +65,9 @@ class TestBarGlyphConstruction:
 
     def test_series_labels_rejected_for_1d(self):
         """series_labels with a 1-D chart is rejected, not silently dropped."""
-        with pytest.raises(ValueError, match="series_labels applies only to a multi-series"):
+        with pytest.raises(
+            ValueError, match="series_labels applies only to a multi-series"
+        ):
             BarGlyph(["a", "b"], [1.0, 2.0], series_labels=["x", "y"])
 
     def test_non_finite_values_raise(self):
@@ -268,7 +270,9 @@ class TestBarGlyphMultiSeries:
 
     def test_unknown_mode_raises(self):
         """An unknown mode is rejected with a clear message."""
-        with pytest.raises(ValueError, match="must be 'single', 'stacked' or 'grouped'"):
+        with pytest.raises(
+            ValueError, match="must be 'single', 'stacked' or 'grouped'"
+        ):
             BarGlyph(["a", "b", "c"], self.VALUES, mode="piled")
 
     def test_row_count_must_match_categories(self):
@@ -336,9 +340,9 @@ class TestBarGlyphMultiSeries:
         _, _, bars = BarGlyph(
             ["a", "b", "c"], self.VALUES, mode="grouped", alpha=0.3
         ).plot()
-        assert all(float(rect.get_alpha()) == 0.3 for series in bars for rect in series), (
-            "every stacked/grouped bar should carry the requested alpha"
-        )
+        assert all(
+            float(rect.get_alpha()) == 0.3 for series in bars for rect in series
+        ), "every stacked/grouped bar should carry the requested alpha"
 
     def test_horizontal_stacked_geometry(self):
         """Horizontal stacking puts the running baseline on the left, labels on y."""
@@ -346,7 +350,9 @@ class TestBarGlyphMultiSeries:
             ["a", "b", "c"], self.VALUES, mode="stacked", horizontal=True
         ).plot()
         assert [b.get_width() for b in bars[0]] == [1.0, 3.0, 5.0]
-        assert [b.get_x() for b in bars[1]] == [1.0, 3.0, 5.0], "series 1 starts at left"
+        assert [b.get_x() for b in bars[1]] == [1.0, 3.0, 5.0], (
+            "series 1 starts at left"
+        )
         assert [t.get_text() for t in ax.get_yticklabels()] == ["a", "b", "c"]
 
     def test_horizontal_grouped_offsets(self):
@@ -357,7 +363,9 @@ class TestBarGlyphMultiSeries:
         assert float(bars[0][0].get_height()) == pytest.approx(0.4), "0.8 / 2 series"
         assert float(bars[0][0].get_y()) == pytest.approx(-0.4), "series 0 below centre"
         assert float(bars[1][0].get_y()) == pytest.approx(0.0), "series 1 above centre"
-        assert [b.get_width() for b in bars[0]] == [1.0, 3.0, 5.0], "widths carry values"
+        assert [b.get_width() for b in bars[0]] == [1.0, 3.0, 5.0], (
+            "widths carry values"
+        )
         assert [t.get_text() for t in ax.get_yticklabels()] == ["a", "b", "c"]
 
     def test_compose_layers_multi_series_glyphs(self):
@@ -435,4 +443,6 @@ class TestBarGlyphMultiSeries:
         glyph = BarGlyph(["a", "b", "c"], self.VALUES, mode="grouped")
         glyph.plot(ax=ax)
         glyph.plot(ax=ax)
-        assert len(ax.containers) == 2, "two series' containers, not four, after re-plot"
+        assert len(ax.containers) == 2, (
+            "two series' containers, not four, after re-plot"
+        )
