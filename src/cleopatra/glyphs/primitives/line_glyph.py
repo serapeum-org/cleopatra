@@ -58,6 +58,12 @@ class LineGlyph(Glyph):
     Styling comes from the shared options (`color_1`, `line_width`,
     `marker`, `linestyle`, `alpha`).
 
+    Unlike `ScatterGlyph`/`PolygonGlyph`, this glyph never colour-maps a
+    value, so it has no grouped `color=ColorScaling(...)` parameter to
+    conflict with: `line`/`bar`/`fill_between` already take a plain flat
+    `color=` keyword (defaulting to the `color_1` option) for a single
+    draw colour.
+
     Args:
         x: 1D array of x-coordinates.
         y: y-values. 1D for a single series, or 2D `(n_points,

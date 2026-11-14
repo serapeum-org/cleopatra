@@ -275,6 +275,59 @@ class TestPolygonGlyphPlot:
         with pytest.raises(ValueError, match="no finite values"):
             glyph.plot()
 
+    def test_facecolor_fills_flat_colour_no_values(self, polygons):
+        """facecolor fills the polygons with no values and no colorbar.
+
+        Test scenario:
+            With no values, an explicit facecolor switches from the default
+            outline-only path to a flat-filled one -- no colormap involved.
+        """
+        glyph = PolygonGlyph(polygons, facecolor="forestgreen", alpha=0.6)
+        _, _, pc = glyph.plot()
+        assert pc.get_array() is None, "flat fill carries no value array"
+        assert glyph.cbar is None, "flat fill draws no colorbar"
+        facecolors = pc.get_facecolor()
+        assert np.allclose(facecolors[:, :3], mcolors.to_rgb("forestgreen")), facecolors
+        assert np.allclose(facecolors[:, 3], 0.6), facecolors
+
+    def test_outline_only_overrides_facecolor(self, polygons):
+        """outline_only wins even when a flat facecolor is set.
+
+        Test scenario:
+            An explicit outline_only=True request stays unfilled regardless
+            of a construction-time facecolor.
+        """
+        glyph = PolygonGlyph(polygons, facecolor="forestgreen")
+        _, _, pc = glyph.plot(outline_only=True)
+        assert pc.get_array() is None
+        assert np.allclose(pc.get_facecolor(), np.empty((0, 4))), (
+            "outline_only should leave the polygons unfilled despite facecolor"
+        )
+
+    def test_alpha_forwarded_to_value_mapped_fill(self, polygons):
+        """alpha applies to the scalar-mapped (colour-by-value) fill too.
+
+        Test scenario:
+            alpha is a shared opacity option, not exclusive to the flat-fill
+            path -- it also reaches the value-mapped PolyCollection.
+        """
+        glyph = PolygonGlyph(polygons, values=np.array([10.0, 20.0]), alpha=0.5)
+        _, _, pc = glyph.plot()
+        assert pc.get_array() is not None
+        assert np.allclose(pc.get_alpha(), 0.5), pc.get_alpha()
+
+    def test_grouped_color_rejects_plain_string(self, polygons):
+        """plot(color=<str>) still raises -- color= stays a grouped param.
+
+        Test scenario:
+            facecolor is a separate construction-time option, so the
+            `color=` keyword to `plot` still only accepts a ColorScaling (or
+            equivalent grouped object), never a loose colour string.
+        """
+        glyph = PolygonGlyph(polygons)
+        with pytest.raises(TypeError, match="expected a grouped parameter object"):
+            glyph.plot(color="navy")
+
 
 def test_polygon_default_options_extend_style_defaults():
     """POLYGON_DEFAULT_OPTIONS is a superset of the shared style defaults.

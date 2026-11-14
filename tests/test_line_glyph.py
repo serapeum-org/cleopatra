@@ -109,6 +109,33 @@ class TestLineGlyphLine:
             f"Unexpected label: {lines[0].get_label()}"
         )
 
+    def test_flat_color_applied(self, xy):
+        """A plain colour string sets the line colour directly.
+
+        Test scenario:
+            Unlike ScatterGlyph/PolygonGlyph, line() has no grouped
+            `color=ColorScaling(...)` parameter to conflict with, so a flat
+            colour string is accepted as-is (#405).
+        """
+        glyph = LineGlyph(*xy)
+        _, _, lines = glyph.line(color="navy")
+        assert lines[0].get_color() == "navy", (
+            f"Unexpected colour: {lines[0].get_color()}"
+        )
+
+    def test_flat_color_defaults_to_color_1_option(self, xy):
+        """With no explicit colour, line() falls back to the color_1 option.
+
+        Test scenario:
+            A construction-time color_1 override reaches the drawn line
+            without an explicit color= at call time.
+        """
+        glyph = LineGlyph(*xy, color_1="#123456")
+        _, _, lines = glyph.line()
+        assert lines[0].get_color() == "#123456", (
+            f"Unexpected colour: {lines[0].get_color()}"
+        )
+
     def test_title_override(self, xy):
         """A title passed to line is applied to the axes."""
         glyph = LineGlyph(*xy)
