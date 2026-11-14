@@ -198,7 +198,7 @@ Symbol **names are unchanged** — only the module path moves (except the one re
 | Old module | New module | Key symbols |
 | --- | --- | --- |
 | `cleopatra.geo` | `cleopatra.basemap.geo` | `GeoMixin`, `Feature`, `Basemap` |
-| `cleopatra.tiles` | `cleopatra.basemap.tiles` | `add_tiles`, `Tile` |
+| `cleopatra.tiles` | `cleopatra.basemap.tiles` | `stitch_basemap`, `Tile` (web-tile basemaps are now the `add_tiles` glyph method) |
 | `cleopatra.reference` | `cleopatra.basemap.reference` | `add_relief`, `add_features`, `natural_earth` |
 | `cleopatra.projection` | `cleopatra.basemap.projection` | `apply_projection_frame` |
 

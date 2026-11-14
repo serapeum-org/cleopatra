@@ -1,7 +1,7 @@
 # Tiles Module — Web-tile Basemaps
 
 The `cleopatra.basemap.tiles` module adds an optional, pure-Python web-tile basemap helper:
-`add_tiles` fetches XYZ map tiles covering an axes' current extent, stitches them with
+the `add_tiles` glyph method fetches XYZ map tiles covering an axes' current extent, stitching them with
 Pillow, and renders the composite underneath your data. No GDAL is required.
 
 For a service published as OGC **WMS** or **WMTS** rather than an XYZ template, pass one of
