@@ -53,9 +53,14 @@ class TestBarGlyphConstruction:
         with pytest.raises(ValueError, match="mode='stacked' or mode='grouped'"):
             BarGlyph(["a", "b"], [[1.0, 2.0], [3.0, 4.0]])
 
-    def test_3d_values_raise(self):
-        """A 3-D values array is rejected even with a multi-series mode."""
-        with pytest.raises(ValueError, match="2-D"):
+    def test_3d_values_rejected_by_mode_validator(self):
+        """A 3-D values array is neither single- nor multi-series, so mode validation rejects it.
+
+        A rank-3 array makes `_multi` False (it is not 2-D), so `mode="stacked"`
+        trips the mode/dimensionality guard rather than `resolve_series` (the
+        latter's own 3-D rejection is covered in test_categorical.py).
+        """
+        with pytest.raises(ValueError, match="needs a 2-D"):
             BarGlyph(["a"], np.zeros((1, 2, 2)), mode="stacked")
 
     def test_non_finite_values_raise(self):
@@ -320,6 +325,15 @@ class TestBarGlyphMultiSeries:
         """Category labels are placed on the category axis."""
         _, ax, _ = BarGlyph(["a", "b", "c"], self.VALUES, mode="stacked").plot()
         assert [t.get_text() for t in ax.get_xticklabels()] == ["a", "b", "c"]
+
+    def test_alpha_applied_to_every_series(self):
+        """alpha= reaches every bar of every series on the multi-series path."""
+        _, _, bars = BarGlyph(
+            ["a", "b", "c"], self.VALUES, mode="grouped", alpha=0.3
+        ).plot()
+        assert all(float(rect.get_alpha()) == 0.3 for series in bars for rect in series), (
+            "every stacked/grouped bar should carry the requested alpha"
+        )
 
     def test_horizontal_stacked_geometry(self):
         """Horizontal stacking puts the running baseline on the left, labels on y."""
