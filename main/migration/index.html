@@ -3239,7 +3239,7 @@ re-exports nothing — you always import from a submodule.</p>
 <a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># after</span>
 <a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.gridded.array_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayGlyph</span>
 <a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.styling.colors</span><span class="w"> </span><span class="kn">import</span> <span class="n">DATA_STYLES</span>
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.basemap.tiles</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_tiles</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="c1"># add_tiles is now the ArrayGlyph.add_tiles glyph method, not a module import</span>
 <a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="kn">from</span><span class="w"> </span><span class="nn">cleopatra.glyphs.stats.histogram_glyph</span><span class="w"> </span><span class="kn">import</span> <span class="n">HistogramGlyph</span>   <span class="c1"># note the class rename</span>
 </code></pre></div>
 <h2 id="import-path-map"><a class="toclink" href="#import-path-map">Import path map</a><a class="headerlink" href="#import-path-map" title="Permanent link">#</a></h2>
@@ -3376,7 +3376,7 @@ re-exports nothing — you always import from a submodule.</p>
 <tr>
 <td><code>cleopatra.tiles</code></td>
 <td><code>cleopatra.basemap.tiles</code></td>
-<td><code>add_tiles</code>, <code>Tile</code></td>
+<td><code>stitch_basemap</code>, <code>Tile</code> (web-tile basemaps are now the <code>add_tiles</code> glyph method)</td>
 </tr>
 <tr>
 <td><code>cleopatra.reference</code></td>

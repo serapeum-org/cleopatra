@@ -2799,7 +2799,7 @@ Pillow and need no FFmpeg.</p>
 </div>
 <h3 id="optional-dependencies-the-tiles-extra"><a class="toclink" href="#optional-dependencies-the-tiles-extra">Optional dependencies — the <code>tiles</code> extra</a><a class="headerlink" href="#optional-dependencies-the-tiles-extra" title="Permanent link">#</a></h3>
 <p>The geospatial basemap features need three extra packages: the web-tile basemap helper
-(<code>cleopatra.basemap.tiles.add_tiles</code>, including the OGC WMS/WMTS providers in
+(the <code>add_tiles</code> glyph method, including the OGC WMS/WMTS providers in
 <code>cleopatra.basemap.ogc</code>), the reference-data layers (<code>cleopatra.basemap.reference.add_relief</code>
 for relief PNG decoding, and <code>cleopatra.basemap.reference.add_features(..., crs=...)</code> for
 reprojection), the orthographic globe presets in <code>cleopatra.basemap.projection</code>, and CRS
@@ -2827,7 +2827,7 @@ dependencies.</p>
 <h2 id="pip"><a class="toclink" href="#pip">pip</a><a class="headerlink" href="#pip" title="Permanent link">#</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>cleopatra
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># with the optional web-tile basemap support (cleopatra.basemap.tiles.add_tiles)</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># with the optional web-tile basemap support (the add_tiles glyph method)</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"cleopatra[tiles]"</span>
 </code></pre></div>
 <h2 id="from-sources"><a class="toclink" href="#from-sources">From sources</a><a class="headerlink" href="#from-sources" title="Permanent link">#</a></h2>
