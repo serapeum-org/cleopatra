@@ -51,12 +51,17 @@ from cleopatra.styling.styles import disjoint_legend
 _MULTI_SERIES_MODES = ("stacked", "grouped")
 
 #: Option keys for `BarGlyph`, on top of the shared styling defaults.
+#: `cmap` overrides the shared diverging default (`coolwarm_r`) with a
+#: sequential one: it colours the *series* of a multi-series chart, sampled
+#: evenly across its range, and a diverging map's near-white centre made the
+#: middle of an odd series count invisible.
 BAR_DEFAULT_OPTIONS = STYLE_DEFAULTS | {
     "palette": "category12",
     "add_legend": False,
     "horizontal": False,
     "width": 0.8,
     "alpha": 1.0,
+    "cmap": "viridis",
 }
 
 
@@ -93,8 +98,9 @@ class BarGlyph(Glyph):
         fig: Pre-existing figure. Default None.
         **kwargs: Construction-time overrides for `BAR_DEFAULT_OPTIONS`:
             `palette` (qualitative palette name for single-series bars, default
-            `"category12"`), `cmap` (continuous colormap sampled per series for
-            a multi-series chart), `horizontal` (draw `barh` instead of `bar`,
+            `"category12"`), `cmap` (sequential colormap sampled per series for
+            a multi-series chart, default `"viridis"`), `horizontal` (draw
+            `barh` instead of `bar`,
             default False; composes with stacking and grouping), `add_legend`
             (draw a disjoint legend -- per category for 1-D, per series for 2-D,
             default False), `width` (bar thickness in data units along the

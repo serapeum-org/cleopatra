@@ -356,6 +356,18 @@ class TestBarGlyphMultiSeries:
         c1 = to_hex(bars[1][0].get_facecolor())
         assert c0 != c1, "distinct series take distinct colormap samples"
 
+    def test_default_cmap_keeps_three_series_visible(self):
+        """Three series under default options are mutually distinct and none near-white."""
+        values = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+        _, _, bars = BarGlyph(["a", "b"], values, mode="grouped").plot()
+        rgbs = [tuple(series[0].get_facecolor()[:3]) for series in bars]
+        hexes = [to_hex(series[0].get_facecolor()) for series in bars]
+        assert len(set(hexes)) == 3, f"series colours should be distinct, got {hexes}"
+        for rgb, hex_ in zip(rgbs, hexes):
+            assert not all(channel > 0.8 for channel in rgb), (
+                f"the default colormap must not sample a near-white series, got {hex_}"
+            )
+
     def test_add_legend_labels_the_series(self):
         """add_legend keys off the series_labels, one legend entry per series."""
         _, ax, _ = BarGlyph(
