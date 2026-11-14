@@ -298,6 +298,40 @@ class TestScatterGlyphPlot:
                 facecolors[i],
             )
 
+    def test_flat_color_combines_with_sizes(self, xy):
+        """flat_color and a per-point sizes mapping are independent.
+
+        Test scenario:
+            A flat colour plus a `sizes` array still varies marker area
+            while every point keeps the same flat colour -- colour and size
+            are orthogonal encodings, so adding a flat colour must not
+            disturb the existing size-mapping path.
+        """
+        glyph = ScatterGlyph(
+            *xy, sizes=np.array([1.0, 5.0, 9.0, 20.0]), flat_color="crimson"
+        )
+        _, _, paths = glyph.plot()
+        facecolors = paths.get_facecolor()
+        assert np.allclose(facecolors[:, :3], mcolors.to_rgb("crimson")), facecolors
+        sizes = paths.get_sizes()
+        assert sizes.min() != sizes.max(), f"expected varying sizes, got {sizes}"
+
+    def test_colors_sequence_combines_with_sizes(self, xy):
+        """An explicit colors sequence and a sizes mapping are independent.
+
+        Test scenario:
+            Per-point explicit colours plus a `sizes` array: each point
+            keeps its own colour while areas still vary by magnitude.
+        """
+        cols = ["red", "green", "blue", "yellow"]
+        glyph = ScatterGlyph(*xy, sizes=np.array([1.0, 5.0, 9.0, 20.0]), colors=cols)
+        _, _, paths = glyph.plot()
+        facecolors = paths.get_facecolor()
+        for i, c in enumerate(cols):
+            assert np.allclose(facecolors[i, :3], mcolors.to_rgb(c)), (i, c)
+        sizes = paths.get_sizes()
+        assert sizes.min() != sizes.max(), f"expected varying sizes, got {sizes}"
+
     def test_grouped_color_rejects_plain_string(self, xy):
         """plot(color=<str>) still raises -- color= stays a grouped param.
 
