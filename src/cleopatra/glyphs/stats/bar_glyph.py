@@ -92,8 +92,8 @@ class BarGlyph(Glyph):
             `values` is 2-D; must be left `"single"` (the default) when
             `values` is 1-D.
         series_labels: Optional names for the series of a 2-D chart, used by the
-            legend. Length must equal the number of series. Ignored for a 1-D
-            chart.
+            legend. Length must equal the number of series. Rejected (raises)
+            for a 1-D chart, whose legend is labelled per category.
         ax: Pre-existing axes to draw on. Default None.
         fig: Pre-existing figure. Default None.
         **kwargs: Construction-time overrides for `BAR_DEFAULT_OPTIONS`:
@@ -115,7 +115,8 @@ class BarGlyph(Glyph):
         ValueError: If `values` is neither 1-D nor 2-D, if the lengths differ,
             if the inputs are empty (via `resolve_categories` /
             `resolve_series`), if `mode` and the `values` dimensionality
-            disagree, or if `series_labels` does not match the number of series.
+            disagree, if `series_labels` is given with a 1-D `values`, or if
+            `series_labels` does not match the number of series.
 
     Examples:
         - Horizontal bars with explicit colours:
@@ -172,6 +173,13 @@ class BarGlyph(Glyph):
             self.categories, self.values = resolve_series(categories, values)
             self.series_labels = self._resolve_series_labels(series_labels)
         else:
+            if series_labels is not None:
+                raise ValueError(
+                    "series_labels applies only to a multi-series (2-D) chart; a "
+                    "1-D values is single-series, whose legend is labelled per "
+                    "category. Drop series_labels, or pass a 2-D values with "
+                    "mode='stacked'/'grouped'."
+                )
             self.categories, self.values = resolve_categories(categories, values)
             self.series_labels = None
         self._colors = colors

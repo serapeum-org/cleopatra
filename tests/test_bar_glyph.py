@@ -63,6 +63,11 @@ class TestBarGlyphConstruction:
         with pytest.raises(ValueError, match="needs a 2-D"):
             BarGlyph(["a"], np.zeros((1, 2, 2)), mode="stacked")
 
+    def test_series_labels_rejected_for_1d(self):
+        """series_labels with a 1-D chart is rejected, not silently dropped."""
+        with pytest.raises(ValueError, match="series_labels applies only to a multi-series"):
+            BarGlyph(["a", "b"], [1.0, 2.0], series_labels=["x", "y"])
+
     def test_non_finite_values_raise(self):
         """NaN or inf values are rejected at construction, not drawn silently."""
         with pytest.raises(ValueError, match="finite"):
