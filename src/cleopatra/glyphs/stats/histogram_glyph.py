@@ -195,8 +195,11 @@ class HistogramGlyph(WatermarkMixin):
                 Supported arguments include:
                 - figsize: Figure size as (width, height) in inches, by default (5, 5).
                 - bins: Number of histogram bins, by default 15.
-                - color: Colors for the histogram bars, by default ["#0504aa"].
-                    For 2D data, the number of colors should match the number of columns.
+                - color: Colour(s) for the histogram bars, by default ["#0504aa"].
+                    A single colour — a name or hex string (e.g. "slategray",
+                    "#3182bd") or an RGB/RGBA tuple — fills a single-series
+                    histogram. For 2D data, pass one colour per column; the
+                    number of colours must match the number of columns.
                 - alpha: Transparency of the histogram bars, by default 0.7.
                     Values range from 0 (transparent) to 1 (opaque).
                 - rwidth: Relative width of the bars, by default 0.85.
@@ -424,8 +427,11 @@ class HistogramGlyph(WatermarkMixin):
                 Supported arguments include:
                 - figsize: Figure size as (width, height) in inches, by default (5, 5).
                 - bins: Number of histogram bins, by default 15.
-                - color: Colors for the histogram bars, by default ["#0504aa"].
-                    For 2D data, the number of colors should match the number of columns.
+                - color: Colour(s) for the histogram bars, by default ["#0504aa"].
+                    A single colour — a name or hex string (e.g. "slategray",
+                    "#3182bd") or an RGB/RGBA tuple — fills a single-series
+                    histogram. For 2D data, pass one colour per column; the
+                    number of colours must match the number of columns.
                 - alpha: Transparency of the histogram bars, by default 0.7.
                     Values range from 0 (transparent) to 1 (opaque).
                 - rwidth: Relative width of the bars, by default 0.85.
@@ -497,6 +503,15 @@ class HistogramGlyph(WatermarkMixin):
                     ...     xlabel_font_size=14,
                     ...     ylabel_font_size=14
                     ... )
+
+                    ```
+
+                - Colour a single-series histogram with a bare colour string:
+
+                    ```python
+                    >>> fig, ax, hist = stat_plot.histogram(bins=10, color="slategray")
+                    >>> hist["patches"][0][0].get_facecolor()
+                    (0.4392156862745098, 0.5019607843137255, 0.5647058823529412, 0.7)
 
                     ```
 

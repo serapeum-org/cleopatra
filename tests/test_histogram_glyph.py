@@ -282,17 +282,31 @@ class TestHistogramSingleColour:
             f"bars should be {color}, got {hist['patches'][0][0].get_facecolor()}"
         )
 
-    def test_rgb_tuple_is_one_colour_not_three(self):
-        """An RGB tuple is treated as one colour, not a 3-element sequence.
+    @pytest.mark.parametrize(
+        "color, expected",
+        [
+            ((0.2, 0.5, 0.7), (0.2, 0.5, 0.7, 0.7)),
+            ((0.2, 0.5, 0.7, 0.4), (0.2, 0.5, 0.7, 0.7)),
+        ],
+    )
+    def test_rgb_tuple_is_one_colour_not_channels(self, color, expected):
+        """An RGB/RGBA tuple is treated as one colour, not a sequence of channels.
+
+        Args:
+            color: A 3-element RGB tuple and a 4-element RGBA tuple.
+            expected: The resolved RGBA facecolour. Both carry the RGB
+                channels unchanged; the alpha is the glyph's default (0.7),
+                which the separate ``alpha`` option applies on top of either
+                tuple.
 
         Test scenario:
-            ``color=(0.2, 0.5, 0.7)`` must render a single-series histogram in
-            that colour rather than being indexed channel by channel.
+            ``color=(...)`` must render a single-series histogram in that
+            colour rather than being indexed channel by channel.
         """
-        fig, ax, hist = HistogramGlyph(self._values()).histogram(
-            bins=10, color=(0.2, 0.5, 0.7)
+        fig, ax, hist = HistogramGlyph(self._values()).histogram(bins=10, color=color)
+        assert hist["patches"][0][0].get_facecolor() == expected, (
+            f"bars should be {expected}, got {hist['patches'][0][0].get_facecolor()}"
         )
-        assert hist["patches"][0][0].get_facecolor() == (0.2, 0.5, 0.7, 0.7)
 
     def test_one_element_colour_list_still_works(self):
         """A one-element colour list keeps working unchanged.
