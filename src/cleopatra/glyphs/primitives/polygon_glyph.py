@@ -50,7 +50,7 @@ from cleopatra.styling.colorbar import (
     ColorBar,
     _resolve_colorbar,
 )
-from cleopatra.styling.colors import resolve_colormap
+from cleopatra.styling.colors import resolve_colormap, validate_single_color
 from cleopatra.styling.params import Classify, Contour
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import CLASSIFY_OPTIONS
@@ -114,6 +114,8 @@ class PolygonGlyph(GeoMixin, Glyph):
             owns a single aggregated colorbar.
 
     Raises:
+        TypeError: If `facecolor` is given but is not a single matplotlib
+            colour (e.g. a sequence of several colours).
         ValueError: If `values` is given but its length does not match
             the number of polygons, or if `values` is given together with
             `facecolor`.
@@ -158,6 +160,8 @@ class PolygonGlyph(GeoMixin, Glyph):
             default_options=POLYGON_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs
         )
         self.polygons = [np.asarray(p, dtype=float) for p in polygons]
+        if self.default_options["facecolor"] is not None:
+            validate_single_color(self.default_options["facecolor"], param="facecolor")
         if values is not None:
             values = np.asarray(values)
             if values.shape != (len(self.polygons),):

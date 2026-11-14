@@ -131,8 +131,21 @@ class TestScatterGlyphInit:
             only fail deep inside matplotlib with a confusing error. The
             shared `validate_color_sequence` helper rejects it up front.
         """
-        with pytest.raises(TypeError, match="not a bare"):
+        with pytest.raises(TypeError, match="not a single"):
             ScatterGlyph(*xy, colors="red")
+
+    def test_bare_rgb_tuple_rejected(self):
+        """A bare RGB(A) tuple for colors raises TypeError, not a length error.
+
+        Test scenario:
+            `colors=(1, 0, 0)` for a 3-point scatter would otherwise pass a
+            naive length check (the tuple has 3 elements, matching the point
+            count) and silently colour each point by one of the RGB channel
+            values rather than by the intended single red colour.
+        """
+        x, y = np.array([0.0, 1.0, 2.0]), np.array([0.0, 1.0, 0.0])
+        with pytest.raises(TypeError, match="not a single"):
+            ScatterGlyph(x, y, colors=(1, 0, 0))
 
     def test_colors_and_values_mutually_exclusive(self, xy, values):
         """Passing both colors and values raises ValueError.

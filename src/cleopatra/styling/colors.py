@@ -50,6 +50,7 @@ __all__ = [
     "resolve_style_overrides",
     "style_for_parameter",
     "validate_color_sequence",
+    "validate_single_color",
 ]
 
 
@@ -150,16 +151,68 @@ def resolve_colormap(
     return mpl.colormaps[cmap]
 
 
+def validate_single_color(color: Any, *, param: str = "color") -> Any:
+    """Validate that `color` is a single matplotlib colour, not a sequence of them.
+
+    Uses `matplotlib.colors.is_color_like`, which is also what rejects a
+    sequence of several colours (a list of names, a list of RGB(A) tuples) --
+    so this is the single-colour counterpart to `validate_color_sequence`:
+    that one rejects a lone colour where a sequence was wanted, this one
+    rejects a sequence where a lone colour was wanted.
+
+    Args:
+        color: The candidate value, expected to be one colour.
+        param: Name of the calling keyword, woven into the error message.
+
+    Returns:
+        The validated `color`, unchanged.
+
+    Raises:
+        TypeError: If `color` is not a single valid colour spec (e.g. a list
+            of several colours, or a value matplotlib cannot parse as a
+            colour at all).
+
+    Examples:
+        - A valid single colour (name, hex, or RGB(A) tuple) passes through:
+            ```python
+            >>> from cleopatra.styling.colors import validate_single_color
+            >>> validate_single_color("navy")
+            'navy'
+            >>> validate_single_color((0.2, 0.4, 0.6))
+            (0.2, 0.4, 0.6)
+
+            ```
+        - A sequence of colours raises TypeError instead of silently
+          mismatching downstream:
+            ```python
+            >>> validate_single_color(["red", "green"], param="facecolor")
+            Traceback (most recent call last):
+                ...
+            TypeError: facecolor must be a single colour (a name, hex string, or RGB(A) tuple), got ['red', 'green'].
+
+            ```
+    """
+    if not mcolors.is_color_like(color):
+        raise TypeError(
+            f"{param} must be a single colour (a name, hex string, or RGB(A) "
+            f"tuple), got {color!r}."
+        )
+    return color
+
+
 def validate_color_sequence(
     colors: Sequence, n: int, *, param: str = "colors", noun: str = "items"
 ) -> list:
     """Coerce an explicit per-item colour sequence and validate its length.
 
-    Rejects a bare colour `str`/`bytes` before the length check. Without this,
-    `list("red")` silently yields `['r', 'e', 'd']` -- a length-3 "sequence" that
-    passes a length check against 3 items and only fails later, deep inside
-    matplotlib, with an error that names neither `param` nor the actual mistake
-    (a flat colour string where a sequence, or a one-item list, was meant).
+    Rejects a single colour spec (a bare string, or an RGB(A) tuple) before
+    the length check, via `matplotlib.colors.is_color_like` -- the sequence
+    counterpart to `validate_single_color`. Without this, `list("red")`
+    silently yields `['r', 'e', 'd']` -- a length-3 "sequence" that passes a
+    length check against 3 items and only fails later, deep inside
+    matplotlib, with an error that names neither `param` nor the actual
+    mistake (a flat colour where a sequence, or a one-item list, was meant);
+    a bare RGB(A) tuple like `(1, 0, 0)` has the same problem at 3 or 4 items.
 
     Args:
         colors: The candidate sequence, one colour per item.
@@ -173,8 +226,9 @@ def validate_color_sequence(
         list: `colors` coerced to a list, unchanged otherwise.
 
     Raises:
-        TypeError: If `colors` is a bare `str`/`bytes` rather than a sequence
-            of colours.
+        TypeError: If `colors` is itself a single colour spec (a bare
+            `str`/`bytes` name, hex string, or RGB(A) tuple) rather than a
+            sequence of colours.
         ValueError: If the coerced list's length does not equal `n`.
 
     Examples:
@@ -190,13 +244,13 @@ def validate_color_sequence(
             >>> validate_color_sequence("red", 3, param="colors")
             Traceback (most recent call last):
                 ...
-            TypeError: colors must be a sequence of colours, not a bare 'red'; wrap a single colour in a list, e.g. ['red'].
+            TypeError: colors must be a sequence of colours, not a single 'red'; wrap a single colour in a list, e.g. ['red'].
 
             ```
     """
-    if isinstance(colors, (str, bytes)):
+    if mcolors.is_color_like(colors):
         raise TypeError(
-            f"{param} must be a sequence of colours, not a bare {colors!r}; "
+            f"{param} must be a sequence of colours, not a single {colors!r}; "
             f"wrap a single colour in a list, e.g. [{colors!r}]."
         )
     colors = list(colors)

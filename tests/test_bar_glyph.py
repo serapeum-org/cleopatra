@@ -127,8 +127,20 @@ class TestBarGlyphPlot:
             inside matplotlib with a confusing error.
         """
         glyph = BarGlyph(["a", "b"], [1.0, 2.0])
-        with pytest.raises(TypeError, match="not a bare"):
+        with pytest.raises(TypeError, match="not a single"):
             glyph.plot(colors="red")
+
+    def test_bare_rgb_tuple_rejected(self):
+        """A bare RGB(A) tuple for colors raises TypeError, not a length error.
+
+        Test scenario:
+            `colors=(1, 0, 0)` for two categories plus alpha would otherwise
+            risk the same silent misread as a bare colour string once the
+            category count matches the tuple length.
+        """
+        glyph = BarGlyph(["a", "b", "c"], [1.0, 2.0, 3.0])
+        with pytest.raises(TypeError, match="not a single"):
+            glyph.plot(colors=(1, 0, 0))
 
     def test_unknown_palette_raises_valueerror(self):
         """An unknown palette name raises ValueError, not a bare KeyError."""

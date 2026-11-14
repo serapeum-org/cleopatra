@@ -303,6 +303,19 @@ class TestPolygonGlyphPlot:
         assert np.allclose(facecolors[:, :3], mcolors.to_rgb("forestgreen")), facecolors
         assert np.allclose(facecolors[:, 3], 0.6), facecolors
 
+    def test_facecolor_sequence_rejected(self, polygons):
+        """A facecolor that is itself a sequence of colours raises TypeError.
+
+        Test scenario:
+            `facecolor` is documented as a single flat colour. Without this
+            guard, a mismatched-length list was passed straight through to
+            `PolyCollection(facecolors=...)` with no error, silently
+            producing a facecolor array whose length did not match the
+            polygon count.
+        """
+        with pytest.raises(TypeError, match="single colour"):
+            PolygonGlyph(polygons, facecolor=["red", "green", "blue"])
+
     def test_outline_only_overrides_facecolor(self, polygons):
         """outline_only wins even when a flat facecolor is set.
 
