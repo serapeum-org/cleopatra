@@ -36,8 +36,9 @@ jobs:
     # this job.
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
-        # A plain `mkdocs build` needs no git history (no mike, no
-        # git-revision-date plugin), so a shallow checkout is enough.
+        # A shallow checkout is enough: mike reads git history only at
+        # `mike deploy`, not at plain `mkdocs build` time (it just injects the
+        # version selector), and there is no git-revision-date plugin.
         persist-credentials: false
 
     # The same setup the deploy jobs get. mkdocs-deploy calls this action
@@ -151,12 +152,15 @@ jobs:
     # work. mike is on PATH because mkdocs-deploy's internal python-setup/uv puts
     # the virtualenv on GITHUB_PATH for subsequent steps in this job.
     #
-    # continue-on-error: the release documentation has already been published by
-    # the deploy step above; pruning is best-effort cleanup whose only cost on
-    # failure is one extra stale version until the next release. It must never
-    # turn an otherwise-successful release into a failed workflow run.
+    # Failure handling: the 3-attempt retry below absorbs a transient gh-pages
+    # push race (the common, benign case). Anything that survives all retries,
+    # or a precondition/config error (missing `mike`, unresolved version), fails
+    # this step on purpose — it is NOT marked continue-on-error. A silently
+    # skipped prune would let gh-pages resume the unbounded growth this workflow
+    # exists to prevent, behind green checks, which is the worst outcome. The
+    # release docs are already published by the deploy step above, so a red
+    # prune signals "cleanup needs attention", not "the release failed".
     - name: Prune superseded documentation versions
-      continue-on-error: true
       env:
         KEEP_VERSION: ${{ github.event.release.tag_name || steps.version.outputs.tag }}
         RETAIN_RELEASES: '5'
@@ -187,9 +191,11 @@ jobs:
           # `tool.commitizen.tag_format` (bare `$version` today). Only release
           # ids count here, so `develop` and any alias-only row fall through to
           # the delete set rather than consuming a retention slot. `|| true`
-          # keeps a no-match `grep` from aborting the step under `pipefail`.
+          # keeps a no-match `grep` from aborting the step under `pipefail`; the
+          # `awk NR<=n` reads all of `sort`'s output (unlike `head`, which could
+          # close the pipe early and SIGPIPE `sort` under `pipefail`).
           { grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' /tmp/mike-all || true; } \
-            | sort -rV | head -n "$RETAIN_RELEASES" > /tmp/mike-keep-releases
+            | sort -rV | awk -v n="$RETAIN_RELEASES" 'NR<=n' > /tmp/mike-keep-releases
           # KEEP_VERSION is listed explicitly as a floor: the release that was
           # just deployed must survive even if it somehow sorts outside the top
           # RETAIN_RELEASES. The keep-list and mike-all share one (lexical `sort
