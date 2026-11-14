@@ -741,6 +741,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -860,6 +864,62 @@
     
   
     HistogramGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bar-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    BarGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pie-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PieGlyph
   
 
     
@@ -2915,6 +2975,7 @@ magnitude <code>hypot(u, v)</code> through the shared scalar-mapping pipeline.</
                 <code>**kwargs</code>
             </td>
             <td>
+                  <code><span title="typing.Any">Any</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3419,7 +3480,7 @@ back. Set <code>thin=n</code> to draw every nth grid point for
 <a id="__codelineno-0-116" name="__codelineno-0-116"></a><span class="sd">        v: y-components of the vectors. Must broadcast against `x`/`y`.</span>
 <a id="__codelineno-0-117" name="__codelineno-0-117"></a><span class="sd">        ax: Pre-existing axes to draw on. Default is None.</span>
 <a id="__codelineno-0-118" name="__codelineno-0-118"></a><span class="sd">        fig: Pre-existing figure. Default is None.</span>
-<a id="__codelineno-0-119" name="__codelineno-0-119"></a><span class="sd">        **kwargs: Override any key in `VECTOR_DEFAULT_OPTIONS`</span>
+<a id="__codelineno-0-119" name="__codelineno-0-119"></a><span class="sd">        **kwargs (Any): Override any key in `VECTOR_DEFAULT_OPTIONS`</span>
 <a id="__codelineno-0-120" name="__codelineno-0-120"></a><span class="sd">            (e.g. `density`, `scale`, `cmap`, `vmin`, `vmax`, `levels`,</span>
 <a id="__codelineno-0-121" name="__codelineno-0-121"></a><span class="sd">            `color_scale`, `ticks_spacing`, `cbar_label`, `figsize`,</span>
 <a id="__codelineno-0-122" name="__codelineno-0-122"></a><span class="sd">            `title`). Set `add_colorbar=False` to suppress the per-glyph</span>
@@ -3542,7 +3603,7 @@ back. Set <code>thin=n</code> to draw every nth grid point for
 <a id="__codelineno-0-239" name="__codelineno-0-239"></a>        <span class="n">contour</span><span class="p">:</span> <span class="n">Contour</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-240" name="__codelineno-0-240"></a>        <span class="n">classify</span><span class="p">:</span> <span class="n">Classify</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-241" name="__codelineno-0-241"></a>        <span class="n">compose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-242" name="__codelineno-0-242"></a>    <span class="p">):</span>
+<a id="__codelineno-0-242" name="__codelineno-0-242"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Figure</span><span class="p">,</span> <span class="n">Axes</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <a id="__codelineno-0-243" name="__codelineno-0-243"></a><span class="w">        </span><span class="sd">"""Render the vector field, coloured by magnitude.</span>
 <a id="__codelineno-0-244" name="__codelineno-0-244"></a>
 <a id="__codelineno-0-245" name="__codelineno-0-245"></a><span class="sd">        Dispatches to `Axes.quiver`, `Axes.barbs`, or `Axes.streamplot`</span>
@@ -3806,7 +3867,7 @@ back. Set <code>thin=n</code> to draw every nth grid point for
 <a id="__codelineno-0-503" name="__codelineno-0-503"></a><span class="sd">        with a text label, the standard legend for a quiver field.</span>
 <a id="__codelineno-0-504" name="__codelineno-0-504"></a>
 <a id="__codelineno-0-505" name="__codelineno-0-505"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-506" name="__codelineno-0-506"></a><span class="sd">            im: The `Quiver` artist returned by `plot(kind="quiver")`.</span>
+<a id="__codelineno-0-506" name="__codelineno-0-506"></a><span class="sd">            im (Quiver): The `Quiver` artist returned by `plot(kind="quiver")`.</span>
 <a id="__codelineno-0-507" name="__codelineno-0-507"></a><span class="sd">            x: Key x-position in axes fraction coordinates.</span>
 <a id="__codelineno-0-508" name="__codelineno-0-508"></a><span class="sd">                Default is 0.9.</span>
 <a id="__codelineno-0-509" name="__codelineno-0-509"></a><span class="sd">            y: Key y-position in axes fraction coordinates.</span>
@@ -3817,7 +3878,7 @@ back. Set <code>thin=n</code> to draw every nth grid point for
 <a id="__codelineno-0-514" name="__codelineno-0-514"></a><span class="sd">                renders the numeric `value` as the label.</span>
 <a id="__codelineno-0-515" name="__codelineno-0-515"></a><span class="sd">            labelpos: Side of the arrow for the label (`"N"`, `"S"`,</span>
 <a id="__codelineno-0-516" name="__codelineno-0-516"></a><span class="sd">                `"E"`, `"W"`). Default is `"E"`.</span>
-<a id="__codelineno-0-517" name="__codelineno-0-517"></a><span class="sd">            **kwargs: Forwarded to `Axes.quiverkey`.</span>
+<a id="__codelineno-0-517" name="__codelineno-0-517"></a><span class="sd">            **kwargs (Any): Forwarded to `Axes.quiverkey`.</span>
 <a id="__codelineno-0-518" name="__codelineno-0-518"></a>
 <a id="__codelineno-0-519" name="__codelineno-0-519"></a><span class="sd">        Returns:</span>
 <a id="__codelineno-0-520" name="__codelineno-0-520"></a><span class="sd">            QuiverKey: The created key artist.</span>
@@ -3913,6 +3974,7 @@ with a text label, the standard legend for a quiver field.</p>
                 <code>im</code>
             </td>
             <td>
+                  <code><span title="Quiver">Quiver</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -4013,6 +4075,7 @@ renders the numeric <code>value</code> as the label.</p>
                 <code>**kwargs</code>
             </td>
             <td>
+                  <code><span title="typing.Any">Any</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -4137,7 +4200,7 @@ renders the numeric <code>value</code> as the label.</p>
 <a id="__codelineno-0-503" name="__codelineno-0-503"></a><span class="sd">    with a text label, the standard legend for a quiver field.</span>
 <a id="__codelineno-0-504" name="__codelineno-0-504"></a>
 <a id="__codelineno-0-505" name="__codelineno-0-505"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-506" name="__codelineno-0-506"></a><span class="sd">        im: The `Quiver` artist returned by `plot(kind="quiver")`.</span>
+<a id="__codelineno-0-506" name="__codelineno-0-506"></a><span class="sd">        im (Quiver): The `Quiver` artist returned by `plot(kind="quiver")`.</span>
 <a id="__codelineno-0-507" name="__codelineno-0-507"></a><span class="sd">        x: Key x-position in axes fraction coordinates.</span>
 <a id="__codelineno-0-508" name="__codelineno-0-508"></a><span class="sd">            Default is 0.9.</span>
 <a id="__codelineno-0-509" name="__codelineno-0-509"></a><span class="sd">        y: Key y-position in axes fraction coordinates.</span>
@@ -4148,7 +4211,7 @@ renders the numeric <code>value</code> as the label.</p>
 <a id="__codelineno-0-514" name="__codelineno-0-514"></a><span class="sd">            renders the numeric `value` as the label.</span>
 <a id="__codelineno-0-515" name="__codelineno-0-515"></a><span class="sd">        labelpos: Side of the arrow for the label (`"N"`, `"S"`,</span>
 <a id="__codelineno-0-516" name="__codelineno-0-516"></a><span class="sd">            `"E"`, `"W"`). Default is `"E"`.</span>
-<a id="__codelineno-0-517" name="__codelineno-0-517"></a><span class="sd">        **kwargs: Forwarded to `Axes.quiverkey`.</span>
+<a id="__codelineno-0-517" name="__codelineno-0-517"></a><span class="sd">        **kwargs (Any): Forwarded to `Axes.quiverkey`.</span>
 <a id="__codelineno-0-518" name="__codelineno-0-518"></a>
 <a id="__codelineno-0-519" name="__codelineno-0-519"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-520" name="__codelineno-0-520"></a><span class="sd">        QuiverKey: The created key artist.</span>
@@ -4344,6 +4407,7 @@ magnitude needs its own scale.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
+                  <code><span title="tuple">tuple</span>[<span title="matplotlib.figure.Figure">Figure</span>, <span title="matplotlib.axes.Axes">Axes</span>, <span title="typing.Any">Any</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -4644,7 +4708,7 @@ the magnitude has no finite values (via
 <a id="__codelineno-0-239" name="__codelineno-0-239"></a>    <span class="n">contour</span><span class="p">:</span> <span class="n">Contour</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-240" name="__codelineno-0-240"></a>    <span class="n">classify</span><span class="p">:</span> <span class="n">Classify</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-241" name="__codelineno-0-241"></a>    <span class="n">compose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-<a id="__codelineno-0-242" name="__codelineno-0-242"></a><span class="p">):</span>
+<a id="__codelineno-0-242" name="__codelineno-0-242"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Figure</span><span class="p">,</span> <span class="n">Axes</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <a id="__codelineno-0-243" name="__codelineno-0-243"></a><span class="w">    </span><span class="sd">"""Render the vector field, coloured by magnitude.</span>
 <a id="__codelineno-0-244" name="__codelineno-0-244"></a>
 <a id="__codelineno-0-245" name="__codelineno-0-245"></a><span class="sd">    Dispatches to `Axes.quiver`, `Axes.barbs`, or `Axes.streamplot`</span>

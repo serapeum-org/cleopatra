@@ -16,7 +16,7 @@
         <link rel="prev" href="../render-options/">
       
       
-        <link rel="next" href="../array-glyph/">
+        <link rel="next" href="../bar-glyph/">
       
       
         
@@ -741,6 +741,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1120,6 +1124,62 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bar-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    BarGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pie-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PieGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2996,6 +3056,7 @@ instance with the <code>option_keys</code> and <code>filter_kwargs</code> classm
       &lt;small class=&quot;doc doc-label doc-label-writable&quot;&gt;&lt;code&gt;writable&lt;/code&gt;&lt;/small&gt;
   &lt;/span&gt; (&lt;code&gt;cleopatra.glyphs.stats.histogram_glyph.HistogramGlyph.values&lt;/code&gt;)" href="#cleopatra.glyphs.stats.histogram_glyph.HistogramGlyph.values">values</a></code></td>
             <td>
+                  <code><span title="numpy.ndarray">ndarray</span> | <span title="list">list</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -4113,7 +4174,7 @@ Create a histogram from 2D data with custom colors:
 <a id="__codelineno-0-191" name="__codelineno-0-191"></a><span class="sd">                ``ax`` argument is omitted. Note these renderers take ``ax``</span>
 <a id="__codelineno-0-192" name="__codelineno-0-192"></a><span class="sd">                per call but never ``fig`` — the figure is bound here, at</span>
 <a id="__codelineno-0-193" name="__codelineno-0-193"></a><span class="sd">                construction.</span>
-<a id="__codelineno-0-194" name="__codelineno-0-194"></a><span class="sd">            **kwargs: Additional keyword arguments to customize the histogram appearance.</span>
+<a id="__codelineno-0-194" name="__codelineno-0-194"></a><span class="sd">            **kwargs (Any): Additional keyword arguments to customize the histogram appearance.</span>
 <a id="__codelineno-0-195" name="__codelineno-0-195"></a><span class="sd">                Supported arguments include:</span>
 <a id="__codelineno-0-196" name="__codelineno-0-196"></a><span class="sd">                - figsize: Figure size as (width, height) in inches, by default (5, 5).</span>
 <a id="__codelineno-0-197" name="__codelineno-0-197"></a><span class="sd">                - bins: Number of histogram bins, by default 15.</span>
@@ -4192,7 +4253,7 @@ Create a histogram from 2D data with custom colors:
 <a id="__codelineno-0-270" name="__codelineno-0-270"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_default_options</span> <span class="o">=</span> <span class="n">options_dict</span>
 <a id="__codelineno-0-271" name="__codelineno-0-271"></a>
 <a id="__codelineno-0-272" name="__codelineno-0-272"></a>    <span class="nd">@property</span>
-<a id="__codelineno-0-273" name="__codelineno-0-273"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-273" name="__codelineno-0-273"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="nb">list</span><span class="p">:</span>
 <a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="w">        </span><span class="sd">"""Get the numerical values to be plotted.</span>
 <a id="__codelineno-0-275" name="__codelineno-0-275"></a>
 <a id="__codelineno-0-276" name="__codelineno-0-276"></a><span class="sd">        Returns:</span>
@@ -4346,7 +4407,7 @@ Create a histogram from 2D data with custom colors:
 <a id="__codelineno-0-424" name="__codelineno-0-424"></a><span class="sd">                shared axes (e.g. several distributions on one axes). The</span>
 <a id="__codelineno-0-425" name="__codelineno-0-425"></a><span class="sd">                histogram still applies its own axis framing (labels, grid) to</span>
 <a id="__codelineno-0-426" name="__codelineno-0-426"></a><span class="sd">                that axes either way.</span>
-<a id="__codelineno-0-427" name="__codelineno-0-427"></a><span class="sd">            **kwargs: Additional keyword arguments to customize the histogram appearance.</span>
+<a id="__codelineno-0-427" name="__codelineno-0-427"></a><span class="sd">            **kwargs (Any): Additional keyword arguments to customize the histogram appearance.</span>
 <a id="__codelineno-0-428" name="__codelineno-0-428"></a><span class="sd">                These will override any options set during initialization.</span>
 <a id="__codelineno-0-429" name="__codelineno-0-429"></a><span class="sd">                Supported arguments include:</span>
 <a id="__codelineno-0-430" name="__codelineno-0-430"></a><span class="sd">                - figsize: Figure size as (width, height) in inches, by default (5, 5).</span>
@@ -4705,7 +4766,7 @@ Create a histogram from 2D data with custom colors:
 <a id="__codelineno-0-783" name="__codelineno-0-783"></a><span class="sd">            compose: Draw *over* whatever is already on the axes instead of</span>
 <a id="__codelineno-0-784" name="__codelineno-0-784"></a><span class="sd">                replacing it, by default `False`. `True` clears only this</span>
 <a id="__codelineno-0-785" name="__codelineno-0-785"></a><span class="sd">                glyph's own prior artists, so it layers onto a shared axes.</span>
-<a id="__codelineno-0-786" name="__codelineno-0-786"></a><span class="sd">            **kwargs: Forwarded to `Axes.boxplot`.</span>
+<a id="__codelineno-0-786" name="__codelineno-0-786"></a><span class="sd">            **kwargs (Any): Forwarded to `Axes.boxplot`.</span>
 <a id="__codelineno-0-787" name="__codelineno-0-787"></a>
 <a id="__codelineno-0-788" name="__codelineno-0-788"></a><span class="sd">        Returns:</span>
 <a id="__codelineno-0-789" name="__codelineno-0-789"></a><span class="sd">            Tuple[Figure, Axes, Dict]: The figure, the axes, and the</span>
@@ -4783,7 +4844,7 @@ Create a histogram from 2D data with custom colors:
 <a id="__codelineno-0-861" name="__codelineno-0-861"></a><span class="sd">            compose: Draw *over* whatever is already on the axes instead of</span>
 <a id="__codelineno-0-862" name="__codelineno-0-862"></a><span class="sd">                replacing it, by default `False`. `True` clears only this</span>
 <a id="__codelineno-0-863" name="__codelineno-0-863"></a><span class="sd">                glyph's own prior artists, so it layers onto a shared axes.</span>
-<a id="__codelineno-0-864" name="__codelineno-0-864"></a><span class="sd">            **kwargs: Forwarded to `Axes.boxplot`.</span>
+<a id="__codelineno-0-864" name="__codelineno-0-864"></a><span class="sd">            **kwargs (Any): Forwarded to `Axes.boxplot`.</span>
 <a id="__codelineno-0-865" name="__codelineno-0-865"></a>
 <a id="__codelineno-0-866" name="__codelineno-0-866"></a><span class="sd">        Returns:</span>
 <a id="__codelineno-0-867" name="__codelineno-0-867"></a><span class="sd">            Tuple[Figure, Axes, Dict]: The figure, the axes, and the</span>
@@ -4871,14 +4932,14 @@ Create a histogram from 2D data with custom colors:
 <a id="__codelineno-0-949" name="__codelineno-0-949"></a><span class="sd">                construction, and a brand-new figure/axes is created</span>
 <a id="__codelineno-0-950" name="__codelineno-0-950"></a><span class="sd">                when none is available. `fig` is a construction-time</span>
 <a id="__codelineno-0-951" name="__codelineno-0-951"></a><span class="sd">                binding, not a parameter here.</span>
-<a id="__codelineno-0-952" name="__codelineno-0-952"></a><span class="sd">            cmap: Colormap name or object. Defaults to the `cmap`</span>
+<a id="__codelineno-0-952" name="__codelineno-0-952"></a><span class="sd">            cmap (str or Colormap): Colormap name or object. Defaults to the `cmap`</span>
 <a id="__codelineno-0-953" name="__codelineno-0-953"></a><span class="sd">                option.</span>
 <a id="__codelineno-0-954" name="__codelineno-0-954"></a><span class="sd">            vmin: Lower colour limit. Defaults to the data minimum.</span>
 <a id="__codelineno-0-955" name="__codelineno-0-955"></a><span class="sd">            vmax: Upper colour limit. Defaults to the data maximum.</span>
 <a id="__codelineno-0-956" name="__codelineno-0-956"></a><span class="sd">            compose: Draw *over* whatever is already on the axes instead of</span>
 <a id="__codelineno-0-957" name="__codelineno-0-957"></a><span class="sd">                replacing it, by default `False`. `True` clears only this</span>
 <a id="__codelineno-0-958" name="__codelineno-0-958"></a><span class="sd">                glyph's own prior artists, so it layers onto a shared axes.</span>
-<a id="__codelineno-0-959" name="__codelineno-0-959"></a><span class="sd">            **kwargs: Forwarded to `Axes.bar`.</span>
+<a id="__codelineno-0-959" name="__codelineno-0-959"></a><span class="sd">            **kwargs (Any): Forwarded to `Axes.bar`.</span>
 <a id="__codelineno-0-960" name="__codelineno-0-960"></a>
 <a id="__codelineno-0-961" name="__codelineno-0-961"></a><span class="sd">        Returns:</span>
 <a id="__codelineno-0-962" name="__codelineno-0-962"></a><span class="sd">            Tuple[Figure, Axes, BarContainer]: The figure, the axes, and</span>
@@ -5040,6 +5101,7 @@ to the class constructor or to the histogram method.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
+                  <code><span title="numpy.ndarray">ndarray</span> | <span title="list">list</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -5166,6 +5228,7 @@ construction.</p>
                 <code>**kwargs</code>
             </td>
             <td>
+                  <code><span title="Any">Any</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -5376,7 +5439,7 @@ Compose into a pre-existing axes:
 <a id="__codelineno-0-191" name="__codelineno-0-191"></a><span class="sd">            ``ax`` argument is omitted. Note these renderers take ``ax``</span>
 <a id="__codelineno-0-192" name="__codelineno-0-192"></a><span class="sd">            per call but never ``fig`` — the figure is bound here, at</span>
 <a id="__codelineno-0-193" name="__codelineno-0-193"></a><span class="sd">            construction.</span>
-<a id="__codelineno-0-194" name="__codelineno-0-194"></a><span class="sd">        **kwargs: Additional keyword arguments to customize the histogram appearance.</span>
+<a id="__codelineno-0-194" name="__codelineno-0-194"></a><span class="sd">        **kwargs (Any): Additional keyword arguments to customize the histogram appearance.</span>
 <a id="__codelineno-0-195" name="__codelineno-0-195"></a><span class="sd">            Supported arguments include:</span>
 <a id="__codelineno-0-196" name="__codelineno-0-196"></a><span class="sd">            - figsize: Figure size as (width, height) in inches, by default (5, 5).</span>
 <a id="__codelineno-0-197" name="__codelineno-0-197"></a><span class="sd">            - bins: Number of histogram bins, by default 15.</span>
@@ -5582,6 +5645,7 @@ glyph's own prior artists, so it layers onto a shared axes.</p>
                 <code>**kwargs</code>
             </td>
             <td>
+                  <code><span title="Any">Any</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -5747,7 +5811,7 @@ dict returned by <code>Axes.boxplot</code> (keys: <code>boxes</code>,
 <a id="__codelineno-0-783" name="__codelineno-0-783"></a><span class="sd">        compose: Draw *over* whatever is already on the axes instead of</span>
 <a id="__codelineno-0-784" name="__codelineno-0-784"></a><span class="sd">            replacing it, by default `False`. `True` clears only this</span>
 <a id="__codelineno-0-785" name="__codelineno-0-785"></a><span class="sd">            glyph's own prior artists, so it layers onto a shared axes.</span>
-<a id="__codelineno-0-786" name="__codelineno-0-786"></a><span class="sd">        **kwargs: Forwarded to `Axes.boxplot`.</span>
+<a id="__codelineno-0-786" name="__codelineno-0-786"></a><span class="sd">        **kwargs (Any): Forwarded to `Axes.boxplot`.</span>
 <a id="__codelineno-0-787" name="__codelineno-0-787"></a>
 <a id="__codelineno-0-788" name="__codelineno-0-788"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-789" name="__codelineno-0-789"></a><span class="sd">        Tuple[Figure, Axes, Dict]: The figure, the axes, and the</span>
@@ -6010,6 +6074,7 @@ that axes either way.</p>
                 <code>**kwargs</code>
             </td>
             <td>
+                  <code><span title="Any">Any</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -6439,7 +6504,7 @@ regions visible.</p>
 <a id="__codelineno-0-424" name="__codelineno-0-424"></a><span class="sd">            shared axes (e.g. several distributions on one axes). The</span>
 <a id="__codelineno-0-425" name="__codelineno-0-425"></a><span class="sd">            histogram still applies its own axis framing (labels, grid) to</span>
 <a id="__codelineno-0-426" name="__codelineno-0-426"></a><span class="sd">            that axes either way.</span>
-<a id="__codelineno-0-427" name="__codelineno-0-427"></a><span class="sd">        **kwargs: Additional keyword arguments to customize the histogram appearance.</span>
+<a id="__codelineno-0-427" name="__codelineno-0-427"></a><span class="sd">        **kwargs (Any): Additional keyword arguments to customize the histogram appearance.</span>
 <a id="__codelineno-0-428" name="__codelineno-0-428"></a><span class="sd">            These will override any options set during initialization.</span>
 <a id="__codelineno-0-429" name="__codelineno-0-429"></a><span class="sd">            Supported arguments include:</span>
 <a id="__codelineno-0-430" name="__codelineno-0-430"></a><span class="sd">            - figsize: Figure size as (width, height) in inches, by default (5, 5).</span>
@@ -6741,6 +6806,7 @@ glyph's own prior artists, so it layers onto a shared axes.</p>
                 <code>**kwargs</code>
             </td>
             <td>
+                  <code><span title="Any">Any</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -6943,7 +7009,7 @@ glyph's own prior artists, so it layers onto a shared axes.</p>
 <a id="__codelineno-0-861" name="__codelineno-0-861"></a><span class="sd">        compose: Draw *over* whatever is already on the axes instead of</span>
 <a id="__codelineno-0-862" name="__codelineno-0-862"></a><span class="sd">            replacing it, by default `False`. `True` clears only this</span>
 <a id="__codelineno-0-863" name="__codelineno-0-863"></a><span class="sd">            glyph's own prior artists, so it layers onto a shared axes.</span>
-<a id="__codelineno-0-864" name="__codelineno-0-864"></a><span class="sd">        **kwargs: Forwarded to `Axes.boxplot`.</span>
+<a id="__codelineno-0-864" name="__codelineno-0-864"></a><span class="sd">        **kwargs (Any): Forwarded to `Axes.boxplot`.</span>
 <a id="__codelineno-0-865" name="__codelineno-0-865"></a>
 <a id="__codelineno-0-866" name="__codelineno-0-866"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-867" name="__codelineno-0-867"></a><span class="sd">        Tuple[Figure, Axes, Dict]: The figure, the axes, and the</span>
@@ -7194,6 +7260,7 @@ binding, not a parameter here.</p>
                 <code>cmap</code>
             </td>
             <td>
+                  <code><span title="str">str</span> or <span title="Colormap">Colormap</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -7260,6 +7327,7 @@ glyph's own prior artists, so it layers onto a shared axes.</p>
                 <code>**kwargs</code>
             </td>
             <td>
+                  <code><span title="Any">Any</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -7432,14 +7500,14 @@ the bar container (one bar per value).</p>
 <a id="__codelineno-0-949" name="__codelineno-0-949"></a><span class="sd">            construction, and a brand-new figure/axes is created</span>
 <a id="__codelineno-0-950" name="__codelineno-0-950"></a><span class="sd">            when none is available. `fig` is a construction-time</span>
 <a id="__codelineno-0-951" name="__codelineno-0-951"></a><span class="sd">            binding, not a parameter here.</span>
-<a id="__codelineno-0-952" name="__codelineno-0-952"></a><span class="sd">        cmap: Colormap name or object. Defaults to the `cmap`</span>
+<a id="__codelineno-0-952" name="__codelineno-0-952"></a><span class="sd">        cmap (str or Colormap): Colormap name or object. Defaults to the `cmap`</span>
 <a id="__codelineno-0-953" name="__codelineno-0-953"></a><span class="sd">            option.</span>
 <a id="__codelineno-0-954" name="__codelineno-0-954"></a><span class="sd">        vmin: Lower colour limit. Defaults to the data minimum.</span>
 <a id="__codelineno-0-955" name="__codelineno-0-955"></a><span class="sd">        vmax: Upper colour limit. Defaults to the data maximum.</span>
 <a id="__codelineno-0-956" name="__codelineno-0-956"></a><span class="sd">        compose: Draw *over* whatever is already on the axes instead of</span>
 <a id="__codelineno-0-957" name="__codelineno-0-957"></a><span class="sd">            replacing it, by default `False`. `True` clears only this</span>
 <a id="__codelineno-0-958" name="__codelineno-0-958"></a><span class="sd">            glyph's own prior artists, so it layers onto a shared axes.</span>
-<a id="__codelineno-0-959" name="__codelineno-0-959"></a><span class="sd">        **kwargs: Forwarded to `Axes.bar`.</span>
+<a id="__codelineno-0-959" name="__codelineno-0-959"></a><span class="sd">        **kwargs (Any): Forwarded to `Axes.bar`.</span>
 <a id="__codelineno-0-960" name="__codelineno-0-960"></a>
 <a id="__codelineno-0-961" name="__codelineno-0-961"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-962" name="__codelineno-0-962"></a><span class="sd">        Tuple[Figure, Axes, BarContainer]: The figure, the axes, and</span>
@@ -7598,13 +7666,13 @@ the bar container (one bar per value).</p>
         
         
           
-          <a href="../array-glyph/" class="md-footer__link md-footer__link--next" aria-label="Next: ArrayGlyph">
+          <a href="../bar-glyph/" class="md-footer__link md-footer__link--next" aria-label="Next: BarGlyph">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                ArrayGlyph
+                BarGlyph
               </div>
             </div>
             <div class="md-footer__button md-icon">

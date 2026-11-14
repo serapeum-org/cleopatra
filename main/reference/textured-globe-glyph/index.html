@@ -741,6 +741,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -860,6 +864,62 @@
     
   
     HistogramGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bar-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    BarGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pie-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PieGlyph
   
 
     
@@ -4380,7 +4440,7 @@ and <code>filter_kwargs</code> classmethods.</p>
 <a id="__codelineno-0-206" name="__codelineno-0-206"></a><span class="sd">                when `sun` is set.</span>
 <a id="__codelineno-0-207" name="__codelineno-0-207"></a><span class="sd">            fig: Pre-existing matplotlib `Figure` to draw on when `draw`/`animate` are called without their own `ax`.</span>
 <a id="__codelineno-0-208" name="__codelineno-0-208"></a><span class="sd">            ax: Pre-existing 3-D matplotlib `Axes` (`Axes3D`) to draw on. If given it must be a 3-D axes.</span>
-<a id="__codelineno-0-209" name="__codelineno-0-209"></a><span class="sd">            **kwargs: Render options overriding `DEFAULT_OPTIONS` (`figsize`, `elev`, `azim`, `background`). An</span>
+<a id="__codelineno-0-209" name="__codelineno-0-209"></a><span class="sd">            **kwargs (Any): Render options overriding `DEFAULT_OPTIONS` (`figsize`, `elev`, `azim`, `background`). An</span>
 <a id="__codelineno-0-210" name="__codelineno-0-210"></a><span class="sd">                unrecognised key raises `ValueError`.</span>
 <a id="__codelineno-0-211" name="__codelineno-0-211"></a>
 <a id="__codelineno-0-212" name="__codelineno-0-212"></a><span class="sd">        Raises:</span>
@@ -4975,7 +5035,7 @@ and <code>filter_kwargs</code> classmethods.</p>
 <a id="__codelineno-0-801" name="__codelineno-0-801"></a><span class="sd">                `None` to render evenly. Omitted (default) inherits the value passed to `__init__`.</span>
 <a id="__codelineno-0-802" name="__codelineno-0-802"></a><span class="sd">            ambient: Ambient floor for this call, overriding the instance's `ambient`. Omitted inherits the</span>
 <a id="__codelineno-0-803" name="__codelineno-0-803"></a><span class="sd">                constructor value. Always validated, but only affects the render when the effective `sun` is set.</span>
-<a id="__codelineno-0-804" name="__codelineno-0-804"></a><span class="sd">            **kwargs: Render options overriding the instance defaults for this call (`figsize`, `elev`, `azim`,</span>
+<a id="__codelineno-0-804" name="__codelineno-0-804"></a><span class="sd">            **kwargs (Any): Render options overriding the instance defaults for this call (`figsize`, `elev`, `azim`,</span>
 <a id="__codelineno-0-805" name="__codelineno-0-805"></a><span class="sd">                `background`). `figsize` applies only when a new figure is created; it is ignored when drawing onto</span>
 <a id="__codelineno-0-806" name="__codelineno-0-806"></a><span class="sd">                an existing (supplied or instance) axes. An unrecognised key raises `ValueError`.</span>
 <a id="__codelineno-0-807" name="__codelineno-0-807"></a>
@@ -5073,7 +5133,7 @@ and <code>filter_kwargs</code> classmethods.</p>
 <a id="__codelineno-0-899" name="__codelineno-0-899"></a><span class="sd">                constructor value; `None` renders evenly.</span>
 <a id="__codelineno-0-900" name="__codelineno-0-900"></a><span class="sd">            ambient: Ambient floor forwarded to `draw` on every frame. Omitted inherits the constructor value.</span>
 <a id="__codelineno-0-901" name="__codelineno-0-901"></a><span class="sd">            interval: Delay between frames in milliseconds (matplotlib playback hint).</span>
-<a id="__codelineno-0-902" name="__codelineno-0-902"></a><span class="sd">            **kwargs: Render options forwarded to `draw` on every frame (`figsize`, `elev`, `azim`, `background`).</span>
+<a id="__codelineno-0-902" name="__codelineno-0-902"></a><span class="sd">            **kwargs (Any): Render options forwarded to `draw` on every frame (`figsize`, `elev`, `azim`, `background`).</span>
 <a id="__codelineno-0-903" name="__codelineno-0-903"></a>
 <a id="__codelineno-0-904" name="__codelineno-0-904"></a><span class="sd">        Returns:</span>
 <a id="__codelineno-0-905" name="__codelineno-0-905"></a><span class="sd">            matplotlib.animation.FuncAnimation: The animation, ready to save or embed.</span>
@@ -5614,6 +5674,7 @@ when <code>sun</code> is set.</p>
                 <code>**kwargs</code>
             </td>
             <td>
+                  <code><span title="typing.Any">Any</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -5818,7 +5879,7 @@ is not a 3-D axes, or if an unknown render option is passed.</p>
 <a id="__codelineno-0-206" name="__codelineno-0-206"></a><span class="sd">            when `sun` is set.</span>
 <a id="__codelineno-0-207" name="__codelineno-0-207"></a><span class="sd">        fig: Pre-existing matplotlib `Figure` to draw on when `draw`/`animate` are called without their own `ax`.</span>
 <a id="__codelineno-0-208" name="__codelineno-0-208"></a><span class="sd">        ax: Pre-existing 3-D matplotlib `Axes` (`Axes3D`) to draw on. If given it must be a 3-D axes.</span>
-<a id="__codelineno-0-209" name="__codelineno-0-209"></a><span class="sd">        **kwargs: Render options overriding `DEFAULT_OPTIONS` (`figsize`, `elev`, `azim`, `background`). An</span>
+<a id="__codelineno-0-209" name="__codelineno-0-209"></a><span class="sd">        **kwargs (Any): Render options overriding `DEFAULT_OPTIONS` (`figsize`, `elev`, `azim`, `background`). An</span>
 <a id="__codelineno-0-210" name="__codelineno-0-210"></a><span class="sd">            unrecognised key raises `ValueError`.</span>
 <a id="__codelineno-0-211" name="__codelineno-0-211"></a>
 <a id="__codelineno-0-212" name="__codelineno-0-212"></a><span class="sd">    Raises:</span>
@@ -6027,6 +6088,7 @@ constructor value; <code>None</code> renders evenly.</p>
                 <code>**kwargs</code>
             </td>
             <td>
+                  <code><span title="typing.Any">Any</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -6205,7 +6267,7 @@ render option is passed. <code>sun</code>/<code>ambient</code> are validated eag
 <a id="__codelineno-0-899" name="__codelineno-0-899"></a><span class="sd">            constructor value; `None` renders evenly.</span>
 <a id="__codelineno-0-900" name="__codelineno-0-900"></a><span class="sd">        ambient: Ambient floor forwarded to `draw` on every frame. Omitted inherits the constructor value.</span>
 <a id="__codelineno-0-901" name="__codelineno-0-901"></a><span class="sd">        interval: Delay between frames in milliseconds (matplotlib playback hint).</span>
-<a id="__codelineno-0-902" name="__codelineno-0-902"></a><span class="sd">        **kwargs: Render options forwarded to `draw` on every frame (`figsize`, `elev`, `azim`, `background`).</span>
+<a id="__codelineno-0-902" name="__codelineno-0-902"></a><span class="sd">        **kwargs (Any): Render options forwarded to `draw` on every frame (`figsize`, `elev`, `azim`, `background`).</span>
 <a id="__codelineno-0-903" name="__codelineno-0-903"></a>
 <a id="__codelineno-0-904" name="__codelineno-0-904"></a><span class="sd">    Returns:</span>
 <a id="__codelineno-0-905" name="__codelineno-0-905"></a><span class="sd">        matplotlib.animation.FuncAnimation: The animation, ready to save or embed.</span>
@@ -6356,6 +6418,7 @@ constructor value. Always validated, but only affects the render when the effect
                 <code>**kwargs</code>
             </td>
             <td>
+                  <code><span title="typing.Any">Any</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -6547,7 +6610,7 @@ render option is passed.</p>
 <a id="__codelineno-0-801" name="__codelineno-0-801"></a><span class="sd">            `None` to render evenly. Omitted (default) inherits the value passed to `__init__`.</span>
 <a id="__codelineno-0-802" name="__codelineno-0-802"></a><span class="sd">        ambient: Ambient floor for this call, overriding the instance's `ambient`. Omitted inherits the</span>
 <a id="__codelineno-0-803" name="__codelineno-0-803"></a><span class="sd">            constructor value. Always validated, but only affects the render when the effective `sun` is set.</span>
-<a id="__codelineno-0-804" name="__codelineno-0-804"></a><span class="sd">        **kwargs: Render options overriding the instance defaults for this call (`figsize`, `elev`, `azim`,</span>
+<a id="__codelineno-0-804" name="__codelineno-0-804"></a><span class="sd">        **kwargs (Any): Render options overriding the instance defaults for this call (`figsize`, `elev`, `azim`,</span>
 <a id="__codelineno-0-805" name="__codelineno-0-805"></a><span class="sd">            `background`). `figsize` applies only when a new figure is created; it is ignored when drawing onto</span>
 <a id="__codelineno-0-806" name="__codelineno-0-806"></a><span class="sd">            an existing (supplied or instance) axes. An unrecognised key raises `ValueError`.</span>
 <a id="__codelineno-0-807" name="__codelineno-0-807"></a>

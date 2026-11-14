@@ -566,6 +566,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#barglyph-categorical-bar-charts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BarGlyph — categorical bar charts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pieglyph-categorical-pie-charts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PieGlyph — categorical pie charts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#scatterglyph-point-clouds" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -977,6 +999,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1095,6 +1121,62 @@
     
   
     HistogramGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/bar-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    BarGlyph
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/pie-glyph/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PieGlyph
   
 
     
@@ -2746,6 +2828,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#barglyph-categorical-bar-charts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BarGlyph — categorical bar charts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pieglyph-categorical-pie-charts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PieGlyph — categorical pie charts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#scatterglyph-point-clouds" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2927,8 +3031,8 @@
 <a href="https://pepy.tech/project/cleopatra"><img alt="Weekly Downloads" src="https://static.pepy.tech/personalized-badge/cleopatra?period=week&amp;units=international_system&amp;left_color=grey&amp;right_color=blue&amp;left_text=Downloads" /></a></p>
 <p><strong>cleopatra</strong> is a Python package providing a fast and flexible way to visualize data using matplotlib.
 It provides a high-level API over matplotlib for 2-D/3-D <code>numpy</code> arrays, unstructured meshes, point clouds,
-vector fields, polygons, lines, and statistical distributions — plotting, animating, and displaying data with
-sensible scientific defaults.</p>
+vector fields, polygons, lines, categorical bar/pie charts, and statistical distributions — plotting, animating,
+and displaying data with sensible scientific defaults.</p>
 <p>For the package's boundaries — what belongs here and what does not — see the <a href="scope/">Scope</a> page.</p>
 <h2 id="package-layout"><a class="toclink" href="#package-layout">Package Layout</a><a class="headerlink" href="#package-layout" title="Permanent link">#</a></h2>
 <pre class="mermaid"><code>graph TD
@@ -2952,8 +3056,10 @@ sensible scientific defaults.</p>
         hexbin_glyph["&lt;b&gt;hexbin_glyph&lt;/b&gt;&lt;br/&gt;HexbinGlyph&lt;br/&gt;hexagonal binning"]
     end
 
-    subgraph standalone["Standalone"]
+    subgraph standalone["Standalone stats / categorical"]
         histogram_glyph["&lt;b&gt;histogram_glyph&lt;/b&gt;&lt;br/&gt;HistogramGlyph&lt;br/&gt;histogram · boxplot · multiboxplot · stripes"]
+        bar_glyph["&lt;b&gt;bar_glyph&lt;/b&gt;&lt;br/&gt;BarGlyph&lt;br/&gt;categorical bars · stacked / grouped"]
+        pie_glyph["&lt;b&gt;pie_glyph&lt;/b&gt;&lt;br/&gt;PieGlyph&lt;br/&gt;categorical pie wedges"]
     end
 
     subgraph support["Supporting utilities"]
@@ -2970,6 +3076,7 @@ sensible scientific defaults.</p>
     end
 
     array_glyph &amp; mesh_glyph &amp; scatter_glyph &amp; vector_glyph &amp; flow_glyph &amp; line_glyph &amp; polygon_glyph &amp; kde_glyph ==&gt;|extends| glyph
+    histogram_glyph &amp; bar_glyph &amp; pie_glyph ==&gt;|extends| glyph
     array_glyph &amp; mesh_glyph &amp; scatter_glyph &amp; vector_glyph &amp; flow_glyph &amp; polygon_glyph -.-&gt;|mixes in| geo
     geo --&gt;|basemap tiles| tiles
     geo --&gt;|coastlines · relief| reference
@@ -2981,8 +3088,9 @@ sensible scientific defaults.</p>
 <li>The user-facing visualizers all subclass <code>Glyph</code> and share its colour-mapping / colorbar pipeline —
   <code>array_glyph</code> (<code>ArrayGlyph</code>, <code>FacetGrid</code>), <code>mesh_glyph</code> (<code>MeshGlyph</code>), <code>scatter_glyph</code> (<code>ScatterGlyph</code>),
   <code>vector_glyph</code> (<code>VectorGlyph</code>), <code>flow_glyph</code> (<code>FlowGlyph</code>), <code>line_glyph</code> (<code>LineGlyph</code>), <code>polygon_glyph</code>
-  (<code>PolygonGlyph</code>), <code>kde_glyph</code> (<code>KDEGlyph</code>), and <code>hexbin_glyph</code> (<code>HexbinGlyph</code>). <code>histogram_glyph</code>
-  (<code>HistogramGlyph</code>) stands alone.</li>
+  (<code>PolygonGlyph</code>), <code>kde_glyph</code> (<code>KDEGlyph</code>), and <code>hexbin_glyph</code> (<code>HexbinGlyph</code>). The statistical / categorical
+  charts — <code>histogram_glyph</code> (<code>HistogramGlyph</code>), <code>bar_glyph</code> (<code>BarGlyph</code>), and <code>pie_glyph</code> (<code>PieGlyph</code>) — stand
+  alone (they subclass <code>Glyph</code> but do not mix in <code>GeoMixin</code>).</li>
 <li><code>geo</code> provides <code>GeoMixin</code>, mixed into the seven geographic visualizers (<code>array_glyph</code>, <code>mesh_glyph</code>,
   <code>scatter_glyph</code>, <code>vector_glyph</code>, <code>flow_glyph</code>, <code>polygon_glyph</code>, <code>hexbin_glyph</code> — not <code>line_glyph</code>, <code>kde_glyph</code>, or
   <code>histogram_glyph</code>), adding a settable <code>crs</code> and one-call basemap helpers on the glyph's own axes:
@@ -3027,6 +3135,19 @@ sensible scientific defaults.</p>
 <li>Boxplots, grouped multi-boxplots, and warming-stripe bands.</li>
 </ul>
 <p>See the <a href="reference/histogram-glyph/">HistogramGlyph reference</a>.</p>
+<h3 id="barglyph-categorical-bar-charts"><a class="toclink" href="#barglyph-categorical-bar-charts"><code>BarGlyph</code> — categorical bar charts</a><a class="headerlink" href="#barglyph-categorical-bar-charts" title="Permanent link">#</a></h3>
+<ul>
+<li>One bar per category from a <code>(categories, values)</code> pair, coloured from the shared palette system.</li>
+<li>2-D <code>(n_categories, n_series)</code> values with <code>mode="stacked"</code>/<code>"grouped"</code> for multi-series charts, and
+  <code>horizontal=True</code> for <code>barh</code>. (For a numeric single-series bar, use <code>LineGlyph.bar</code>.)</li>
+</ul>
+<p>See the <a href="reference/bar-glyph/">BarGlyph reference</a>.</p>
+<h3 id="pieglyph-categorical-pie-charts"><a class="toclink" href="#pieglyph-categorical-pie-charts"><code>PieGlyph</code> — categorical pie charts</a><a class="headerlink" href="#pieglyph-categorical-pie-charts" title="Permanent link">#</a></h3>
+<ul>
+<li>One wedge per category, sized by each value's share of the total, with per-wedge percentage labels or a
+  category legend. Negative or all-zero values are rejected.</li>
+</ul>
+<p>See the <a href="reference/pie-glyph/">PieGlyph reference</a>.</p>
 <h3 id="scatterglyph-point-clouds"><a class="toclink" href="#scatterglyph-point-clouds"><code>ScatterGlyph</code> — point clouds</a><a class="headerlink" href="#scatterglyph-point-clouds" title="Permanent link">#</a></h3>
 <ul>
 <li>2-D point clouds colour-mapped by a per-point <code>values</code> array, with an independent per-point
