@@ -20,6 +20,24 @@ be invisible; pass an explicit `edgecolor` to override it.
 
 ## Examples
 
+### A flat fill colour (no value mapping)
+
+```python
+import numpy as np
+from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
+
+polygons = [
+    np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]]),
+    np.array([[1.0, 0.0], [2.0, 0.0], [2.0, 1.0], [1.0, 1.0]]),
+    np.array([[0.0, 1.0], [1.0, 1.0], [0.5, 2.0]]),
+]
+
+pg = PolygonGlyph(polygons, facecolor="forestgreen", alpha=0.6)
+fig, ax, pc = pg.plot(title="Flat-filled polygons")
+```
+
+`facecolor` and `values` are mutually exclusive -- pick one or the other, not both.
+
 ### Value-filled polygons
 
 ```python

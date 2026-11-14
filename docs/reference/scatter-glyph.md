@@ -17,6 +17,28 @@ encode two different quantities at once.
 
 ## Examples
 
+### A flat colour (no value mapping)
+
+```python
+import numpy as np
+from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
+
+rng = np.random.default_rng(0)
+x, y = rng.random(100), rng.random(100)
+
+sg = ScatterGlyph(x, y, flat_color="navy", alpha=0.7)
+fig, ax, paths = sg.plot(title="Flat-coloured points")
+```
+
+`colors` takes an explicit per-point sequence instead, the way `BarGlyph` takes `colors=` per category:
+
+```python
+categories = rng.integers(0, 3, size=100)
+palette = {0: "navy", 1: "crimson", 2: "forestgreen"}
+sg = ScatterGlyph(x, y, colors=[palette[c] for c in categories])
+fig, ax, paths = sg.plot(title="Explicit per-point colours")
+```
+
 ### Value-coloured points
 
 ```python

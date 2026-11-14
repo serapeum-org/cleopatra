@@ -111,6 +111,79 @@ class TestScatterGlyphInit:
         with pytest.raises(ValueError, match="values must match"):
             ScatterGlyph(*xy, values=np.array([1.0, 2.0]))
 
+    def test_mismatched_colors_raises(self, xy):
+        """A colors sequence not matching the point count raises ValueError.
+
+        Test scenario:
+            len(colors) != len(x) is rejected at construction, mirroring
+            BarGlyph's per-category colors validation.
+        """
+        with pytest.raises(ValueError, match="must match the number of points"):
+            ScatterGlyph(*xy, colors=["red", "green"])
+
+    def test_bare_color_string_rejected(self, xy):
+        """A bare colour string for colors raises TypeError, not a length error.
+
+        Test scenario:
+            `colors="red"` is a plausible typo for `flat_color="red"`.
+            `list("red")` would silently yield `['r', 'e', 'd']` -- a
+            length-3 sequence that, for a 4-point scatter, would otherwise
+            only fail deep inside matplotlib with a confusing error. The
+            shared `validate_color_sequence` helper rejects it up front.
+        """
+        with pytest.raises(TypeError, match="not a single"):
+            ScatterGlyph(*xy, colors="red")
+
+    def test_bare_rgb_tuple_rejected(self):
+        """A bare RGB(A) tuple for colors raises TypeError, not a length error.
+
+        Test scenario:
+            `colors=(1, 0, 0)` for a 3-point scatter would otherwise pass a
+            naive length check (the tuple has 3 elements, matching the point
+            count) and silently colour each point by one of the RGB channel
+            values rather than by the intended single red colour.
+        """
+        x, y = np.array([0.0, 1.0, 2.0]), np.array([0.0, 1.0, 0.0])
+        with pytest.raises(TypeError, match="not a single"):
+            ScatterGlyph(x, y, colors=(1, 0, 0))
+
+    def test_colors_and_values_mutually_exclusive(self, xy, values):
+        """Passing both colors and values raises ValueError.
+
+        Test scenario:
+            colors is an explicit per-point colour; values drives a
+            colormap. The two cannot both apply, so combining them raises.
+        """
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            ScatterGlyph(*xy, values=values, colors=["red", "green", "blue", "yellow"])
+
+    def test_flat_color_and_values_mutually_exclusive(self, xy, values):
+        """Passing both flat_color and values raises ValueError.
+
+        Test scenario:
+            Without this guard, flat_color was silently dropped in favour of
+            the values-driven colormap path -- the same kind of conflict
+            colors/values is already guarded against, so flat_color/values
+            must raise too rather than resolve one option in silence.
+        """
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            ScatterGlyph(*xy, values=values, flat_color="red")
+
+    def test_colors_and_flat_color_mutually_exclusive(self, xy):
+        """Passing both colors and flat_color raises ValueError.
+
+        Test scenario:
+            Each of values/colors/flat_color guarded itself against values
+            pairwise, but not against each other -- colors+flat_color
+            together used to construct and plot with no error, silently
+            dropping flat_color. The combined "at most one" check must
+            catch this third pair too.
+        """
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            ScatterGlyph(
+                *xy, colors=["red", "green", "blue", "yellow"], flat_color="navy"
+            )
+
 
 class TestScatterGlyphPlot:
     """Tests for ScatterGlyph.plot."""
@@ -241,6 +314,88 @@ class TestScatterGlyphPlot:
         glyph = ScatterGlyph(*xy, values=np.full(4, np.nan))
         with pytest.raises(ValueError, match="no finite values"):
             glyph.plot()
+
+    def test_flat_color_and_alpha_applied(self, xy):
+        """flat_color/alpha style the uncoloured path with no colormap.
+
+        Test scenario:
+            With no values and no colors, flat_color/alpha set every
+            point's facecolor/opacity directly and no colorbar is drawn.
+        """
+        glyph = ScatterGlyph(*xy, flat_color="navy", alpha=0.7)
+        _, _, paths = glyph.plot()
+        assert paths.get_array() is None, "flat colour path carries no value array"
+        assert glyph.cbar is None, "flat colour path draws no colorbar"
+        facecolors = paths.get_facecolor()
+        assert np.allclose(facecolors[:, :3], mcolors.to_rgb("navy")), facecolors
+        assert np.allclose(facecolors[:, 3], 0.7), facecolors
+
+    def test_colors_sequence_applied_per_point(self, xy):
+        """An explicit colors sequence colours each point verbatim.
+
+        Test scenario:
+            One colour per point is drawn exactly, with no colormap/colorbar
+            involved -- the explicit-colour counterpart to BarGlyph's
+            `colors=`.
+        """
+        cols = ["red", "green", "blue", "yellow"]
+        glyph = ScatterGlyph(*xy, colors=cols)
+        _, _, paths = glyph.plot()
+        assert paths.get_array() is None, "explicit colors carry no value array"
+        assert glyph.cbar is None, "explicit colors draw no colorbar"
+        facecolors = paths.get_facecolor()
+        for i, c in enumerate(cols):
+            assert np.allclose(facecolors[i, :3], mcolors.to_rgb(c)), (
+                i,
+                c,
+                facecolors[i],
+            )
+
+    def test_flat_color_combines_with_sizes(self, xy):
+        """flat_color and a per-point sizes mapping are independent.
+
+        Test scenario:
+            A flat colour plus a `sizes` array still varies marker area
+            while every point keeps the same flat colour -- colour and size
+            are orthogonal encodings, so adding a flat colour must not
+            disturb the existing size-mapping path.
+        """
+        glyph = ScatterGlyph(
+            *xy, sizes=np.array([1.0, 5.0, 9.0, 20.0]), flat_color="crimson"
+        )
+        _, _, paths = glyph.plot()
+        facecolors = paths.get_facecolor()
+        assert np.allclose(facecolors[:, :3], mcolors.to_rgb("crimson")), facecolors
+        sizes = paths.get_sizes()
+        assert sizes.min() != sizes.max(), f"expected varying sizes, got {sizes}"
+
+    def test_colors_sequence_combines_with_sizes(self, xy):
+        """An explicit colors sequence and a sizes mapping are independent.
+
+        Test scenario:
+            Per-point explicit colours plus a `sizes` array: each point
+            keeps its own colour while areas still vary by magnitude.
+        """
+        cols = ["red", "green", "blue", "yellow"]
+        glyph = ScatterGlyph(*xy, sizes=np.array([1.0, 5.0, 9.0, 20.0]), colors=cols)
+        _, _, paths = glyph.plot()
+        facecolors = paths.get_facecolor()
+        for i, c in enumerate(cols):
+            assert np.allclose(facecolors[i, :3], mcolors.to_rgb(c)), (i, c)
+        sizes = paths.get_sizes()
+        assert sizes.min() != sizes.max(), f"expected varying sizes, got {sizes}"
+
+    def test_grouped_color_rejects_plain_string(self, xy):
+        """plot(color=<str>) still raises -- color= stays a grouped param.
+
+        Test scenario:
+            flat_color/colors are separate construction-time options, so the
+            `color=` keyword to `plot` still only accepts a ColorScaling (or
+            equivalent grouped object), never a loose colour string.
+        """
+        glyph = ScatterGlyph(*xy)
+        with pytest.raises(TypeError, match="expected a grouped parameter object"):
+            glyph.plot(color="navy")
 
 
 def test_scatter_default_options_extend_style_defaults():

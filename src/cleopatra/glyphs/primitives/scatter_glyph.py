@@ -32,6 +32,7 @@ Examples:
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import cast
 
 import numpy as np
@@ -47,7 +48,7 @@ from cleopatra.styling.colorbar import (
     ColorBar,
     _resolve_colorbar,
 )
-from cleopatra.styling.colors import resolve_colormap
+from cleopatra.styling.colors import resolve_colormap, validate_color_sequence
 from cleopatra.styling.params import Classify, Contour
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import CLASSIFY_OPTIONS, resolve_sizes, size_legend
@@ -57,9 +58,14 @@ from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 #: `_prepare_scalar_mapping` helper auto-derives it from the data range.
 #: The `size_*` keys drive value→size scaling and its legend (see `plot`);
 #: they are inert unless a `sizes` array is supplied at construction.
+#: `flat_color` and `alpha` style the uncoloured (no `values`, no per-point
+#: `colors`) path -- they are plain colour options, not a scalar mapping, so
+#: they live alongside `marker` rather than behind `color=ColorScaling(...)`.
 SCATTER_DEFAULT_OPTIONS = {
     "marker": "o",
     "point_size": 20,
+    "flat_color": None,
+    "alpha": 1.0,  # matplotlib's own scatter default -- a no-op on prior rendering
     "vmin": None,
     "vmax": None,
     "levels": None,
@@ -96,24 +102,39 @@ class ScatterGlyph(GeoMixin, Glyph):
             point can encode both). Must match the length of `x` when
             given. When None, the scalar `point_size` option is used for
             every point (the original behaviour). Default is None.
+        colors: Optional explicit per-point colours (length must equal the
+            number of points), the way `BarGlyph` takes `colors=` per
+            category. Drawn verbatim -- no colormap, no colorbar -- so it is
+            for a caller that already has one colour per point (e.g. a
+            categorical column mapped upstream), not for value-driven
+            mapping. Mutually exclusive with `values` and with `flat_color`.
+            Default is None.
         ax: Pre-existing axes to draw on. Default is None.
         fig: Pre-existing figure. Default is None.
         **kwargs: Override any key in `SCATTER_DEFAULT_OPTIONS`
             (e.g. `marker`, `point_size`, `cmap`, `vmin`, `vmax`,
             `levels`, `color_scale`, `ticks_spacing`, `cbar_label`,
-            `figsize`, `title`). Set `add_colorbar=False` to suppress the
-            per-glyph colorbar (default True) for shared-axes composition
-            where the host owns a single aggregated colorbar. The
-            `size_limits` (min/max marker area in points², default
-            `(10, 200)`), `size_scale` (`"linear"` / `"log"` / `"sqrt"`,
-            default `"linear"`), `size_legend` (bool, default False),
-            `size_legend_values` (explicit representative magnitudes), and
-            `size_legend_kwargs` (forwarded to the legend) options control
-            the `sizes` mapping and its legend.
+            `figsize`, `title`). `flat_color` sets a single flat colour for
+            the uncoloured path -- a plain colour string/tuple, kept
+            distinct from `plot`'s grouped `color=` (a `ColorScaling`),
+            which is for value-driven mapping only. Mutually exclusive with
+            `values` and with `colors`. `alpha` sets marker opacity
+            (default `1.0`). Set
+            `add_colorbar=False` to suppress the per-glyph colorbar (default
+            True) for shared-axes composition where the host owns a single
+            aggregated colorbar. The `size_limits` (min/max marker area in
+            points², default `(10, 200)`), `size_scale` (`"linear"` /
+            `"log"` / `"sqrt"`, default `"linear"`), `size_legend` (bool,
+            default False), `size_legend_values` (explicit representative
+            magnitudes), and `size_legend_kwargs` (forwarded to the legend)
+            options control the `sizes` mapping and its legend.
 
     Raises:
-        ValueError: If `x` and `y` (or `values` / `sizes`, when given)
-            have mismatched lengths.
+        TypeError: If `colors` is given as a bare `str`/`bytes` rather than a
+            sequence of per-point colours.
+        ValueError: If `x` and `y` (or `values` / `sizes` / `colors`, when
+            given) have mismatched lengths, or if more than one of `values`,
+            `colors`, and `flat_color` is given.
 
     Examples:
         - Colour points by value and read back the mapped array:
@@ -128,6 +149,18 @@ class ScatterGlyph(GeoMixin, Glyph):
             >>> fig, ax, paths = glyph.plot()
             >>> [float(v) for v in paths.get_array()]
             [1.0, 5.0, 9.0]
+
+            ```
+        - Draw a flat-coloured point cloud (no `values`, no colorbar):
+            ```python
+            >>> import numpy as np
+            >>> from cleopatra.glyphs.primitives.scatter_glyph import ScatterGlyph
+            >>> glyph = ScatterGlyph(
+            ...     np.array([0.0, 1.0]), np.array([0.0, 1.0]), flat_color="navy", alpha=0.7
+            ... )
+            >>> fig, ax, paths = glyph.plot()
+            >>> paths.get_array() is None
+            True
 
             ```
         - Size points by a magnitude; the areas span `size_limits`:
@@ -153,6 +186,8 @@ class ScatterGlyph(GeoMixin, Glyph):
             `sizes` mapping (reusable by other size-encoding glyphs).
         cleopatra.styling.styles.size_legend: Builds the size legend drawn when
             `size_legend` is truthy.
+        cleopatra.glyphs.stats.bar_glyph.BarGlyph: Takes an explicit `colors=`
+            sequence the same way, one colour per category instead of per point.
     """
 
     #: Option keys this glyph accepts (see `Glyph.option_keys`/`filter_kwargs`).
@@ -168,6 +203,7 @@ class ScatterGlyph(GeoMixin, Glyph):
         values: np.ndarray | None = None,
         *,
         sizes: np.ndarray | None = None,
+        colors: Sequence | None = None,
         ax: Axes | None = None,
         fig: Figure | None = None,
         **kwargs,
@@ -194,8 +230,34 @@ class ScatterGlyph(GeoMixin, Glyph):
                 raise ValueError(
                     f"sizes must match x/y shape {self.x.shape}, got {sizes.shape}."
                 )
+        # `values`/`colors`/`flat_color` each drive point colour a different way
+        # (colormap / explicit sequence / single flat colour) -- at most one may
+        # be given, checked together rather than pairwise so a third colour
+        # source added later cannot reopen this gap the way `colors`+`flat_color`
+        # originally did.
+        given = [
+            name
+            for name, val in (
+                ("values", values),
+                ("colors", colors),
+                ("flat_color", self.default_options["flat_color"]),
+            )
+            if val is not None
+        ]
+        if len(given) > 1:
+            raise ValueError(
+                f"{' and '.join(given)} are mutually exclusive: values maps a "
+                "scalar through a colormap, colors is an explicit per-point "
+                "colour sequence, and flat_color is a single explicit colour -- "
+                "only one colour source may be given."
+            )
+        if colors is not None:
+            colors = validate_color_sequence(
+                colors, self.x.shape[0], param="colors", noun="points"
+            )
         self.values = values
         self.sizes = sizes
+        self.colors = colors
         self.cbar: Colorbar | None = None
         #: The size legend created by `plot` when `size_legend` is truthy
         #: (None otherwise); built via `cleopatra.styling.styles.size_legend`.
@@ -324,12 +386,23 @@ class ScatterGlyph(GeoMixin, Glyph):
 
             marker_area = self._resolve_marker_area()
 
-            if self.values is None:
+            if self.colors is not None:
+                paths = ax.scatter(
+                    self.x,
+                    self.y,
+                    c=self.colors,
+                    s=marker_area,
+                    marker=opts["marker"],
+                    alpha=opts["alpha"],
+                )
+            elif self.values is None:
                 paths = ax.scatter(
                     self.x,
                     self.y,
                     s=marker_area,
                     marker=opts["marker"],
+                    color=opts["flat_color"],
+                    alpha=opts["alpha"],
                 )
             else:
                 norm, cbar_kw, ticks = self._prepare_scalar_mapping(self.values)
@@ -351,6 +424,7 @@ class ScatterGlyph(GeoMixin, Glyph):
                     norm=norm,
                     vmin=None if norm else ticks[0],
                     vmax=None if norm else ticks[-1],
+                    alpha=opts["alpha"],
                 )
                 if draw_colorbar:
                     if categorical is not None:

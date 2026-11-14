@@ -50,7 +50,7 @@ from cleopatra.styling.colorbar import (
     ColorBar,
     _resolve_colorbar,
 )
-from cleopatra.styling.colors import resolve_colormap
+from cleopatra.styling.colors import resolve_colormap, validate_single_color
 from cleopatra.styling.params import Classify, Contour
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import CLASSIFY_OPTIONS
@@ -58,9 +58,16 @@ from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
 #: Option keys for PolygonGlyph. `ticks_spacing` is `None` so the shared
 #: `_prepare_scalar_mapping` helper auto-derives it from the data.
+#: `facecolor` is a plain flat fill colour, kept distinct from `plot`'s
+#: grouped `color=` (a `ColorScaling`), which maps `values` through a
+#: colormap. Its default of `None` preserves the existing no-`values`
+#: behaviour (outline-only); setting it draws a flat-filled polygon with no
+#: `values` and no colorbar.
 POLYGON_DEFAULT_OPTIONS = {
     "edgecolor": "none",
+    "facecolor": None,
     "linewidth": 0.5,
+    "alpha": None,  # PolyCollection's own default -- a no-op on prior rendering
     "vmin": None,
     "vmax": None,
     "levels": None,
@@ -96,13 +103,22 @@ class PolygonGlyph(GeoMixin, Glyph):
         **kwargs: Override any key in `POLYGON_DEFAULT_OPTIONS`
             (e.g. `edgecolor`, `linewidth`, `cmap`, `vmin`, `vmax`,
             `levels`, `color_scale`, `ticks_spacing`, `cbar_label`,
-            `figsize`, `title`). Set `add_colorbar=False` to suppress the
-            per-glyph colorbar (default True) for shared-axes composition
-            where the host owns a single aggregated colorbar.
+            `figsize`, `title`). `facecolor` fills the polygons in a flat
+            colour when no `values` is given (a plain colour string/tuple,
+            kept distinct from `plot`'s grouped `color=`, which maps
+            `values` through a colormap); left at its default of `None`,
+            no-`values` polygons stay outline-only as before. Mutually
+            exclusive with `values`. `alpha` sets the fill/edge opacity.
+            Set `add_colorbar=False` to suppress the per-glyph colorbar
+            (default True) for shared-axes composition where the host
+            owns a single aggregated colorbar.
 
     Raises:
+        TypeError: If `facecolor` is given but is not a single matplotlib
+            colour (e.g. a sequence of several colours).
         ValueError: If `values` is given but its length does not match
-            the number of polygons.
+            the number of polygons, or if `values` is given together with
+            `facecolor`.
 
     Examples:
         - Inspect the value array carried by the collection:
@@ -144,12 +160,20 @@ class PolygonGlyph(GeoMixin, Glyph):
             default_options=POLYGON_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs
         )
         self.polygons = [np.asarray(p, dtype=float) for p in polygons]
+        if self.default_options["facecolor"] is not None:
+            validate_single_color(self.default_options["facecolor"], param="facecolor")
         if values is not None:
             values = np.asarray(values)
             if values.shape != (len(self.polygons),):
                 raise ValueError(
                     f"values shape {values.shape} must match the number of "
                     f"polygons ({len(self.polygons)},)."
+                )
+            if self.default_options["facecolor"] is not None:
+                raise ValueError(
+                    "facecolor and values are mutually exclusive: facecolor is a "
+                    "single explicit fill colour, values is a scalar mapped "
+                    "through a colormap."
                 )
         self.values = values
         self.cbar: Colorbar | None = None
@@ -207,6 +231,20 @@ class PolygonGlyph(GeoMixin, Glyph):
                 and the `PolyCollection` added to the axes.
 
         Examples:
+            - A flat `facecolor` fills the polygons with no `values` and no
+                colorbar:
+                ```python
+                >>> import numpy as np
+                >>> from cleopatra.glyphs.primitives.polygon_glyph import PolygonGlyph
+                >>> polys = [np.array([[0.0, 0.0], [1.0, 0.0], [0.5, 1.0]])]
+                >>> glyph = PolygonGlyph(polys, facecolor="forestgreen", alpha=0.6)
+                >>> fig, ax, pc = glyph.plot()
+                >>> pc.get_array() is None
+                True
+                >>> glyph.cbar is None
+                True
+
+                ```
             - Outline-only mode carries no colour array and no colorbar,
                 and its edges are opaque so the outlines are visible:
                 ```python
@@ -253,7 +291,9 @@ class PolygonGlyph(GeoMixin, Glyph):
             self.cbar = None
             self.category_legend = None
 
-            if outline_only or self.values is None:
+            flat_fill = self.values is None and opts["facecolor"] is not None
+
+            if outline_only or (self.values is None and not flat_fill):
                 edgecolor = opts["edgecolor"]
                 if isinstance(edgecolor, str) and edgecolor.lower() == "none":
                     edgecolor = OUTLINE_EDGECOLOR
@@ -262,6 +302,17 @@ class PolygonGlyph(GeoMixin, Glyph):
                     facecolors="none",
                     edgecolors=edgecolor,
                     linewidths=opts["linewidth"],
+                    alpha=opts["alpha"],
+                )
+                ax.add_collection(pc)
+                ax.autoscale_view()
+            elif flat_fill:
+                pc = PolyCollection(
+                    self.polygons,
+                    facecolors=opts["facecolor"],
+                    edgecolors=opts["edgecolor"],
+                    linewidths=opts["linewidth"],
+                    alpha=opts["alpha"],
                 )
                 ax.add_collection(pc)
                 ax.autoscale_view()
@@ -282,6 +333,7 @@ class PolygonGlyph(GeoMixin, Glyph):
                     norm=norm,
                     edgecolors=opts["edgecolor"],
                     linewidths=opts["linewidth"],
+                    alpha=opts["alpha"],
                 )
                 if norm is None:
                     pc.set_clim(ticks[0], ticks[-1])
