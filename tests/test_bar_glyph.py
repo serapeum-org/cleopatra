@@ -128,6 +128,34 @@ class TestBarGlyphPlot:
         _, _, bars = BarGlyph(["a", "b"], [3.0, 7.0], horizontal=True).plot()
         assert [float(b.get_width()) for b in bars] == [3.0, 7.0]
 
+    def test_default_width_is_unchanged(self):
+        """The default bar width stays matplotlib's 0.8, so existing charts are unchanged."""
+        _, _, bars = BarGlyph(["a", "b"], [1.0, 2.0]).plot()
+        assert [float(b.get_width()) for b in bars] == [0.8, 0.8]
+
+    def test_width_applied_vertical(self):
+        """width= is forwarded as the bar thickness on a vertical chart."""
+        _, _, bars = BarGlyph(["a", "b"], [1.0, 2.0], width=20).plot()
+        assert [float(b.get_width()) for b in bars] == [20.0, 20.0]
+
+    def test_width_applied_horizontal(self):
+        """width= is forwarded as the bar thickness (barh's height) when horizontal."""
+        _, _, bars = BarGlyph(["a", "b"], [1.0, 2.0], horizontal=True, width=4).plot()
+        assert [float(b.get_height()) for b in bars] == [4.0, 4.0]
+
+    def test_alpha_applied(self):
+        """alpha= is forwarded to the drawn bars."""
+        _, _, bars = BarGlyph(["a", "b"], [1.0, 2.0], alpha=0.7).plot()
+        assert all(float(b.get_alpha()) == 0.7 for b in bars)
+
+    def test_width_on_datetime_like_categories(self):
+        """width= still applies when categories are date-like (coerced to str labels)."""
+        import datetime
+
+        idx = [datetime.date(2000, m, 1) for m in range(1, 7)]
+        _, _, bars = BarGlyph(idx, list(range(6)), width=0.5).plot()
+        assert all(float(b.get_width()) == 0.5 for b in bars)
+
     def test_no_legend_by_default(self):
         """No legend is drawn unless requested."""
         _, ax, _ = BarGlyph(["a", "b"], [1.0, 2.0]).plot()

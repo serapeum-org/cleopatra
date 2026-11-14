@@ -49,6 +49,8 @@ BAR_DEFAULT_OPTIONS = STYLE_DEFAULTS | {
     "palette": "category12",
     "add_legend": False,
     "horizontal": False,
+    "width": 0.8,
+    "alpha": 1.0,
 }
 
 
@@ -70,8 +72,12 @@ class BarGlyph(Glyph):
             `palette` (qualitative palette name, default `"category12"`),
             `horizontal` (draw `barh` instead of `bar`, default False),
             `add_legend` (draw a disjoint category->colour legend, default
-            False), plus the shared styling options (`title`, `xlabel`,
-            `ylabel`, their font sizes, `figsize`, ...).
+            False), `width` (bar thickness in data units along the category
+            axis, default `0.8` -- applied as `Axes.bar`'s `width` when
+            vertical and as `Axes.barh`'s `height` when `horizontal=True`;
+            there is no separate `height` keyword), `alpha` (bar opacity,
+            default `1.0`), plus the shared styling options (`title`,
+            `xlabel`, `ylabel`, their font sizes, `figsize`, ...).
 
     Raises:
         ValueError: If `values` is not 1-D, if the lengths differ, or if the
@@ -191,9 +197,21 @@ class BarGlyph(Glyph):
         )
         _clear_prior_render_artists(ax, self, compose=compose)
         if opts["horizontal"]:
-            self.bars = ax.barh(self.categories, self.values, color=palette_colors)
+            self.bars = ax.barh(
+                self.categories,
+                self.values,
+                height=opts["width"],
+                alpha=opts["alpha"],
+                color=palette_colors,
+            )
         else:
-            self.bars = ax.bar(self.categories, self.values, color=palette_colors)
+            self.bars = ax.bar(
+                self.categories,
+                self.values,
+                width=opts["width"],
+                alpha=opts["alpha"],
+                color=palette_colors,
+            )
         # Mark the BarContainer itself (not its unpacked Rectangles): its
         # remove() both detaches the child patches and deregisters the container
         # from ax.containers, so a re-plot leaves no stale/detached containers.
