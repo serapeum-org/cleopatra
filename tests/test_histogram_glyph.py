@@ -251,8 +251,9 @@ class TestHistogramSingleColour:
 
     A colour is itself a sequence (a string of characters, an RGB(A) tuple of
     channels), so the per-series ``color[i]`` indexing used to pair series 0
-    with element 0 — raising ``'#' is not a valid color value`` for a hex
-    string or ``object of type 'float' has no len()`` for an RGB tuple. A
+    with element 0 — raising ``'s' is not a valid color value`` for a named
+    string like ``"slategray"``, ``'#' is not a valid color value`` for a hex
+    string, or ``object of type 'float' has no len()`` for an RGB tuple. A
     single colour is now normalised to a one-element sequence first.
     """
 
@@ -278,7 +279,7 @@ class TestHistogramSingleColour:
         """
         fig, ax, hist = HistogramGlyph(self._values()).histogram(bins=10, color=color)
         expected = matplotlib.colors.to_rgba(color, 0.7)
-        assert hist["patches"][0][0].get_facecolor() == expected, (
+        assert hist["patches"][0][0].get_facecolor() == pytest.approx(expected), (
             f"bars should be {color}, got {hist['patches'][0][0].get_facecolor()}"
         )
 
@@ -304,7 +305,7 @@ class TestHistogramSingleColour:
             colour rather than being indexed channel by channel.
         """
         fig, ax, hist = HistogramGlyph(self._values()).histogram(bins=10, color=color)
-        assert hist["patches"][0][0].get_facecolor() == expected, (
+        assert hist["patches"][0][0].get_facecolor() == pytest.approx(expected), (
             f"bars should be {expected}, got {hist['patches'][0][0].get_facecolor()}"
         )
 
@@ -319,8 +320,8 @@ class TestHistogramSingleColour:
             bins=10, color=["slategray"]
         )
         assert len(hist["patches"]) == 1
-        assert hist["patches"][0][0].get_facecolor() == matplotlib.colors.to_rgba(
-            "slategray", 0.7
+        assert hist["patches"][0][0].get_facecolor() == pytest.approx(
+            matplotlib.colors.to_rgba("slategray", 0.7)
         )
 
     def test_multi_series_colour_sequence_applies_per_series(self):
@@ -335,7 +336,25 @@ class TestHistogramSingleColour:
         fig, ax, hist = HistogramGlyph(data, color=colors).histogram(bins=10)
         assert len(hist["patches"]) == 3
         for container, name in zip(hist["patches"], colors):
-            assert container[0].get_facecolor() == matplotlib.colors.to_rgba(name, 0.7)
+            assert container[0].get_facecolor() == pytest.approx(
+                matplotlib.colors.to_rgba(name, 0.7)
+            )
+
+    def test_single_colour_rejected_for_multi_series(self):
+        """A single colour for multi-series 2D data raises the clear mismatch error.
+
+        Test scenario:
+            A numeric RGB tuple is one colour, so for a 3-column dataset it is
+            normalised to a one-element sequence and fails the existing
+            "number of colors" check with a clear message — rather than being
+            silently zipped channel-per-series.
+        """
+        data = np.random.default_rng(0).normal(size=(200, 3))
+        with pytest.raises(ValueError, match=r"number of colors") as exc:
+            HistogramGlyph(data, color=(0.2, 0.5, 0.7)).histogram(bins=10)
+        assert "samples:3" in str(exc.value), (
+            f"error should report the sample count: {exc.value}"
+        )
 
 
 class TestBoxplot:
