@@ -2523,6 +2523,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0461-2026-11-15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.46.1 (2026-11-15)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0460-2026-11-14" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3454,6 +3465,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0461-2026-11-15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.46.1 (2026-11-15)
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#0460-2026-11-14" class="md-nav__link">
@@ -4388,6 +4410,36 @@
 
 
 <h1 id="changelog"><a class="toclink" href="#changelog">Changelog</a><a class="headerlink" href="#changelog" title="Permanent link">#</a></h1>
+<h2 id="0461-2026-11-15"><a class="toclink" href="#0461-2026-11-15">0.46.1 (2026-11-15)</a><a class="headerlink" href="#0461-2026-11-15" title="Permanent link">#</a></h2>
+<ul>
+<li>refactor(basemap.tiles)!: make add_tiles private; use the add_tiles glyph method (#414)</li>
+<li>
+<p>The module-level cleopatra.basemap.tiles.add_tiles is now the private _add_tiles.                              <br />
+  Web-tile basemaps are added through the public add_tiles glyph method                                          <br />
+  (cleopatra.basemap.geo.GeoMixin, inherited by ArrayGlyph, MeshGlyph, VectorGlyph,                              <br />
+  FlowGlyph, PolygonGlyph, ...), which defaults crs= from the glyph and forwards to                              <br />
+  _add_tiles. This keeps one blessed entry point so callers and agents go through                                <br />
+  the glyph rather than the bare module function.                                                                  </p>
+</li>
+<li>
+<p>Rename def add_tiles -&gt; def _add_tiles; its docstring states it is the internal                              <br />
+    implementation and points to the GeoMixin.add_tiles glyph method.                                              </p>
+</li>
+<li>GeoMixin.add_tiles calls tiles._add_tiles; docstring and See Also updated.                                     </li>
+<li>Update the ogc/reference/<strong>init</strong> docstrings and the tiles module header so the                              <br />
+    public import examples use stitch_basemap (headless) or the glyph method, not                                <br />
+    the private function.                                                                                          </li>
+<li>Scrub the user-facing docs (README, index, installation, migration, and the                                  <br />
+    tiles/ogc/geo reference pages) to the glyph method; leave the auto-generated                                 <br />
+    change-log and the historical "before" import in migration untouched.                                          </li>
+<li>Tests: import/call _add_tiles in test_tiles.py and test_ogc.py; patch                                        <br />
+    tiles._add_tiles in test_geo.py (the glyph .add_tiles() calls are unchanged).                                  </li>
+</ul>
+<p>BREAKING CHANGE: cleopatra.basemap.tiles.add_tiles is renamed to the private                                   <br />
+  _add_tiles. Add web-tile basemaps through the add_tiles glyph method (e.g.                                     <br />
+  ArrayGlyph(...).add_tiles(...)); for the headless image+extent, use the public                                 <br />
+  stitch_basemap.                                                                                                  </p>
+<p>Closes #415</p>
 <h2 id="0460-2026-11-14"><a class="toclink" href="#0460-2026-11-14">0.46.0 (2026-11-14)</a><a class="headerlink" href="#0460-2026-11-14" title="Permanent link">#</a></h2>
 <ul>
 <li>chore(ci): stop publishing docs on every PR and prune gh-pages versions (#412)</li>
