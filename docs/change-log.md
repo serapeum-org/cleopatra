@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.46.1 (2026-11-15)
+
+
+- refactor(basemap.tiles)!: make add_tiles private; use the add_tiles glyph method (#414)
+- The module-level cleopatra.basemap.tiles.add_tiles is now the private _add_tiles.                                
+  Web-tile basemaps are added through the public add_tiles glyph method                                            
+  (cleopatra.basemap.geo.GeoMixin, inherited by ArrayGlyph, MeshGlyph, VectorGlyph,                                
+  FlowGlyph, PolygonGlyph, ...), which defaults crs= from the glyph and forwards to                                
+  _add_tiles. This keeps one blessed entry point so callers and agents go through                                  
+  the glyph rather than the bare module function.                                                                  
+                                                                                                                   
+  - Rename def add_tiles -> def _add_tiles; its docstring states it is the internal                                
+    implementation and points to the GeoMixin.add_tiles glyph method.                                              
+  - GeoMixin.add_tiles calls tiles._add_tiles; docstring and See Also updated.                                     
+  - Update the ogc/reference/__init__ docstrings and the tiles module header so the                                
+    public import examples use stitch_basemap (headless) or the glyph method, not                                  
+    the private function.                                                                                          
+  - Scrub the user-facing docs (README, index, installation, migration, and the                                    
+    tiles/ogc/geo reference pages) to the glyph method; leave the auto-generated                                   
+    change-log and the historical "before" import in migration untouched.                                          
+  - Tests: import/call _add_tiles in test_tiles.py and test_ogc.py; patch                                          
+    tiles._add_tiles in test_geo.py (the glyph .add_tiles() calls are unchanged).                                  
+                                                                                                                   
+  BREAKING CHANGE: cleopatra.basemap.tiles.add_tiles is renamed to the private                                     
+  _add_tiles. Add web-tile basemaps through the add_tiles glyph method (e.g.                                       
+  ArrayGlyph(...).add_tiles(...)); for the headless image+extent, use the public                                   
+  stitch_basemap.                                                                                                  
+                                                                                                                   
+  Closes #415
+
 ## 0.46.0 (2026-11-14)
 
 
