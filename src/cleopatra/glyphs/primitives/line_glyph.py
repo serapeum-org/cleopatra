@@ -112,14 +112,39 @@ class LineGlyph(Glyph):
         **kwargs,
     ):
         super().__init__(default_options=LINE_DEFAULT_OPTIONS, fig=fig, ax=ax, **kwargs)
-        self.x = np.asarray(x)
+        self.x = self._coerce_x(x)
         self.y = np.asarray(y)
         n_rows = self.y.shape[0]
-        if self.x.shape[0] != n_rows:
+        x_len = self.x.shape[0] if hasattr(self.x, "shape") else len(self.x)
+        if x_len != n_rows:
             raise ValueError(
-                f"x length ({self.x.shape[0]}) must match the number of rows "
+                f"x length ({x_len}) must match the number of rows "
                 f"in y ({n_rows})."
             )
+
+    @staticmethod
+    def _coerce_x(x: np.ndarray) -> np.ndarray:
+        """Return `x` ready for plotting, keeping datetime unit semantics.
+
+        A plain `np.asarray` is applied to ordinary numeric input. A pandas
+        `DatetimeIndex`, however, is left untouched: coercing it to a
+        `datetime64` array makes `Axes.bar` read a numeric `width` as
+        nanoseconds (collapsing the bars to zero width), whereas the original
+        index keeps `width` in data units -- so `width=20` means 20 days. The
+        check is pandas-free: it inspects the coerced dtype's kind (`"M"` for
+        `datetime64`) rather than importing pandas, which is not a dependency.
+
+        Args:
+            x: The x-coordinates as passed to the constructor.
+
+        Returns:
+            np.ndarray: `x` unchanged when it is datetime64-backed, otherwise
+                `np.asarray(x)`.
+        """
+        arr = np.asarray(x)
+        if arr.dtype.kind == "M":
+            return x
+        return arr
 
     def _series(self) -> list[np.ndarray]:
         """Split `y` into one 1D array per series (column for 2D)."""
@@ -218,16 +243,26 @@ class LineGlyph(Glyph):
         ax: Axes | None = None,
         title: str | None = None,
         color=None,
+        alpha: float | None = None,
         **kwargs,
     ) -> tuple[Figure, Axes, BarContainer]:
         """Draw a bar chart of a single series with `Axes.bar`.
+
+        Bars are drawn at the data's own x-coordinates, so a numeric or
+        datetime x keeps a real (non-categorical) axis and `width` is in those
+        data units: for a pandas `DatetimeIndex`, `width=20` is 20 days (a
+        `datetime.timedelta` width is also accepted). This is unlike
+        `cleopatra.glyphs.stats.bar_glyph.BarGlyph`, whose x is categorical.
 
         Args:
             ax: Axes to draw on. Falls back to the construction axes or
                 a new figure/axes.
             title: Plot title override.
             color (color-like): Bar colour. Defaults to the `color_1` option.
-            **kwargs (Any): Forwarded to `Axes.bar`.
+            alpha: Bar opacity for this call. Defaults to None, which keeps the
+                glyph's `alpha` option. Pass it here rather than in `**kwargs`
+                (which would collide with the option-sourced alpha).
+            **kwargs (Any): Forwarded to `Axes.bar` (e.g. `width`, `bottom`).
 
         Returns:
             tuple[Figure, Axes, BarContainer]: The figure, the axes, and
@@ -256,7 +291,8 @@ class LineGlyph(Glyph):
         ax = self._resolve_ax(ax)
         opts = self.default_options
         color = color if color is not None else opts["color_1"]
-        bars = ax.bar(self.x, self.y, color=color, alpha=opts["alpha"], **kwargs)
+        alpha = alpha if alpha is not None else opts["alpha"]
+        bars = ax.bar(self.x, self.y, color=color, alpha=alpha, **kwargs)
         self._apply_title(ax, title)
         return self.fig, ax, bars
 

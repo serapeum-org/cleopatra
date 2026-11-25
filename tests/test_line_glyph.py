@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import datetime
+
 import matplotlib
 
 matplotlib.use("Agg")
@@ -177,6 +179,69 @@ class TestLineGlyphBar:
         glyph = LineGlyph(x, y)
         with pytest.raises(ValueError, match="bar requires 1D"):
             glyph.bar()
+
+    def test_bar_datetime_width_in_data_units_stdlib(self):
+        """A numeric width on a datetime axis is read in data units (days).
+
+        Test scenario:
+            x is a pandas-free list of ``datetime.datetime`` on a month cadence;
+            ``width=20`` must draw bars 20 days wide, matching native
+            ``Axes.bar`` -- not collapse to ~0 as a ``datetime64`` array would.
+        """
+        x = [
+            datetime.datetime(1999, 1, 1) + datetime.timedelta(days=30 * i)
+            for i in range(12)
+        ]
+        glyph = LineGlyph(x, np.arange(12.0))
+        _, _, bars = glyph.bar(width=20)
+        assert round(bars[0].get_width(), 1) == 20.0, (
+            f"Expected 20-day bars, got {bars[0].get_width()}"
+        )
+
+    def test_bar_datetime_width_in_data_units_pandas(self):
+        """A pandas ``DatetimeIndex`` keeps its day-unit width scaling.
+
+        Test scenario:
+            The issue's reproduction -- a monthly ``DatetimeIndex`` with
+            ``width=20`` -- draws 20-day-wide bars rather than 20 nanoseconds.
+        """
+        pd = pytest.importorskip("pandas")
+        idx = pd.date_range("1999-01-01", periods=12, freq="MS")
+        glyph = LineGlyph(idx, np.arange(12.0))
+        _, _, bars = glyph.bar(width=20)
+        assert round(bars[0].get_width(), 1) == 20.0, (
+            f"Expected 20-day bars, got {bars[0].get_width()}"
+        )
+
+    def test_bar_accepts_timedelta_width(self):
+        """A ``timedelta`` width is accepted on a datetime axis.
+
+        Test scenario:
+            ``width=timedelta(days=20)`` draws 20-day bars regardless of how the
+            datetime x is represented.
+        """
+        x = [
+            datetime.datetime(1999, 1, 1) + datetime.timedelta(days=30 * i)
+            for i in range(12)
+        ]
+        glyph = LineGlyph(x, np.arange(12.0))
+        _, _, bars = glyph.bar(width=datetime.timedelta(days=20))
+        assert round(bars[0].get_width(), 1) == 20.0, (
+            f"Expected 20-day bars, got {bars[0].get_width()}"
+        )
+
+    def test_bar_alpha_keyword(self, xy):
+        """An explicit ``alpha`` on ``.bar()`` is honoured without a TypeError.
+
+        Test scenario:
+            ``bar(alpha=0.5)`` previously collided with the option-sourced alpha
+            and raised ``TypeError``; it now sets the bar opacity.
+        """
+        glyph = LineGlyph(*xy)
+        _, _, bars = glyph.bar(alpha=0.5)
+        assert bars[0].get_alpha() == 0.5, (
+            f"Expected alpha 0.5, got {bars[0].get_alpha()}"
+        )
 
 
 class TestLineGlyphFillBetween:
