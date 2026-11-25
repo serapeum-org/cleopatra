@@ -71,6 +71,46 @@ class TestLineGlyphInit:
         with pytest.raises(ValueError, match="not correct"):
             LineGlyph(*xy, nope=1)
 
+    def test_numeric_list_coerced_to_array(self):
+        """Ordinary numeric x is coerced to a numpy array.
+
+        Test scenario:
+            A plain list of numbers is stored as an ``np.ndarray`` (the
+            datetime-preserving path does not apply).
+        """
+        glyph = LineGlyph([0, 1, 2], [3, 4, 5])
+        assert isinstance(glyph.x, np.ndarray), f"Expected ndarray, got {type(glyph.x)}"
+        assert glyph.x.dtype.kind in "iuf", f"Expected numeric dtype, got {glyph.x.dtype}"
+
+    def test_datetime64_array_x_preserved(self):
+        """A ``datetime64`` ndarray is left untouched by ``_coerce_x``.
+
+        Test scenario:
+            ``_coerce_x`` returns the same datetime64-backed object (so a later
+            ``bar`` keeps its day-unit width), and its ``shape`` drives the
+            length check.
+        """
+        x = np.array(
+            ["1999-01-01", "1999-02-01", "1999-03-01"], dtype="datetime64[D]"
+        )
+        glyph = LineGlyph(x, np.array([1.0, 2.0, 3.0]))
+        assert glyph.x is x, "datetime64 x should be preserved, not re-coerced"
+        assert glyph.x.dtype.kind == "M", f"Expected datetime64, got {glyph.x.dtype}"
+
+    def test_datetime_list_without_shape_length_checked(self):
+        """A datetime64-backed list (no ``.shape``) still validates its length.
+
+        Test scenario:
+            A list whose ``np.asarray`` is ``datetime64`` is preserved as the
+            list itself (no ``.shape``); the constructor falls back to ``len``
+            and raises on a length mismatch.
+        """
+        x = [np.datetime64("1999-01-01"), np.datetime64("1999-02-01")]
+        glyph = LineGlyph(x, np.array([1.0, 2.0]))
+        assert glyph.x is x, "datetime64-backed list should be preserved as-is"
+        with pytest.raises(ValueError, match="x length \\(2\\) must match"):
+            LineGlyph(x, np.array([1.0, 2.0, 3.0]))
+
 
 class TestLineGlyphLine:
     """Tests for LineGlyph.line."""
