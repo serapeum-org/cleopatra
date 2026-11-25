@@ -283,6 +283,16 @@ class LineGlyph(Glyph):
                 3
 
                 ```
+            - On a datetime axis, `width` is in data units (days):
+                ```python
+                >>> import datetime, numpy as np
+                >>> from cleopatra.glyphs.primitives.line_glyph import LineGlyph
+                >>> x = [datetime.datetime(1999, m, 1) for m in (1, 2, 3)]
+                >>> _, _, bars = LineGlyph(x, np.array([3.0, 1.0, 2.0])).bar(width=20)
+                >>> round(bars[0].get_width())
+                20
+
+                ```
         """
         if self.y.ndim != 1:
             raise ValueError(
