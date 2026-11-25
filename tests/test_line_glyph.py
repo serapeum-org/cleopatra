@@ -233,12 +233,15 @@ class TestLineGlyphBar:
             glyph.bar()
 
     def test_bar_datetime_width_in_data_units_stdlib(self):
-        """A numeric width on a datetime axis is read in data units (days).
+        """A pandas-free ``list[datetime]`` draws bars with width in data units.
 
         Test scenario:
-            x is a pandas-free list of ``datetime.datetime`` on a month cadence;
-            ``width=20`` must draw bars 20 days wide, matching native
-            ``Axes.bar`` -- not collapse to ~0 as a ``datetime64`` array would.
+            x is a list of ``datetime.datetime`` (an object array that bypasses
+            the datetime64 normalisation); ``width=20`` draws 20-day bars. This
+            documents parity with native ``Axes.bar`` on already-object input --
+            it is not a regression guard (it passes on ``main`` too); the raw
+            ``datetime64`` guards are the ``_pandas`` and ``_datetime64_array``
+            tests.
         """
         x = [
             datetime.datetime(1999, 1, 1) + datetime.timedelta(days=30 * i)
@@ -285,17 +288,34 @@ class TestLineGlyphBar:
             f"Expected 20-day bars, got {bars[0].get_width()}"
         )
 
-    def test_bar_accepts_timedelta_width(self):
-        """A ``timedelta`` width is accepted on a datetime axis.
+    def test_bar_with_nat_does_not_crash(self):
+        """A ``NaT`` in a datetime x is tolerated (coerced to ``None``).
 
         Test scenario:
-            ``width=timedelta(days=20)`` draws 20-day bars regardless of how the
-            datetime x is represented.
+            ``_coerce_x`` maps ``NaT`` to ``None``; ``bar`` still draws one bar
+            per row without raising (the ``None`` bar's position is undefined,
+            not masked -- a documented limitation).
         """
-        x = [
-            datetime.datetime(1999, 1, 1) + datetime.timedelta(days=30 * i)
-            for i in range(12)
-        ]
+        x = np.array(["1999-01-01", "NaT", "1999-03-01"], dtype="datetime64[ns]")
+        glyph = LineGlyph(x, np.array([1.0, 2.0, 3.0]))
+        assert glyph.x[1] is None, f"Expected NaT -> None, got {glyph.x[1]!r}"
+        _, _, bars = glyph.bar(width=5)
+        assert len(bars) == 3, f"Expected 3 bars, got {len(bars)}"
+
+    def test_bar_accepts_timedelta_width(self):
+        """A ``timedelta`` width works on a normalised ``datetime64`` array.
+
+        Test scenario:
+            A raw ``datetime64[ns]`` array with ``width=timedelta(days=20)``
+            draws 20-day bars. On ``main`` this raises a matplotlib
+            ``ConversionError`` (a timedelta cannot be added to a datetime64
+            axis position), so the test guards that normalisation makes a
+            timedelta width usable.
+        """
+        x = (
+            np.datetime64("1999-01-01")
+            + np.arange(12) * np.timedelta64(30, "D")
+        ).astype("datetime64[ns]")
         glyph = LineGlyph(x, np.arange(12.0))
         _, _, bars = glyph.bar(width=datetime.timedelta(days=20))
         assert round(bars[0].get_width(), 1) == 20.0, (

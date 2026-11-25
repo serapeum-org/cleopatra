@@ -125,25 +125,35 @@ class LineGlyph(Glyph):
     def _coerce_x(x: np.ndarray) -> np.ndarray:
         """Return `x` as a plotting-ready array, keeping datetime width in days.
 
-        Ordinary numeric input is returned as a plain `np.asarray`. A
-        datetime-like `x` (a pandas `DatetimeIndex`, a `datetime64` array of any
-        resolution, or a list of `datetime`/`datetime64`) is instead normalised
-        to an **object array of `datetime.datetime`**. A high-resolution
-        `datetime64` array (`[ns]`/`[us]`) makes `Axes.bar` read a numeric
-        `width` as that many nanoseconds -- collapsing the bars to zero width --
-        whereas the object form keeps `width` in data units, so `width=20` means
-        20 days (matching native `Axes.bar` on a `DatetimeIndex`). Sub-
-        microsecond resolution is dropped, which is irrelevant for bar/line/band
-        positions. The datetime test is pandas-free: it inspects the coerced
-        dtype's kind (`"M"` for `datetime64`) rather than importing pandas, which
-        is not a dependency.
+        Only a `datetime64`-backed `x` is rewritten: a `datetime64` array of any
+        resolution, or a tz-naive pandas `DatetimeIndex` (whose `np.asarray` is
+        `datetime64`). Such input is normalised to an **object array of
+        `datetime.datetime`**, because a high-resolution `datetime64` array
+        (`[ns]`/`[us]`) makes `Axes.bar` read a numeric `width` as that many
+        nanoseconds -- collapsing the bars to zero width -- whereas the object
+        form keeps `width` in data units, so `width=20` means 20 days (matching
+        native `Axes.bar` on a `DatetimeIndex`). The `.astype(object)` step, not
+        the `[us]` cast, is what fixes it: `Axes._convert_dx` can then no longer
+        do `datetime64 + width`. The detection is pandas-free -- it inspects the
+        coerced dtype's kind (`"M"`) rather than importing pandas, which is not a
+        dependency.
+
+        Everything else is returned as a plain `np.asarray`, unchanged. That
+        covers ordinary numeric input and also already-object datetime inputs --
+        a list of python `datetime.datetime`, or a tz-aware `DatetimeIndex`
+        (whose elements are `Timestamp`) -- which `np.asarray` leaves as an
+        object array (kind `"O"`) that already plots with data-unit width, so no
+        rewrite is needed. Edge cases within the `datetime64` branch: a `NaT`
+        becomes `None` (its bar position is undefined, not masked), and a date
+        beyond `datetime.datetime`'s year 9999 falls back to an integer (losing
+        the datetime axis); both are exotic and left as-is.
 
         Args:
             x: The x-coordinates as passed to the constructor.
 
         Returns:
-            np.ndarray: An object array of `datetime.datetime` for datetime-like
-                input, otherwise `np.asarray(x)`.
+            np.ndarray: An object array of `datetime.datetime` for a
+                `datetime64`-backed `x`, otherwise `np.asarray(x)` unchanged.
         """
         arr = np.asarray(x)
         if arr.dtype.kind == "M":
