@@ -80,7 +80,9 @@ class TestLineGlyphInit:
         """
         glyph = LineGlyph([0, 1, 2], [3, 4, 5])
         assert isinstance(glyph.x, np.ndarray), f"Expected ndarray, got {type(glyph.x)}"
-        assert glyph.x.dtype.kind in "iuf", f"Expected numeric dtype, got {glyph.x.dtype}"
+        assert glyph.x.dtype.kind in "iuf", (
+            f"Expected numeric dtype, got {glyph.x.dtype}"
+        )
 
     def test_datetime64_array_normalised_to_datetime_objects(self):
         """A ``datetime64`` ndarray is normalised to an object array of datetimes.
@@ -90,9 +92,7 @@ class TestLineGlyphInit:
             an object array of ``datetime.datetime`` (so ``bar`` keeps width in
             days); the result is a fresh ndarray, not the caller's object.
         """
-        x = np.array(
-            ["1999-01-01", "1999-02-01", "1999-03-01"], dtype="datetime64[ns]"
-        )
+        x = np.array(["1999-01-01", "1999-02-01", "1999-03-01"], dtype="datetime64[ns]")
         glyph = LineGlyph(x, np.array([1.0, 2.0, 3.0]))
         assert isinstance(glyph.x, np.ndarray), f"Expected ndarray, got {type(glyph.x)}"
         assert glyph.x.dtype == object, f"Expected object dtype, got {glyph.x.dtype}"
@@ -279,8 +279,7 @@ class TestLineGlyphBar:
             regression guard (it fails on ``main``).
         """
         x = (
-            np.datetime64("1999-01-01")
-            + np.arange(12) * np.timedelta64(30, "D")
+            np.datetime64("1999-01-01") + np.arange(12) * np.timedelta64(30, "D")
         ).astype("datetime64[ns]")
         glyph = LineGlyph(x, np.arange(12.0))
         _, _, bars = glyph.bar(width=20)
@@ -313,8 +312,7 @@ class TestLineGlyphBar:
             timedelta width usable.
         """
         x = (
-            np.datetime64("1999-01-01")
-            + np.arange(12) * np.timedelta64(30, "D")
+            np.datetime64("1999-01-01") + np.arange(12) * np.timedelta64(30, "D")
         ).astype("datetime64[ns]")
         glyph = LineGlyph(x, np.arange(12.0))
         _, _, bars = glyph.bar(width=datetime.timedelta(days=20))
