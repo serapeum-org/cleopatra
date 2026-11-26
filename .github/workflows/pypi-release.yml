@@ -43,6 +43,7 @@ jobs:
           set -euo pipefail
           if [ "$EVENT_NAME" = "workflow_run" ]; then
             REF="$(cat .release-ref/release-ref.txt)"
+            [ -n "$REF" ] || { echo "::error::empty release ref -- refusing to publish the default branch"; exit 1; }
           else
             REF="$FALLBACK_REF"
           fi

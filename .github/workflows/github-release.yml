@@ -100,6 +100,10 @@ jobs:
           RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
           set -euo pipefail
+          if [ "$GIVEN_BRANCH" = "main" ]; then
+            echo "::error::Cannot release on 'main' (protected; the bump push is rejected). Leave empty to auto-create."
+            exit 1
+          fi
           if [ -n "$GIVEN_BRANCH" ]; then
             echo "Using the given release branch: $GIVEN_BRANCH"
             BRANCH="$GIVEN_BRANCH"
@@ -136,9 +140,9 @@ jobs:
         uses: serapeum-org/github-actions/actions/release/github@38c111084f99d5ff5f4a1e63bedce48fe33a10c0 # github-release/v1.5.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          increment: ${{ github.event.inputs.increment }}
-          prerelease-type: ${{ github.event.inputs.prerelease_type }}
-          draft: ${{ github.event.inputs.draft }}
+          increment: ${{ inputs.increment }}
+          prerelease-type: ${{ inputs.prerelease_type }}
+          draft: ${{ inputs.draft }}
           package-manager: uv
           package-manager-version: '0.12.1'
           python-version: "3.12"
@@ -176,23 +180,25 @@ jobs:
         with:
           name: release-ref
           path: release-ref.txt
-          retention-days: 1
+          # 7 days, not 1: a delayed re-publish on the workflow_run path must still find the artifact.
+          retention-days: 7
           if-no-files-found: error
 
       # Open the release PR into main. It is MERGED MANUALLY: main's ruleset requires a review, so the
       # workflow cannot land the merge unattended. Merge it with a MERGE COMMIT (not squash) so the tagged
       # bump commit stays an ancestor of main. A re-run that finds the PR already open does not re-create it.
       - name: Open the release PR into main (merge manually)
+        # Non-fatal: a `gh pr create` hiccup must NOT fail the release run. The tag, GitHub Release and
+        # release-ref artifact are already done by this point, and pypi-release + docs-deploy gate on this
+        # run's success -- so a failed PR-open would otherwise block the publish. If it fails, open the PR
+        # by hand; the publish and docs still proceed.
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: ${{ needs.prepare.outputs.branch }}
         run: |
           set -euo pipefail
           HEAD_BRANCH="$BRANCH"
-          if [ "$HEAD_BRANCH" = "main" ]; then
-            echo "Release was cut on main; nothing to merge back."
-            exit 0
-          fi
           VERSION="$(git describe --tags --abbrev=0 2>/dev/null || true)"
           TITLE="release: land ${VERSION:-the version bump, changelog and tag} on main"
           if gh pr view "$HEAD_BRANCH" --json number >/dev/null 2>&1; then
