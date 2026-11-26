@@ -40,7 +40,7 @@ from cleopatra.glyphs.gridded.array_glyph import (
     _resolve_colorbar,
     _swatch_text_default,
 )
-from cleopatra.styling.params import CellValues, Contour, DataStyle
+from cleopatra.styling.params import CellValues, Classify, Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
@@ -1893,6 +1893,118 @@ class TestPlotKindDispatch:
         # because matplotlib also creates axis label/title Text objects.
         cell_texts = [t for t in ax.texts]
         assert len(cell_texts) >= 25
+
+    def test_plot_cell_values_recolor_by_background_threshold(self):
+        """`plot` switches cell-value text colour at the background threshold.
+
+        Test scenario:
+            A 0..80 array plotted with an explicit `background_threshold=40`
+            must colour each cell's value text by the threshold (as `animate`
+            already does), not draw every value white. With the default
+            `("white", "black")` pair, cells above 40 go black and the rest
+            stay white -- so both colours must appear, which reproduces the
+            issue #75 symptom (all-white before the fix).
+        """
+        arr = np.arange(0.0, 90.0, 10.0).reshape(3, 3)
+        glyph = ArrayGlyph(arr)
+        fig, ax = glyph.plot(cells=CellValues(show=True, background_threshold=40.0))
+        value_texts = [t for t in ax.texts if t.get_text() not in ("", None)]
+        colors = {to_rgba(t.get_color()) for t in value_texts}
+        assert to_rgba("white") in colors, f"low cells should stay white; got {colors}"
+        assert to_rgba("black") in colors, f"high cells should go black; got {colors}"
+        high = {
+            float(t.get_text())
+            for t in value_texts
+            if to_rgba(t.get_color()) == to_rgba("black")
+        }
+        assert high == {50.0, 60.0, 70.0, 80.0}, f"wrong cells recoloured: {high}"
+
+    def test_plot_cell_values_default_threshold_splits_at_half_max(self):
+        """With no threshold, `plot` splits cell text at `norm(max) / 2`.
+
+        Test scenario:
+            A 0..80 array (linear norm) plotted with `CellValues(show=True)`
+            and no `background_threshold` must fall back to `norm(80)/2`,
+            i.e. the raw-value midpoint 40 -- so values above 40 go black and
+            the rest stay white, the same default `animate` has always used.
+        """
+        arr = np.arange(0.0, 90.0, 10.0).reshape(3, 3)
+        glyph = ArrayGlyph(arr)
+        fig, ax = glyph.plot(cells=CellValues(show=True))
+        value_texts = [t for t in ax.texts if t.get_text() not in ("", None)]
+        high = {
+            float(t.get_text())
+            for t in value_texts
+            if to_rgba(t.get_color()) == to_rgba("black")
+        }
+        assert high == {50.0, 60.0, 70.0, 80.0}, f"default split wrong: {high}"
+
+    def test_plot_cell_values_recolor_on_pcolormesh(self):
+        """The threshold recolouring also applies on the pcolormesh path.
+
+        Test scenario:
+            `kind="pcolormesh"` draws cell text via the same `_plot_text`
+            call (with `coords` instead of `extent`); an explicit threshold
+            must still split the colours, not leave every value white.
+        """
+        arr = np.arange(0.0, 90.0, 10.0).reshape(3, 3)
+        glyph = ArrayGlyph(arr)
+        fig, ax = glyph.plot(
+            kind="pcolormesh", cells=CellValues(show=True, background_threshold=40.0)
+        )
+        colors = {
+            to_rgba(t.get_color()) for t in ax.texts if t.get_text() not in ("", None)
+        }
+        assert to_rgba("white") in colors, f"low cells should stay white; got {colors}"
+        assert to_rgba("black") in colors, f"high cells should go black; got {colors}"
+
+    def test_plot_cell_values_recolor_under_classify(self):
+        """The threshold recolouring also fires on a classified (BoundaryNorm) plot.
+
+        Test scenario:
+            With `classify=Classify(...)` the mappable's norm is a `BoundaryNorm`,
+            so `norm(value)` is a bin index rather than a `[0, 1]` position; the
+            split must still recolour (not leave every value white). The high
+            cells 60/70/80 land in the top bin and go black while both colours
+            appear -- pinning the classified path flagged in review (L3).
+        """
+        arr = np.arange(0.0, 90.0, 10.0).reshape(3, 3)
+        glyph = ArrayGlyph(arr)
+        fig, ax = glyph.plot(
+            classify=Classify(scheme="equal_interval", k=3),
+            cells=CellValues(show=True, background_threshold=40.0),
+        )
+        value_texts = [t for t in ax.texts if t.get_text() not in ("", None)]
+        colors = {to_rgba(t.get_color()) for t in value_texts}
+        assert to_rgba("white") in colors, f"low cells should stay white; got {colors}"
+        assert to_rgba("black") in colors, f"high cells should go black; got {colors}"
+        black = {
+            float(t.get_text())
+            for t in value_texts
+            if to_rgba(t.get_color()) == to_rgba("black")
+        }
+        assert {60.0, 70.0, 80.0} <= black, f"top-bin cells should be black: {black}"
+
+    def test_plot_text_empty_indices_skips_threshold(self):
+        """`_plot_text` with no indices returns [] without evaluating the threshold.
+
+        Test scenario:
+            With an empty index list the `norm(nanmax(arr)) / 2` default must be
+            skipped (never evaluated on an all-NaN array), so the call returns no
+            text artists and raises nothing even when `norm` is supplied.
+        """
+        fig, ax = plt.subplots()
+        try:
+            out = ArrayGlyph._plot_text(
+                ax,
+                np.full((2, 2), np.nan),
+                [],
+                {"num_size": 8, "background_color_threshold": None},
+                norm=Normalize(0.0, 1.0),
+            )
+            assert out == [], f"empty indices should yield no text artists: {out}"
+        finally:
+            plt.close(fig)
 
     def test_cell_values_land_inside_a_georeferenced_extent(self):
         """Cell labels map to data coordinates, not raw indices, under an extent."""

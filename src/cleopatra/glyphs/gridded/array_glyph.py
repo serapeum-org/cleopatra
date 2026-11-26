@@ -1002,6 +1002,38 @@ def _as_artists(result: Iterable[Artist] | Artist | None) -> list[Artist]:
     return artists
 
 
+def _resolve_cell_text_threshold(
+    norm: Normalize | None,
+    arr: np.ndarray,
+    raw_threshold: float | None,
+    has_indices: bool,
+) -> float | None:
+    """Normalised cell-text colour threshold, or `None` to draw every value white.
+
+    Returns `None` when no `norm` is given or there are no cells to label (so
+    `_plot_text` keeps the historical all-white text); otherwise the normalised
+    `background_color_threshold`, or `norm(nanmax(arr)) / 2` when it is unset --
+    the same default split `animate` applies per frame.
+
+    Args:
+        norm: The mappable's `Normalize`, or `None` (RGB / animate's one-shot
+            creation) to disable threshold recolouring.
+        arr: The array being labelled, for the `nanmax` fallback.
+        raw_threshold: The raw `background_color_threshold` option value, or
+            `None` to use the `nanmax / 2` default.
+        has_indices: Whether any cell will be labelled (guards `nanmax` on an
+            all-filtered array).
+
+    Returns:
+        The normalised threshold, or `None` to keep every value white.
+    """
+    if norm is None or not has_indices:
+        return None
+    if raw_threshold is not None:
+        return norm(raw_threshold)
+    return norm(np.nanmax(arr)) / 2.0
+
+
 @dataclass(frozen=True)
 class Animation:
     """Playback options for `ArrayGlyph.animate` (grouped to keep the call small).
@@ -3780,17 +3812,20 @@ class ArrayGlyph(GeoMixin, Glyph):
     def _plot_text(
         ax: Axes,
         arr: np.ndarray,
-        indices,
+        indices: Sequence[tuple[int, int]],
         default_options_dict: dict,
         extent: list | tuple | None = None,
         coords: tuple[np.ndarray, np.ndarray] | None = None,
+        *,
+        norm: Normalize | None = None,
     ) -> list:
         """plot values as a text in each cell.
 
         Args:
             ax: matplotlib axes.
             arr: numpy array.
-            indices (np.ndarray): array with columns, (row, col).
+            indices: sequence of `(row, col)` index tuples (one per cell to
+                label), as returned by `hpc.indexing.get_indices2`.
             default_options_dict: default options dictionary after updating the options.
             extent: the glyph's `[left, right, bottom, top]` extent (matplotlib
                 order, as stored on `self.extent`) when the raster is drawn by
@@ -3806,6 +3841,20 @@ class ArrayGlyph(GeoMixin, Glyph):
                 2-D) is handled too. No row flip (unlike `extent`). Mutually
                 exclusive with `extent`.
 
+            norm: the mappable's `Normalize` used to switch each cell's text
+                colour by the `background_color_threshold` option, the same way
+                `animate` recolours per frame. `None` (the default) draws
+                every value white -- used by `animate`'s one-shot artist
+                creation (its per-frame blitter recolours them) and by `plot`
+                for RGB renders, which have no scalar norm. When given, a
+                cell whose normalised value exceeds the threshold is drawn
+                black (for contrast) and the rest white; the threshold is the
+                normalised `background_color_threshold`, or `norm(max) / 2` when
+                that option is unset -- matching the animate default. Under a
+                classified render the norm is a `BoundaryNorm`, so the split
+                acts on bin indices rather than raw-value position (again, as in
+                `animate`).
+
             With neither `extent` nor `coords` the axes are index space, so the
             raw `(col, row)` indices are used unchanged.
 
@@ -3813,6 +3862,13 @@ class ArrayGlyph(GeoMixin, Glyph):
             list: list of the text object.
         """
         nrows, ncols = arr.shape[0], arr.shape[1]
+        low_high_colors = ("white", "black")
+        threshold_norm = _resolve_cell_text_threshold(
+            norm,
+            arr,
+            default_options_dict.get("background_color_threshold"),
+            len(indices) > 0,
+        )
         if coords is not None:
             xs = np.asarray(coords[0])
             ys = np.asarray(coords[1])
@@ -3838,13 +3894,18 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         def add_text(elem):
             x, y = _xy(elem[0], elem[1])
+            value = arr[elem[0], elem[1]]
+            if threshold_norm is None:
+                color = "w"
+            else:
+                color = low_high_colors[int(norm(value) > threshold_norm)]
             return ax.text(
                 x,
                 y,
-                np.round(arr[elem[0], elem[1]], 2),
+                np.round(value, 2),
                 ha="center",
                 va="center",
-                color="w",
+                color=color,
                 fontsize=default_options_dict["num_size"],
             )
 
@@ -4869,7 +4930,13 @@ class ArrayGlyph(GeoMixin, Glyph):
             else:
                 label_extent, label_coords = None, self._coords
             optional_display["cell_text_value"] = self._plot_text(
-                ax, arr, indices, self.default_options, label_extent, label_coords
+                ax,
+                arr,
+                indices,
+                self.default_options,
+                label_extent,
+                label_coords,
+                norm=None if self.rgb else self.im.norm,
             )
 
         if points is not None and supports_overlay:
