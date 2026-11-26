@@ -3,13 +3,20 @@ name: github-release
 permissions:
   contents: read
 
+# Serialize releases: a second dispatch queues behind the first instead of racing it on branch
+# creation / bump / tag / PR (two runs off the same tip would compute the same next version and
+# collide). Releases are rare and admin-only, so queue rather than cancel.
+concurrency:
+  group: github-release
+  cancel-in-progress: false
+
 on:
   workflow_dispatch:
     inputs:
       release-branch:
-        description: "Branch to create release from"
+        description: "Branch to cut the release on. Leave empty to create one from the tip of main."
         required: false
-        default: "main"
+        default: ""
       increment:
         description: "Version increment type"
         required: false
@@ -36,31 +43,94 @@ on:
         default: false
 
 jobs:
-  pure-wheel-test:
-    uses: ./.github/workflows/pure-wheel-test.yml
-
-  release:
-    needs: pure-wheel-test
+  # Resolve the release branch BEFORE anything builds or tests, so pure-wheel-test and the release job
+  # run on the SAME branch. Admins only. When `release-branch` is empty, create one from the tip of main
+  # and use it exactly as if it had been passed.
+  prepare:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      branch: ${{ steps.resolve.outputs.branch }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          ref: ${{ inputs.release-branch }}
-
       - name: Check actor is a repository admin
+        # Every `${{ }}` below reaches the shell through `env`, never interpolated into the script body: GitHub
+        # expands an expression into the script source *before* bash parses it, so a crafted actor/repo value
+        # would otherwise run as shell. Passed through `env` and quoted, each is read as plain data.
         run: |
-          PERMISSION=$(gh api repos/${{ github.repository }}/collaborators/${{ github.actor }}/permission --jq '.permission')
-          echo "Permission level for ${{ github.actor }}: $PERMISSION"
+          set -euo pipefail
+          PERMISSION=$(gh api "repos/$REPOSITORY/collaborators/$ACTOR/permission" --jq '.permission')
+          echo "Permission level for $ACTOR: $PERMISSION"
           if [ "$PERMISSION" != "admin" ]; then
-            echo "::error::${{ github.actor }} is not a repository admin. Only admins can trigger releases."
+            echo "::error::$ACTOR is not a repository admin. Only admins can trigger releases."
             exit 1
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
+
+      - name: Verify the repo allows merge commits
+        # The release PR must be merged with a MERGE COMMIT so the tagged bump commit lands on main as an
+        # ancestor; a squash merge rewrites the SHA and orphans the tag. Fail fast here, before any branch,
+        # bump or tag is cut, if merge commits are disabled.
+        run: |
+          set -euo pipefail
+          ALLOWED=$(gh api "repos/$REPOSITORY" --jq '.allow_merge_commit')
+          echo "allow_merge_commit: ${ALLOWED}"
+          if [ "${ALLOWED}" != "true" ]; then
+            echo "::error::Enable 'Allow merge commits' (Settings>General) or the release tag orphans off main"
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+
+      - name: Checkout main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Resolve or create the release branch
+        id: resolve
+        env:
+          GIVEN_BRANCH: ${{ inputs.release-branch }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          if [ -n "$GIVEN_BRANCH" ]; then
+            echo "Using the given release branch: $GIVEN_BRANCH"
+            BRANCH="$GIVEN_BRANCH"
+          else
+            BRANCH="release/auto-${RUN_ID}-${RUN_ATTEMPT}"
+            echo "No release branch given; creating $BRANCH from the tip of main"
+            git switch -c "$BRANCH"
+            git push -u origin "$BRANCH"
+          fi
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+  # Build the wheel and run it across the OS/Python matrix on the SAME branch the release is cut on, so a
+  # wheel that cannot install or import on a supported target blocks the tag/release/PyPI chain.
+  pure-wheel-test:
+    needs: prepare
+    uses: ./.github/workflows/pure-wheel-test.yml
+    with:
+      branch: ${{ needs.prepare.outputs.branch }}
+
+  release:
+    needs: [prepare, pure-wheel-test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout the release branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.prepare.outputs.branch }}
 
       - name: Create GitHub Release with Commitizen
         uses: serapeum-org/github-actions/actions/release/github@38c111084f99d5ff5f4a1e63bedce48fe33a10c0 # github-release/v1.5.0
@@ -78,10 +148,60 @@ jobs:
         run: uv lock
 
       - name: Commit and push updated lockfile
+        # `branch` is free text (or an auto-generated name). Interpolated into the script it would be executed:
+        # `main; <command>` runs `<command>` on the runner with this job's `contents: write` token. Through `env`
+        # and quoted, it is an argument to `git push` and nothing else.
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add uv.lock
           git diff --cached --quiet && echo "No lockfile changes" && exit 0
-          git commit -m "build: sync uv.lock after ${{ inputs.increment }} version bump"
-          git push origin ${{ inputs.release-branch }}
+          git commit -m "build: sync uv.lock after version bump"
+          git push origin "$RELEASE_BRANCH"
+        env:
+          RELEASE_BRANCH: ${{ needs.prepare.outputs.branch }}
+
+      # Hand the release branch to pypi-release. pypi-release is triggered by `workflow_run`, whose payload's
+      # head_branch points at the dispatched ref, not necessarily the branch that received the version-bump +
+      # lockfile commits above. Uploading the branch name as an artifact is the one channel that crosses the
+      # workflow_run boundary; pypi-release downloads it by run id and checks out that exact branch.
+      - name: Record the release branch for pypi-release
+        env:
+          RELEASE_BRANCH: ${{ needs.prepare.outputs.branch }}
+        run: printf '%s\n' "$RELEASE_BRANCH" > release-ref.txt
+
+      - name: Upload the release ref for pypi-release
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-ref
+          path: release-ref.txt
+          retention-days: 1
+          if-no-files-found: error
+
+      # Open the release PR into main. It is MERGED MANUALLY: main's ruleset requires a review, so the
+      # workflow cannot land the merge unattended. Merge it with a MERGE COMMIT (not squash) so the tagged
+      # bump commit stays an ancestor of main. A re-run that finds the PR already open does not re-create it.
+      - name: Open the release PR into main (merge manually)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ needs.prepare.outputs.branch }}
+        run: |
+          set -euo pipefail
+          HEAD_BRANCH="$BRANCH"
+          if [ "$HEAD_BRANCH" = "main" ]; then
+            echo "Release was cut on main; nothing to merge back."
+            exit 0
+          fi
+          VERSION="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+          TITLE="release: land ${VERSION:-the version bump, changelog and tag} on main"
+          if gh pr view "$HEAD_BRANCH" --json number >/dev/null 2>&1; then
+            echo "A PR for ${HEAD_BRANCH} already exists."
+          else
+            gh pr create \
+              --base main \
+              --head "$HEAD_BRANCH" \
+              --title "$TITLE" \
+              --body "Automated release PR. Merge MANUALLY with a MERGE COMMIT (a squash orphans the tag)."
+          fi
+          echo "Release PR for ${HEAD_BRANCH} is open; merge it manually into main."
