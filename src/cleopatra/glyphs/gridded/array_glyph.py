@@ -3784,6 +3784,9 @@ class ArrayGlyph(GeoMixin, Glyph):
         default_options_dict: dict,
         extent: list | tuple | None = None,
         coords: tuple[np.ndarray, np.ndarray] | None = None,
+        *,
+        norm: Normalize | None = None,
+        text_colors: tuple[str, str] = ("white", "black"),
     ) -> list:
         """plot values as a text in each cell.
 
@@ -3808,11 +3811,29 @@ class ArrayGlyph(GeoMixin, Glyph):
 
             With neither `extent` nor `coords` the axes are index space, so the
             raw `(col, row)` indices are used unchanged.
+            norm: the mappable's `Normalize` used to switch each cell's text
+                colour by the `background_color_threshold` option, the same way
+                `animate` recolours per frame. `None` (the default, used by
+                `animate`'s one-shot artist creation) draws every value in the
+                light colour, leaving the per-frame blitter to recolour them.
+                When given, a cell whose normalised value exceeds the threshold
+                uses the dark colour for contrast; the threshold is the
+                normalised `background_color_threshold`, or `norm(max) / 2` when
+                that option is unset -- matching the animate default.
+            text_colors: the `(low, high)` text colours selected at the
+                threshold. Defaults to `("white", "black")`.
 
         Returns:
             list: list of the text object.
         """
         nrows, ncols = arr.shape[0], arr.shape[1]
+        threshold_norm: float | None = None
+        if norm is not None and len(indices) > 0:
+            raw_threshold = default_options_dict.get("background_color_threshold")
+            if raw_threshold is not None:
+                threshold_norm = norm(raw_threshold)
+            else:
+                threshold_norm = norm(np.nanmax(arr)) / 2.0
         if coords is not None:
             xs = np.asarray(coords[0])
             ys = np.asarray(coords[1])
@@ -3838,13 +3859,18 @@ class ArrayGlyph(GeoMixin, Glyph):
 
         def add_text(elem):
             x, y = _xy(elem[0], elem[1])
+            value = arr[elem[0], elem[1]]
+            if threshold_norm is None:
+                color = "w"
+            else:
+                color = text_colors[int(norm(value) > threshold_norm)]
             return ax.text(
                 x,
                 y,
-                np.round(arr[elem[0], elem[1]], 2),
+                np.round(value, 2),
                 ha="center",
                 va="center",
-                color="w",
+                color=color,
                 fontsize=default_options_dict["num_size"],
             )
 
@@ -4869,7 +4895,13 @@ class ArrayGlyph(GeoMixin, Glyph):
             else:
                 label_extent, label_coords = None, self._coords
             optional_display["cell_text_value"] = self._plot_text(
-                ax, arr, indices, self.default_options, label_extent, label_coords
+                ax,
+                arr,
+                indices,
+                self.default_options,
+                label_extent,
+                label_coords,
+                norm=None if self.rgb else self.im.norm,
             )
 
         if points is not None and supports_overlay:

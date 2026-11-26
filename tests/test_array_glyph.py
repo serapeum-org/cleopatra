@@ -1894,6 +1894,31 @@ class TestPlotKindDispatch:
         cell_texts = [t for t in ax.texts]
         assert len(cell_texts) >= 25
 
+    def test_plot_cell_values_recolor_by_background_threshold(self):
+        """`plot` switches cell-value text colour at the background threshold.
+
+        Test scenario:
+            A 0..80 array plotted with an explicit `background_threshold=40`
+            must colour each cell's value text by the threshold (as `animate`
+            already does), not draw every value white. With the default
+            `("white", "black")` pair, cells above 40 go black and the rest
+            stay white -- so both colours must appear, which reproduces the
+            issue #75 symptom (all-white before the fix).
+        """
+        arr = np.arange(0.0, 90.0, 10.0).reshape(3, 3)
+        glyph = ArrayGlyph(arr)
+        fig, ax = glyph.plot(cells=CellValues(show=True, background_threshold=40.0))
+        value_texts = [t for t in ax.texts if t.get_text() not in ("", None)]
+        colors = {to_rgba(t.get_color()) for t in value_texts}
+        assert to_rgba("white") in colors, f"low cells should stay white; got {colors}"
+        assert to_rgba("black") in colors, f"high cells should go black; got {colors}"
+        high = {
+            float(t.get_text())
+            for t in value_texts
+            if to_rgba(t.get_color()) == to_rgba("black")
+        }
+        assert high == {50.0, 60.0, 70.0, 80.0}, f"wrong cells recoloured: {high}"
+
     def test_cell_values_land_inside_a_georeferenced_extent(self):
         """Cell labels map to data coordinates, not raw indices, under an extent."""
         extent = [-8416244.4, 471959.4, -8359879.0, 524298.7]
