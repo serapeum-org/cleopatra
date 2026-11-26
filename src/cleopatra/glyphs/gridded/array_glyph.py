@@ -1002,6 +1002,38 @@ def _as_artists(result: Iterable[Artist] | Artist | None) -> list[Artist]:
     return artists
 
 
+def _resolve_cell_text_threshold(
+    norm: Normalize | None,
+    arr: np.ndarray,
+    raw_threshold: float | None,
+    has_indices: bool,
+) -> float | None:
+    """Normalised cell-text colour threshold, or `None` to draw every value white.
+
+    Returns `None` when no `norm` is given or there are no cells to label (so
+    `_plot_text` keeps the historical all-white text); otherwise the normalised
+    `background_color_threshold`, or `norm(nanmax(arr)) / 2` when it is unset --
+    the same default split `animate` applies per frame.
+
+    Args:
+        norm: The mappable's `Normalize`, or `None` (RGB / animate's one-shot
+            creation) to disable threshold recolouring.
+        arr: The array being labelled, for the `nanmax` fallback.
+        raw_threshold: The raw `background_color_threshold` option value, or
+            `None` to use the `nanmax / 2` default.
+        has_indices: Whether any cell will be labelled (guards `nanmax` on an
+            all-filtered array).
+
+    Returns:
+        The normalised threshold, or `None` to keep every value white.
+    """
+    if norm is None or not has_indices:
+        return None
+    if raw_threshold is not None:
+        return norm(raw_threshold)
+    return norm(np.nanmax(arr)) / 2.0
+
+
 @dataclass(frozen=True)
 class Animation:
     """Playback options for `ArrayGlyph.animate` (grouped to keep the call small).
@@ -3831,13 +3863,12 @@ class ArrayGlyph(GeoMixin, Glyph):
         """
         nrows, ncols = arr.shape[0], arr.shape[1]
         low_high_colors = ("white", "black")
-        threshold_norm: float | None = None
-        if norm is not None and len(indices) > 0:
-            raw_threshold = default_options_dict.get("background_color_threshold")
-            if raw_threshold is not None:
-                threshold_norm = norm(raw_threshold)
-            else:
-                threshold_norm = norm(np.nanmax(arr)) / 2.0
+        threshold_norm = _resolve_cell_text_threshold(
+            norm,
+            arr,
+            default_options_dict.get("background_color_threshold"),
+            len(indices) > 0,
+        )
         if coords is not None:
             xs = np.asarray(coords[0])
             ys = np.asarray(coords[1])
