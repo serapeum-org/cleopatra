@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import datetime
+
 import matplotlib
 
 matplotlib.use("Agg")
@@ -68,6 +70,45 @@ class TestLineGlyphInit:
         """An unknown kwarg is rejected by the strict merge."""
         with pytest.raises(ValueError, match="not correct"):
             LineGlyph(*xy, nope=1)
+
+    def test_numeric_list_coerced_to_array(self):
+        """Ordinary numeric x is coerced to a numpy array.
+
+        Test scenario:
+            A plain list of numbers is stored as a numeric ``np.ndarray`` (the
+            datetime normalisation path does not apply).
+        """
+        glyph = LineGlyph([0, 1, 2], [3, 4, 5])
+        assert isinstance(glyph.x, np.ndarray), f"Expected ndarray, got {type(glyph.x)}"
+        assert glyph.x.dtype.kind in "iuf", (
+            f"Expected numeric dtype, got {glyph.x.dtype}"
+        )
+
+    def test_datetime64_array_normalised_to_datetime_objects(self):
+        """A ``datetime64`` ndarray is normalised to an object array of datetimes.
+
+        Test scenario:
+            ``_coerce_x`` turns a high-resolution ``datetime64[ns]`` array into
+            an object array of ``datetime.datetime`` (so ``bar`` keeps width in
+            days); the result is a fresh ndarray, not the caller's object.
+        """
+        x = np.array(["1999-01-01", "1999-02-01", "1999-03-01"], dtype="datetime64[ns]")
+        glyph = LineGlyph(x, np.array([1.0, 2.0, 3.0]))
+        assert isinstance(glyph.x, np.ndarray), f"Expected ndarray, got {type(glyph.x)}"
+        assert glyph.x.dtype == object, f"Expected object dtype, got {glyph.x.dtype}"
+        assert isinstance(glyph.x[0], datetime.datetime), (
+            f"Expected datetime elements, got {type(glyph.x[0])}"
+        )
+
+    def test_datetime_length_mismatch_raises(self):
+        """A datetime x whose length differs from y is rejected.
+
+        Test scenario:
+            After normalisation the length check still fires for datetime input.
+        """
+        x = np.array(["1999-01-01", "1999-02-01"], dtype="datetime64[D]")
+        with pytest.raises(ValueError, match=r"x length \(2\) must match"):
+            LineGlyph(x, np.array([1.0, 2.0, 3.0]))
 
 
 class TestLineGlyphLine:
@@ -149,6 +190,19 @@ class TestLineGlyphLine:
         out_fig, out_ax, _ = glyph.line(ax=ax)
         assert out_ax is ax and out_fig is fig, "Should reuse supplied axes/figure"
 
+    def test_alpha_keyword(self, xy):
+        """An explicit ``alpha`` on ``.line()`` is honoured without a TypeError.
+
+        Test scenario:
+            ``line(alpha=0.5)`` previously collided with the option-sourced alpha
+            and raised ``TypeError``; it now sets the line opacity.
+        """
+        glyph = LineGlyph(*xy)
+        _, _, lines = glyph.line(alpha=0.5)
+        assert lines[0].get_alpha() == 0.5, (
+            f"Expected alpha 0.5, got {lines[0].get_alpha()}"
+        )
+
 
 class TestLineGlyphBar:
     """Tests for LineGlyph.bar."""
@@ -177,6 +231,107 @@ class TestLineGlyphBar:
         glyph = LineGlyph(x, y)
         with pytest.raises(ValueError, match="bar requires 1D"):
             glyph.bar()
+
+    def test_bar_datetime_width_in_data_units_stdlib(self):
+        """A pandas-free ``list[datetime]`` draws bars with width in data units.
+
+        Test scenario:
+            x is a list of ``datetime.datetime`` (an object array that bypasses
+            the datetime64 normalisation); ``width=20`` draws 20-day bars. This
+            documents parity with native ``Axes.bar`` on already-object input --
+            it is not a regression guard (it passes on ``main`` too); the raw
+            ``datetime64`` guards are the ``_pandas`` and ``_datetime64_array``
+            tests.
+        """
+        x = [
+            datetime.datetime(1999, 1, 1) + datetime.timedelta(days=30 * i)
+            for i in range(12)
+        ]
+        glyph = LineGlyph(x, np.arange(12.0))
+        _, _, bars = glyph.bar(width=20)
+        assert round(bars[0].get_width(), 1) == 20.0, (
+            f"Expected 20-day bars, got {bars[0].get_width()}"
+        )
+
+    def test_bar_datetime_width_in_data_units_pandas(self):
+        """A pandas ``DatetimeIndex`` keeps its day-unit width scaling.
+
+        Test scenario:
+            The issue's reproduction -- a monthly ``DatetimeIndex`` with
+            ``width=20`` -- draws 20-day-wide bars rather than 20 nanoseconds.
+        """
+        pd = pytest.importorskip("pandas")
+        idx = pd.date_range("1999-01-01", periods=12, freq="MS")
+        glyph = LineGlyph(idx, np.arange(12.0))
+        _, _, bars = glyph.bar(width=20)
+        assert round(bars[0].get_width(), 1) == 20.0, (
+            f"Expected 20-day bars, got {bars[0].get_width()}"
+        )
+
+    def test_bar_datetime64_array_width_in_data_units(self):
+        """A raw high-resolution ``datetime64[ns]`` array keeps day-unit width.
+
+        Test scenario:
+            A ``datetime64[ns]`` ndarray (the form a NumPy-first caller passes,
+            and what pandas stores internally) with ``width=20`` draws 20-day
+            bars. Without the normalisation ``Axes.bar`` reads the width as 20
+            nanoseconds and the bars collapse to ~0 -- this is the real
+            regression guard (it fails on ``main``).
+        """
+        x = (
+            np.datetime64("1999-01-01") + np.arange(12) * np.timedelta64(30, "D")
+        ).astype("datetime64[ns]")
+        glyph = LineGlyph(x, np.arange(12.0))
+        _, _, bars = glyph.bar(width=20)
+        assert round(bars[0].get_width(), 1) == 20.0, (
+            f"Expected 20-day bars, got {bars[0].get_width()}"
+        )
+
+    def test_bar_with_nat_does_not_crash(self):
+        """A ``NaT`` in a datetime x is tolerated (coerced to ``None``).
+
+        Test scenario:
+            ``_coerce_x`` maps ``NaT`` to ``None``; ``bar`` still draws one bar
+            per row without raising (the ``None`` bar's position is undefined,
+            not masked -- a documented limitation).
+        """
+        x = np.array(["1999-01-01", "NaT", "1999-03-01"], dtype="datetime64[ns]")
+        glyph = LineGlyph(x, np.array([1.0, 2.0, 3.0]))
+        assert glyph.x[1] is None, f"Expected NaT -> None, got {glyph.x[1]!r}"
+        _, _, bars = glyph.bar(width=5)
+        assert len(bars) == 3, f"Expected 3 bars, got {len(bars)}"
+
+    def test_bar_accepts_timedelta_width(self):
+        """A ``timedelta`` width works on a normalised ``datetime64`` array.
+
+        Test scenario:
+            A raw ``datetime64[ns]`` array with ``width=timedelta(days=20)``
+            draws 20-day bars. On ``main`` this raises a matplotlib
+            ``ConversionError`` (a timedelta cannot be added to a datetime64
+            axis position), so the test guards that normalisation makes a
+            timedelta width usable.
+        """
+        x = (
+            np.datetime64("1999-01-01") + np.arange(12) * np.timedelta64(30, "D")
+        ).astype("datetime64[ns]")
+        glyph = LineGlyph(x, np.arange(12.0))
+        _, _, bars = glyph.bar(width=datetime.timedelta(days=20))
+        assert round(bars[0].get_width(), 1) == 20.0, (
+            f"Expected 20-day bars, got {bars[0].get_width()}"
+        )
+
+    def test_bar_alpha_keyword(self, xy):
+        """An explicit ``alpha`` on ``.bar()`` is honoured without a TypeError.
+
+        Test scenario:
+            ``bar(alpha=0.5)`` previously collided with the option-sourced alpha
+            and raised ``TypeError``; it now sets the bar opacity.
+        """
+        glyph = LineGlyph(*xy)
+        _, _, bars = glyph.bar(alpha=0.5)
+        assert bars[0].get_alpha() == 0.5, (
+            f"Expected alpha 0.5, got {bars[0].get_alpha()}"
+        )
 
 
 class TestLineGlyphFillBetween:
