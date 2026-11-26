@@ -118,9 +118,13 @@ class CellValues:
         show: Draw each cell's value as text. `None` leaves the glyph
             default (`False`).
         size: Font size of the cell-value text. `None` leaves the default.
-        background_threshold: Value above which the text switches to the
-            light colour (for contrast against a dark cell). `None` leaves
-            the default (`max(array) / 2`).
+        background_threshold: Value above which the cell's value text switches
+            to the dark colour (black) for contrast against a bright/light
+            cell; at or below it the text stays the light colour (white).
+            `None` leaves the default (`norm(max(array)) / 2`). Both `plot`
+            and `animate` honour it; `plot` always uses the white/black pair
+            (only `animate` can customise it, via
+            `Animation(cell_value_text_colors=...)`).
 
     Examples:
         - Enable the overlay with a custom font size:
