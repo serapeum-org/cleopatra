@@ -40,7 +40,7 @@ from cleopatra.glyphs.gridded.array_glyph import (
     _resolve_colorbar,
     _swatch_text_default,
 )
-from cleopatra.styling.params import CellValues, Contour, DataStyle
+from cleopatra.styling.params import CellValues, Classify, Contour, DataStyle
 from cleopatra.styling.scaling import ColorScaling
 from cleopatra.styling.styles import DEFAULT_OPTIONS as STYLE_DEFAULTS
 
@@ -1957,6 +1957,33 @@ class TestPlotKindDispatch:
         }
         assert to_rgba("white") in colors, f"low cells should stay white; got {colors}"
         assert to_rgba("black") in colors, f"high cells should go black; got {colors}"
+
+    def test_plot_cell_values_recolor_under_classify(self):
+        """The threshold recolouring also fires on a classified (BoundaryNorm) plot.
+
+        Test scenario:
+            With `classify=Classify(...)` the mappable's norm is a `BoundaryNorm`,
+            so `norm(value)` is a bin index rather than a `[0, 1]` position; the
+            split must still recolour (not leave every value white). The high
+            cells 60/70/80 land in the top bin and go black while both colours
+            appear -- pinning the classified path flagged in review (L3).
+        """
+        arr = np.arange(0.0, 90.0, 10.0).reshape(3, 3)
+        glyph = ArrayGlyph(arr)
+        fig, ax = glyph.plot(
+            classify=Classify(scheme="equal_interval", k=3),
+            cells=CellValues(show=True, background_threshold=40.0),
+        )
+        value_texts = [t for t in ax.texts if t.get_text() not in ("", None)]
+        colors = {to_rgba(t.get_color()) for t in value_texts}
+        assert to_rgba("white") in colors, f"low cells should stay white; got {colors}"
+        assert to_rgba("black") in colors, f"high cells should go black; got {colors}"
+        black = {
+            float(t.get_text())
+            for t in value_texts
+            if to_rgba(t.get_color()) == to_rgba("black")
+        }
+        assert {60.0, 70.0, 80.0} <= black, f"top-bin cells should be black: {black}"
 
     def test_plot_text_empty_indices_skips_threshold(self):
         """`_plot_text` with no indices returns [] without evaluating the threshold.
