@@ -3780,13 +3780,12 @@ class ArrayGlyph(GeoMixin, Glyph):
     def _plot_text(
         ax: Axes,
         arr: np.ndarray,
-        indices,
+        indices: Sequence[tuple[int, int]],
         default_options_dict: dict,
         extent: list | tuple | None = None,
         coords: tuple[np.ndarray, np.ndarray] | None = None,
         *,
         norm: Normalize | None = None,
-        text_colors: tuple[str, str] = ("white", "black"),
     ) -> list:
         """plot values as a text in each cell.
 
@@ -3809,24 +3808,27 @@ class ArrayGlyph(GeoMixin, Glyph):
                 2-D) is handled too. No row flip (unlike `extent`). Mutually
                 exclusive with `extent`.
 
-            With neither `extent` nor `coords` the axes are index space, so the
-            raw `(col, row)` indices are used unchanged.
             norm: the mappable's `Normalize` used to switch each cell's text
                 colour by the `background_color_threshold` option, the same way
                 `animate` recolours per frame. `None` (the default, used by
-                `animate`'s one-shot artist creation) draws every value in the
-                light colour, leaving the per-frame blitter to recolour them.
-                When given, a cell whose normalised value exceeds the threshold
-                uses the dark colour for contrast; the threshold is the
+                `animate`'s one-shot artist creation) draws every value white,
+                leaving the per-frame blitter to recolour them. When given, a
+                cell whose normalised value exceeds the threshold is drawn
+                black (for contrast) and the rest white; the threshold is the
                 normalised `background_color_threshold`, or `norm(max) / 2` when
-                that option is unset -- matching the animate default.
-            text_colors: the `(low, high)` text colours selected at the
-                threshold. Defaults to `("white", "black")`.
+                that option is unset -- matching the animate default. Under a
+                classified render the norm is a `BoundaryNorm`, so the split
+                acts on bin indices rather than raw-value position (again, as in
+                `animate`).
+
+            With neither `extent` nor `coords` the axes are index space, so the
+            raw `(col, row)` indices are used unchanged.
 
         Returns:
             list: list of the text object.
         """
         nrows, ncols = arr.shape[0], arr.shape[1]
+        low_high_colors = ("white", "black")
         threshold_norm: float | None = None
         if norm is not None and len(indices) > 0:
             raw_threshold = default_options_dict.get("background_color_threshold")
@@ -3863,7 +3865,7 @@ class ArrayGlyph(GeoMixin, Glyph):
             if threshold_norm is None:
                 color = "w"
             else:
-                color = text_colors[int(norm(value) > threshold_norm)]
+                color = low_high_colors[int(norm(value) > threshold_norm)]
             return ax.text(
                 x,
                 y,
