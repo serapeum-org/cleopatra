@@ -3792,7 +3792,8 @@ class ArrayGlyph(GeoMixin, Glyph):
         Args:
             ax: matplotlib axes.
             arr: numpy array.
-            indices (np.ndarray): array with columns, (row, col).
+            indices: sequence of `(row, col)` index tuples (one per cell to
+                label), as returned by `hpc.indexing.get_indices2`.
             default_options_dict: default options dictionary after updating the options.
             extent: the glyph's `[left, right, bottom, top]` extent (matplotlib
                 order, as stored on `self.extent`) when the raster is drawn by
@@ -3810,9 +3811,10 @@ class ArrayGlyph(GeoMixin, Glyph):
 
             norm: the mappable's `Normalize` used to switch each cell's text
                 colour by the `background_color_threshold` option, the same way
-                `animate` recolours per frame. `None` (the default, used by
-                `animate`'s one-shot artist creation) draws every value white,
-                leaving the per-frame blitter to recolour them. When given, a
+                `animate` recolours per frame. `None` (the default) draws
+                every value white -- used by `animate`'s one-shot artist
+                creation (its per-frame blitter recolours them) and by `plot`
+                for RGB renders, which have no scalar norm. When given, a
                 cell whose normalised value exceeds the threshold is drawn
                 black (for contrast) and the rest white; the threshold is the
                 normalised `background_color_threshold`, or `norm(max) / 2` when
