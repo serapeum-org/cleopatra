@@ -3,13 +3,21 @@ name: github-release
 permissions:
   contents: read
 
+# Serialize releases: one release runs at a time (a second dispatch queues, it does not cancel). NOTE this
+# does NOT prevent a duplicate-version/tag collision: until a release PR is merged, main is still unbumped,
+# so a second release dispatched before that merge recomputes the same version and fails at tag push. Rule:
+# merge each release PR into main before dispatching the next. Releases are rare and admin-only.
+concurrency:
+  group: github-release
+  cancel-in-progress: false
+
 on:
   workflow_dispatch:
     inputs:
       release-branch:
-        description: "Branch to create release from"
+        description: "Branch to cut the release on. Leave empty to create one from the tip of main."
         required: false
-        default: "main"
+        default: ""
       increment:
         description: "Version increment type"
         required: false
@@ -36,39 +44,109 @@ on:
         default: false
 
 jobs:
-  pure-wheel-test:
-    uses: ./.github/workflows/pure-wheel-test.yml
-
-  release:
-    needs: pure-wheel-test
+  # Resolve the release branch BEFORE anything builds or tests, so pure-wheel-test and the release job
+  # run on the SAME branch. Admins only. When `release-branch` is empty, create one from the tip of main
+  # and use it exactly as if it had been passed.
+  prepare:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      branch: ${{ steps.resolve.outputs.branch }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          ref: ${{ inputs.release-branch }}
-
       - name: Check actor is a repository admin
+        # Every `${{ }}` below reaches the shell through `env`, never interpolated into the script body: GitHub
+        # expands an expression into the script source *before* bash parses it, so a crafted actor/repo value
+        # would otherwise run as shell. Passed through `env` and quoted, each is read as plain data.
         run: |
-          PERMISSION=$(gh api repos/${{ github.repository }}/collaborators/${{ github.actor }}/permission --jq '.permission')
-          echo "Permission level for ${{ github.actor }}: $PERMISSION"
+          set -euo pipefail
+          PERMISSION=$(gh api "repos/$REPOSITORY/collaborators/$ACTOR/permission" --jq '.permission')
+          echo "Permission level for $ACTOR: $PERMISSION"
           if [ "$PERMISSION" != "admin" ]; then
-            echo "::error::${{ github.actor }} is not a repository admin. Only admins can trigger releases."
+            echo "::error::$ACTOR is not a repository admin. Only admins can trigger releases."
             exit 1
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
+
+      - name: Verify the repo allows merge commits
+        # The release PR must be merged with a MERGE COMMIT so the tagged bump commit lands on main as an
+        # ancestor; a squash merge rewrites the SHA and orphans the tag. Fail fast here, before any branch,
+        # bump or tag is cut, if merge commits are disabled.
+        run: |
+          set -euo pipefail
+          ALLOWED=$(gh api "repos/$REPOSITORY" --jq '.allow_merge_commit')
+          echo "allow_merge_commit: ${ALLOWED}"
+          if [ "${ALLOWED}" != "true" ]; then
+            echo "::error::Enable 'Allow merge commits' (Settings>General) or the release tag orphans off main"
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+
+      - name: Checkout main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Resolve or create the release branch
+        id: resolve
+        env:
+          GIVEN_BRANCH: ${{ inputs.release-branch }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          if [ "$GIVEN_BRANCH" = "main" ]; then
+            echo "::error::Cannot release on 'main' (protected; the bump push is rejected). Leave empty to auto-create."
+            exit 1
+          fi
+          if [ -n "$GIVEN_BRANCH" ]; then
+            git ls-remote --exit-code --heads origin "$GIVEN_BRANCH" >/dev/null \
+              || { echo "::error::release-branch '$GIVEN_BRANCH' does not exist on origin"; exit 1; }
+            echo "Using the given release branch: $GIVEN_BRANCH"
+            BRANCH="$GIVEN_BRANCH"
+          else
+            BRANCH="release/auto-${RUN_ID}-${RUN_ATTEMPT}"
+            echo "No release branch given; creating $BRANCH from the tip of main"
+            git switch -c "$BRANCH"
+            git push -u origin "$BRANCH"
+          fi
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+  # Build the wheel and run it across the OS/Python matrix on the release branch (its PRE-BUMP tip -- the
+  # version bump + lockfile land later, in the release job), so a wheel that cannot install or import on a
+  # supported target blocks the tag/release/PyPI chain.
+  pure-wheel-test:
+    needs: prepare
+    uses: ./.github/workflows/pure-wheel-test.yml
+    with:
+      branch: ${{ needs.prepare.outputs.branch }}
+
+  release:
+    needs: [prepare, pure-wheel-test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout the release branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.prepare.outputs.branch }}
 
       - name: Create GitHub Release with Commitizen
         uses: serapeum-org/github-actions/actions/release/github@38c111084f99d5ff5f4a1e63bedce48fe33a10c0 # github-release/v1.5.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          increment: ${{ github.event.inputs.increment }}
-          prerelease-type: ${{ github.event.inputs.prerelease_type }}
-          draft: ${{ github.event.inputs.draft }}
+          increment: ${{ inputs.increment }}
+          prerelease-type: ${{ inputs.prerelease_type }}
+          draft: ${{ inputs.draft }}
           package-manager: uv
           package-manager-version: '0.12.1'
           python-version: "3.12"
@@ -78,10 +156,99 @@ jobs:
         run: uv lock
 
       - name: Commit and push updated lockfile
+        # `branch` is free text (or an auto-generated name). Interpolated into the script it would be executed:
+        # `main; <command>` runs `<command>` on the runner with this job's `contents: write` token. Through `env`
+        # and quoted, it is an argument to `git push` and nothing else.
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add uv.lock
           git diff --cached --quiet && echo "No lockfile changes" && exit 0
-          git commit -m "build: sync uv.lock after ${{ inputs.increment }} version bump"
-          git push origin ${{ inputs.release-branch }}
+          git commit -m "build: sync uv.lock after version bump"
+          git push origin "$RELEASE_BRANCH"
+        env:
+          RELEASE_BRANCH: ${{ needs.prepare.outputs.branch }}
+
+      # Hand the released commit to the downstream consumers. They are triggered by `workflow_run`, whose
+      # payload's head_branch points at the dispatched ref, not the branch that received the version-bump +
+      # lockfile commits above. The artifact is the one channel that crosses the workflow_run boundary;
+      # pypi-release, deploy-release and build-strict download it by run id and check this out.
+      # Record the SHA (the lockfile commit = the published tree), not the branch name: a SHA survives the
+      # release branch being auto-deleted after the PR merges (it stays reachable via the merge commit on
+      # main), whereas a branch name would leave a delayed re-publish unable to check anything out.
+      - name: Record the released commit for the downstream consumers
+        # Skip on a draft: the release-ref artifact is the "publish this" token for the downstream consumers.
+        # `draft` cannot cross the workflow_run boundary, so withholding the artifact is how a draft stops the
+        # PyPI publish + release-docs deploy (each treats a missing artifact as "nothing to publish").
+        if: ${{ inputs.draft != true }}
+        run: git rev-parse HEAD > release-ref.txt
+
+      - name: Upload the release ref for pypi-release
+        if: ${{ inputs.draft != true }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-ref
+          path: release-ref.txt
+          # 7 days, not 1: a delayed re-publish on the workflow_run path must still find the artifact.
+          retention-days: 7
+          if-no-files-found: error
+
+      # Open the release PR into main. It is MERGED MANUALLY: main's ruleset requires a review, so the
+      # workflow cannot land the merge unattended. Merge it with a MERGE COMMIT (not squash) so the tagged
+      # bump commit stays an ancestor of main. RECOVERY: do NOT re-run a failed release. "Re-run failed jobs"
+      # keeps prepare's branch but re-bumps the already-bumped tree / collides on the existing tag; "Re-run all
+      # jobs" cuts a fresh auto-branch. Either way: delete the failed release's branch + tag, then dispatch anew.
+      - name: Open the release PR into main (merge manually)
+        # Non-fatal: a `gh pr create` hiccup must NOT fail the release run. The tag, GitHub Release and
+        # release-ref artifact are already done by this point, and pypi-release + docs-deploy gate on this
+        # run's success -- so a failed PR-open would otherwise block the publish. If it fails, open the PR
+        # by hand; the publish and docs still proceed.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ needs.prepare.outputs.branch }}
+        run: |
+          set -euo pipefail
+          HEAD_BRANCH="$BRANCH"
+          VERSION="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+          TITLE="release: land ${VERSION:-the version bump, changelog and tag} on main"
+          if gh pr view "$HEAD_BRANCH" --json number >/dev/null 2>&1; then
+            echo "A PR for ${HEAD_BRANCH} already exists."
+          else
+            gh pr create \
+              --base main \
+              --head "$HEAD_BRANCH" \
+              --title "$TITLE" \
+              --body "Automated release PR. Merge MANUALLY with a MERGE COMMIT (a squash orphans the tag)."
+          fi
+          echo "Release PR for ${HEAD_BRANCH} is open; merge it manually into main."
+
+  # If the release fails anywhere after `prepare` pushed an auto-created branch (and no PR was opened yet),
+  # delete that branch so failed attempts don't litter the remote. Only touches `release/auto-*` branches
+  # (never a user-supplied release-branch) and never one that already has an open PR.
+  cleanup-on-failure:
+    needs: [prepare, pure-wheel-test, release]
+    if: ${{ failure() && needs.prepare.outputs.branch != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Delete the orphaned auto-created release branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          BRANCH: ${{ needs.prepare.outputs.branch }}
+        run: |
+          set -euo pipefail
+          case "$BRANCH" in
+            release/auto-*) ;;
+            *) echo "Not an auto-created branch ($BRANCH); leaving it."; exit 0 ;;
+          esac
+          if gh pr view "$BRANCH" --json number >/dev/null 2>&1; then
+            echo "A PR exists for $BRANCH; leaving the branch for the PR."
+            exit 0
+          fi
+          echo "Deleting orphaned release branch $BRANCH"
+          gh api -X DELETE "repos/$REPOSITORY/git/refs/heads/$BRANCH" || echo "branch $BRANCH already gone"

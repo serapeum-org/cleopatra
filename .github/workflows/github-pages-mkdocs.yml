@@ -23,23 +23,66 @@ jobs:
   # non-strict, so a broken nav entry, a dangling anchor or a malformed
   # docstring would publish silently — this fails the run instead.
   build-strict:
+    # Skip on a FAILED upstream github-release: a failed release uploaded no release-ref artifact, so the
+    # download step below would error and red this "Deploy MkDocs" run for a failure that has nothing to do
+    # with docs. Every non-workflow_run event (push / pull_request / release) still runs unconditionally.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     # Only reads the tree; the write scopes the workflow grants are for the
     # deploy jobs, not for this one. A pull-request run therefore has no write
     # path to gh-pages at all.
     permissions:
       contents: read
+      # download the release-ref artifact on the workflow_run path (cross-run)
+      actions: read
     steps:
-    # No explicit ref: checkout's own default is what we want on every trigger,
-    # and it is the merge commit on a pull_request rather than the fork's head.
-    # Naming a ref from the event payload would put fork-controlled code into
-    # this job.
+    - name: Download the release ref from the github-release run
+      # Gate the SAME tree the deploy jobs publish: on workflow_run / release that is the released commit /
+      # tag (the bump + new changelog), not pre-bump main -- else a page that only exists on the release
+      # branch would pass --strict yet still publish. On push / pull_request this is skipped and checkout
+      # uses its default ref (the PR merge commit), so fork-controlled code never reaches a write-scoped job.
+      # continue-on-error: a draft release (or a run that did not upload) leaves no artifact; let the job
+      # continue and the resolve step fall back to gating the default tree instead of erroring here.
+      if: github.event_name == 'workflow_run'
+      continue-on-error: true
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        name: release-ref
+        run-id: ${{ github.event.workflow_run.id }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path: .release-ref
+
+    - name: Resolve the ref to gate
+      id: ref
+      env:
+        EVENT_NAME: ${{ github.event_name }}
+        RELEASE_REF: ${{ github.ref }}
+      run: |
+        set -euo pipefail
+        case "$EVENT_NAME" in
+          workflow_run)
+            if [ -f .release-ref/release-ref.txt ]; then
+              REF="$(cat .release-ref/release-ref.txt)"
+              [ -n "$REF" ] || { echo "::error::empty release ref"; exit 1; }
+            else
+              echo "no release-ref artifact (draft or non-publishing run); gating the default tree"
+              REF=""
+            fi ;;
+          release) REF="$RELEASE_REF" ;;
+          *) REF="" ;;
+        esac
+        echo "ref=${REF}" >> "$GITHUB_OUTPUT"
+
+    # On push / pull_request REF is empty, so checkout uses its own default ref -- the merge commit on a
+    # pull_request, never the fork's head, so fork-controlled code stays out of this job. On workflow_run /
+    # release REF is the released commit/tag, so the --strict gate checks the exact tree the deploy publishes.
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
-        # A shallow checkout is enough: mike reads git history only at
-        # `mike deploy`, not at plain `mkdocs build` time (it just injects the
-        # version selector), and there is no git-revision-date plugin.
+        # Full history so a checkout by the released commit SHA resolves (a shallow fetch of a non-tip SHA
+        # can fail). plain `mkdocs build` itself reads no git history (no git-revision-date plugin).
+        fetch-depth: 0
         persist-credentials: false
+        ref: ${{ steps.ref.outputs.ref }}
 
     # The same setup the deploy jobs get. mkdocs-deploy calls this action
     # internally with these inputs, so reusing it here keeps the gate and the
@@ -61,9 +104,8 @@ jobs:
     # (`--strict` turns every MkDocs warning into an error). It does NOT execute
     # notebooks (no notebooks-path here; mkdocs-jupyter renders committed outputs
     # with execute=false), so a notebook-execution regression is still caught by
-    # the deploy jobs, not here. On the `workflow_run` release path the default
-    # checkout ref is the default branch, so the gate is a main-branch smoke test
-    # there rather than a check of the exact released tree.
+    # the deploy jobs, not here. On the `workflow_run` / `release` path it checks
+    # the exact released tree (the release-ref handoff above), not pre-bump main.
     - name: Build docs with --strict
       run: mkdocs build --strict --site-dir /tmp/site
 
@@ -80,9 +122,11 @@ jobs:
         path: /tmp/site
         retention-days: 7
 
-  # deploy-main / deploy-release run un-serialised on purpose: mkdocs-deploy retries
-  # the shared gh-pages push (mike_push.sh), so each completes. Never add workflow-
-  # level concurrency here — it would also evict the build-strict gate.
+  # deploy-main / deploy-release are not serialised against each other: mkdocs-deploy retries the shared
+  # gh-pages push (mike_push.sh), so each completes. Never add a WORKFLOW-level concurrency group here — it
+  # would also evict the build-strict gate. deploy-release does carry its own JOB-level group (below), which
+  # is safe (it never touches build-strict) and only stops a UI/PAT release — which fires both the `release`
+  # and `workflow_run` events — from running two release deploys at once.
   deploy-main:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build-strict
@@ -102,25 +146,96 @@ jobs:
         deploy-token: ${{ secrets.ACTIONS_DEPLOY_TOKEN }}
 
   deploy-release:
+    # Security: when triggered via `workflow_run`, require that the upstream
+    # workflow ran from the base repository (not a fork) so we can never run
+    # untrusted code in a context that holds `ACTIONS_DEPLOY_TOKEN`.
     if: >-
       github.event_name == 'release' ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_repository.full_name == github.repository)
+      (github.event_name == 'workflow_run'
+       && github.event.workflow_run.conclusion == 'success'
+       && github.event.workflow_run.head_repository.fork == false)
     needs: build-strict
     runs-on: ubuntu-latest
+    # Serialize release-docs deploys so two runs never race on gh-pages (mike deploy + prune). A UI/PAT-
+    # published release fires BOTH the `release` and `workflow_run` events; a constant group makes the second
+    # wait instead of corrupting the branch. The bot path fires only workflow_run, so this is normally a no-op.
+    concurrency:
+      group: mkdocs-deploy-release
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pages: write
+      # Download the release-ref artifact from the github-release run (cross-run fetch).
+      actions: read
     steps:
+    - name: Download the release ref from the github-release run
+      # github-release cuts the version bump + tag on the release branch, not on the dispatch ref, so on the
+      # workflow_run path head_sha/head_branch point at pre-bump main. Fetch the released commit SHA it
+      # recorded and deploy from there, so the versioned docs reflect the released version -- the same
+      # release-ref handoff pypi-release uses. (Without it, deploy-release publishes OLD docs + regresses
+      # `latest`.)
+      # continue-on-error: a draft release leaves no artifact; let the job continue so the resolve step can
+      # skip the deploy cleanly instead of erroring on the missing file.
+      if: github.event_name == 'workflow_run'
+      continue-on-error: true
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        name: release-ref
+        run-id: ${{ github.event.workflow_run.id }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path: .release-ref
+
+    - name: Resolve the ref to deploy
+      id: ref
+      env:
+        EVENT_NAME: ${{ github.event_name }}
+        # Fallback serves the `release` event, where github.ref is refs/tags/<tag> (the released tag).
+        FALLBACK_REF: ${{ github.ref }}
+      run: |
+        set -euo pipefail
+        if [ "$EVENT_NAME" = "workflow_run" ]; then
+          # No artifact => draft release (or a run that did not upload); nothing to deploy, skip cleanly.
+          if [ ! -f .release-ref/release-ref.txt ]; then
+            echo "no release-ref artifact (draft or non-publishing run); skipping release docs deploy"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          REF="$(cat .release-ref/release-ref.txt)"
+          [ -n "$REF" ] || { echo "::error::empty release ref"; exit 1; }
+        else
+          REF="$FALLBACK_REF"
+        fi
+        echo "resolved ref: ${REF}"
+        echo "ref=${REF}" >> "$GITHUB_OUTPUT"
+
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      if: steps.ref.outputs.skip != 'true'
       with:
         fetch-depth: 0
-        ref: ${{ github.event.workflow_run.head_branch || github.ref }}
+        # workflow_run: the released commit SHA from the release-ref artifact (the tree that holds the bump);
+        # `release` event: the published tag. Both carry the released version. The release-ref SHA comes
+        # from the gated, fork-guarded release run, so it is trusted input (CWE-829: untrusted-checkout) --
+        # the fork guard in `if:` above keeps untrusted code out.
+        ref: ${{ steps.ref.outputs.ref }}
 
     - name: Extract version from pyproject.toml
       id: version
+      if: steps.ref.outputs.skip != 'true'
+      # Anchor on `version` + `=` so it cannot match `version_provider` under [tool.commitizen]. On a
+      # `release` event, assert the published tag_name equals the committed version so the deploy tag and the
+      # prune floor (KEEP_VERSION) cannot diverge and prune the version just deployed.
+      env:
+        TAG_NAME: ${{ github.event.release.tag_name }}
       run: |
-        VERSION=$(grep -m1 '^version' pyproject.toml | sed 's/.*"\(.*\)"/\1/')
-        echo "tag=$VERSION" >> $GITHUB_OUTPUT
+        set -euo pipefail
+        VERSION=$(grep -m1 '^version[[:space:]]*=' pyproject.toml | sed 's/.*"\(.*\)"/\1/')
+        if [ -n "${TAG_NAME:-}" ] && [ "$TAG_NAME" != "$VERSION" ]; then
+          echo "::error::release tag '$TAG_NAME' != pyproject version '$VERSION'"; exit 1
+        fi
+        echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
 
     - uses: serapeum-org/github-actions/actions/mkdocs-deploy@38c111084f99d5ff5f4a1e63bedce48fe33a10c0 # mkdocs/v1.3.1
+      if: steps.ref.outputs.skip != 'true'
       with:
         trigger: 'release'
         package-manager: 'uv'
@@ -161,10 +276,12 @@ jobs:
     # release docs are already published by the deploy step above, so a red
     # prune signals "cleanup needs attention", not "the release failed".
     - name: Prune superseded documentation versions
+      if: steps.ref.outputs.skip != 'true'
       env:
         KEEP_VERSION: ${{ github.event.release.tag_name || steps.version.outputs.tag }}
         RETAIN_RELEASES: '5'
       run: |
+        set -euo pipefail
         if [ -z "$KEEP_VERSION" ]; then
           echo "::error::no release version resolved; refusing to prune"
           exit 1
