@@ -178,9 +178,14 @@ jobs:
       # release branch being auto-deleted after the PR merges (it stays reachable via the merge commit on
       # main), whereas a branch name would leave a delayed re-publish unable to check anything out.
       - name: Record the released commit for the downstream consumers
+        # Skip on a draft: the release-ref artifact is the "publish this" token for the downstream consumers.
+        # `draft` cannot cross the workflow_run boundary, so withholding the artifact is how a draft stops the
+        # PyPI publish + release-docs deploy (each treats a missing artifact as "nothing to publish").
+        if: ${{ inputs.draft != true }}
         run: git rev-parse HEAD > release-ref.txt
 
       - name: Upload the release ref for pypi-release
+        if: ${{ inputs.draft != true }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-ref

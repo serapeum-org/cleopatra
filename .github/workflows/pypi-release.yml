@@ -32,6 +32,9 @@ jobs:
         # the tree that actually holds the bump -- not head_branch, which is the dispatched ref, not that
         # commit. A dispatch run of this workflow skips this and falls back to github.ref_name below.
         if: github.event_name == 'workflow_run'
+        # continue-on-error: a draft release uploads no release-ref artifact, so this download fails on a
+        # draft. Let the job continue; the resolve step detects the absent file and skips the publish cleanly.
+        continue-on-error: true
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: release-ref
@@ -48,6 +51,13 @@ jobs:
         run: |
           set -euo pipefail
           if [ "$EVENT_NAME" = "workflow_run" ]; then
+            # No artifact => github-release withheld it (a draft release), or the run never reached the
+            # upload. Either way there is nothing to publish: skip cleanly rather than erroring on the file.
+            if [ ! -f .release-ref/release-ref.txt ]; then
+              echo "no release-ref artifact (draft or non-publishing run); skipping PyPI publish"
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
             REF="$(cat .release-ref/release-ref.txt)"
             [ -n "$REF" ] || { echo "::error::empty release ref -- refusing to publish the default branch"; exit 1; }
           else
@@ -57,11 +67,13 @@ jobs:
           echo "ref=${REF}" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.ref.outputs.skip != 'true'
         with:
           fetch-depth: 0
           ref: ${{ steps.ref.outputs.ref }}
 
       - name: Build and publish to PyPI
+        if: steps.ref.outputs.skip != 'true'
         uses: serapeum-org/github-actions/actions/release/pypi@38c111084f99d5ff5f4a1e63bedce48fe33a10c0 # pypi-release/v1.0.3
         with:
           pypi-username: __token__

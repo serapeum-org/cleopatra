@@ -41,7 +41,10 @@ jobs:
       # tag (the bump + new changelog), not pre-bump main -- else a page that only exists on the release
       # branch would pass --strict yet still publish. On push / pull_request this is skipped and checkout
       # uses its default ref (the PR merge commit), so fork-controlled code never reaches a write-scoped job.
+      # continue-on-error: a draft release (or a run that did not upload) leaves no artifact; let the job
+      # continue and the resolve step fall back to gating the default tree instead of erroring here.
       if: github.event_name == 'workflow_run'
+      continue-on-error: true
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
       with:
         name: release-ref
@@ -58,8 +61,13 @@ jobs:
         set -euo pipefail
         case "$EVENT_NAME" in
           workflow_run)
-            REF="$(cat .release-ref/release-ref.txt)"
-            [ -n "$REF" ] || { echo "::error::empty release ref"; exit 1; } ;;
+            if [ -f .release-ref/release-ref.txt ]; then
+              REF="$(cat .release-ref/release-ref.txt)"
+              [ -n "$REF" ] || { echo "::error::empty release ref"; exit 1; }
+            else
+              echo "no release-ref artifact (draft or non-publishing run); gating the default tree"
+              REF=""
+            fi ;;
           release) REF="$RELEASE_REF" ;;
           *) REF="" ;;
         esac
@@ -166,7 +174,10 @@ jobs:
       # recorded and deploy from there, so the versioned docs reflect the released version -- the same
       # release-ref handoff pypi-release uses. (Without it, deploy-release publishes OLD docs + regresses
       # `latest`.)
+      # continue-on-error: a draft release leaves no artifact; let the job continue so the resolve step can
+      # skip the deploy cleanly instead of erroring on the missing file.
       if: github.event_name == 'workflow_run'
+      continue-on-error: true
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
       with:
         name: release-ref
@@ -183,6 +194,12 @@ jobs:
       run: |
         set -euo pipefail
         if [ "$EVENT_NAME" = "workflow_run" ]; then
+          # No artifact => draft release (or a run that did not upload); nothing to deploy, skip cleanly.
+          if [ ! -f .release-ref/release-ref.txt ]; then
+            echo "no release-ref artifact (draft or non-publishing run); skipping release docs deploy"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           REF="$(cat .release-ref/release-ref.txt)"
           [ -n "$REF" ] || { echo "::error::empty release ref"; exit 1; }
         else
@@ -192,6 +209,7 @@ jobs:
         echo "ref=${REF}" >> "$GITHUB_OUTPUT"
 
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      if: steps.ref.outputs.skip != 'true'
       with:
         fetch-depth: 0
         # workflow_run: the released commit SHA from the release-ref artifact (the tree that holds the bump);
@@ -202,6 +220,7 @@ jobs:
 
     - name: Extract version from pyproject.toml
       id: version
+      if: steps.ref.outputs.skip != 'true'
       # Anchor on `version` + `=` so it cannot match `version_provider` under [tool.commitizen]. On a
       # `release` event, assert the published tag_name equals the committed version so the deploy tag and the
       # prune floor (KEEP_VERSION) cannot diverge and prune the version just deployed.
@@ -216,6 +235,7 @@ jobs:
         echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
 
     - uses: serapeum-org/github-actions/actions/mkdocs-deploy@38c111084f99d5ff5f4a1e63bedce48fe33a10c0 # mkdocs/v1.3.1
+      if: steps.ref.outputs.skip != 'true'
       with:
         trigger: 'release'
         package-manager: 'uv'
@@ -256,6 +276,7 @@ jobs:
     # release docs are already published by the deploy step above, so a red
     # prune signals "cleanup needs attention", not "the release failed".
     - name: Prune superseded documentation versions
+      if: steps.ref.outputs.skip != 'true'
       env:
         KEEP_VERSION: ${{ github.event.release.tag_name || steps.version.outputs.tag }}
         RETAIN_RELEASES: '5'
