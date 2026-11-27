@@ -2523,6 +2523,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0462-2026-11-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.46.2 (2026-11-26)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0461-2026-11-15" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3465,6 +3476,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0462-2026-11-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.46.2 (2026-11-26)
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#0461-2026-11-15" class="md-nav__link">
@@ -4410,6 +4432,49 @@
 
 
 <h1 id="changelog"><a class="toclink" href="#changelog">Changelog</a><a class="headerlink" href="#changelog" title="Permanent link">#</a></h1>
+<h2 id="0462-2026-11-26"><a class="toclink" href="#0462-2026-11-26">0.46.2 (2026-11-26)</a><a class="headerlink" href="#0462-2026-11-26" title="Permanent link">#</a></h2>
+<ul>
+<li>fix(array_glyph): recolour plot cell-value text by background threshold (#419)</li>
+<li>
+<p>ArrayGlyph.plot drew every cell-value label white regardless of                                             <br />
+  background_color_threshold -- the threshold-based recolouring existed only                                  <br />
+  in animate's per-frame update, and _plot_text hardcoded color="w", so the                                   <br />
+  option silently did nothing in plot and dark values on bright cells were                                    <br />
+  unreadable.                                                                                                   </p>
+</li>
+<li>
+<p>_plot_text takes the mappable's norm and switches each cell's text at                                     <br />
+    the normalised threshold (norm(background_color_threshold), or                                            <br />
+    norm(nanmax)/2 by default), the same split animate applies; the plot                                      <br />
+    call site passes norm=None for RGB renders, animate stays unchanged                                         </p>
+</li>
+<li>lift the threshold resolution into _resolve_cell_text_threshold to keep                                   <br />
+    _plot_text under the cognitive-complexity limit                                                             </li>
+<li>correct the inverted CellValues.background_threshold docstring (above                                     <br />
+    the threshold the text goes dark for contrast, not light) and note that                                   <br />
+    plot uses a fixed white/black pair                                                                          </li>
+<li>cover the recolouring across imshow, pcolormesh, classified BoundaryNorm,                                 <br />
+    the default-threshold split, and the empty-indices guard                                                    </li>
+</ul>
+<p>Closes #75
+- fix(line_glyph): draw datetime bars with width in data units (#418)
+- LineGlyph coerced x with np.asarray, flattening a pandas DatetimeIndex (or                                  <br />
+  any datetime64 array) to a high-resolution datetime64 array. Axes.bar then                                  <br />
+  read a numeric width (e.g. width=20) as that many nanoseconds, collapsing                                   <br />
+  the bars to zero width on an otherwise-correct date axis.                                                     </p>
+<ul>
+<li>Normalise any datetime64-backed x to an object array of datetime.datetime                                 <br />
+    in _coerce_x, so width=20 means 20 days for every representation,                                         <br />
+    including the raw datetime64[ns] ndarray a NumPy-first caller passes;                                     <br />
+    matches native Axes.bar. A datetime.timedelta width is also accepted.                                     <br />
+    Detection is pandas-free (dtype.kind == "M"); pandas stays undeclared.                                      </li>
+<li>Add an explicit alpha parameter to bar() and line(), fixing the duplicate                                 <br />
+    keyword TypeError raised when alpha was passed alongside the option-sourced                               <br />
+    alpha (fill_between already had one).                                                                       </li>
+<li>Bump virtualenv 21.14.12 -&gt; 21.15.13 in uv.lock to clear pip-audit's                                      <br />
+    PYSEC-2026-4402 advisory on a transitive dev dependency.                                                    </li>
+</ul>
+<p>Closes #417</p>
 <h2 id="0461-2026-11-15"><a class="toclink" href="#0461-2026-11-15">0.46.1 (2026-11-15)</a><a class="headerlink" href="#0461-2026-11-15" title="Permanent link">#</a></h2>
 <ul>
 <li>refactor(basemap.tiles)!: make add_tiles private; use the add_tiles glyph method (#414)</li>
