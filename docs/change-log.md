@@ -1,5 +1,47 @@
 # Changelog
 
+## 0.46.2 (2026-11-26)
+
+
+- fix(array_glyph): recolour plot cell-value text by background threshold (#419)
+- ArrayGlyph.plot drew every cell-value label white regardless of                                               
+  background_color_threshold -- the threshold-based recolouring existed only                                    
+  in animate's per-frame update, and _plot_text hardcoded color="w", so the                                     
+  option silently did nothing in plot and dark values on bright cells were                                      
+  unreadable.                                                                                                   
+                                                                                                                
+  - _plot_text takes the mappable's norm and switches each cell's text at                                       
+    the normalised threshold (norm(background_color_threshold), or                                              
+    norm(nanmax)/2 by default), the same split animate applies; the plot                                        
+    call site passes norm=None for RGB renders, animate stays unchanged                                         
+  - lift the threshold resolution into _resolve_cell_text_threshold to keep                                     
+    _plot_text under the cognitive-complexity limit                                                             
+  - correct the inverted CellValues.background_threshold docstring (above                                       
+    the threshold the text goes dark for contrast, not light) and note that                                     
+    plot uses a fixed white/black pair                                                                          
+  - cover the recolouring across imshow, pcolormesh, classified BoundaryNorm,                                   
+    the default-threshold split, and the empty-indices guard                                                    
+                                                                                                                
+  Closes #75
+- fix(line_glyph): draw datetime bars with width in data units (#418)
+- LineGlyph coerced x with np.asarray, flattening a pandas DatetimeIndex (or                                    
+  any datetime64 array) to a high-resolution datetime64 array. Axes.bar then                                    
+  read a numeric width (e.g. width=20) as that many nanoseconds, collapsing                                     
+  the bars to zero width on an otherwise-correct date axis.                                                     
+                                                                                                                
+  - Normalise any datetime64-backed x to an object array of datetime.datetime                                   
+    in _coerce_x, so width=20 means 20 days for every representation,                                           
+    including the raw datetime64[ns] ndarray a NumPy-first caller passes;                                       
+    matches native Axes.bar. A datetime.timedelta width is also accepted.                                       
+    Detection is pandas-free (dtype.kind == "M"); pandas stays undeclared.                                      
+  - Add an explicit alpha parameter to bar() and line(), fixing the duplicate                                   
+    keyword TypeError raised when alpha was passed alongside the option-sourced                                 
+    alpha (fill_between already had one).                                                                       
+  - Bump virtualenv 21.14.12 -> 21.15.13 in uv.lock to clear pip-audit's                                        
+    PYSEC-2026-4402 advisory on a transitive dev dependency.                                                    
+                                                                                                                
+  Closes #417
+
 ## 0.46.1 (2026-11-15)
 
 
