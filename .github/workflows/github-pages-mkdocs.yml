@@ -260,6 +260,7 @@ jobs:
         KEEP_VERSION: ${{ github.event.release.tag_name || steps.version.outputs.tag }}
         RETAIN_RELEASES: '5'
       run: |
+        set -euo pipefail
         if [ -z "$KEEP_VERSION" ]; then
           echo "::error::no release version resolved; refusing to prune"
           exit 1
